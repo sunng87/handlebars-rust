@@ -1,0 +1,13 @@
+[package]
+
+name = "handlebars"
+version = "0.0.1"
+authors = ["Ning Sun <sunng@about.me>"]
+description = "Handlebars templating implemented in Rust."
+license = "MIT"
+keywords = ["handlebars", "templates", "web"]
+
+[lib]
+
+name = "handlebars"
+path = "src/lib.rs"
