@@ -23,7 +23,9 @@ impl HelperDef for DummyHelper {
 pub static DUMMY_HELPER: DummyHelper = DummyHelper;
 
 #[deriving(Copy)]
-pub struct IfHelper;
+pub struct IfHelper {
+    positive: bool
+}
 
 impl HelperDef for IfHelper{
     fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
@@ -35,7 +37,7 @@ impl HelperDef for IfHelper{
 
         let value = c.navigate(rc.get_path(), param.unwrap());
 
-        let bool_value:bool = match *value {
+        let mut bool_value:bool = match *value {
             Json::I64(i) => i != 0,
             Json::U64(i) => i != 0,
             Json::F64(i) => i != Float::zero() || ! i.is_nan(),
@@ -46,7 +48,10 @@ impl HelperDef for IfHelper{
             Json::Object (ref i) => true
         };
 
-        print!("{}", bool_value);
+        if !self.positive {
+            bool_value = !bool_value;
+        }
+
         let tmpl = if bool_value { h.template() } else { h.inverse() };
         match tmpl {
             Some(ref t) => t.render(c, r, rc),
@@ -55,8 +60,8 @@ impl HelperDef for IfHelper{
     }
 }
 
-pub static IF_HELPER: IfHelper = IfHelper;
-
+pub static IF_HELPER: IfHelper = IfHelper { positive: true };
+pub static UNLESS_HELPER: IfHelper = IfHelper { positive: false };
 
 /*
 pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
@@ -70,22 +75,23 @@ pub fn helper_dummy (ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderCon
 mod test {
     use template::{Template};
     use registry::{Registry};
-    use helpers::{IF_HELPER};
+    use helpers::{IF_HELPER, UNLESS_HELPER};
 
     #[test]
     fn test_if() {
         let t0 = Template::compile("{{#if this}}hello{{/if}}".to_string()).unwrap();
-        let t1 = Template::compile("{{#if this}}hello{{else}}world{{/if}}".to_string()).unwrap();
+        let t1 = Template::compile("{{#unless this}}hello{{else}}world{{/unless}}".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", &t0);
         handlebars.register_template("t1", &t1);
         handlebars.register_helper("if", box IF_HELPER);
+        handlebars.register_helper("unless", box UNLESS_HELPER);
 
         let r0 = handlebars.render("t0", &true);
         assert_eq!(r0.unwrap(), "hello".to_string());
 
-        let r1 = handlebars.render("t1", &false);
+        let r1 = handlebars.render("t1", &true);
         assert_eq!(r1.unwrap(), "world".to_string());
 
         let r2 = handlebars.render("t0", &false);
