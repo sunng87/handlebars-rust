@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use serialize::json::Json;
 
 use template::{Template, TemplateElement};
 use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression};
@@ -6,6 +7,7 @@ use registry::Registry;
 use context::{Context, JsonRender};
 
 pub static EMPTY: &'static str = "";
+static NULL_VALUE: Json = Json::Null;
 
 #[deriving(Show, Copy)]
 pub struct RenderError {
@@ -14,14 +16,16 @@ pub struct RenderError {
 
 pub struct RenderContext {
     partials: HashMap<String, String>,
-    path: String
+    path: String,
+    local_variables: HashMap<String, Json>
 }
 
 impl RenderContext {
     pub fn new() -> RenderContext {
         RenderContext {
             partials: HashMap::new(),
-            path: ".".to_string()
+            path: ".".to_string(),
+            local_variables: HashMap::new()
         }
     }
 
@@ -39,6 +43,21 @@ impl RenderContext {
 
     pub fn set_path(&mut self, path: String) {
         self.path = path
+    }
+
+    pub fn set_local_variable(&mut self, name: String, value: Json) {
+        self.local_variables.insert(name, value);
+    }
+
+    pub fn clear_local_variables(&mut self){
+        self.local_variables.clear();
+    }
+
+    pub fn get_local_variable(&self, name: &String) -> &Json {
+        match self.local_variables.get(name) {
+            Some(ref j) => *j,
+            None => &NULL_VALUE
+        }
     }
 }
 
@@ -74,7 +93,11 @@ impl Renderable for TemplateElement {
                 return Ok(v.clone());
             },
             Expression(ref v) => {
-                let value = ctx.navigate(rc.get_path(), v);
+                let value = if (*v).starts_with("@") {
+                    rc.get_local_variable(v)
+                } else {
+                    ctx.navigate(rc.get_path(), v)
+                };
                 let rendered = value.render();
                 Ok(rendered.replace("&", "&amp;")
                    .replace("\"", "&quot;")
@@ -82,7 +105,11 @@ impl Renderable for TemplateElement {
                    .replace(">", "&gt;"))
             },
             HTMLExpression(ref v) => {
-                let value = ctx.navigate(rc.get_path(), v);
+                let value = if (*v).starts_with("@") {
+                    rc.get_local_variable(v)
+                } else {
+                    ctx.navigate(rc.get_path(), v)
+                };
                 Ok(value.render())
             },
             HelperBlock(ref helper) => {

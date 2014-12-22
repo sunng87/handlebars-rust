@@ -1,6 +1,6 @@
 //use std::ops::Fn;
 use std::num::Float;
-use serialize::json::Json;
+use serialize::json::{Json, ToJson};
 
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 use template::{Helper};
@@ -62,6 +62,59 @@ impl HelperDef for IfHelper{
 
 pub static IF_HELPER: IfHelper = IfHelper { positive: true };
 pub static UNLESS_HELPER: IfHelper = IfHelper { positive: false };
+
+#[deriving(Copy)]
+pub struct EachHelper;
+
+impl HelperDef for EachHelper{
+    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+        let param = h.params().get(0);
+
+        if param.is_none() {
+            return Err(render_error("Param not found for helper \"error\""));
+        }
+
+        let template = h.template();
+
+        match template {
+            Some(t) => {
+                let value = c.navigate(rc.get_path(), param.unwrap());
+                let mut buffer = String::new();
+
+                match *value {
+                    Json::Array (ref list) => {
+                        let len = list.len();
+                        for i in range(0, len) {
+                            if i == 0u {
+                                rc.set_local_variable("@first".to_string(), true.to_json());
+                            }
+                            if len > 1 && i == (len-1) {
+                                rc.set_local_variable("@last".to_string(), true.to_json());
+                            }
+                            rc.set_local_variable("@index".to_string(), i.to_json());
+                            match t.render(c, r, rc) {
+                                Ok(r) => {
+                                    buffer.push_str(r.as_slice());
+                                }
+                                Err(r) => {
+                                    return Err(r);
+                                }
+                            }
+                            rc.clear_local_variables();
+                        }
+                        Ok(buffer)
+                    },
+                    _ => {
+                        Err(render_error("Param is not an iteratable."))
+                    }
+                }
+            },
+            None => Ok(EMPTY.to_string())
+        }
+    }
+}
+
+pub static EACH_HELPER: EachHelper = EachHelper;
 
 /*
 pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
