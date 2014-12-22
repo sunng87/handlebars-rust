@@ -88,7 +88,7 @@ impl JsonRender for Json {
 #[cfg(test)]
 mod test {
     use context::{JsonRender, Context};
-    use std::collections::TreeMap;
+    use std::collections::BTreeMap;
     use serialize::json::{Json, ToJson};
 
     struct Address {
@@ -98,7 +98,7 @@ mod test {
 
     impl ToJson for Address {
         fn to_json(&self) -> Json {
-            let mut m = TreeMap::new();
+            let mut m = BTreeMap::new();
             m.insert("city".to_string(), self.city.to_json());
             m.insert("country".to_string(), self.country.to_json());
             Json::Object(m)
@@ -113,7 +113,7 @@ mod test {
 
     impl ToJson for Person {
         fn to_json(&self) -> Json {
-            let mut m = TreeMap::new();
+            let mut m = BTreeMap::new();
             m.insert("name".to_string(), self.name.to_json());
             m.insert("age".to_string(), self.age.to_json());
             m.insert("addr".to_string(), self.addr.to_json());
