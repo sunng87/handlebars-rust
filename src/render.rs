@@ -45,15 +45,43 @@ impl RenderContext {
         self.path = path
     }
 
-    pub fn set_local_variable(&mut self, name: String, value: Json) {
+    pub fn set_local_var(&mut self, name: String, value: Json) {
         self.local_variables.insert(name, value);
     }
 
-    pub fn clear_local_variables(&mut self){
+    pub fn clear_local_vars(&mut self){
         self.local_variables.clear();
     }
 
-    pub fn get_local_variable(&self, name: &String) -> &Json {
+    pub fn promote_local_vars(&mut self) {
+        let mut new_map: HashMap<String, Json> = HashMap::new();
+        for key in self.local_variables.keys() {
+            let mut new_key = String::new();
+            new_key.push_str("@../");
+            new_key.push_str(key.slice_from(1));
+
+            let v = self.local_variables.get(key).unwrap().clone();
+            new_map.insert(new_key, v);
+        }
+        self.local_variables = new_map;
+    }
+
+    pub fn demote_local_vars(&mut self) {
+        let mut new_map: HashMap<String, Json> = HashMap::new();
+        for key in self.local_variables.keys() {
+            if key.starts_with("@../") {
+                let mut new_key = String::new();
+                new_key.push('@');
+                new_key.push_str(key.slice_from(4));
+
+                let v = self.local_variables.get(key).unwrap().clone();
+                new_map.insert(new_key, v);
+            }
+        }
+        self.local_variables = new_map;
+    }
+
+    pub fn get_local_var(&self, name: &String) -> &Json {
         match self.local_variables.get(name) {
             Some(ref j) => *j,
             None => &NULL_VALUE
@@ -94,7 +122,7 @@ impl Renderable for TemplateElement {
             },
             Expression(ref v) => {
                 let value = if (*v).starts_with("@") {
-                    rc.get_local_variable(v)
+                    rc.get_local_var(v)
                 } else {
                     ctx.navigate(rc.get_path(), v)
                 };
@@ -106,7 +134,7 @@ impl Renderable for TemplateElement {
             },
             HTMLExpression(ref v) => {
                 let value = if (*v).starts_with("@") {
-                    rc.get_local_variable(v)
+                    rc.get_local_var(v)
                 } else {
                     ctx.navigate(rc.get_path(), v)
                 };
