@@ -1,8 +1,11 @@
 #![allow(dead_code, unused_variables)]
-#![feature(unboxed_closures)]
+#![feature(unboxed_closures, phase)]
 #![experimental]
 
 extern crate serialize;
+extern crate regex;
+#[phase(plugin)]
+extern crate regex_macros;
 
 pub mod template;
 pub mod registry;

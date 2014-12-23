@@ -6,6 +6,17 @@ use registry::{Registry};
 use context::{Context};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
+fn build_path (path: &String, param: &Option<&String>, key: &str) -> String {
+    let mut new_path = String::new();
+    new_path.push_str(path.as_slice());
+    new_path.push_str("/");
+    new_path.push_str(param.unwrap().as_slice());
+    new_path.push_str("[");
+    new_path.push_str(key);
+    new_path.push_str("]");
+    new_path
+}
+
 #[deriving(Copy)]
 pub struct EachHelper;
 
@@ -25,11 +36,12 @@ impl HelperDef for EachHelper{
                 let value = c.navigate(&path, param.unwrap());
                 let mut buffer = String::new();
 
-                match *value {
+                rc.promote_local_vars();
+
+                let rendered = match *value {
                     Json::Array (ref list) => {
                         let len = list.len();
                         for i in range(0, len) {
-                            rc.promote_local_vars();
                             if i == 0u {
                                 rc.set_local_var("@first".to_string(), true.to_json());
                             }
@@ -38,10 +50,7 @@ impl HelperDef for EachHelper{
                             }
                             rc.set_local_var("@index".to_string(), i.to_json());
                             // context change
-                            let mut new_path = String::new();
-                            new_path.push_str(path.as_slice());
-                            new_path.push_str("/");
-                            new_path.push_str(param.unwrap().as_slice());
+                            let new_path = build_path(&path, &param, i.to_string().as_slice());
                             rc.set_path(new_path);
 
                             match t.render(c, r, rc) {
@@ -52,15 +61,39 @@ impl HelperDef for EachHelper{
                                     return Err(r);
                                 }
                             }
-                            rc.demote_local_vars();
+
                         }
-                        rc.set_path(path);
+                        Ok(buffer)
+                    },
+                    Json::Object(ref obj) => {
+                        let mut first:bool = true;
+                        for k in obj.keys() {
+                            if first {
+                                rc.set_local_var("@first".to_string(), true.to_json());
+                                first = false;
+                            }
+
+                            rc.set_local_var("@key".to_string(), k.to_json());
+                            let new_path = build_path(&path, &param, k.to_string().as_slice());
+                            match t.render(c, r, rc) {
+                                Ok(r) => {
+                                    buffer.push_str(r.as_slice());
+                                }
+                                Err(r) => {
+                                    return Err(r);
+                                }
+                            }
+                        }
+
                         Ok(buffer)
                     },
                     _ => {
                         Err(render_error("Param is not an iteratable."))
                     }
-                }
+                };
+                rc.set_path(path);
+                rc.demote_local_vars();
+                rendered
             },
             None => Ok(EMPTY.to_string())
         }

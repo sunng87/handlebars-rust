@@ -17,7 +17,7 @@ pub struct RenderError {
 pub struct RenderContext {
     partials: HashMap<String, String>,
     path: String,
-    local_variables: HashMap<String, Json>
+    local_variables: HashMap<String, Json>,
 }
 
 impl RenderContext {
