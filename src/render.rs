@@ -227,3 +227,21 @@ fn test_template() {
 
     assert_eq!(template.render(&ctx, &r, &mut rc).unwrap(), "<h1>world</h1>".to_string());
 }
+
+#[test]
+fn test_render_context_promotion_and_demotion() {
+    use serialize::json::ToJson;
+    let mut render_context = RenderContext::new();
+
+    render_context.set_local_var("@index".to_string(), 0u.to_json());
+
+    render_context.promote_local_vars();
+
+    assert_eq!(render_context.get_local_var(&"@../index".to_string()),
+               &0u.to_json());
+
+    render_context.demote_local_vars();
+
+    assert_eq!(render_context.get_local_var(&"@index".to_string()),
+               &0u.to_json());
+}
