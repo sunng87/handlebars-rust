@@ -98,7 +98,7 @@ mod test {
     use std::collections::BTreeMap;
 
     #[test]
-    fn test_if() {
+    fn test_each() {
         let t0 = Template::compile("{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}".to_string()).unwrap();
         let t1 = Template::compile("{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}".to_string()).unwrap();
 

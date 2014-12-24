@@ -6,6 +6,7 @@ use context::{Context};
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::{EACH_HELPER};
+pub use self::helper_with::{WITH_HELPER};
 
 pub trait HelperDef {
     fn resolve(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>;
@@ -22,9 +23,9 @@ impl HelperDef for DummyHelper {
 
 pub static DUMMY_HELPER: DummyHelper = DummyHelper;
 
-pub mod helper_if;
-pub mod helper_each;
-
+mod helper_if;
+mod helper_each;
+mod helper_with;
 
 /*
 pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;

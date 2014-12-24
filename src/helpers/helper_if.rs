@@ -1,10 +1,7 @@
-use std::num::Float;
-use serialize::json::{Json};
-
 use helpers::{HelperDef};
 use template::{Helper};
 use registry::{Registry};
-use context::{Context};
+use context::{Context, JsonTruthy};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
 #[deriving(Copy)]
@@ -22,16 +19,7 @@ impl HelperDef for IfHelper{
 
         let value = c.navigate(rc.get_path(), param.unwrap());
 
-        let mut bool_value:bool = match *value {
-            Json::I64(i) => i != 0,
-            Json::U64(i) => i != 0,
-            Json::F64(i) => i != Float::zero() || ! i.is_nan(),
-            Json::Boolean (ref i) => *i,
-            Json::Null => false,
-            Json::String (ref i) => i.len() > 0,
-            Json::Array (ref i) => true,
-            Json::Object (ref i) => true
-        };
+        let mut bool_value:bool = value.is_truthy();
 
         if !self.positive {
             bool_value = !bool_value;

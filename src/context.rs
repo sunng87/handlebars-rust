@@ -1,3 +1,4 @@
+use std::num::Float;
 use serialize::json::{Json, ToJson};
 use regex::Regex;
 use std::iter::IteratorExt;
@@ -92,6 +93,10 @@ pub trait JsonRender {
     fn render(&self) -> String;
 }
 
+pub trait JsonTruthy {
+    fn is_truthy(&self) -> bool;
+}
+
 impl JsonRender for Json {
     fn render(&self) -> String {
         match *self {
@@ -102,6 +107,21 @@ impl JsonRender for Json {
             _ => {
                 format!("{}", *self)
             }
+        }
+    }
+}
+
+impl JsonTruthy for Json {
+    fn is_truthy(&self) -> bool {
+        match *self {
+            Json::I64(i) => i != 0,
+            Json::U64(i) => i != 0,
+            Json::F64(i) => i != Float::zero() || ! i.is_nan(),
+            Json::Boolean (ref i) => *i,
+            Json::Null => false,
+            Json::String (ref i) => i.len() > 0,
+            Json::Array (ref i) => i.len() > 0,
+            Json::Object (ref i) => i.len() > 0
         }
     }
 }
