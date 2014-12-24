@@ -10,6 +10,37 @@ pub struct Context {
 static NULL_VALUE: Json = Json::Null;
 static ARRAY_INDEX_MATCHER: Regex = regex!(r"\[\d+\]$");
 
+fn parse_json_visitor<'a>(path_stack: &mut RingBuf<&'a str>, path: &'a String) {
+    for p in (*path).split('/') {
+        match p {
+            "this" | "." | "" => {
+                continue;
+            }
+            ".." => {
+                path_stack.pop_back();
+            }
+            _ => {
+                for dot_p in p.split('.') {
+                    match ARRAY_INDEX_MATCHER.find(dot_p) {
+                        Some((s, _)) => {
+                            let arr = dot_p.slice_to(s);
+                            if arr != "this" {
+                                path_stack.push_back(dot_p.slice_to(s));
+                            }
+                            path_stack.push_back(dot_p.slice_from(s));
+                        },
+                        None => {
+                            if dot_p != "this" {
+                                path_stack.push_back(dot_p);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl Context {
     pub fn null() -> Context {
         Context {
@@ -25,63 +56,8 @@ impl Context {
 
     pub fn navigate(&self, path: &String, relative_path: &String) -> &Json {
         let mut path_stack :RingBuf<&str> = RingBuf::new();
-        for p in (*path).split('/') {
-            match p {
-                "this" | "." | "" => {
-                    continue;
-                }
-                ".." => {
-                    path_stack.pop_back();
-                }
-                _ => {
-                    for dot_p in p.split('.') {
-                        match ARRAY_INDEX_MATCHER.find(dot_p) {
-                            Some((s, _)) => {
-                                let arr = dot_p.slice_to(s);
-                                if arr != "this" {
-                                    path_stack.push_back(dot_p.slice_to(s));
-                                }
-                                path_stack.push_back(dot_p.slice_from(s));
-                            },
-                            None => {
-                                if dot_p != "this" {
-                                    path_stack.push_back(dot_p);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        for p in (*relative_path).split('/') {
-            match p {
-                "this" | "." | "" => {
-                    continue;
-                }
-                ".." => {
-                    path_stack.pop_back();
-                }
-                _ => {
-                    for dot_p in p.split('.') {
-                        match ARRAY_INDEX_MATCHER.find(dot_p) {
-                            Some((s, _)) => {
-                                let arr = dot_p.slice_to(s);
-                                if arr != "this" {
-                                    path_stack.push_back(dot_p.slice_to(s));
-                                }
-                                path_stack.push_back(dot_p.slice_from(s));
-                            },
-                            None => {
-                                if dot_p != "this" {
-                                    path_stack.push_back(dot_p);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        parse_json_visitor(&mut path_stack, path);
+        parse_json_visitor(&mut path_stack, relative_path);
 
         let paths :Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
