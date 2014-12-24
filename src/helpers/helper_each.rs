@@ -6,17 +6,6 @@ use registry::{Registry};
 use context::{Context};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
-fn build_path (path: &String, param: &Option<&String>, key: &str) -> String {
-    let mut new_path = String::new();
-    new_path.push_str(path.as_slice());
-    new_path.push_str("/");
-    new_path.push_str(param.unwrap().as_slice());
-    new_path.push_str("[");
-    new_path.push_str(key);
-    new_path.push_str("]");
-    new_path
-}
-
 #[deriving(Copy)]
 pub struct EachHelper;
 
@@ -25,7 +14,7 @@ impl HelperDef for EachHelper{
         let param = h.params().get(0);
 
         if param.is_none() {
-            return Err(render_error("Param not found for helper \"error\""));
+            return Err(render_error("Param not found for helper \"each\""));
         }
 
         let template = h.template();
@@ -42,15 +31,12 @@ impl HelperDef for EachHelper{
                     Json::Array (ref list) => {
                         let len = list.len();
                         for i in range(0, len) {
-                            if i == 0u {
-                                rc.set_local_var("@first".to_string(), true.to_json());
-                            }
-                            if len > 1 && i == (len-1) {
-                                rc.set_local_var("@last".to_string(), true.to_json());
-                            }
+                            rc.set_local_var("@first".to_string(), (i==0u).to_json());
+                            rc.set_local_var("@last".to_string(), (len>1 && i == len-1).to_json());
                             rc.set_local_var("@index".to_string(), i.to_json());
                             // context change
-                            let new_path = build_path(&path, &param, i.to_string().as_slice());
+                            let index_visitor_path = format!("[{}]", i);
+                            let new_path = format!("{}/{}[{}]", path, param.unwrap(), i);
                             rc.set_path(new_path);
 
                             match t.render(c, r, rc) {
@@ -68,13 +54,14 @@ impl HelperDef for EachHelper{
                     Json::Object(ref obj) => {
                         let mut first:bool = true;
                         for k in obj.keys() {
+                            rc.set_local_var("@first".to_string(), first.to_json());
                             if first {
-                                rc.set_local_var("@first".to_string(), true.to_json());
                                 first = false;
                             }
 
                             rc.set_local_var("@key".to_string(), k.to_json());
-                            let new_path = build_path(&path, &param, k.to_string().as_slice());
+                            let new_path = format!("{}/{}/{}", path, param.unwrap(), k);
+                            rc.set_path(new_path);
                             match t.render(c, r, rc) {
                                 Ok(r) => {
                                     buffer.push_str(r.as_slice());
@@ -101,3 +88,33 @@ impl HelperDef for EachHelper{
 }
 
 pub static EACH_HELPER: EachHelper = EachHelper;
+
+#[cfg(test)]
+mod test {
+    use template::{Template};
+    use registry::{Registry};
+    use helpers::{EACH_HELPER};
+
+    use std::collections::BTreeMap;
+
+    #[test]
+    fn test_if() {
+        let t0 = Template::compile("{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}".to_string()).unwrap();
+        let t1 = Template::compile("{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}".to_string()).unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", &t0);
+        handlebars.register_template("t1", &t1);
+        handlebars.register_helper("each", box EACH_HELPER);
+
+        let r0 = handlebars.render("t0", &vec![1u, 2u, 3u]);
+        assert_eq!(r0.unwrap(), "true|false|0:1|false|false|1:2|false|true|2:3|".to_string());
+
+        let mut m :BTreeMap<String, uint> = BTreeMap::new();
+        m.insert("ftp".to_string(), 21);
+        m.insert("http".to_string(), 80);
+        let r1 = handlebars.render("t1", &m);
+        assert_eq!(r1.unwrap(), "true|ftp:21|false|http:80|".to_string());
+    }
+
+}
