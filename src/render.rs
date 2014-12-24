@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use serialize::json::Json;
 
 use template::{Template, TemplateElement};
-use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression};
+use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression, HelperExpression};
 use registry::Registry;
 use context::{Context, JsonRender};
 
@@ -140,7 +140,7 @@ impl Renderable for TemplateElement {
                 };
                 Ok(value.render())
             },
-            HelperBlock(ref helper) => {
+            HelperExpression(ref helper) | HelperBlock(ref helper) => {
                 match registry.get_helper(helper.name()) {
                     Some(d) => {
                         return (**d).resolve(ctx, helper, registry, rc);

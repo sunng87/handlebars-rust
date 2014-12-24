@@ -2,7 +2,7 @@ use std::cmp::min;
 use std::iter::IteratorExt;
 use std::collections::{HashMap, RingBuf};
 
-use self::TemplateElement::{RawString, Expression,
+use self::TemplateElement::{RawString, Expression, HelperExpression,
                             HTMLExpression, HelperBlock, Comment};
 
 #[deriving(PartialEq, Show)]
@@ -171,6 +171,17 @@ impl Template {
                                             h.template = Some(t);
                                             template_stack.push_front(Template{ elements: Vec::new() });
                                             ParserState::Text
+                                        } else if buffer.contains_char(' ') {
+                                            //inline helper
+                                            match Helper::parse(buffer.clone()){
+                                                Ok(helper) => {
+                                                    let mut t = template_stack.front_mut().unwrap();
+                                                    t.elements.push(HelperExpression(helper));
+                                                    buffer.clear();
+                                                    ParserState::Text
+                                                },
+                                                Err(_) => ParserState::Invalid
+                                            }
                                         } else {
                                             let mut t = template_stack.front_mut().unwrap();
                                             t.elements.push(Expression(
@@ -178,6 +189,7 @@ impl Template {
                                             buffer.clear();
                                             ParserState::Text
                                         }
+
                                     } else {
                                         ParserState::Invalid
                                     }
@@ -242,6 +254,7 @@ pub enum TemplateElement {
     RawString(String),
     Expression(String),
     HTMLExpression(String),
+    HelperExpression(Helper),
     HelperBlock(Helper),
     Comment,
 }
@@ -262,10 +275,10 @@ fn test_parse_helper_start_tag() {
 #[test]
 fn test_parse_template() {
     let source = "<h1>{{title}}</h1> {{{content}}}
-{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>";
+{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
 
-    assert_eq!(t.elements.len(), 7);
+    assert_eq!(t.elements.len(), 8);
     assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
     assert_eq!(*t.elements.get(1).unwrap(), Expression("title".to_string()));
 
@@ -280,5 +293,16 @@ fn test_parse_template() {
         _ => {
             panic!("Helper expected here.");
         }
-    }
+    };
+
+    match *t.elements.get(7).unwrap() {
+        HelperExpression(ref h) => {
+            assert_eq!(h.name, "foo".to_string());
+            assert_eq!(h.params.len(), 1);
+            assert_eq!(*(h.params.get(0).unwrap()), "bar".to_string());
+        },
+        _ => {
+            panic!("Helper expression here");
+        }
+    };
 }
