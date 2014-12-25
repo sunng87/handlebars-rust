@@ -35,4 +35,49 @@ pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry,
 pub fn helper_dummy (ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
     h.template().unwrap().render(ctx, r, rc).unwrap()
 }
-*/
+ */
+
+#[cfg(test)]
+mod test {
+    use context::{JsonRender, Context};
+    use helpers::{HelperDef};
+    use template::{Helper, Template};
+    use registry::{Registry};
+    use render::{RenderContext, RenderError, Renderable};
+
+    #[deriving(Copy)]
+    struct MetaHelper;
+
+    impl HelperDef for MetaHelper {
+        fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+            let v = c.navigate(rc.get_path(), h.params().get(0).unwrap());
+
+            let r = if !h.is_block() {
+                format!("{}:{}", h.name(), v.render())
+            } else {
+                format!("{}:{}->{}", h.name(), v.render(), h.template().unwrap().render(c, r, rc).unwrap())
+            };
+            Ok(r.to_string())
+        }
+    }
+
+    #[test]
+    fn test_meta_helper() {
+        let t0 = Template::compile("{{foo this}}".to_string()).unwrap();
+        let t1 = Template::compile("{{#bar this}}nice{{/bar}}".to_string()).unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", &t0);
+        handlebars.register_template("t1", &t1);
+
+        let meta_helper = MetaHelper;
+        handlebars.register_helper("helperMissing", box meta_helper);
+        handlebars.register_helper("blockHelperMissing", box meta_helper);
+
+        let r0 = handlebars.render("t0", &true);
+        assert_eq!(r0.unwrap(), "foo:true".to_string());
+
+        let r1 = handlebars.render("t1", &true);
+        assert_eq!(r1.unwrap(), "bar:true->nice".to_string());
+    }
+}

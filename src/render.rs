@@ -118,7 +118,7 @@ impl Renderable for TemplateElement {
     fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         match *self {
             RawString(ref v) => {
-                return Ok(v.clone());
+                Ok(v.clone())
             },
             Expression(ref v) => {
                 let value = if (*v).starts_with("@") {
@@ -143,17 +143,29 @@ impl Renderable for TemplateElement {
             HelperExpression(ref helper) | HelperBlock(ref helper) => {
                 match registry.get_helper(helper.name()) {
                     Some(d) => {
-                        return (**d).resolve(ctx, helper, registry, rc);
+                        (**d).resolve(ctx, helper, registry, rc)
                     },
                     None => {
-                        return Err(RenderError{
-                            desc: "Helper not defined."
-                        });
+                        let meta_helper_name = if helper.is_block() {
+                            "blockHelperMissing"
+                        } else {
+                            "helperMissing"
+                        }.to_string();
+                        match registry.get_helper(&meta_helper_name) {
+                            Some (md) => {
+                                (**md).resolve(ctx, helper, registry, rc)
+                            }
+                            None => {
+                                Err(RenderError{
+                                    desc: "Helper not defined."
+                                })
+                            }
+                        }
                     }
                 }
             },
             Comment => {
-                return Ok(EMPTY.to_string());
+                Ok(EMPTY.to_string())
             }
         }
     }
