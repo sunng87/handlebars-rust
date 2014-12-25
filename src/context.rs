@@ -11,6 +11,7 @@ pub struct Context {
 static NULL_VALUE: Json = Json::Null;
 static ARRAY_INDEX_MATCHER: Regex = regex!(r"\[\d+\]$");
 
+#[inline]
 fn parse_json_visitor<'a>(path_stack: &mut RingBuf<&'a str>, path: &'a String) {
     for p in (*path).split('/') {
         match p {
@@ -22,19 +23,8 @@ fn parse_json_visitor<'a>(path_stack: &mut RingBuf<&'a str>, path: &'a String) {
             }
             _ => {
                 for dot_p in p.split('.') {
-                    match ARRAY_INDEX_MATCHER.find(dot_p) {
-                        Some((s, _)) => {
-                            let arr = dot_p.slice_to(s);
-                            if arr != "this" {
-                                path_stack.push_back(dot_p.slice_to(s));
-                            }
-                            path_stack.push_back(dot_p.slice_from(s));
-                        },
-                        None => {
-                            if dot_p != "this" {
-                                path_stack.push_back(dot_p);
-                            }
-                        }
+                    if dot_p != "this" {
+                        path_stack.push_back(dot_p);
                     }
                 }
             }
@@ -63,25 +53,37 @@ impl Context {
         let paths :Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
-            if ARRAY_INDEX_MATCHER.is_match(*p) {
-                data = match *data {
-                    Json::Array(ref a) => {
-                        let index = p.slice_chars(1, p.len()-1);
-//                        println!("========== {}", index);
-                        let index_u: Option<uint> = from_str(index);
-                        match index_u {
-                            Some(i) => a.get(i).unwrap(),
-                            None => &NULL_VALUE
-                        }
-                    },
-                    _ => {
-                        &NULL_VALUE
-                    }
-                }
-            } else {
-                data = match data.find(*p) {
-                    Some(d) => d,
-                    None => &NULL_VALUE
+            match ARRAY_INDEX_MATCHER.find(*p) {
+                Some((s, _)) => {
+                    let arr = p.slice_to(s);
+                    let idx = p.slice(s+1, p.len()-1);
+
+                    let root = if arr == "this" {
+                        Some(data)
+                    } else {
+                        data.find(arr)
+                    };
+
+                    data = match root {
+                        Some(d) => {
+                            match *d {
+                                Json::Array(ref l) => {
+                                    match idx.parse::<uint>() {
+                                        Some(idx_u) => l.get(idx_u).unwrap(),
+                                        None => &NULL_VALUE
+                                    }
+                                },
+                                _ => &NULL_VALUE
+                            }
+                        },
+                        None => &NULL_VALUE
+                    };
+                },
+                None => {
+                    data = match data.find(*p) {
+                        Some(d) => d,
+                        None => &NULL_VALUE
+                    };
                 }
             }
         }
@@ -102,7 +104,7 @@ impl JsonRender for Json {
         match *self {
             Json::String(_) => {
                 let s = format!("{}", *self);
-                s.slice_chars(1, s.char_len()-1).to_string()
+                s.slice_chars(1, s.chars().count()-1).to_string()
             },
             _ => {
                 format!("{}", *self)

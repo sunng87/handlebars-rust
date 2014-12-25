@@ -110,9 +110,9 @@ impl Template {
         let mut state = ParserState::Text;
 
         let mut c:uint = 0;
-        let source_len = source.char_len();
+        let source_len = source.chars().count();
         while c < source_len {
-            let slice = source.slice_chars(c, min(c+3, source.char_len()));
+            let slice = source.slice_chars(c, min(c+3, source_len));
 
             state = match slice {
                 "{{{" | "{{!" | "{{#" | "{{/" => {
@@ -148,7 +148,7 @@ impl Template {
                     ParserState::Text
                 },
                 _ => {
-                    match if slice.char_len() > 2 { slice.slice_chars(0, 2) } else { slice } {
+                    match if slice.chars().count() > 2 { slice.slice_chars(0, 2) } else { slice } {
                         "{{" => {
                             c += 1;
                             if !buffer.is_empty() {
