@@ -27,7 +27,8 @@ pub struct Helper {
     params: Vec<String>,
     hash: HashMap<String, String>,
     template: Option<Template>,
-    inverse: Option<Template>
+    inverse: Option<Template>,
+    block: bool
 }
 
 impl Helper {
@@ -60,13 +61,17 @@ impl Helper {
             None => None
         }
     }
+
+    pub fn is_block(&self) -> bool {
+        self.block
+    }
 }
 
 #[deriving(Show, Copy)]
 pub struct TemplateError;
 
 impl Helper {
-    fn parse(source: String) -> Result<Helper, TemplateError> {
+    fn parse(source: String, block: bool) -> Result<Helper, TemplateError> {
         let mut tokens = source.split(|&: c: char| c.is_whitespace())
             .filter(|s: &&str| !(*s).is_empty());
 
@@ -91,7 +96,8 @@ impl Helper {
                     params: params,
                     hash: hash,
                     template: Option::None,
-                    inverse: Option::None
+                    inverse: Option::None,
+                    block: block
                 })
             },
             None =>
@@ -173,7 +179,7 @@ impl Template {
                                             ParserState::Text
                                         } else if buffer.contains_char(' ') {
                                             //inline helper
-                                            match Helper::parse(buffer.clone()){
+                                            match Helper::parse(buffer.clone(), false){
                                                 Ok(helper) => {
                                                     let mut t = template_stack.front_mut().unwrap();
                                                     t.elements.push(HelperExpression(helper));
@@ -201,7 +207,7 @@ impl Template {
                                     ParserState::Text
                                 },
                                 ParserState::HelperStart => {
-                                    match Helper::parse(buffer.clone()) {
+                                    match Helper::parse(buffer.clone(), true) {
                                         Ok(helper) => {
                                             helper_stack.push_front(helper);
                                             template_stack.push_front(Template{ elements: Vec::new() });
@@ -262,7 +268,7 @@ pub enum TemplateElement {
 #[test]
 fn test_parse_helper_start_tag() {
     let source = "if not name compare=1".to_string();
-    let h = Helper::parse(source).ok().unwrap();
+    let h = Helper::parse(source, true).ok().unwrap();
 
     assert_eq!(h.name, "if".to_string());
     assert_eq!(h.params, vec::<String>!["not".to_string(), "name".to_string()]);
