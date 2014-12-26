@@ -1,11 +1,12 @@
 use std::cmp::min;
 use std::iter::IteratorExt;
 use std::collections::{HashMap, RingBuf};
+use std::string::ToString;
 
 use self::TemplateElement::{RawString, Expression, HelperExpression,
                             HTMLExpression, HelperBlock, Comment};
 
-#[deriving(PartialEq, Show)]
+#[deriving(PartialEq)]
 pub struct Template {
     pub elements: Vec<TemplateElement>
 }
@@ -21,7 +22,7 @@ enum ParserState {
     Invalid
 }
 
-#[deriving(PartialEq, Show)]
+#[deriving(PartialEq)]
 pub struct Helper {
     name: String,
     params: Vec<String>,
@@ -64,6 +65,43 @@ impl Helper {
 
     pub fn is_block(&self) -> bool {
         self.block
+    }
+}
+
+impl ToString for Helper {
+    fn to_string(&self) -> String {
+
+        let mut buf = String::new();
+
+        if self.block {
+            buf.push_str(format!("{{{{#{}", self.name).as_slice());
+        } else {
+            buf.push_str(format!("{{{{{}", self.name).as_slice());
+        }
+
+        for p in self.params.iter() {
+            buf.push_str(format!(" {}", p).as_slice());
+        }
+
+        for k in self.hash.keys() {
+            buf.push_str(format!(" {}={}", k, self.hash.get(k).unwrap()).as_slice());
+        }
+
+        buf.push_str("}}");
+
+        if self.block {
+            let tpl = self.template();
+            if tpl.is_some() {
+                buf.push_str(tpl.unwrap().to_string().as_slice());
+            }
+            let ivs = self.inverse();
+            if ivs.is_some() {
+                buf.push_str("{{else}}");
+                buf.push_str(ivs.unwrap().to_string().as_slice());
+            }
+            buf.push_str(format!("{{{{/{}}}}}", self.name).as_slice());
+        }
+        buf
     }
 }
 
@@ -202,7 +240,7 @@ impl Template {
                                 },
                                 ParserState::Comment => {
                                     let mut t = template_stack.front_mut().unwrap();
-                                    t.elements.push(Comment);
+                                    t.elements.push(Comment(buffer.clone()));
                                     buffer.clear();
                                     ParserState::Text
                                 },
@@ -255,14 +293,50 @@ impl Template {
     }
 }
 
-#[deriving(Show, PartialEq)]
+impl ToString for Template {
+    fn to_string(&self) -> String {
+        let mut buf = String::new();
+        for v in self.elements.iter() {
+            buf.push_str(v.to_string().as_slice());
+        }
+        buf
+    }
+}
+
+#[deriving(PartialEq)]
 pub enum TemplateElement {
     RawString(String),
     Expression(String),
     HTMLExpression(String),
     HelperExpression(Helper),
     HelperBlock(Helper),
-    Comment,
+    Comment(String),
+}
+
+impl ToString for TemplateElement {
+    fn to_string(&self) -> String {
+        match *self {
+            RawString(ref v) => {
+                v.clone()
+            },
+            Expression(ref v) => {
+                // {{ escape to {
+                format!("{{{{{}}}}}", v)
+            },
+            HTMLExpression(ref v) => {
+                format!("{{{{{{{}}}}}}}", v)
+            },
+            HelperExpression(ref helper) => {
+                helper.to_string()
+            }
+            HelperBlock(ref helper) => {
+                helper.to_string()
+            }
+            Comment(ref v) => {
+                format!("{{!{}}}", v)
+            }
+        }
+    }
 }
 
 #[test]
@@ -285,10 +359,11 @@ fn test_parse_template() {
     let t = Template::compile(source.to_string()).ok().unwrap();
 
     assert_eq!(t.elements.len(), 8);
-    assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
-    assert_eq!(*t.elements.get(1).unwrap(), Expression("title".to_string()));
+    assert_eq!((*t.elements.get(0).unwrap()).to_string(), "<h1>".to_string());
+    assert_eq!((*t.elements.get(1).unwrap()).to_string(),
+               Expression("title".to_string()).to_string());
 
-    assert_eq!(*t.elements.get(3).unwrap(), HTMLExpression("content".to_string()));
+    assert_eq!((*t.elements.get(3).unwrap()).to_string(), "{{{content}}}".to_string());
 
     match *t.elements.get(5).unwrap() {
         HelperBlock(ref h) => {
@@ -311,4 +386,14 @@ fn test_parse_template() {
             panic!("Helper expression here");
         }
     };
+}
+
+#[test]
+fn test_helper_to_string() {
+    let source = "{{#ifequals name compare=hello}}hello{{else}}good{{/ifequals}}".to_string();
+
+    let t = Template::compile(source.to_string()).ok().unwrap();
+
+    assert_eq!(t.elements.len(), 1);
+    assert_eq!(t.elements.get(0).unwrap().to_string(), source);
 }

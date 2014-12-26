@@ -62,7 +62,8 @@ fn test_registry_operations() {
     let t = Template::compile("<h1></h1>".to_string()).unwrap();
     r.register_template("index", &t);
 
-    assert_eq!(**r.get_template(&("index".to_string())).unwrap(), t);
+    assert_eq!((**r.get_template(&("index".to_string())).unwrap()).to_string(),
+               t.to_string());
     assert_eq!(r.templates.len(), 1);
 
     r.register_helper("dummy", box DUMMY_HELPER);

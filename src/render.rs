@@ -164,7 +164,7 @@ impl Renderable for TemplateElement {
                     }
                 }
             },
-            Comment => {
+            Comment(_) => {
                 Ok(EMPTY.to_string())
             }
         }
@@ -224,7 +224,7 @@ fn test_template() {
     let e3 = RawString("</h1>".to_string());
     elements.push(e3);
 
-    let e4 = Comment;
+    let e4 = Comment("".to_string());
     elements.push(e4);
 
     let template = Template {
