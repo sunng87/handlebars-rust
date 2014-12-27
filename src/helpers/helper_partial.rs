@@ -86,12 +86,14 @@ mod test {
 
     #[test]
     fn test() {
-        let t0 = Template::compile("<h1>{{block title}}</h1>".to_string()).unwrap();
+        let t0 = Template::compile("<h1>{{#block title}}default{{/block}}</h1>".to_string()).unwrap();
         let t1 = Template::compile("{{#partial title}}{{this}}{{/partial}}{{> t0}}".to_string()).unwrap();
+        let t2 = Template::compile("{{> t0}}<p>{{this}}</p>".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", &t0);
         handlebars.register_template("t1", &t1);
+        handlebars.register_template("t2", &t2);
         handlebars.register_helper(">", box INCLUDE_HELPER);
         handlebars.register_helper("partial", box PARTIAL_HELPER);
         handlebars.register_helper("block", box BLOCK_HELPER);
@@ -99,5 +101,7 @@ mod test {
         let r0 = handlebars.render("t1", &true);
         assert_eq!(r0.unwrap(), "<h1>true</h1>".to_string());
 
+        let r1 = handlebars.render("t2", &true);
+        assert_eq!(r1.unwrap(), "<h1>default</h1><p>true</p>".to_string());
     }
 }
