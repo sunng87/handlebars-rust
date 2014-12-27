@@ -17,15 +17,19 @@ impl HelperDef for IfHelper{
             return Err(render_error("Param not found for helper \"if\""));
         }
 
-        let value = c.navigate(rc.get_path(), param.unwrap());
+        let name = param.unwrap();
 
-        let mut bool_value:bool = value.is_truthy();
+        let mut value = if name.starts_with("@") {
+            rc.get_local_var(name).is_truthy()
+        } else {
+            c.navigate(rc.get_path(), name).is_truthy()
+        };
 
         if !self.positive {
-            bool_value = !bool_value;
+            value = !value;
         }
 
-        let tmpl = if bool_value { h.template() } else { h.inverse() };
+        let tmpl = if value { h.template() } else { h.inverse() };
         match tmpl {
             Some(ref t) => t.render(c, r, rc),
             None => Ok(EMPTY.to_string())
