@@ -7,6 +7,9 @@ extern crate regex;
 #[phase(plugin)]
 extern crate regex_macros;
 
+#[phase(plugin, link)]
+extern crate log;
+
 pub use self::template::{Template, Helper};
 pub use self::registry::{Registry};
 pub use self::render::{Renderable, RenderError, RenderContext};

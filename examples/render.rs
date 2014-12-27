@@ -54,7 +54,6 @@ fn make_data () -> BTreeMap<String, Json> {
     }
 
     data.insert("teams".to_string(), teams.to_json());
-    println!("{}", data);
     data
 }
 

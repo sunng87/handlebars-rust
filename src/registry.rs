@@ -27,6 +27,7 @@ impl<'a> Registry<'a> {
         r.register_helper(">", box helpers::INCLUDE_HELPER);
         r.register_helper("block", box helpers::BLOCK_HELPER);
         r.register_helper("partial", box helpers::PARTIAL_HELPER);
+        r.register_helper("log", box helpers::LOG_HELPER);
 
         r
     }
@@ -82,5 +83,5 @@ fn test_registry_operations() {
     r.register_helper("dummy", box DUMMY_HELPER);
 
     // built-in helpers plus 1
-    assert_eq!(r.helpers.len(), 9+1);
+    assert_eq!(r.helpers.len(), 10+1);
 }
