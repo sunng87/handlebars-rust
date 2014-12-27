@@ -7,8 +7,14 @@ extern crate regex;
 #[phase(plugin)]
 extern crate regex_macros;
 
-pub mod template;
-pub mod registry;
-pub mod render;
-pub mod helpers;
-pub mod context;
+pub use self::template::{Template, Helper};
+pub use self::registry::{Registry};
+pub use self::render::{Renderable, RenderError, RenderContext};
+pub use self::helpers::{HelperDef};
+pub use self::context::{Context, JsonRender, JsonTruthy};
+
+mod template;
+mod registry;
+mod render;
+mod helpers;
+mod context;
