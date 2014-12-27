@@ -29,8 +29,11 @@ impl RenderContext {
         }
     }
 
-    pub fn get_rendered_partial(&self, name: String) -> Option<&String> {
-        self.partials.get(&name)
+    pub fn get_rendered_partial(&self, name: &String) -> Option<String> {
+        match self.partials.get(name) {
+            Some(t) => Some(t.clone()),
+            None => None
+        }
     }
 
     pub fn set_rendered_partial(&mut self, name: String, result: String) {

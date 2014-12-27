@@ -9,6 +9,7 @@ pub use self::helper_each::{EACH_HELPER};
 pub use self::helper_with::{WITH_HELPER};
 pub use self::helper_lookup::{LOOKUP_HELPER};
 pub use self::helper_raw::{RAW_HELPER};
+pub use self::helper_partial::{INCLUDE_HELPER, BLOCK_HELPER, PARTIAL_HELPER};
 
 pub trait HelperDef {
     fn resolve(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>;
@@ -30,6 +31,7 @@ mod helper_each;
 mod helper_with;
 mod helper_lookup;
 mod helper_raw;
+mod helper_partial;
 
 /*
 pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
