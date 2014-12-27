@@ -40,7 +40,6 @@ pub static UNLESS_HELPER: IfHelper = IfHelper { positive: false };
 mod test {
     use template::{Template};
     use registry::{Registry};
-    use helpers::{IF_HELPER, UNLESS_HELPER};
 
     #[test]
     fn test_if() {
@@ -50,8 +49,6 @@ mod test {
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", &t0);
         handlebars.register_template("t1", &t1);
-        handlebars.register_helper("if", box IF_HELPER);
-        handlebars.register_helper("unless", box UNLESS_HELPER);
 
         let r0 = handlebars.render("t0", &true);
         assert_eq!(r0.unwrap(), "hello".to_string());

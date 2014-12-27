@@ -82,7 +82,6 @@ pub static PARTIAL_HELPER: PartialHelper = PartialHelper;
 mod test {
     use template::{Template};
     use registry::{Registry};
-    use helpers::{INCLUDE_HELPER, PARTIAL_HELPER, BLOCK_HELPER};
 
     #[test]
     fn test() {
@@ -94,9 +93,6 @@ mod test {
         handlebars.register_template("t0", &t0);
         handlebars.register_template("t1", &t1);
         handlebars.register_template("t2", &t2);
-        handlebars.register_helper(">", box INCLUDE_HELPER);
-        handlebars.register_helper("partial", box PARTIAL_HELPER);
-        handlebars.register_helper("block", box BLOCK_HELPER);
 
         let r0 = handlebars.render("t1", &true);
         assert_eq!(r0.unwrap(), "<h1>true</h1>".to_string());

@@ -52,7 +52,6 @@ pub static LOOKUP_HELPER: LookupHelper = LookupHelper;
 mod test {
     use template::{Template};
     use registry::{Registry};
-    use helpers::{EACH_HELPER, LOOKUP_HELPER};
 
     use std::collections::BTreeMap;
 
@@ -62,8 +61,6 @@ mod test {
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", &t0);
-        handlebars.register_helper("each", box EACH_HELPER);
-        handlebars.register_helper("lookup", box LOOKUP_HELPER);
 
         let mut m :BTreeMap<String, Vec<uint>> = BTreeMap::new();
         m.insert("v1".to_string(), vec![1u, 2u, 3u]);

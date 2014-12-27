@@ -4,6 +4,7 @@ use template::{Template};
 use render::{Renderable, RenderError, RenderContext};
 use helpers::{HelperDef};
 use context::{Context};
+use helpers;
 
 pub struct Registry<'a> {
     templates: HashMap<String, &'a Template>,
@@ -12,10 +13,22 @@ pub struct Registry<'a> {
 
 impl<'a> Registry<'a> {
     pub fn new() -> Registry<'a> {
-        Registry {
+        let mut r = Registry {
             templates: HashMap::new(),
             helpers: HashMap::new()
-        }
+        };
+
+        r.register_helper("if", box helpers::IF_HELPER);
+        r.register_helper("unless", box helpers::UNLESS_HELPER);
+        r.register_helper("each", box helpers::EACH_HELPER);
+        r.register_helper("with", box helpers::WITH_HELPER);
+        r.register_helper("lookup", box helpers::LOOKUP_HELPER);
+        r.register_helper("raw", box helpers::RAW_HELPER);
+        r.register_helper(">", box helpers::INCLUDE_HELPER);
+        r.register_helper("block", box helpers::BLOCK_HELPER);
+        r.register_helper("partial", box helpers::PARTIAL_HELPER);
+
+        r
     }
 
     pub fn register_template(&mut self, name: &str, template: &'a Template) -> Option<&'a Template> {
@@ -68,5 +81,6 @@ fn test_registry_operations() {
 
     r.register_helper("dummy", box DUMMY_HELPER);
 
-    assert_eq!(r.helpers.len(), 1);
+    // built-in helpers plus 1
+    assert_eq!(r.helpers.len(), 9+1);
 }

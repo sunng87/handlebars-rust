@@ -93,7 +93,6 @@ pub static EACH_HELPER: EachHelper = EachHelper;
 mod test {
     use template::{Template};
     use registry::{Registry};
-    use helpers::{EACH_HELPER};
 
     use std::collections::BTreeMap;
 
@@ -105,7 +104,6 @@ mod test {
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", &t0);
         handlebars.register_template("t1", &t1);
-        handlebars.register_helper("each", box EACH_HELPER);
 
         let r0 = handlebars.render("t0", &vec![1u, 2u, 3u]);
         assert_eq!(r0.unwrap(), "true|false|0:1|false|false|1:2|false|true|2:3|".to_string());

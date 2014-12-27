@@ -49,7 +49,6 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 mod test {
     use template::{Template};
     use registry::{Registry};
-    use helpers::{WITH_HELPER};
 
     use std::collections::BTreeMap;
     use serialize::json::{Json, ToJson};
@@ -107,7 +106,6 @@ mod test {
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", &t0);
         handlebars.register_template("t1", &t1);
-        handlebars.register_helper("with", box WITH_HELPER);
 
         let r0 = handlebars.render("t0", &person);
         assert_eq!(r0.unwrap(), "Beijing".to_string());

@@ -30,7 +30,6 @@ pub static RAW_HELPER: RawHelper = RawHelper;
 mod test {
     use template::{Template};
     use registry::{Registry};
-    use helpers::{RAW_HELPER};
 
     #[test]
     fn test_raw_helper () {
@@ -38,7 +37,6 @@ mod test {
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", &t);
-        handlebars.register_helper("raw", box RAW_HELPER);
 
         let r = handlebars.render("t0", &());
         assert_eq!(r.unwrap(), "a{{content}}{{else}}hello");
