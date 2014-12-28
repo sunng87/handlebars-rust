@@ -1,7 +1,8 @@
 use std::cmp::min;
 use std::iter::IteratorExt;
-use std::collections::{HashMap, RingBuf};
+use std::collections::{BTreeMap, RingBuf};
 use std::string::ToString;
+use serialize::json::Json;
 
 use self::TemplateElement::{RawString, Expression, HelperExpression,
                             HTMLExpression, HelperBlock, Comment};
@@ -26,7 +27,7 @@ enum ParserState {
 pub struct Helper {
     name: String,
     params: Vec<String>,
-    hash: HashMap<String, String>,
+    hash: BTreeMap<String, Json>,
     template: Option<Template>,
     inverse: Option<Template>,
     block: bool
@@ -41,7 +42,7 @@ impl Helper {
         &self.params
     }
 
-    pub fn hash(&self) -> &HashMap<String, String> {
+    pub fn hash(&self) -> &BTreeMap<String, Json> {
         &self.hash
     }
 
@@ -117,13 +118,13 @@ impl Helper {
         match name {
             Some(n) => {
                 let mut params: Vec<String> = Vec::new();
-                let mut hash: HashMap<String, String> = HashMap::new();
+                let mut hash: BTreeMap<String, Json> = BTreeMap::new();
 
                 for t in tokens {
                     if t.contains_char('=') {
                         let kv = t.split('=').collect::<Vec<&str>>();
                         hash.insert(kv.get(0).unwrap().to_string(),
-                                    kv.get(1).unwrap().to_string());
+                                    kv.get(1).unwrap().parse::<Json>().unwrap());
                     } else {
                         params.push(t.to_string());
                     }
@@ -349,7 +350,7 @@ fn test_parse_helper_start_tag() {
 
     let key = "compare".to_string();
     let value = h.hash.get(&key).unwrap();
-    assert_eq!(*value, "1".to_string());
+    assert_eq!(value.as_u64().unwrap(), 1u64);
 }
 
 #[test]
@@ -390,7 +391,7 @@ fn test_parse_template() {
 
 #[test]
 fn test_helper_to_string() {
-    let source = "{{#ifequals name compare=hello}}hello{{else}}good{{/ifequals}}".to_string();
+    let source = "{{#ifequals name compare=\"hello\"}}hello{{else}}good{{/ifequals}}".to_string();
 
     let t = Template::compile(source.to_string()).ok().unwrap();
 
