@@ -14,7 +14,6 @@
 //! You can go to [Handlebars.js](http://handlebarsjs.com/) website for its syntax. This implementation should be compatible with most parts of the spec, except:
 //!
 //! * raw helper syntax `{{{raw-helper}}}...{{{/raw-helper}}}` is implemented as block helper raw.
-//! * type inference in hashes (on my TODO list)
 //! * configurable logging (hard-coded to rust native logging, with fixed level `INFO`)
 //!
 //! ### Extensions
@@ -128,12 +127,19 @@
 //! }
 //! ```
 //!
+//! You can get data from the `Helper` argument about the template information:
+//!
+//! * `name()` for the helper name. This is known to you for most situation but if you are defining `helperMissing` or `blockHelperMissing`, this is important.
+//! * `params()` is a vector of String as params in helper, like `{{#somehelper param1 param2 param3}}`.
+//! * `hash()` is a map of String key and Json value, defined in helper as `{{@somehelper a=1 b="2" c=true}}`.
+//! * `template()` gives you the nested template of block helper.
+//! * `inverse()` gives you the inversed template of it, inversed template is the template behind `{{else}}`.
+//!
 //! You can learn more about helpers by looking into source code of built-in helpers.
 //!
 //! ## TODO
 //!
 //! * More friendly ToJson
-//! * Type inference in helper hash
 //! * Better error report
 //!
 
