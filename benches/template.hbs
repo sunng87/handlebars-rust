@@ -1,0 +1,15 @@
+<html>
+  <head>
+    <title>{{year}}</title>
+  </head>
+  <body>
+    <h1>CSL {{year}}</h1>
+    <ul>
+    {{#each teams}}
+      <li class="{{#if @first}}champion{{/if}}">
+      <b>{{name}}</b>: {{score}}
+      </li>
+    {{/each}}
+    </ul>
+  </body>
+</html>
