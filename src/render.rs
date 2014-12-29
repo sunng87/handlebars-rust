@@ -4,10 +4,9 @@ use serialize::json::Json;
 use template::{Template, TemplateElement};
 use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression, HelperExpression};
 use registry::Registry;
-use context::{Context, JsonRender};
+use context::{Context, JsonRender, NULL_VALUE};
 
 pub static EMPTY: &'static str = "";
-static NULL_VALUE: Json = Json::Null;
 
 #[deriving(Show, Copy)]
 pub struct RenderError {
@@ -87,7 +86,7 @@ impl RenderContext {
     pub fn get_local_var(&self, name: &String) -> &Json {
         match self.local_variables.get(name) {
             Some(ref j) => *j,
-            None => &NULL_VALUE
+            None => NULL_VALUE
         }
     }
 }

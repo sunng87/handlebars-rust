@@ -8,7 +8,7 @@ pub struct Context {
     data: Json
 }
 
-static NULL_VALUE: Json = Json::Null;
+pub static NULL_VALUE: &'static Json = &Json::Null;
 static ARRAY_INDEX_MATCHER: Regex = regex!(r"\[\d+\]$");
 
 #[inline]
@@ -70,19 +70,19 @@ impl Context {
                                 Json::Array(ref l) => {
                                     match idx.parse::<uint>() {
                                         Some(idx_u) => l.get(idx_u).unwrap(),
-                                        None => &NULL_VALUE
+                                        None => NULL_VALUE
                                     }
                                 },
-                                _ => &NULL_VALUE
+                                _ => NULL_VALUE
                             }
                         },
-                        None => &NULL_VALUE
+                        None => NULL_VALUE
                     };
                 },
                 None => {
                     data = match data.find(*p) {
                         Some(d) => d,
-                        None => &NULL_VALUE
+                        None => NULL_VALUE
                     };
                 }
             }
