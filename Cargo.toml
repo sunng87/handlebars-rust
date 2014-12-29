@@ -6,7 +6,9 @@ authors = ["Ning Sun <sunng@about.me>"]
 description = "Handlebars templating implemented in Rust."
 license = "MIT"
 keywords = ["handlebars", "templates", "web"]
+homepage = "https://github.com/sunng87/handlebars-rust"
 repository = "https://github.com/sunng87/handlebars-rust"
+documentation = "http://sunng.info/handlebars-rust/"
 readme = "README.md"
 
 [lib]
