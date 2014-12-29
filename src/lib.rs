@@ -18,12 +18,12 @@
 //!
 //! ### Extensions
 //!
-//! We have template reuse facilities support via built-in helpers `>`, `partial` and `block`.
+//! We have template reuse facilities supported via built-in helpers `>`, `partial` and `block`.
 //!
 //! There are two ways to reuse a template:
 //!
-//! * include (using `<`)
-//! * inheritance (using `<` together with `block` and `partial`)
+//! * include (using `>`)
+//! * inheritance (using `>` together with `block` and `partial`)
 //!
 //! Consult [Handlebar.java document about template inheritance](http://jknack.github.io/handlebars.java/reuse.html).
 //!
