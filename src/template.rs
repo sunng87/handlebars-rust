@@ -290,6 +290,10 @@ impl Template {
             t.elements.push(TemplateElement::RawString(buffer.clone()));
         }
 
+        if !helper_stack.is_empty() {
+            return Err(TemplateError);
+        }
+
         return Ok(template_stack.pop_front().unwrap());
     }
 }
@@ -397,4 +401,14 @@ fn test_helper_to_string() {
 
     assert_eq!(t.elements.len(), 1);
     assert_eq!(t.elements.get(0).unwrap().to_string(), source);
+}
+
+
+#[test]
+fn test_parse_error() {
+    let source = "{{#ifequals name compare=\"hello\"}}hello{{else}}good".to_string();
+
+    let t = Template::compile(source.to_string());
+
+    assert!(t.is_err());
 }
