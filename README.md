@@ -12,8 +12,8 @@ Rust templating with Handlebars.
 It's my favorite templating tools by far. I used it in
 [Delicious.com](https://delicious.com) as javascript-side template in
 2013. Also I maintained a Clojure wrapper for Handlebars.java,
-[hbs](http://github.com/sunng87/hbs). And you may notice that the
-close relationship between Ember.js community and Rust, handlebars is
+[hbs](http://github.com/sunng87/hbs). And you may notice the
+close relationship between Ember.js and Rust community, handlebars is
 the default templating language of Ember.js framework, which powers
 [crates.io](http://crates.io).
 
