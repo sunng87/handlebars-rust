@@ -41,7 +41,7 @@
 //! fn main() {
 //!   let source = "hello {{world}}";
 //!   //compile returns an Option, we use unwrap() to deref it directly here
-//!   let tpl = Template::compile(source.to_string).unwrap();
+//!   let tpl = Template::compile(source.to_string()).unwrap();
 //! }
 //! ```
 //!
@@ -57,7 +57,7 @@
 //! fn main() {
 //!   let source = "hello {{world}}";
 //!   //compile returns an Option, we use unwrap() to deref it directly here
-//!   let tpl = Template::compile(source.to_string).unwrap();
+//!   let tpl = Template::compile(source.to_string()).unwrap();
 //!
 //!   let mut handlebars = Registry::new();
 //!   handlebars.register_template("hello_world", &tpl);
@@ -71,23 +71,41 @@
 //! That means, if you want to render something, you have to ensure that it implements the `serialize::json::ToJson` trait. Luckily, most built-in types already have trait. However, if you want to render your custom struct, you need to implement this trait manually. (Rust has a deriving facility, but it's just for selected types. Maybe I will add some syntax extensions or macros to simplify this process.)
 //!
 //! ```
+//! extern crate serialize;
 //! extern crate handlebars;
 //!
-//! use serialize::json::ToJson;
-//! use std.collections::BTreeMap;
+//! use serialize::json::{Json, ToJson};
+//! use std::collections::BTreeMap;
 //!
 //! use handlebars::{Template, Registry};
+//!
+//! struct Person {
+//!   name: String,
+//!   age: i16,
+//! }
+//!
+//! impl ToJson for Person {
+//!   fn to_json(&self) -> Json {
+//!     let mut m = BTreeMap::new();
+//!     m.insert("name".to_string(), self.name.to_json());
+//!     m.insert("age".to_string(), self.age.to_json());
+//!     Json::Object(m)
+//!   }
+//! }
+//!
 //!
 //! fn main() {
 //!   let source = "hello {{world}}";
 //!   //compile returns an Option, we use unwrap() to deref it directly here
-//!   let tpl = Template::compile(source.to_string).unwrap();
+//!   let tpl = Template::compile(source.to_string()).unwrap();
 //!
 //!   let mut handlebars = Registry::new();
 //!   handlebars.register_template("hello_world", &tpl);
 //!
-//!   let mut data = BTreeMap::new();
-//!   data.insert("world", "world".to_json());
+//!   let mut data = Person {
+//!       name: "Ning Sun".to_string(),
+//!       age: 27
+//!   };
 //!   let result = handlebars.render("hello_world", &data);
 //! }
 //! ```
