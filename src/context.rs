@@ -5,10 +5,11 @@ use std::iter::IteratorExt;
 use std::collections::RingBuf;
 
 pub struct Context {
-    data: Json
+    data: Json,
+    default: Json
 }
 
-pub static NULL_VALUE: &'static Json = &Json::Null;
+//pub static NULL_VALUE: &'static Json = &Json::Null;
 static ARRAY_INDEX_MATCHER: Regex = regex!(r"\[\d+\]$");
 
 #[inline]
@@ -35,13 +36,15 @@ fn parse_json_visitor<'a>(path_stack: &mut RingBuf<&'a str>, path: &'a String) {
 impl Context {
     pub fn null() -> Context {
         Context {
-            data: NULL_VALUE.clone()
+            data: Json::Null,
+            default: Json::Null
         }
     }
 
     pub fn wraps<'a, T: ToJson>(e: &T) -> Context {
         Context {
-            data: e.to_json()
+            data: e.to_json(),
+            default: Json::Null
         }
     }
 
@@ -70,19 +73,19 @@ impl Context {
                                 Json::Array(ref l) => {
                                     match idx.parse::<uint>() {
                                         Some(idx_u) => l.get(idx_u).unwrap(),
-                                        None => NULL_VALUE
+                                        None => &self.default
                                     }
                                 },
-                                _ => NULL_VALUE
+                                _ => &self.default
                             }
                         },
-                        None => NULL_VALUE
+                        None => &self.default
                     };
                 },
                 None => {
                     data = match data.find(*p) {
                         Some(d) => d,
-                        None => NULL_VALUE
+                        None => &self.default
                     };
                 }
             }

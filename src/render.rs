@@ -4,7 +4,7 @@ use serialize::json::Json;
 use template::{Template, TemplateElement};
 use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression, HelperExpression};
 use registry::Registry;
-use context::{Context, JsonRender, NULL_VALUE};
+use context::{Context, JsonRender};
 
 pub static EMPTY: &'static str = "";
 
@@ -17,6 +17,7 @@ pub struct RenderContext {
     partials: HashMap<String, String>,
     path: String,
     local_variables: HashMap<String, Json>,
+    default_var: Json
 }
 
 impl RenderContext {
@@ -24,7 +25,8 @@ impl RenderContext {
         RenderContext {
             partials: HashMap::new(),
             path: ".".to_string(),
-            local_variables: HashMap::new()
+            local_variables: HashMap::new(),
+            default_var: Json::Null
         }
     }
 
@@ -86,7 +88,7 @@ impl RenderContext {
     pub fn get_local_var(&self, name: &String) -> &Json {
         match self.local_variables.get(name) {
             Some(ref j) => *j,
-            None => NULL_VALUE
+            None => &self.default_var
         }
     }
 }
