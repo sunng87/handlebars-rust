@@ -41,7 +41,7 @@ Limitations:
 
 Check examples in the source. The example shows you how to:
 
-* Render file and compile to `Template`
+* Read file and compile to `Template`
 * Create a `Registry` and register the template
 * Create a custom Helper by impl `HelperDef`, and register it
 * Render something
