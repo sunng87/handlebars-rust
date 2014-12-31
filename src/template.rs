@@ -158,7 +158,6 @@ impl Template {
         let source_len = source.chars().count();
         while c < source_len {
             let slice = source.slice_chars(c, min(c+3, source_len));
-
             state = match slice {
                 "{{{" | "{{!" | "{{#" | "{{/" => {
                     c += 2;
@@ -273,7 +272,7 @@ impl Template {
                             }
                         },
                         _ => {
-                            buffer.push(source.char_at(c));
+                            buffer.push(slice.char_at(0));
                             state
                         }
                     }
@@ -359,7 +358,7 @@ fn test_parse_helper_start_tag() {
 
 #[test]
 fn test_parse_template() {
-    let source = "<h1>{{title}}</h1> {{{content}}}
+    let source = "<h1>{{title}} 你好</h1> {{{content}}}
 {{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
 
