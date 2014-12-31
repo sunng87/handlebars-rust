@@ -187,7 +187,7 @@ impl Template {
                     c += 2;
                     let mut t = template_stack.front_mut().unwrap();
                     t.elements.push(HTMLExpression(
-                        buffer.clone().trim_chars(' ').to_string()));
+                        buffer.clone().trim_matches(' ').to_string()));
                     buffer.clear();
                     ParserState::Text
                 },
@@ -208,7 +208,7 @@ impl Template {
                                 ParserState::Expression => {
                                     if !buffer.is_empty() {
                                         // {{else}} within a helper block
-                                        if buffer.trim_chars(' ') == "else" {
+                                        if buffer.trim_matches(' ') == "else" {
                                             buffer.clear(); // drop else
                                             let t = template_stack.pop_front().unwrap();
                                             let h = helper_stack.front_mut().unwrap();
@@ -229,7 +229,7 @@ impl Template {
                                         } else {
                                             let mut t = template_stack.front_mut().unwrap();
                                             t.elements.push(Expression(
-                                                buffer.clone().trim_chars(' ').to_string()));
+                                                buffer.clone().trim_matches(' ').to_string()));
                                             buffer.clear();
                                             ParserState::Text
                                         }
@@ -257,7 +257,7 @@ impl Template {
                                     }
                                 },
                                 ParserState::HelperEnd => {
-                                    let name = buffer.trim_chars(' ').to_string();
+                                    let name = buffer.trim_matches(' ').to_string();
                                     if name == helper_stack.front().unwrap().name {
                                         let h = helper_stack.pop_front().unwrap();
                                         let mut t = template_stack.front_mut().unwrap();
