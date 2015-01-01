@@ -168,10 +168,6 @@
 //!
 //! You can learn more about helpers by looking into source code of built-in helpers.
 //!
-//! ## TODO
-//!
-//! * More friendly ToJson
-//! * Better error report
 //!
 
 extern crate serialize;
