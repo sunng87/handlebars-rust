@@ -1,7 +1,7 @@
 [package]
 
 name = "handlebars"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Ning Sun <sunng@about.me>"]
 description = "Handlebars templating implemented in Rust."
 license = "MIT"
@@ -15,3 +15,8 @@ readme = "README.md"
 
 name = "handlebars"
 path = "src/lib.rs"
+
+[dependencies]
+
+regex = "*"
+log = "*"
