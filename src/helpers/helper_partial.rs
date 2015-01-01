@@ -14,7 +14,7 @@ pub struct BlockHelper;
 pub struct PartialHelper;
 
 impl HelperDef for IncludeHelper {
-    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {
@@ -35,7 +35,7 @@ impl HelperDef for IncludeHelper {
 }
 
 impl HelperDef for BlockHelper {
-    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {
@@ -53,7 +53,7 @@ impl HelperDef for BlockHelper {
 }
 
 impl HelperDef for PartialHelper {
-    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {

@@ -147,7 +147,7 @@ impl Renderable for TemplateElement {
             HelperExpression(ref helper) | HelperBlock(ref helper) => {
                 match registry.get_helper(helper.name()) {
                     Some(d) => {
-                        (**d).resolve(ctx, helper, registry, rc)
+                        (**d).call(ctx, helper, registry, rc)
                     },
                     None => {
                         let meta_helper_name = if helper.is_block() {
@@ -157,7 +157,7 @@ impl Renderable for TemplateElement {
                         }.to_string();
                         match registry.get_helper(&meta_helper_name) {
                             Some (md) => {
-                                (**md).resolve(ctx, helper, registry, rc)
+                                (**md).call(ctx, helper, registry, rc)
                             }
                             None => {
                                 Err(RenderError{

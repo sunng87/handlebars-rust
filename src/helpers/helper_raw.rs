@@ -8,7 +8,7 @@ use render::{RenderContext, RenderError};
 pub struct RawHelper;
 
 impl HelperDef for RawHelper {
-    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let mut buf = String::new();
         let tpl = h.template();
         if tpl.is_some() {

@@ -4,24 +4,13 @@ extern crate serialize;
 use std::io::File;
 use std::collections::BTreeMap;
 
-use handlebars::{Registry, Template, HelperDef, RenderError, RenderContext, Helper, Context};
+use handlebars::{Registry, Template, RenderError, RenderContext, Helper, Context};
 use serialize::json::{Json, ToJson};
 
-#[deriving(Copy)]
-struct FormatHelper;
-
-impl HelperDef for FormatHelper {
-    fn resolve(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-        let param = h.params().get(0).unwrap();
-//        let fmt = h.params().get(1).unwrap();
-
-        // bad, since rust doesn't support runtime format string
-        // we can't have much customization here.
-        Ok(format!("{} pts", c.navigate(rc.get_path(), param)))
-    }
+fn format_helper (c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    let param = h.params().get(0).unwrap();
+    Ok(format!("{} pts", c.navigate(rc.get_path(), param)))
 }
-
-static FORMAT_HELPER: FormatHelper = FormatHelper;
 
 fn load_template(name: &str) -> Template {
     let path = Path::new(name);
@@ -63,7 +52,8 @@ fn main() {
     let t = load_template("./examples/template.hbs");
     handlebars.register_template("table", &t);
 
-    handlebars.register_helper("format", box FORMAT_HELPER);
+    handlebars.register_helper("format", box format_helper);
+//    handlebars.register_helper("format", box FORMAT_HELPER);
 
     let data = make_data();
     println!("{}", handlebars.render("table", &data).unwrap());

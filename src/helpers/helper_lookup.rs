@@ -10,7 +10,7 @@ use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let value_param = h.params().get(0);
         let index_param = h.params().get(1);
 

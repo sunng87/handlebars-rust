@@ -112,18 +112,19 @@
 //!
 //! ### Custom Helper
 //!
-//! Handlebars is nothing without helpers. You can also create your own helpers with rust. Helpers in handlebars-rust are custom struct implements the `HelperDef` trait, concretely, the `resolve` function.
+//! Handlebars is nothing without helpers. You can also create your own helpers with rust. Helpers in handlebars-rust are custom struct implements the `HelperDef` trait, concretely, the `call` function. For your convenience, most of stateless helpers can be implemented as bare functions.
 //!
 //! ```
 //! extern crate handlebars;
 //!
 //! use handlebars::{Registry, HelperDef, RenderError, RenderContext, Helper, Context};
 //!
+//! // implement by a structure impls HelperDef
 //! #[deriving(Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn resolve(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+//!   fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
 //!     let param = h.params().get(0).unwrap();
 //!
 //!     // get value from context data
@@ -134,12 +135,24 @@
 //!   }
 //! }
 //!
+//! // implement via bare function
+//! fn another_simple_helper (c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+//!     let param = h.params().get(0).unwrap();
+//!
+//!     // get value from context data
+//!     // rc.get_path() is current json parent path, you should always use it like this
+//!     // param is the key of value you want to display
+//!     let value = c.navigate(rc.get_path(), param);
+//!     Ok(format!("My second helper dumps: {} ", value))
+//! }
+//!
 //! // create an instance
 //! static MY_HELPER: SimpleHelper = SimpleHelper;
 //!
 //! fn main() {
 //!   let mut handlebars = Registry::new();
 //!   handlebars.register_helper("simple-helper", box MY_HELPER);
+//!   handlebars.register_helper("another-simple-helper", box another_simple_helper);
 //!
 //!   //...
 //! }

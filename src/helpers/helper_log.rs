@@ -10,7 +10,7 @@ use log;
 pub struct LogHelper;
 
 impl HelperDef for LogHelper {
-    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {

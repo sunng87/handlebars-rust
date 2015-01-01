@@ -12,15 +12,22 @@ pub use self::helper_raw::{RAW_HELPER};
 pub use self::helper_partial::{INCLUDE_HELPER, BLOCK_HELPER, PARTIAL_HELPER};
 pub use self::helper_log::{LOG_HELPER};
 
-pub trait HelperDef {
-    fn resolve(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>;
+pub trait HelperDef: Send + Sync {
+    fn call(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>;
+}
+
+/// implement HelperDef for bare function so we can use function as helper
+impl<F: Send + Sync + for<'a, 'b, 'c, 'd> Fn(&'a Context, &'b Helper, &'c Registry, &'d mut RenderContext) -> Result<String, RenderError>> HelperDef for F {
+    fn call(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>{
+        (*self)(ctx, h, r, rc)
+    }
 }
 
 #[deriving(Copy)]
 pub struct DummyHelper;
 
 impl HelperDef for DummyHelper {
-    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         h.template().unwrap().render(c, r, rc)
     }
 }
@@ -55,7 +62,7 @@ mod test {
     struct MetaHelper;
 
     impl HelperDef for MetaHelper {
-        fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
             let v = c.navigate(rc.get_path(), h.params().get(0).unwrap());
 
             let r = if !h.is_block() {

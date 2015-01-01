@@ -10,7 +10,7 @@ use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 pub struct EachHelper;
 
 impl HelperDef for EachHelper{
-    fn resolve(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {
