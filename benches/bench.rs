@@ -1,5 +1,5 @@
 extern crate handlebars;
-extern crate serialize;
+extern crate "rustc-serialize" as serialize;
 extern crate test;
 
 use std::io::File;

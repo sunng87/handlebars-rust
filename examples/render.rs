@@ -1,5 +1,5 @@
 extern crate handlebars;
-extern crate serialize;
+extern crate "rustc-serialize" as serialize;
 
 use std::io::File;
 use std::collections::BTreeMap;

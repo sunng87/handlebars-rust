@@ -20,3 +20,4 @@ path = "src/lib.rs"
 
 regex = "*"
 log = "*"
+rustc-serialize = "*"

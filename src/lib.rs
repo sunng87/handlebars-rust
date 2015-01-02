@@ -71,7 +71,7 @@
 //! That means, if you want to render something, you have to ensure that it implements the `serialize::json::ToJson` trait. Luckily, most built-in types already have trait. However, if you want to render your custom struct, you need to implement this trait manually. (Rust has a deriving facility, but it's just for selected types. Maybe I will add some syntax extensions or macros to simplify this process.)
 //!
 //! ```
-//! extern crate serialize;
+//! extern crate "rustc-serialize" as serialize;
 //! extern crate handlebars;
 //!
 //! use serialize::json::{Json, ToJson};
@@ -170,7 +170,7 @@
 //!
 //!
 
-extern crate serialize;
+extern crate "rustc-serialize" as serialize;
 extern crate regex;
 #[phase(plugin)]
 extern crate regex_macros;
