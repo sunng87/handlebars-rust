@@ -1,4 +1,3 @@
-#![allow(dead_code, unused_variables)]
 #![feature(unboxed_closures, phase)]
 #![experimental]
 

@@ -1,5 +1,15 @@
-//use std::ops::Fn;
-use render::{Renderable, RenderContext, RenderError};
+//!
+//! Implement `HelperDef` to create custom helper. You can retrieve useful information from these arguments.
+//!
+//! * &Context: the context you are rendering
+//! * &Helper: current helper template information, contains name, params, hashes and nested template
+//! * &Registry: the global registry, you can find templates by name from registry
+//! * &mut RenderContext: you can store variables (starts with @) in render context, for example, @index of #each.
+//!
+//! By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
+//!
+
+use render::{RenderContext, RenderError};
 use template::{Helper};
 use registry::{Registry};
 use context::{Context};
@@ -22,17 +32,6 @@ impl<F: Send + Sync + for<'a, 'b, 'c, 'd> Fn(&'a Context, &'b Helper, &'c Regist
         (*self)(ctx, h, r, rc)
     }
 }
-
-#[deriving(Copy)]
-pub struct DummyHelper;
-
-impl HelperDef for DummyHelper {
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-        h.template().unwrap().render(c, r, rc)
-    }
-}
-
-pub static DUMMY_HELPER: DummyHelper = DummyHelper;
 
 mod helper_if;
 mod helper_each;

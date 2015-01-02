@@ -68,20 +68,39 @@ impl<'a> Registry<'a> {
     }
 }
 
-#[test]
-fn test_registry_operations() {
-    use helpers::DUMMY_HELPER;
-    let mut r = Registry::new();
+#[cfg(test)]
+mod test {
+    use template::{Template, Helper};
+    use registry::{Registry};
+    use render::{RenderContext, Renderable, RenderError};
+    use helpers::{HelperDef};
+    use context::{Context};
 
-    let t = Template::compile("<h1></h1>".to_string()).unwrap();
-    r.register_template("index", &t);
+    #[deriving(Copy)]
+    struct DummyHelper;
 
-    assert_eq!((**r.get_template(&("index".to_string())).unwrap()).to_string(),
-               t.to_string());
-    assert_eq!(r.templates.len(), 1);
+    impl HelperDef for DummyHelper {
+        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+            h.template().unwrap().render(c, r, rc)
+        }
+    }
 
-    r.register_helper("dummy", box DUMMY_HELPER);
+    static DUMMY_HELPER: DummyHelper = DummyHelper;
 
-    // built-in helpers plus 1
-    assert_eq!(r.helpers.len(), 10+1);
+    #[test]
+    fn test_registry_operations() {
+        let mut r = Registry::new();
+
+        let t = Template::compile("<h1></h1>".to_string()).unwrap();
+        r.register_template("index", &t);
+
+        assert_eq!((**r.get_template(&("index".to_string())).unwrap()).to_string(),
+                   t.to_string());
+        assert_eq!(r.templates.len(), 1);
+
+        r.register_helper("dummy", box DUMMY_HELPER);
+
+        // built-in helpers plus 1
+        assert_eq!(r.helpers.len(), 10+1);
+    }
 }

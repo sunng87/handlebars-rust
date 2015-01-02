@@ -34,8 +34,7 @@ impl HelperDef for EachHelper{
                             rc.set_local_var("@first".to_string(), (i==0u).to_json());
                             rc.set_local_var("@last".to_string(), (len>1 && i == len-1).to_json());
                             rc.set_local_var("@index".to_string(), i.to_json());
-                            // context change
-                            let index_visitor_path = format!("[{}]", i);
+
                             let new_path = format!("{}/{}[{}]", path, param.unwrap(), i);
                             rc.set_path(new_path);
 
