@@ -7,6 +7,9 @@ Rust templating with Handlebars.
 * crates.io: [handlebars](https://crates.io/crates/handlebars)
 * document: [rust-doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html)
 
+**Warning**: This project, like rust, is in its early stage. Breaking
+  changes are constantly introduced.
+
 ## Why Handlebars?
 
 It's my favorite templating tools by far. I used it in
@@ -41,8 +44,7 @@ Limitations:
 
 Check examples in the source. The example shows you how to:
 
-* Read file and compile to `Template`
-* Create a `Registry` and register the template
+* Create a `Handlebars` and register the template from files
 * Create a custom Helper by impl `HelperDef`, and register it
 * Render something
 * Make your custom struct `ToJson`-able.
@@ -50,7 +52,15 @@ Check examples in the source. The example shows you how to:
 Run `cargo run --example render` to see results.
 (or `RUST_LOG=INFO cargo run --example render`) for logging output.
 
-##
+## Handlebars for Iron
+
+Handlebars is created to work with other web framework like
+[Iron](http://ironframework.io). You can easily integrate Handlebars
+as a middileware. Checkout
+[examples/iron.rs](https://github.com/sunng87/handlebars-rust/master/blob/examples/iron.rs)
+for how to.
+
+Run `cargo run --example iron` and visit http://localhost:3000/ to see results.
 
 ## License
 
