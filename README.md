@@ -58,7 +58,7 @@ Handlebars is created to work with other web framework like
 [Iron](http://ironframework.io). You can easily integrate Handlebars
 as a middileware. Checkout feature/iron branch (will be moved to a
 standalone project)
-[examples/iron.rs](https://github.com/sunng87/handlebars-rust/feature/iron/blob/examples/iron.rs)
+[examples/iron.rs](https://github.com/sunng87/handlebars-rust/blob/feature/iron/examples/iron.rs)
 for how to.
 
 Run `cargo run --example iron` and visit http://localhost:3000/ to see results.
