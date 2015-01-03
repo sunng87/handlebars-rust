@@ -90,9 +90,9 @@ mod test {
         let t2 = Template::compile("{{> t0}}<p>{{this}}</p>".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", &t0);
-        handlebars.register_template("t1", &t1);
-        handlebars.register_template("t2", &t2);
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
+        handlebars.register_template("t2", t2);
 
         let r0 = handlebars.render("t1", &true);
         assert_eq!(r0.unwrap(), "<h1>true</h1>".to_string());

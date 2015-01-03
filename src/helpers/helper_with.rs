@@ -104,8 +104,8 @@ mod test {
         let t1 = Template::compile("{{#with notfound}}hello{{else}}world{{/with}}".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", &t0);
-        handlebars.register_template("t1", &t1);
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
 
         let r0 = handlebars.render("t0", &person);
         assert_eq!(r0.unwrap(), "Beijing".to_string());

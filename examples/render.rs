@@ -4,15 +4,15 @@ extern crate "rustc-serialize" as serialize;
 use std::io::File;
 use std::collections::BTreeMap;
 
-use handlebars::{Registry, Template, RenderError, RenderContext, Helper, Context};
+use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context};
 use serialize::json::{Json, ToJson};
 
-fn format_helper (c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+fn format_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<String, RenderError> {
     let param = h.params().get(0).unwrap();
     Ok(format!("{} pts", c.navigate(rc.get_path(), param)))
 }
 
-fn load_template(name: &str) -> Template {
+fn load_template(name: &str) -> String {
     let path = Path::new(name);
     let display = path.display();
 
@@ -23,7 +23,7 @@ fn load_template(name: &str) -> Template {
 
     match file.read_to_string() {
         Err(why) => panic!("couldn't read {}: {}", display, why.desc),
-        Ok(string) => Template::compile(string).unwrap()
+        Ok(string) => string
     }
 }
 
@@ -47,10 +47,11 @@ fn make_data () -> BTreeMap<String, Json> {
 }
 
 fn main() {
-    let mut handlebars = Registry::new();
+    let mut handlebars = Handlebars::new();
 
     let t = load_template("./examples/template.hbs");
-    handlebars.register_template("table", &t);
+    handlebars.register_template_string("table", t)
+        .ok().expect("template creation failed");
 
     handlebars.register_helper("format", box format_helper);
 //    handlebars.register_helper("format", box FORMAT_HELPER);

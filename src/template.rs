@@ -7,7 +7,7 @@ use serialize::json::Json;
 use self::TemplateElement::{RawString, Expression, HelperExpression,
                             HTMLExpression, HelperBlock, Comment};
 
-#[deriving(PartialEq)]
+#[deriving(PartialEq, Clone)]
 pub struct Template {
     pub elements: Vec<TemplateElement>
 }
@@ -23,7 +23,7 @@ enum ParserState {
     Invalid
 }
 
-#[deriving(PartialEq)]
+#[deriving(PartialEq, Clone)]
 pub struct Helper {
     name: String,
     params: Vec<String>,
@@ -307,7 +307,7 @@ impl ToString for Template {
     }
 }
 
-#[deriving(PartialEq)]
+#[deriving(PartialEq, Clone)]
 pub enum TemplateElement {
     RawString(String),
     Expression(String),

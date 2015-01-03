@@ -36,7 +36,7 @@ mod test {
         let t = Template::compile("a{{#raw}}{{content}}{{else}}hello{{/raw}}".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", &t);
+        handlebars.register_template("t0", t);
 
         let r = handlebars.render("t0", &());
         assert_eq!(r.unwrap(), "a{{content}}{{else}}hello");

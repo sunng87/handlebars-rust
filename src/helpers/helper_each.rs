@@ -101,8 +101,8 @@ mod test {
         let t1 = Template::compile("{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", &t0);
-        handlebars.register_template("t1", &t1);
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
 
         let r0 = handlebars.render("t0", &vec![1u, 2u, 3u]);
         assert_eq!(r0.unwrap(), "true|false|0:1|false|false|1:2|false|true|2:3|".to_string());

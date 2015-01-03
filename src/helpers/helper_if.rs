@@ -51,8 +51,8 @@ mod test {
         let t1 = Template::compile("{{#unless this}}hello{{else}}world{{/unless}}".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", &t0);
-        handlebars.register_template("t1", &t1);
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
 
         let r0 = handlebars.render("t0", &true);
         assert_eq!(r0.unwrap(), "hello".to_string());

@@ -60,7 +60,7 @@ mod test {
         let t0 = Template::compile("{{#each v1}}{{lookup ../v2 @index}}{{/each}}".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", &t0);
+        handlebars.register_template("t0", t0);
 
         let mut m :BTreeMap<String, Vec<uint>> = BTreeMap::new();
         m.insert("v1".to_string(), vec![1u, 2u, 3u]);

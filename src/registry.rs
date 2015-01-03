@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 use serialize::json::ToJson;
-use template::{Template};
+use template::{Template, TemplateError};
 use render::{Renderable, RenderError, RenderContext};
 use helpers::{HelperDef};
 use context::{Context};
 use helpers;
 
-pub struct Registry<'a> {
-    templates: HashMap<String, &'a Template>,
+pub struct Registry {
+    templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<HelperDef + 'static>>
 }
 
-impl<'a> Registry<'a> {
-    pub fn new() -> Registry<'a> {
+impl Registry {
+    pub fn new() -> Registry {
         let mut r = Registry {
             templates: HashMap::new(),
             helpers: HashMap::new()
@@ -32,15 +32,26 @@ impl<'a> Registry<'a> {
         r
     }
 
-    pub fn register_template(&mut self, name: &str, template: &'a Template) -> Option<&'a Template> {
-        self.templates.insert(name.to_string(), template)
+    pub fn register_template(&mut self, name: &str, template: Template) {
+        self.templates.insert(name.to_string(), template);
+    }
+
+    pub fn register_template_string(&mut self, name: &str, tpl_str: String) -> Result<(), TemplateError>{
+        let t = Template::compile(tpl_str);
+        match t {
+            Ok(tpl) => {
+                self.templates.insert(name.to_string(), tpl);
+                Ok(())
+            },
+            Err(e) => Err(e)
+        }
     }
 
     pub fn register_helper(&mut self, name: &str, def: Box<HelperDef + 'static>) -> Option<Box<HelperDef + 'static>> {
         self.helpers.insert(name.to_string(), def)
     }
 
-    pub fn get_template(&self, name: &String) -> Option<&(&'a Template)> {
+    pub fn get_template(&self, name: &String) -> Option<&Template> {
         self.templates.get(name)
     }
 
@@ -48,11 +59,11 @@ impl<'a> Registry<'a> {
         self.helpers.get(name)
     }
 
-    pub fn get_templates(&self) -> &HashMap<String, &'a Template> {
+    pub fn get_templates(&self) -> &HashMap<String, Template> {
         &self.templates
     }
 
-    pub fn render<T :ToJson>(&self, name: &str, ctx: &T) -> Result<String, RenderError> {
+    pub fn render<'b, T :ToJson>(&self, name: &str, ctx: &'b T) -> Result<String, RenderError> {
         let template = self.get_template(&name.to_string());
         let context = Context::wraps(ctx);
         let mut render_context = RenderContext::new();
@@ -60,10 +71,11 @@ impl<'a> Registry<'a> {
             Some(t) => {
                 (*t).render(&context, self, &mut render_context)
             },
-            None =>
+            None => {
                 Err(RenderError{
                     desc: "Template not found."
                 })
+            }
         }
     }
 }
@@ -92,9 +104,9 @@ mod test {
         let mut r = Registry::new();
 
         let t = Template::compile("<h1></h1>".to_string()).unwrap();
-        r.register_template("index", &t);
+        r.register_template("index", t.clone());
 
-        assert_eq!((**r.get_template(&("index".to_string())).unwrap()).to_string(),
+        assert_eq!((*r.get_template(&("index".to_string())).unwrap()).to_string(),
                    t.to_string());
         assert_eq!(r.templates.len(), 1);
 

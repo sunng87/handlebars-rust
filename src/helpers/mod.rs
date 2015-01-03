@@ -79,8 +79,8 @@ mod test {
         let t1 = Template::compile("{{#bar this}}nice{{/bar}}".to_string()).unwrap();
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", &t0);
-        handlebars.register_template("t1", &t1);
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
 
         let meta_helper = MetaHelper;
         handlebars.register_helper("helperMissing", box meta_helper);

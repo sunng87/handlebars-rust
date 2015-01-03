@@ -21,3 +21,7 @@ path = "src/lib.rs"
 regex = "*"
 log = "*"
 rustc-serialize = "*"
+
+[dev-dependencies]
+
+iron = "*"

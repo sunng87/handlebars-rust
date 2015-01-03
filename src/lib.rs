@@ -28,38 +28,22 @@
 //!
 //! ## Usage
 //!
-//! ### Template Creation
+//! ### Template Creation and Registration
 //!
-//! Templates are created from String.
-//!
-//! ```
-//! extern crate handlebars;
-//!
-//! use handlebars::Template;
-//!
-//! fn main() {
-//!   let source = "hello {{world}}";
-//!   //compile returns an Option, we use unwrap() to deref it directly here
-//!   let tpl = Template::compile(source.to_string()).unwrap();
-//! }
-//! ```
-//!
-//! ### Registration
-//!
-//! All the templates and helpers have to be registered into Registry, so they can look up each other by name.
+//! Templates are created from String and registered to `Registry` with a name.
 //!
 //! ```
 //! extern crate handlebars;
 //!
-//! use handlebars::{Template, Registry};
+//! use handlebars::Handlebars;
 //!
 //! fn main() {
+//!   let mut handlebars = Handlebars::new();
 //!   let source = "hello {{world}}";
-//!   //compile returns an Option, we use unwrap() to deref it directly here
-//!   let tpl = Template::compile(source.to_string()).unwrap();
 //!
-//!   let mut handlebars = Registry::new();
-//!   handlebars.register_template("hello_world", &tpl);
+//!   //compile returns an Option, we use unwrap() to deref it directly here
+//!   handlebars.register_template_string("helloworld", source.to_string())
+//!           .ok().expect("template created");
 //! }
 //! ```
 //!
@@ -76,7 +60,7 @@
 //! use serialize::json::{Json, ToJson};
 //! use std::collections::BTreeMap;
 //!
-//! use handlebars::{Template, Registry};
+//! use handlebars::Handlebars;
 //!
 //! struct Person {
 //!   name: String,
@@ -95,17 +79,16 @@
 //!
 //! fn main() {
 //!   let source = "hello {{world}}";
-//!   //compile returns an Option, we use unwrap() to deref it directly here
-//!   let tpl = Template::compile(source.to_string()).unwrap();
 //!
-//!   let mut handlebars = Registry::new();
-//!   handlebars.register_template("hello_world", &tpl);
+//!   let mut handlebars = Handlebars::new();
+//!   handlebars.register_template_string("helloworld", source.to_string())
+//!           .ok().expect("template creation failed");
 //!
 //!   let mut data = Person {
 //!       name: "Ning Sun".to_string(),
 //!       age: 27
 //!   };
-//!   let result = handlebars.render("hello_world", &data);
+//!   let result = handlebars.render("helloworld", &data);
 //! }
 //! ```
 //!
@@ -116,14 +99,14 @@
 //! ```
 //! extern crate handlebars;
 //!
-//! use handlebars::{Registry, HelperDef, RenderError, RenderContext, Helper, Context};
+//! use handlebars::{Handlebars, HelperDef, RenderError, RenderContext, Helper, Context};
 //!
 //! // implement by a structure impls HelperDef
 //! #[deriving(Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+//!   fn call(&self, c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<String, RenderError> {
 //!     let param = h.params().get(0).unwrap();
 //!
 //!     // get value from context data
@@ -135,7 +118,7 @@
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+//! fn another_simple_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<String, RenderError> {
 //!     let param = h.params().get(0).unwrap();
 //!
 //!     // get value from context data
@@ -149,7 +132,7 @@
 //! static MY_HELPER: SimpleHelper = SimpleHelper;
 //!
 //! fn main() {
-//!   let mut handlebars = Registry::new();
+//!   let mut handlebars = Handlebars::new();
 //!   handlebars.register_helper("simple-helper", box MY_HELPER);
 //!   handlebars.register_helper("another-simple-helper", box another_simple_helper);
 //!
@@ -178,7 +161,7 @@ extern crate regex_macros;
 extern crate log;
 
 pub use self::template::{Template, Helper};
-pub use self::registry::{Registry};
+pub use self::registry::Registry as Handlebars;
 pub use self::render::{Renderable, RenderError, RenderContext};
 pub use self::helpers::{HelperDef};
 pub use self::context::{Context, JsonRender, JsonTruthy};
