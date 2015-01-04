@@ -1,14 +1,3 @@
-//!
-//! Implement `HelperDef` to create custom helper. You can retrieve useful information from these arguments.
-//!
-//! * &Context: the context you are rendering
-//! * &Helper: current helper template information, contains name, params, hashes and nested template
-//! * &Registry: the global registry, you can find templates by name from registry
-//! * &mut RenderContext: you can store variables (starts with @) in render context, for example, @index of #each.
-//!
-//! By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
-//!
-
 use render::{RenderContext, RenderError};
 use template::{Helper};
 use registry::{Registry};
@@ -22,6 +11,17 @@ pub use self::helper_raw::{RAW_HELPER};
 pub use self::helper_partial::{INCLUDE_HELPER, BLOCK_HELPER, PARTIAL_HELPER};
 pub use self::helper_log::{LOG_HELPER};
 
+/// # Helper Definitions
+///
+/// Implement `HelperDef` to create custom helper. You can retrieve useful information from these arguments.
+///
+/// * &Context: the context you are rendering
+/// * &Helper: current helper template information, contains name, params, hashes and nested template
+/// * &Registry: the global registry, you can find templates by name from registry
+/// * &mut RenderContext: you can store variables (starts with @) in render context, for example, @index of #each.
+///
+/// By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
+///
 pub trait HelperDef: Send + Sync {
     fn call(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>;
 }

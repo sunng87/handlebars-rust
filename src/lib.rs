@@ -30,7 +30,7 @@
 //!
 //! ### Template Creation and Registration
 //!
-//! Templates are created from String and registered to `Registry` with a name.
+//! Templates are created from String and registered to `Handlebars` with a name.
 //!
 //! ```
 //! extern crate handlebars;
@@ -117,6 +117,9 @@
 //!   }
 //! }
 //!
+//! // create an instance
+//! static MY_HELPER: SimpleHelper = SimpleHelper;
+//!
 //! // implement via bare function
 //! fn another_simple_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<String, RenderError> {
 //!     let param = h.params().get(0).unwrap();
@@ -128,8 +131,6 @@
 //!     Ok(format!("My second helper dumps: {} ", value))
 //! }
 //!
-//! // create an instance
-//! static MY_HELPER: SimpleHelper = SimpleHelper;
 //!
 //! fn main() {
 //!   let mut handlebars = Handlebars::new();
@@ -139,6 +140,8 @@
 //!   //...
 //! }
 //! ```
+//!
+//! Arguments of HelpDef
 //!
 //! You can get data from the `Helper` argument about the template information:
 //!
