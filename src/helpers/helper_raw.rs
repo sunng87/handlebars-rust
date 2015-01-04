@@ -4,7 +4,7 @@ use registry::{Registry};
 use context::{Context};
 use render::{RenderContext, RenderError};
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct RawHelper;
 
 impl HelperDef for RawHelper {

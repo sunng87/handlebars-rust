@@ -57,7 +57,7 @@ mod test {
     use registry::{Registry};
     use render::{RenderContext, RenderError, Renderable};
 
-    #[deriving(Copy)]
+    #[derive(Copy)]
     struct MetaHelper;
 
     impl HelperDef for MetaHelper {

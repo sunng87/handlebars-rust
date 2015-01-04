@@ -4,7 +4,7 @@ use registry::{Registry};
 use context::{Context, JsonTruthy};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct IfHelper {
     positive: bool
 }

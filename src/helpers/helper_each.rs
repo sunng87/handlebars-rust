@@ -6,7 +6,7 @@ use registry::{Registry};
 use context::{Context};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct EachHelper;
 
 impl HelperDef for EachHelper{

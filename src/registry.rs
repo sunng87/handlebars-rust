@@ -88,7 +88,7 @@ mod test {
     use helpers::{HelperDef};
     use context::{Context};
 
-    #[deriving(Copy)]
+    #[derive(Copy)]
     struct DummyHelper;
 
     impl HelperDef for DummyHelper {

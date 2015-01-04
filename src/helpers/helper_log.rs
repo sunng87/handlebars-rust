@@ -6,7 +6,7 @@ use render::{RenderContext, RenderError, render_error, EMPTY};
 
 use log;
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct LogHelper;
 
 impl HelperDef for LogHelper {

@@ -1,3 +1,5 @@
+use std::num::ToPrimitive;
+
 use serialize::json::Json;
 
 use helpers::{HelperDef};
@@ -6,7 +8,7 @@ use registry::{Registry};
 use context::{Context, JsonRender};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
