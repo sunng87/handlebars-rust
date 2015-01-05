@@ -12,7 +12,7 @@ Rust templating with Handlebars.
 
 ## Why Handlebars?
 
-It's my favorite templating tools by far. I used it in
+It's my favorite templating tool by far. I used it in
 [Delicious.com](https://delicious.com) as javascript-side template in
 2013. Also I maintained a Clojure wrapper for Handlebars.java,
 [hbs](http://github.com/sunng87/hbs). And you may notice the
@@ -24,7 +24,7 @@ Reasons I prefer Handlebars:
 
 * Never ruin your Rust with HTML
 * Never ruin your HTML with Rust
-* Templating without reuse mechanism is shit
+* Templating without a reuse mechanism is shit
 * Templating wihtout customization is nothing but shit
 
 Handlebars provides:
@@ -32,8 +32,8 @@ Handlebars provides:
 * Separation of Rust and HTML
 * A few control structures makes templating easier
 * Few control structures stops you to put logic into templates
-* Template reuse with `include`, `partial` and `block`
-* Customize template behavior with **helper**
+* Template reuse with include(`>`), `partial` and `block`
+* Customize template behavior with **helper**s
 
 Limitations:
 
@@ -61,7 +61,13 @@ standalone project)
 [examples/iron.rs](https://github.com/sunng87/handlebars-rust/blob/feature/iron/examples/iron.rs)
 for how to.
 
-Run `cargo run --example iron` and visit http://localhost:3000/ to see results.
+Run `cargo run --example iron` and visit http://localhost:3000/ to see
+results.
+
+I will eventually make this middleware a standalone module, with
+directory scan and auto reload support. But currently it's still
+difficult to get iron compiled, so this example is placed in a
+separated branch.
 
 ## License
 
