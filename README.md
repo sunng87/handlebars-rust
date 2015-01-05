@@ -12,6 +12,8 @@ Rust templating with Handlebars.
 
 ## Why Handlebars?
 
+For information about handlebars, you will go to [handlebars.js](http://handlebarsjs.com).
+
 It's my favorite templating tool by far. I used it in
 [Delicious.com](https://delicious.com) as javascript-side template in
 2013. Also I maintained a Clojure wrapper for Handlebars.java,
