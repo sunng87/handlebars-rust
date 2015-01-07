@@ -141,7 +141,7 @@
 //! }
 //! ```
 //!
-//! Arguments of HelpDef
+//! #### Arguments of HelpDef
 //!
 //! You can get data from the `Helper` argument about the template information:
 //!
@@ -153,6 +153,18 @@
 //!
 //! You can learn more about helpers by looking into source code of built-in helpers.
 //!
+//! #### Built-in Helpers
+//!
+//! * `{{#raw}} ... {{/raw}}` escape handlebars expression within the block
+//! * `{{#if ...}} ... {{else}} ... {{/if}}` if-else block
+//! * `{{#unless ...}} ... {{else}} .. {{/unless}}` if-not-else block
+//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebar-rust doesn't support mustach iteration syntax so use this instead.
+//! * `{{#with ...}} ... {{/with}}` change current context. Similar to {{#each}}, used for replace corresponding mustach syntax.
+//! * `{{lookup ... ...}}` get value from array by `@index` or `@key`
+//! * `{{#partial ...}} ... {{/partial}}` template reuse, used to replace block with same name
+//! * `{{#block ...}} ... {{/block}}` template reuse, used to be replaced by partial with same name, with default content if partial not found.
+//! * `{{> ...}}` include template with name
+//! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //!
 
 extern crate "rustc-serialize" as serialize;
