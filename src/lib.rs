@@ -1,4 +1,4 @@
-#![feature(unboxed_closures, phase)]
+#![feature(unboxed_closures, phase, plugin)]
 #![unstable]
 
 //! # Handlebars
@@ -169,10 +169,11 @@
 
 extern crate "rustc-serialize" as serialize;
 extern crate regex;
-#[phase(plugin)]
+#[plugin]
 extern crate regex_macros;
 
-#[phase(plugin, link)]
+#[plugin]
+#[macro_use]
 extern crate log;
 
 pub use self::template::{Template, Helper};
