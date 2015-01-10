@@ -1,3 +1,4 @@
+#![allow(unstable)]
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
 
@@ -34,7 +35,7 @@ fn make_data () -> BTreeMap<String, Json> {
 
     let mut teams = Vec::new();
 
-    for v in vec![("Jiangsu", 43u), ("Beijing", 27u), ("Guangzhou", 22u), ("Shandong", 12u)].iter() {
+    for v in vec![("Jiangsu", 43u16), ("Beijing", 27u16), ("Guangzhou", 22u16), ("Shandong", 12u16)].iter() {
         let (name, score) = *v;
         let mut t = BTreeMap::new();
         t.insert("name".to_string(), name.to_json());
@@ -53,8 +54,8 @@ fn main() {
     handlebars.register_template_string("table", t)
         .ok().expect("template creation failed");
 
-    handlebars.register_helper("format", box format_helper);
-//    handlebars.register_helper("format", box FORMAT_HELPER);
+    handlebars.register_helper("format", Box::new(format_helper));
+//    handlebars.register_helper("format", Box::new(FORMAT_HELPER));
 
     let data = make_data();
     println!("{}", handlebars.render("table", &data).unwrap());

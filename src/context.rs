@@ -71,7 +71,7 @@ impl Context {
                         Some(d) => {
                             match *d {
                                 Json::Array(ref l) => {
-                                    match idx.parse::<uint>() {
+                                    match idx.parse::<usize>() {
                                         Some(idx_u) => l.get(idx_u).unwrap(),
                                         None => &self.default
                                     }

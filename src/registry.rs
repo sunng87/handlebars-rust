@@ -18,16 +18,16 @@ impl Registry {
             helpers: HashMap::new()
         };
 
-        r.register_helper("if", box helpers::IF_HELPER);
-        r.register_helper("unless", box helpers::UNLESS_HELPER);
-        r.register_helper("each", box helpers::EACH_HELPER);
-        r.register_helper("with", box helpers::WITH_HELPER);
-        r.register_helper("lookup", box helpers::LOOKUP_HELPER);
-        r.register_helper("raw", box helpers::RAW_HELPER);
-        r.register_helper(">", box helpers::INCLUDE_HELPER);
-        r.register_helper("block", box helpers::BLOCK_HELPER);
-        r.register_helper("partial", box helpers::PARTIAL_HELPER);
-        r.register_helper("log", box helpers::LOG_HELPER);
+        r.register_helper("if", Box::new(helpers::IF_HELPER));
+        r.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
+        r.register_helper("each", Box::new(helpers::EACH_HELPER));
+        r.register_helper("with", Box::new(helpers::WITH_HELPER));
+        r.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
+        r.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        r.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
+        r.register_helper("block", Box::new(helpers::BLOCK_HELPER));
+        r.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
+        r.register_helper("log", Box::new(helpers::LOG_HELPER));
 
         r
     }
@@ -110,7 +110,7 @@ mod test {
                    t.to_string());
         assert_eq!(r.templates.len(), 1);
 
-        r.register_helper("dummy", box DUMMY_HELPER);
+        r.register_helper("dummy", Box::new(DUMMY_HELPER));
 
         // built-in helpers plus 1
         assert_eq!(r.helpers.len(), 10+1);

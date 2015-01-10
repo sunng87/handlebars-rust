@@ -31,8 +31,8 @@ impl HelperDef for EachHelper{
                     Json::Array (ref list) => {
                         let len = list.len();
                         for i in range(0, len) {
-                            rc.set_local_var("@first".to_string(), (i==0u).to_json());
-                            rc.set_local_var("@last".to_string(), (len>1 && i == len-1).to_json());
+                            rc.set_local_var("@first".to_string(), (i == 0us).to_json());
+                            rc.set_local_var("@last".to_string(), (len > 1 && i == len - 1).to_json());
                             rc.set_local_var("@index".to_string(), i.to_json());
 
                             let new_path = format!("{}/{}[{}]", path, param.unwrap(), i);
@@ -104,10 +104,10 @@ mod test {
         handlebars.register_template("t0", t0);
         handlebars.register_template("t1", t1);
 
-        let r0 = handlebars.render("t0", &vec![1u, 2u, 3u]);
+        let r0 = handlebars.render("t0", &vec![1u16, 2u16, 3u16]);
         assert_eq!(r0.unwrap(), "true|false|0:1|false|false|1:2|false|true|2:3|".to_string());
 
-        let mut m :BTreeMap<String, uint> = BTreeMap::new();
+        let mut m :BTreeMap<String, u16> = BTreeMap::new();
         m.insert("ftp".to_string(), 21);
         m.insert("http".to_string(), 80);
         let r1 = handlebars.render("t1", &m);

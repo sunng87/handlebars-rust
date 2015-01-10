@@ -1,3 +1,4 @@
+#![allow(unstable)]
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
 extern crate test;
@@ -5,7 +6,7 @@ extern crate test;
 use std::io::File;
 use std::collections::BTreeMap;
 
-use handlebars::{Registry, Template};
+use handlebars::{Handlebars, Template};
 use serialize::json::{Json, ToJson};
 
 fn load_template_source(name: &str) -> String {
@@ -30,7 +31,7 @@ fn make_data () -> BTreeMap<String, Json> {
 
     let mut teams = Vec::new();
 
-    for v in vec![("Jiangsu", 43u), ("Beijing", 27u), ("Guangzhou", 22u), ("Shandong", 12u)].iter() {
+    for v in vec![("Jiangsu", 43u16), ("Beijing", 27u16), ("Guangzhou", 22u16), ("Shandong", 12u16)].iter() {
         let (name, score) = *v;
         let mut t = BTreeMap::new();
         t.insert("name".to_string(), name.to_json());
@@ -53,10 +54,10 @@ fn parse_template(b: &mut test::Bencher) {
 #[bench]
 fn render_template(b: &mut test::Bencher) {
     let source = load_template_source("./benches/template.hbs");
-    let template = Template::compile(source).unwrap();
 
-    let mut handlebars = Registry::new();
-    handlebars.register_template("table", &template);
+    let mut handlebars = Handlebars::new();
+    handlebars.register_template_string("table", source)
+        .ok().expect("Invalid template format");
 
     let data = make_data();
     b.iter(|| {

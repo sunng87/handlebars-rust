@@ -154,7 +154,7 @@ impl Template {
         let mut buffer: String = String::new();
         let mut state = ParserState::Text;
 
-        let mut c:uint = 0;
+        let mut c:usize = 0;
         let source_len = source.chars().count();
         while c < source_len {
             let slice = source.slice_chars(c, min(c+3, source_len));

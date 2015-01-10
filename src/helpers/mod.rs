@@ -83,8 +83,8 @@ mod test {
         handlebars.register_template("t1", t1);
 
         let meta_helper = MetaHelper;
-        handlebars.register_helper("helperMissing", box meta_helper);
-        handlebars.register_helper("blockHelperMissing", box meta_helper);
+        handlebars.register_helper("helperMissing", Box::new(meta_helper));
+        handlebars.register_helper("blockHelperMissing", Box::new(meta_helper));
 
         let r0 = handlebars.render("t0", &true);
         assert_eq!(r0.unwrap(), "foo:true".to_string());

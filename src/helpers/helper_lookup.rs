@@ -64,9 +64,9 @@ mod test {
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
 
-        let mut m :BTreeMap<String, Vec<uint>> = BTreeMap::new();
-        m.insert("v1".to_string(), vec![1u, 2u, 3u]);
-        m.insert("v2".to_string(), vec![9u, 8u, 7u]);
+        let mut m :BTreeMap<String, Vec<u16>> = BTreeMap::new();
+        m.insert("v1".to_string(), vec![1u16, 2u16, 3u16]);
+        m.insert("v2".to_string(), vec![9u16, 8u16, 7u16]);
 
         let r0 = handlebars.render("t0", &m);
         assert_eq!(r0.unwrap(), "987".to_string());
