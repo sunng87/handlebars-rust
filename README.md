@@ -56,20 +56,10 @@ Run `cargo run --example render` to see results.
 
 ## Handlebars for Iron
 
-Handlebars is created to work with other web framework like
-[Iron](http://ironframework.io). You can easily integrate Handlebars
-as a middileware. Checkout feature/iron branch (will be moved to a
-standalone project)
-[examples/iron.rs](https://github.com/sunng87/handlebars-rust/blob/feature/iron/examples/iron.rs)
-for how to.
-
-Run `cargo run --example iron` and visit http://localhost:3000/ to see
-results.
-
-I will eventually make this middleware a standalone module, with
-directory scan and auto reload support. But currently it's still
-difficult to get iron compiled, so this example is placed in a
-separated branch.
+Due to upstream changes, the example is currently broken. I have
+started a separated project
+[handlebars-iron](https://github.com/sunng87/handlebars-iron) for
+this, which is still working in progress.
 
 ## License
 
