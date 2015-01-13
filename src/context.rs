@@ -41,7 +41,7 @@ impl Context {
         }
     }
 
-    pub fn wraps<'a, T: ToJson>(e: &T) -> Context {
+    pub fn wraps<T: ToJson>(e: &T) -> Context {
         Context {
             data: e.to_json(),
             default: Json::Null
