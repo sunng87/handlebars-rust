@@ -56,10 +56,9 @@ Run `cargo run --example render` to see results.
 
 ## Handlebars for Iron
 
-Due to upstream changes, the example is currently broken. I have
-started a separated project
+I have started another project
 [handlebars-iron](https://github.com/sunng87/handlebars-iron) for
-this, which is still working in progress.
+the Iron web framework.
 
 ## License
 
