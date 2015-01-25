@@ -62,7 +62,7 @@ impl RenderContext {
         for key in self.local_variables.keys() {
             let mut new_key = String::new();
             new_key.push_str("@../");
-            new_key.push_str(key.slice_from(1));
+            new_key.push_str(&key[1..]);
 
             let v = self.local_variables.get(key).unwrap().clone();
             new_map.insert(new_key, v);
@@ -76,7 +76,7 @@ impl RenderContext {
             if key.starts_with("@../") {
                 let mut new_key = String::new();
                 new_key.push('@');
-                new_key.push_str(key.slice_from(4));
+                new_key.push_str(&key[4..]);
 
                 let v = self.local_variables.get(key).unwrap().clone();
                 new_map.insert(new_key, v);
@@ -181,7 +181,8 @@ fn test_raw_string() {
     let mut rc = RenderContext::new();
     let raw_string = RawString("<h1>hello world</h1>".to_string());
     assert_eq!(raw_string.render(
-        &Context::null(), &r, &mut rc).unwrap(), "<h1>hello world</h1>".to_string());
+        &Context::null(), &r, &mut rc).ok().unwrap(),
+               "<h1>hello world</h1>".to_string());
 }
 
 #[test]
@@ -196,7 +197,8 @@ fn test_expression() {
 
     let ctx = Context::wraps(&m);
 
-    assert_eq!(element.render(&ctx, &r, &mut rc).unwrap(), "&lt;p&gt;&lt;/p&gt;".to_string());
+    assert_eq!(element.render(&ctx, &r, &mut rc).ok().unwrap(),
+               "&lt;p&gt;&lt;/p&gt;".to_string());
 }
 
 #[test]
@@ -210,7 +212,8 @@ fn test_html_expression() {
 
     let ctx = Context::wraps(&m);
 
-    assert_eq!(element.render(&ctx, &r, &mut rc).unwrap(), value.to_string());
+    assert_eq!(element.render(&ctx, &r, &mut rc).ok().unwrap(),
+               value.to_string());
 }
 
 #[test]
@@ -241,7 +244,8 @@ fn test_template() {
 
     let ctx = Context::wraps(&m);
 
-    assert_eq!(template.render(&ctx, &r, &mut rc).unwrap(), "<h1>world</h1>".to_string());
+    assert_eq!(template.render(&ctx, &r, &mut rc).ok().unwrap(),
+               "<h1>world</h1>".to_string());
 }
 
 #[test]

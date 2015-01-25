@@ -103,7 +103,7 @@ mod test {
     fn test_registry_operations() {
         let mut r = Registry::new();
 
-        let t = Template::compile("<h1></h1>".to_string()).unwrap();
+        let t = Template::compile("<h1></h1>".to_string()).ok().unwrap();
         r.register_template("index", t.clone());
 
         assert_eq!((*r.get_template(&("index".to_string())).unwrap()).to_string(),

@@ -58,8 +58,8 @@ impl Context {
         for p in paths.iter() {
             match ARRAY_INDEX_MATCHER.find(*p) {
                 Some((s, _)) => {
-                    let arr = p.slice_to(s);
-                    let idx = p.slice(s+1, p.len()-1);
+                    let arr = &p[..s];
+                    let idx = &p[s+1 .. p.len()-1];
 
                     let root = if arr == "this" {
                         Some(data)

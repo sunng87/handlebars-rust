@@ -100,17 +100,17 @@ mod test {
                          "cartographier".to_string()]
         };
 
-        let t0 = Template::compile("{{#with addr}}{{city}}{{/with}}".to_string()).unwrap();
-        let t1 = Template::compile("{{#with notfound}}hello{{else}}world{{/with}}".to_string()).unwrap();
+        let t0 = Template::compile("{{#with addr}}{{city}}{{/with}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#with notfound}}hello{{else}}world{{/with}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
         handlebars.register_template("t1", t1);
 
         let r0 = handlebars.render("t0", &person);
-        assert_eq!(r0.unwrap(), "Beijing".to_string());
+        assert_eq!(r0.ok().unwrap(), "Beijing".to_string());
 
         let r1 = handlebars.render("t1", &person);
-        assert_eq!(r1.unwrap(), "world".to_string());
+        assert_eq!(r1.ok().unwrap(), "world".to_string());
     }
 }

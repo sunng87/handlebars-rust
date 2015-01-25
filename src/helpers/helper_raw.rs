@@ -33,12 +33,12 @@ mod test {
 
     #[test]
     fn test_raw_helper () {
-        let t = Template::compile("a{{#raw}}{{content}}{{else}}hello{{/raw}}".to_string()).unwrap();
+        let t = Template::compile("a{{#raw}}{{content}}{{else}}hello{{/raw}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t);
 
         let r = handlebars.render("t0", &());
-        assert_eq!(r.unwrap(), "a{{content}}{{else}}hello");
+        assert_eq!(r.ok().unwrap(), "a{{content}}{{else}}hello");
     }
 }

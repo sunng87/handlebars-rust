@@ -47,21 +47,21 @@ mod test {
 
     #[test]
     fn test_if() {
-        let t0 = Template::compile("{{#if this}}hello{{/if}}".to_string()).unwrap();
-        let t1 = Template::compile("{{#unless this}}hello{{else}}world{{/unless}}".to_string()).unwrap();
+        let t0 = Template::compile("{{#if this}}hello{{/if}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#unless this}}hello{{else}}world{{/unless}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
         handlebars.register_template("t1", t1);
 
         let r0 = handlebars.render("t0", &true);
-        assert_eq!(r0.unwrap(), "hello".to_string());
+        assert_eq!(r0.ok().unwrap(), "hello".to_string());
 
         let r1 = handlebars.render("t1", &true);
-        assert_eq!(r1.unwrap(), "world".to_string());
+        assert_eq!(r1.ok().unwrap(), "world".to_string());
 
         let r2 = handlebars.render("t0", &false);
-        assert_eq!(r2.unwrap(), "".to_string());
+        assert_eq!(r2.ok().unwrap(), "".to_string());
     }
 
 }

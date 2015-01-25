@@ -47,7 +47,7 @@ fn make_data () -> BTreeMap<String, Json> {
 fn parse_template(b: &mut test::Bencher) {
     let source = load_template_source("./benches/template.hbs");
     b.iter(|| {
-        Template::compile(source.clone()).unwrap()
+        Template::compile(source.clone()).ok().unwrap()
     });
 }
 
@@ -61,6 +61,6 @@ fn render_template(b: &mut test::Bencher) {
 
     let data = make_data();
     b.iter(|| {
-        handlebars.render("table", &data).unwrap()
+        handlebars.render("table", &data).ok().unwrap()
     })
 }

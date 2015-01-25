@@ -67,7 +67,7 @@ mod test {
             let r = if !h.is_block() {
                 format!("{}:{}", h.name(), v.render())
             } else {
-                format!("{}:{}->{}", h.name(), v.render(), h.template().unwrap().render(c, r, rc).unwrap())
+                format!("{}:{}->{}", h.name(), v.render(), h.template().unwrap().render(c, r, rc).ok().unwrap())
             };
             Ok(r.to_string())
         }
@@ -75,8 +75,8 @@ mod test {
 
     #[test]
     fn test_meta_helper() {
-        let t0 = Template::compile("{{foo this}}".to_string()).unwrap();
-        let t1 = Template::compile("{{#bar this}}nice{{/bar}}".to_string()).unwrap();
+        let t0 = Template::compile("{{foo this}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#bar this}}nice{{/bar}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
@@ -87,9 +87,9 @@ mod test {
         handlebars.register_helper("blockHelperMissing", Box::new(meta_helper));
 
         let r0 = handlebars.render("t0", &true);
-        assert_eq!(r0.unwrap(), "foo:true".to_string());
+        assert_eq!(r0.ok().unwrap(), "foo:true".to_string());
 
         let r1 = handlebars.render("t1", &true);
-        assert_eq!(r1.unwrap(), "bar:true->nice".to_string());
+        assert_eq!(r1.ok().unwrap(), "bar:true->nice".to_string());
     }
 }

@@ -59,7 +59,7 @@ mod test {
 
     #[test]
     fn test_lookup() {
-        let t0 = Template::compile("{{#each v1}}{{lookup ../v2 @index}}{{/each}}".to_string()).unwrap();
+        let t0 = Template::compile("{{#each v1}}{{lookup ../v2 @index}}{{/each}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
@@ -69,6 +69,6 @@ mod test {
         m.insert("v2".to_string(), vec![9u16, 8u16, 7u16]);
 
         let r0 = handlebars.render("t0", &m);
-        assert_eq!(r0.unwrap(), "987".to_string());
+        assert_eq!(r0.ok().unwrap(), "987".to_string());
     }
 }

@@ -97,21 +97,21 @@ mod test {
 
     #[test]
     fn test_each() {
-        let t0 = Template::compile("{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}".to_string()).unwrap();
-        let t1 = Template::compile("{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}".to_string()).unwrap();
+        let t0 = Template::compile("{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
         handlebars.register_template("t1", t1);
 
         let r0 = handlebars.render("t0", &vec![1u16, 2u16, 3u16]);
-        assert_eq!(r0.unwrap(), "true|false|0:1|false|false|1:2|false|true|2:3|".to_string());
+        assert_eq!(r0.ok().unwrap(), "true|false|0:1|false|false|1:2|false|true|2:3|".to_string());
 
         let mut m :BTreeMap<String, u16> = BTreeMap::new();
         m.insert("ftp".to_string(), 21);
         m.insert("http".to_string(), 80);
         let r1 = handlebars.render("t1", &m);
-        assert_eq!(r1.unwrap(), "true|ftp:21|false|http:80|".to_string());
+        assert_eq!(r1.ok().unwrap(), "true|ftp:21|false|http:80|".to_string());
     }
 
 }

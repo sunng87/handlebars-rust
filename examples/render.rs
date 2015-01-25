@@ -58,5 +58,5 @@ fn main() {
 //    handlebars.register_helper("format", Box::new(FORMAT_HELPER));
 
     let data = make_data();
-    println!("{}", handlebars.render("table", &data).unwrap());
+    println!("{}", handlebars.render("table", &data).ok().unwrap());
 }
