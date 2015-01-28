@@ -168,14 +168,13 @@
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //!
 
-extern crate "rustc-serialize" as serialize;
-extern crate regex;
+#[macro_use]
+extern crate log;
 #[plugin]
 extern crate regex_macros;
 
-#[plugin]
-#[macro_use]
-extern crate log;
+extern crate "rustc-serialize" as serialize;
+extern crate regex;
 
 pub use self::template::{Template, Helper};
 pub use self::registry::Registry as Handlebars;

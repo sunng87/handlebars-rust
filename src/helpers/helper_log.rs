@@ -4,8 +4,6 @@ use registry::{Registry};
 use context::{Context};
 use render::{RenderContext, RenderError, render_error, EMPTY};
 
-use log;
-
 #[derive(Copy)]
 pub struct LogHelper;
 
@@ -25,7 +23,7 @@ impl HelperDef for LogHelper {
             c.navigate(rc.get_path(), name)
         };
 
-        log!(log::INFO, "{}: {}", name, value);
+        info!("{}: {}", name, value);
 
         Ok(EMPTY.to_string())
     }

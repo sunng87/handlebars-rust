@@ -1,4 +1,5 @@
 #![allow(unstable)]
+extern crate env_logger;
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
 
@@ -48,6 +49,7 @@ fn make_data () -> BTreeMap<String, Json> {
 }
 
 fn main() {
+    env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
     let t = load_template("./examples/template.hbs");
