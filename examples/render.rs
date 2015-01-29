@@ -1,9 +1,9 @@
-#![allow(unstable)]
+#![feature(path, io, collections)]
 extern crate env_logger;
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
 
-use std::io::File;
+use std::old_io::File;
 use std::collections::BTreeMap;
 
 use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context};

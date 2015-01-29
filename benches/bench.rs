@@ -1,9 +1,9 @@
-#![allow(unstable)]
+#![feature(path, io, collections, test)]
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
 extern crate test;
 
-use std::io::File;
+use std::old_io::File;
 use std::collections::BTreeMap;
 
 use handlebars::{Handlebars, Template};

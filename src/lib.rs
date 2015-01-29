@@ -1,6 +1,4 @@
-#![allow(unstable)]
-#![feature(plugin)]
-#![unstable]
+#![feature(plugin, core, collections, std_misc)]
 
 //! # Handlebars
 //! Handlebars is a modern and extensible templating solution originally created in the JavaScript world. It's used by many popular frameworks like [Ember.js](http://emberjs.com) and Chaplin. It's also ported to some other platforms such as [Java](https://github.com/jknack/handlebars.java).
@@ -34,7 +32,7 @@
 //! Templates are created from String and registered to `Handlebars` with a name.
 //!
 //! ```
-//! #![allow(unstable)]
+//!
 //! extern crate handlebars;
 //!
 //! use handlebars::Handlebars;
@@ -56,7 +54,7 @@
 //! That means, if you want to render something, you have to ensure that it implements the `serialize::json::ToJson` trait. Luckily, most built-in types already have trait. However, if you want to render your custom struct, you need to implement this trait manually. (Rust has a deriving facility, but it's just for selected types. Maybe I will add some syntax extensions or macros to simplify this process.)
 //!
 //! ```
-//! #![allow(unstable)]
+//!
 //! extern crate "rustc-serialize" as serialize;
 //! extern crate handlebars;
 //!
@@ -100,13 +98,13 @@
 //! Handlebars is nothing without helpers. You can also create your own helpers with rust. Helpers in handlebars-rust are custom struct implements the `HelperDef` trait, concretely, the `call` function. For your convenience, most of stateless helpers can be implemented as bare functions.
 //!
 //! ```
-//! #![allow(unstable)]
+//!
 //! extern crate handlebars;
 //!
 //! use handlebars::{Handlebars, HelperDef, RenderError, RenderContext, Helper, Context};
 //!
 //! // implement by a structure impls HelperDef
-//! #[deriving(Copy)]
+//! #[derive(Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
