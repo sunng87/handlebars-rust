@@ -8,7 +8,7 @@ use context::{Context, JsonRender};
 
 pub static EMPTY: &'static str = "";
 
-#[derive(Show, Copy)]
+#[derive(Debug, Copy)]
 pub struct RenderError {
     pub desc: &'static str
 }

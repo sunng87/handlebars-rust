@@ -12,7 +12,7 @@ pub struct Template {
     pub elements: Vec<TemplateElement>
 }
 
-#[derive(PartialEq, Show)]
+#[derive(PartialEq, Debug)]
 enum ParserState {
     Text,
     HtmlExpression,
@@ -106,7 +106,7 @@ impl ToString for Helper {
     }
 }
 
-#[derive(Show, Copy)]
+#[derive(Debug, Copy)]
 pub struct TemplateError;
 
 impl Helper {
