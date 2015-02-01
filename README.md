@@ -27,7 +27,7 @@ Reasons I prefer Handlebars:
 * Never ruin your Rust with HTML
 * Never ruin your HTML with Rust
 * Templating without a reuse mechanism is shit
-* Templating wihtout customization is nothing but shit
+* Templating without customization is nothing but shit
 
 Handlebars provides:
 
