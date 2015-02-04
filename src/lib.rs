@@ -169,6 +169,7 @@
 #[macro_use]
 extern crate log;
 #[plugin]
+#[no_link]
 extern crate regex_macros;
 
 extern crate "rustc-serialize" as serialize;
