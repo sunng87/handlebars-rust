@@ -100,7 +100,7 @@ pub trait Renderable {
 impl Renderable for Template {
     fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let mut output = String::new();
-        let mut iter = self.elements.iter();
+        let iter = self.elements.iter();
         for t in iter {
             let c = ctx;
             match t.render(c, registry, rc) {
