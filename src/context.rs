@@ -106,8 +106,10 @@ impl JsonRender for Json {
     fn render(&self) -> String {
         match *self {
             Json::String(_) => {
-                let s = format!("{}", *self);
-                s.slice_chars(1, s.chars().count()-1).to_string()
+                match self.as_string() {
+                    Some(s) => String::from_str(s),
+                    None => String::from_str("")
+                }
             },
             _ => {
                 format!("{}", *self)
@@ -136,6 +138,14 @@ mod test {
     use context::{JsonRender, Context};
     use std::collections::BTreeMap;
     use serialize::json::{Json, ToJson};
+
+    #[test]
+    fn test_json_render() {
+        let raw = "<p>Hello world</p>\n<p thing=\"hello\"</p>";
+        let thing = Json::String(String::from_str(raw));
+
+        assert_eq!(raw, thing.render());
+    }
 
     struct Address {
         city: String,
