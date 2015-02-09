@@ -42,35 +42,29 @@ impl HelperDef for BlockHelper {
             return Err(render_error("Param not found for helper"));
         }
 
-        let partial = rc.get_rendered_partial(param.unwrap());
+        let partial_template = rc.get_partial(param.unwrap());
 
-        if partial.is_some() {
-            Ok(partial.unwrap())
-        } else {
-            h.template().unwrap().render(c, r, rc)
+        match partial_template {
+            Some(partial_template) => {
+                partial_template.render(c, r, rc)
+            },
+            None => {
+                h.template().unwrap().render(c, r, rc)
+            }
         }
     }
 }
 
 impl HelperDef for PartialHelper {
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, _: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {
             return Err(render_error("Param not found for helper"));
         }
 
-        let partial = h.template().unwrap().render(c, r, rc);
-
-        match partial {
-            Ok(t) => {
-                rc.set_rendered_partial(param.unwrap().clone(), t);
-                Ok(EMPTY.to_string())
-            },
-            Err(e) => {
-                Err(e)
-            }
-        }
+        rc.set_partial(param.unwrap().clone(), h.template().unwrap().clone());
+        Ok(EMPTY.to_string())
     }
 }
 

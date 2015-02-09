@@ -14,7 +14,7 @@ pub struct RenderError {
 }
 
 pub struct RenderContext {
-    partials: HashMap<String, String>,
+    partials: HashMap<String, Template>,
     path: String,
     local_variables: HashMap<String, Json>,
     default_var: Json
@@ -30,14 +30,14 @@ impl RenderContext {
         }
     }
 
-    pub fn get_rendered_partial(&self, name: &String) -> Option<String> {
+    pub fn get_partial(&self, name: &String) -> Option<Template> {
         match self.partials.get(name) {
             Some(t) => Some(t.clone()),
             None => None
         }
     }
 
-    pub fn set_rendered_partial(&mut self, name: String, result: String) {
+    pub fn set_partial(&mut self, name: String, result: Template) {
         self.partials.insert(name, result);
     }
 
