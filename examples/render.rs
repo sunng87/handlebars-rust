@@ -1,4 +1,4 @@
-#![feature(path, io, core)]
+#![feature(path, io)]
 extern crate env_logger;
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
