@@ -54,6 +54,19 @@ Check examples in the source. The example shows you how to:
 Run `cargo run --example render` to see results.
 (or `RUST_LOG=INFO cargo run --example render`) for logging output.
 
+## Handlebars-js features supported in Handlebars-rust
+
+* Expression / Block Helpers
+* Built-in helpers
+* Customizing helper
+* Parameter and hashes for helper
+* Partials, include
+* Omitting whitespace with `~`
+
+Feel free to report an issue if you find something broken. We aren't
+going to implement all features of handlebars-js, but we should have a
+workaround for cases we don't support.
+
 ## Handlebars for Iron
 
 I have started another project
