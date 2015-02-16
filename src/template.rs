@@ -207,8 +207,8 @@ impl Template {
                             match state {
                                 ParserState::Expression => {
                                     if !buffer.is_empty() {
-                                        // {{else}} within a helper block
-                                        if buffer.trim_matches(' ') == "else" {
+                                        // {{else}} or {{^}} within a helper block
+                                        if buffer.trim() == "else" || buffer.trim() == "^" {
                                             buffer.clear(); // drop else
                                             let t = template_stack.pop_front().unwrap();
                                             let h = helper_stack.front_mut().unwrap();
@@ -359,10 +359,10 @@ fn test_parse_helper_start_tag() {
 #[test]
 fn test_parse_template() {
     let source = "<h1>{{title}} 你好</h1> {{{content}}}
-{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}";
+{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}{{#unless true}}kitkat{{^}}lollipop{{/unless}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
 
-    assert_eq!(t.elements.len(), 8);
+    assert_eq!(t.elements.len(), 9);
     assert_eq!((*t.elements.get(0).unwrap()).to_string(), "<h1>".to_string());
     assert_eq!((*t.elements.get(1).unwrap()).to_string(),
                Expression("title".to_string()).to_string());
@@ -390,6 +390,18 @@ fn test_parse_template() {
             panic!("Helper expression here");
         }
     };
+
+    match *t.elements.get(8).unwrap() {
+        HelperBlock(ref h) => {
+            assert_eq!(h.name, "unless".to_string());
+            assert_eq!(h.params.len(), 1);
+            assert_eq!(h.inverse.as_ref().unwrap().elements.len(), 1);
+        },
+        _ => {
+            panic!("Helper expression here");
+        }
+    };
+
 }
 
 #[test]
