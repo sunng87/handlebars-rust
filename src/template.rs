@@ -1,4 +1,7 @@
 use std::cmp::min;
+use std::ops::BitOr;
+use std::num::FromPrimitive;
+use std::fmt::{self, Debug, Formatter};
 use std::iter::IteratorExt;
 use std::collections::{BTreeMap, RingBuf};
 use std::string::ToString;
@@ -145,6 +148,42 @@ impl Helper {
     }
 }
 
+#[derive(PartialEq, FromPrimitive)]
+enum WhiteSpaceOmit {
+    Left = 0x01,
+    Right = 0x10,
+    Both = 0x11,
+    None = 0x00
+}
+
+impl BitOr<WhiteSpaceOmit> for WhiteSpaceOmit {
+    type Output = WhiteSpaceOmit;
+
+    fn bitor(self, right: WhiteSpaceOmit) -> WhiteSpaceOmit {
+        FromPrimitive::from_u8((self as u8) | (right as u8)).unwrap()
+    }
+}
+
+
+fn process_whitespace(buf: &String, wso: &mut WhiteSpaceOmit) -> String {
+    let result = match *wso {
+        WhiteSpaceOmit::Left => {
+            buf.trim_left().to_string()
+        },
+        WhiteSpaceOmit::Right => {
+            buf.trim_right().to_string()
+        },
+        WhiteSpaceOmit::Both => {
+            buf.trim().to_string()
+        },
+        WhiteSpaceOmit::None => {
+            buf.clone()
+        }
+    };
+    *wso = WhiteSpaceOmit::None;
+    result
+}
+
 impl Template {
     pub fn compile(source: String) -> Result<Template, TemplateError> {
         let mut helper_stack: RingBuf<Helper> = RingBuf::new();
@@ -155,18 +194,32 @@ impl Template {
         let mut state = ParserState::Text;
 
         let mut c:usize = 0;
+        let mut ws_omitter = WhiteSpaceOmit::None;
         let source_len = source.chars().count();
         while c < source_len {
-            let slice = source.slice_chars(c, min(c+3, source_len));
-            state = match slice {
+            let mut slice = source.slice_chars(c, min(c+3, source_len)).to_string();
+            if slice == "{{~" {
+                ws_omitter = ws_omitter | WhiteSpaceOmit::Right;
+                // read another char and remove ~
+                slice = source.slice_chars(c, min(c+4, source_len)).to_string();
+                slice.remove(2);
+                c += 1;
+            }
+            if slice == "~}}" {
+                ws_omitter = ws_omitter | WhiteSpaceOmit::Left;
+                c += 1;
+                slice = source.slice_chars(c, min(c+3, source_len)).to_string();
+            }
+            state = match slice.as_slice() {
                 "{{{" | "{{!" | "{{#" | "{{/" => {
                     c += 2;
                     if !buffer.is_empty() {
                         let mut t = template_stack.front_mut().unwrap();
-                        t.elements.push(RawString(buffer.clone()));
+                        let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
+                        t.elements.push(RawString(buf_clone));
                         buffer.clear();
                     }
-                    match slice {
+                    match slice.as_slice() {
                         "{{{" => ParserState::HtmlExpression,
                         "{{!" => ParserState::Comment,
                         "{{#" => ParserState::HelperStart,
@@ -192,12 +245,13 @@ impl Template {
                     ParserState::Text
                 },
                 _ => {
-                    match if slice.chars().count() > 2 { slice.slice_chars(0, 2) } else { slice } {
+                    match if slice.len() > 2 { slice.slice_chars(0, 2) } else { slice.as_slice() } {
                         "{{" => {
                             c += 1;
                             if !buffer.is_empty() {
                                 let mut t = template_stack.front_mut().unwrap();
-                                t.elements.push(RawString(buffer.clone()));
+                                let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
+                                t.elements.push(RawString(buf_clone));
                                 buffer.clear();
                             }
                             ParserState::Expression
@@ -286,7 +340,8 @@ impl Template {
 
         if !buffer.is_empty() {
             let mut t = template_stack.front_mut().unwrap();
-            t.elements.push(TemplateElement::RawString(buffer.clone()));
+            let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
+            t.elements.push(TemplateElement::RawString(buf_clone));
         }
 
         if !helper_stack.is_empty() {
@@ -340,6 +395,13 @@ impl ToString for TemplateElement {
                 format!("{{!{}}}", v)
             }
         }
+    }
+}
+
+impl Debug for TemplateElement {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        try!(writeln!(f, "{:?}", self.to_string()));
+        Ok(())
     }
 }
 
@@ -417,9 +479,21 @@ fn test_helper_to_string() {
 
 #[test]
 fn test_parse_error() {
-    let source = "{{#ifequals name compare=\"hello\"}}hello{{else}}good".to_string();
+    let source = "{{#ifequals name compare=\"hello\"}}hello{{else}}good";
 
     let t = Template::compile(source.to_string());
 
     assert!(t.is_err());
+}
+
+#[test]
+fn test_white_space_omitter() {
+    let source = "hello~     {{~world~}} \n  !{{~#if true}}else{{/if~}}".to_string();
+    let t = Template::compile(source).ok().unwrap();
+
+    assert_eq!(t.elements.len(), 4);
+
+    assert_eq!(t.elements[0], RawString(String::from_str("hello~")));
+    assert_eq!(t.elements[1], Expression(String::from_str("world")));
+    assert_eq!(t.elements[2], RawString(String::from_str("!")));
 }

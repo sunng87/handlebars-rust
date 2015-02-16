@@ -5,12 +5,12 @@
   <body>
     <h1>CSL {{year}}</h1>
     <ul>
-    {{#each teams}}
+    {{#each teams~}}
       <li class="{{#if @first}}champion{{/if}}">
-      {{log @index}}
-      <b>{{name}}</b>: {{format score}}
+      {{~log @index~}}
+      <b>{{name}}</b>: {{format score ~}}
       </li>
-    {{/each}}
+    {{/each~}}
     </ul>
   </body>
 </html>
