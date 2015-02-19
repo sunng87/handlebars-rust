@@ -170,7 +170,6 @@
 
 #[macro_use]
 extern crate log;
-extern crate regex_macros;
 
 extern crate "rustc-serialize" as serialize;
 extern crate regex;
