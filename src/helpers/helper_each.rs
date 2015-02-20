@@ -31,7 +31,7 @@ impl HelperDef for EachHelper{
                     Json::Array (ref list) => {
                         let len = list.len();
                         for i in range(0, len) {
-                            rc.set_local_var("@first".to_string(), (i == 0us).to_json());
+                            rc.set_local_var("@first".to_string(), (i == 0usize).to_json());
                             rc.set_local_var("@last".to_string(), (len > 1 && i == len - 1).to_json());
                             rc.set_local_var("@index".to_string(), i.to_json());
 
