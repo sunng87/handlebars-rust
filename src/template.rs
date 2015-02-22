@@ -3,7 +3,7 @@ use std::ops::BitOr;
 use std::num::FromPrimitive;
 use std::fmt::{self, Debug, Formatter};
 use std::iter::IteratorExt;
-use std::collections::{BTreeMap, RingBuf};
+use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
 use serialize::json::Json;
 
@@ -186,8 +186,8 @@ fn process_whitespace(buf: &String, wso: &mut WhiteSpaceOmit) -> String {
 
 impl Template {
     pub fn compile(source: String) -> Result<Template, TemplateError> {
-        let mut helper_stack: RingBuf<Helper> = RingBuf::new();
-        let mut template_stack: RingBuf<Template> = RingBuf::new();
+        let mut helper_stack: VecDeque<Helper> = VecDeque::new();
+        let mut template_stack: VecDeque<Template> = VecDeque::new();
         template_stack.push_front(Template{ elements: Vec::new() });
 
         let mut buffer: String = String::new();

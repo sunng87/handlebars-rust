@@ -2,7 +2,7 @@ use std::num::Float;
 use serialize::json::{Json, ToJson};
 use regex::Regex;
 use std::iter::IteratorExt;
-use std::collections::RingBuf;
+use std::collections::VecDeque;
 
 pub struct Context {
     data: Json,
@@ -13,7 +13,7 @@ pub struct Context {
 static ARRAY_INDEX_MATCHER: Regex = regex!(r"\[\d+\]$");
 
 #[inline]
-fn parse_json_visitor<'a>(path_stack: &mut RingBuf<&'a str>, path: &'a String) {
+fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a String) {
     for p in (*path).split('/') {
         match p {
             "this" | "." | "" => {
@@ -49,7 +49,7 @@ impl Context {
     }
 
     pub fn navigate(&self, path: &String, relative_path: &String) -> &Json {
-        let mut path_stack :RingBuf<&str> = RingBuf::new();
+        let mut path_stack :VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, path);
         parse_json_visitor(&mut path_stack, relative_path);
 
