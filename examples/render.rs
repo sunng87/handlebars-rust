@@ -1,9 +1,12 @@
-#![feature(old_path, old_io)]
+#![feature(io, path, fs)]
 extern crate env_logger;
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
 
-use std::old_io::File;
+use std::io::prelude::*;
+use std::io;
+use std::fs::File;
+use std::path::Path;
 use std::collections::BTreeMap;
 
 use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context};
@@ -14,19 +17,13 @@ fn format_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContex
     Ok(format!("{} pts", c.navigate(rc.get_path(), param)))
 }
 
-fn load_template(name: &str) -> String {
+fn load_template(name: &str) -> io::Result<String> {
     let path = Path::new(name);
-    let display = path.display();
 
-    let mut file = match File::open(&path) {
-        Err(why) => panic!("couldn't open {}: {}", display, why.desc),
-        Ok(file) => file,
-    };
-
-    match file.read_to_string() {
-        Err(why) => panic!("couldn't read {}: {}", display, why.desc),
-        Ok(string) => string
-    }
+    let mut file = try!(File::open(path));
+    let mut s = String::new();
+    try!(file.read_to_string(&mut s));
+    Ok(s)
 }
 
 fn make_data () -> BTreeMap<String, Json> {
@@ -52,7 +49,7 @@ fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    let t = load_template("./examples/template.hbs");
+    let t = load_template("./examples/template.hbs").ok().unwrap();
     handlebars.register_template_string("table", t)
         .ok().expect("template creation failed");
 

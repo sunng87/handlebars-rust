@@ -1,27 +1,24 @@
-#![feature(old_path, old_io, test)]
+#![feature(io, path, fs, test)]
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
 extern crate test;
 
-use std::old_io::File;
+use std::io::prelude::*;
+use std::io::Result;
+use std::fs::File;
+use std::path::Path;
 use std::collections::BTreeMap;
 
 use handlebars::{Handlebars, Template};
 use serialize::json::{Json, ToJson};
 
-fn load_template_source(name: &str) -> String {
+fn load_template_source(name: &str) -> Result<String> {
     let path = Path::new(name);
-    let display = path.display();
 
-    let mut file = match File::open(&path) {
-        Err(why) => panic!("couldn't open {}: {}", display, why.desc),
-        Ok(file) => file,
-    };
-
-    match file.read_to_string() {
-        Err(why) => panic!("couldn't read {}: {}", display, why.desc),
-        Ok(string) => string
-    }
+    let mut file = try!(File::open(&path));
+    let mut buf = String::new();
+    try!(file.read_to_string(&mut buf));
+    Ok(buf)
 }
 
 fn make_data () -> BTreeMap<String, Json> {
@@ -45,7 +42,7 @@ fn make_data () -> BTreeMap<String, Json> {
 
 #[bench]
 fn parse_template(b: &mut test::Bencher) {
-    let source = load_template_source("./benches/template.hbs");
+    let source = load_template_source("./benches/template.hbs").ok().unwrap();
     b.iter(|| {
         Template::compile(source.clone()).ok().unwrap()
     });
@@ -53,7 +50,7 @@ fn parse_template(b: &mut test::Bencher) {
 
 #[bench]
 fn render_template(b: &mut test::Bencher) {
-    let source = load_template_source("./benches/template.hbs");
+    let source = load_template_source("./benches/template.hbs").ok().unwrap();
 
     let mut handlebars = Handlebars::new();
     handlebars.register_template_string("table", source)
