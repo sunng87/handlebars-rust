@@ -124,7 +124,7 @@ impl Helper {
                 let mut hash: BTreeMap<String, Json> = BTreeMap::new();
 
                 for t in tokens {
-                    if t.contains_char('=') {
+                    if t.contains('=') {
                         let kv = t.split('=').collect::<Vec<&str>>();
                         hash.insert(kv.get(0).unwrap().to_string(),
                                     kv.get(1).unwrap().parse::<Json>().unwrap());
@@ -269,7 +269,7 @@ impl Template {
                                             h.template = Some(t);
                                             template_stack.push_front(Template{ elements: Vec::new() });
                                             ParserState::Text
-                                        } else if buffer.contains_char(' ') {
+                                        } else if buffer.contains(' ') {
                                             //inline helper
                                             match Helper::parse(buffer.clone(), false){
                                                 Ok(helper) => {
