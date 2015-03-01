@@ -114,7 +114,7 @@ pub struct TemplateError;
 
 impl Helper {
     fn parse(source: String, block: bool) -> Result<Helper, TemplateError> {
-        let mut tokens = source.split(|&: c: char| c.is_whitespace())
+        let mut tokens = source.split(|c: char| c.is_whitespace())
             .filter(|s: &&str| !(*s).is_empty());
 
         let name = tokens.next();
