@@ -30,7 +30,7 @@ impl HelperDef for LookupHelper {
                 let index = rc.get_local_var(index_param_name);
                 match *index {
                     Json::U64(i) => {
-                        match l.get(i.to_uint().unwrap()) {
+                        match l.get(i.to_usize().unwrap()) {
                             Some(v) => Ok(v.render()),
                             None => Ok(EMPTY.to_string())
                         }
