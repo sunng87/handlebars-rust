@@ -1,4 +1,4 @@
-#![feature(io, path, fs, test)]
+#![feature(test)]
 extern crate handlebars;
 extern crate "rustc-serialize" as serialize;
 extern crate test;
