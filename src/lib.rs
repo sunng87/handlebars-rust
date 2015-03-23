@@ -1,4 +1,4 @@
-#![feature(plugin, core, collections, std_misc)]
+#![feature(plugin, core, collections, std_misc, str_char)]
 
 #![plugin(regex_macros)]
 
