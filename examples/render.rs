@@ -1,6 +1,6 @@
 extern crate env_logger;
 extern crate handlebars;
-extern crate "rustc-serialize" as serialize;
+extern crate rustc_serialize as serialize;
 
 use std::io::prelude::*;
 use std::io;
