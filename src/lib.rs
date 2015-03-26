@@ -57,7 +57,7 @@
 //!
 //! ```
 //!
-//! extern crate "rustc-serialize" as serialize;
+//! extern crate rustc_serialize as serialize;
 //! extern crate handlebars;
 //!
 //! use serialize::json::{Json, ToJson};
@@ -171,7 +171,7 @@
 #[macro_use]
 extern crate log;
 
-extern crate "rustc-serialize" as serialize;
+extern crate rustc_serialize as serialize;
 extern crate regex;
 
 pub use self::template::{Template, Helper};
