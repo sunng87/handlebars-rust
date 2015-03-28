@@ -1,6 +1,6 @@
 #![feature(test)]
 extern crate handlebars;
-extern crate "rustc-serialize" as serialize;
+extern crate rustc_serialize as serialize;
 extern crate test;
 
 use std::io::prelude::*;
