@@ -12,12 +12,12 @@ impl HelperDef for RawHelper {
         let mut buf = String::new();
         let tpl = h.template();
         if tpl.is_some() {
-            buf.push_str(tpl.unwrap().to_string().as_slice());
+            buf.push_str(tpl.unwrap().to_string().as_ref());
         }
         let ivs = h.inverse();
         if ivs.is_some() {
             buf.push_str("{{else}}");
-            buf.push_str(ivs.unwrap().to_string().as_slice());
+            buf.push_str(ivs.unwrap().to_string().as_ref());
         }
 
         Ok(buf)

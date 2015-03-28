@@ -78,17 +78,17 @@ impl ToString for Helper {
         let mut buf = String::new();
 
         if self.block {
-            buf.push_str(format!("{{{{#{}", self.name).as_slice());
+            buf.push_str(format!("{{{{#{}", self.name).as_ref());
         } else {
-            buf.push_str(format!("{{{{{}", self.name).as_slice());
+            buf.push_str(format!("{{{{{}", self.name).as_ref());
         }
 
         for p in self.params.iter() {
-            buf.push_str(format!(" {}", p).as_slice());
+            buf.push_str(format!(" {}", p).as_ref());
         }
 
         for k in self.hash.keys() {
-            buf.push_str(format!(" {}={}", k, self.hash.get(k).unwrap()).as_slice());
+            buf.push_str(format!(" {}={}", k, self.hash.get(k).unwrap()).as_ref());
         }
 
         buf.push_str("}}");
@@ -96,14 +96,14 @@ impl ToString for Helper {
         if self.block {
             let tpl = self.template();
             if tpl.is_some() {
-                buf.push_str(tpl.unwrap().to_string().as_slice());
+                buf.push_str(tpl.unwrap().to_string().as_ref());
             }
             let ivs = self.inverse();
             if ivs.is_some() {
                 buf.push_str("{{else}}");
-                buf.push_str(ivs.unwrap().to_string().as_slice());
+                buf.push_str(ivs.unwrap().to_string().as_ref());
             }
-            buf.push_str(format!("{{{{/{}}}}}", self.name).as_slice());
+            buf.push_str(format!("{{{{/{}}}}}", self.name).as_ref());
         }
         buf
     }
@@ -210,7 +210,7 @@ impl Template {
                 c += 1;
                 slice = source.slice_chars(c, min(c+3, source_len)).to_string();
             }
-            state = match slice.as_slice() {
+            state = match slice.as_ref() {
                 "{{{" | "{{!" | "{{#" | "{{/" => {
                     c += 2;
                     if !buffer.is_empty() {
@@ -219,7 +219,7 @@ impl Template {
                         t.elements.push(RawString(buf_clone));
                         buffer.clear();
                     }
-                    match slice.as_slice() {
+                    match slice.as_ref() {
                         "{{{" => ParserState::HtmlExpression,
                         "{{!" => ParserState::Comment,
                         "{{#" => ParserState::HelperStart,
@@ -245,7 +245,7 @@ impl Template {
                     ParserState::Text
                 },
                 _ => {
-                    match if slice.len() > 2 { slice.slice_chars(0, 2) } else { slice.as_slice() } {
+                    match if slice.len() > 2 { slice.slice_chars(0, 2) } else { slice.as_ref() } {
                         "{{" => {
                             c += 1;
                             if !buffer.is_empty() {
@@ -356,7 +356,7 @@ impl ToString for Template {
     fn to_string(&self) -> String {
         let mut buf = String::new();
         for v in self.elements.iter() {
-            buf.push_str(v.to_string().as_slice());
+            buf.push_str(v.to_string().as_ref());
         }
         buf
     }

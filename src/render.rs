@@ -104,7 +104,7 @@ impl Renderable for Template {
         for t in iter {
             let c = ctx;
             match t.render(c, registry, rc) {
-                Ok(r) => output.push_str(r.as_slice()),
+                Ok(r) => output.push_str(r.as_ref()),
                 Err(e) => return Err(e)
             }
         }

@@ -40,7 +40,7 @@ impl HelperDef for EachHelper{
 
                             match t.render(c, r, rc) {
                                 Ok(r) => {
-                                    buffer.push_str(r.as_slice());
+                                    buffer.push_str(r.as_ref());
                                 }
                                 Err(r) => {
                                     return Err(r);
@@ -63,7 +63,7 @@ impl HelperDef for EachHelper{
                             rc.set_path(new_path);
                             match t.render(c, r, rc) {
                                 Ok(r) => {
-                                    buffer.push_str(r.as_slice());
+                                    buffer.push_str(r.as_ref());
                                 }
                                 Err(r) => {
                                     return Err(r);
