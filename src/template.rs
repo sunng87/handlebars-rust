@@ -2,7 +2,6 @@ use std::cmp::min;
 use std::ops::BitOr;
 use std::num::FromPrimitive;
 use std::fmt::{self, Debug, Formatter};
-use std::iter::IteratorExt;
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
 use serialize::json::Json;

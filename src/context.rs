@@ -1,7 +1,6 @@
 use std::num::Float;
 use serialize::json::{Json, ToJson};
 use regex::Regex;
-use std::iter::IteratorExt;
 use std::collections::VecDeque;
 
 pub struct Context {
