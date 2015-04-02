@@ -1,4 +1,3 @@
-use std::num::Float;
 use serialize::json::{Json, ToJson};
 use regex::Regex;
 use std::collections::VecDeque;
@@ -122,7 +121,7 @@ impl JsonTruthy for Json {
         match *self {
             Json::I64(i) => i != 0,
             Json::U64(i) => i != 0,
-            Json::F64(i) => i != Float::zero() || ! i.is_nan(),
+            Json::F64(i) => i != 0.0 || ! i.is_nan(),
             Json::Boolean (ref i) => *i,
             Json::Null => false,
             Json::String (ref i) => i.len() > 0,
