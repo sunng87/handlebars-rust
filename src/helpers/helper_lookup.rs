@@ -8,7 +8,7 @@ use registry::{Registry};
 use context::{Context, JsonRender};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {

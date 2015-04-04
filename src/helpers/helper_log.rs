@@ -4,7 +4,7 @@ use registry::{Registry};
 use context::{Context};
 use render::{RenderContext, RenderError, render_error, EMPTY};
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct LogHelper;
 
 impl HelperDef for LogHelper {

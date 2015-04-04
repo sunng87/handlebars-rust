@@ -108,7 +108,7 @@ impl ToString for Helper {
     }
 }
 
-#[derive(Debug, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct TemplateError;
 
 impl Helper {

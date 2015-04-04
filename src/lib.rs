@@ -106,7 +106,7 @@
 //! use handlebars::{Handlebars, HelperDef, RenderError, RenderContext, Helper, Context};
 //!
 //! // implement by a structure impls HelperDef
-//! #[derive(Copy)]
+//! #[derive(Clone, Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {

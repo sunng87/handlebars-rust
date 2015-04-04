@@ -4,13 +4,13 @@ use registry::{Registry};
 use context::{Context};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct IncludeHelper;
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct BlockHelper;
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct PartialHelper;
 
 impl HelperDef for IncludeHelper {

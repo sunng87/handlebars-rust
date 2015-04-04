@@ -4,7 +4,7 @@ use registry::{Registry};
 use context::{Context, JsonTruthy};
 use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
 
-#[derive(Copy)]
+#[derive(Clone, Copy)]
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
