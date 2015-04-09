@@ -105,8 +105,8 @@ impl JsonRender for Json {
         match *self {
             Json::String(_) => {
                 match self.as_string() {
-                    Some(s) => String::from_str(s),
-                    None => String::from_str("")
+                    Some(s) => s.to_string(),
+                    None => String::new()
                 }
             },
             _ => {
@@ -140,7 +140,7 @@ mod test {
     #[test]
     fn test_json_render() {
         let raw = "<p>Hello world</p>\n<p thing=\"hello\"</p>";
-        let thing = Json::String(String::from_str(raw));
+        let thing = Json::String(raw.to_string());
 
         assert_eq!(raw, thing.render());
     }

@@ -325,7 +325,7 @@ impl Template {
                             }
                         },
                         _ => {
-                            buffer.push(slice.char_at(0));
+                            buffer.push(slice.chars().nth(0).unwrap());
                             state
                         }
                     }
@@ -492,7 +492,7 @@ fn test_white_space_omitter() {
 
     assert_eq!(t.elements.len(), 4);
 
-    assert_eq!(t.elements[0], RawString(String::from_str("hello~")));
-    assert_eq!(t.elements[1], Expression(String::from_str("world")));
-    assert_eq!(t.elements[2], RawString(String::from_str("!")));
+    assert_eq!(t.elements[0], RawString("hello~".to_string()));
+    assert_eq!(t.elements[1], Expression("world".to_string()));
+    assert_eq!(t.elements[2], RawString("!".to_string()));
 }
