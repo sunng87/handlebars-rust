@@ -10,6 +10,9 @@ Rust templating with Handlebars.
 **Warning**: This project, like rust, is in its early stage. Breaking
   changes are constantly introduced.
 
+Currently handlebars-rust still uses some unstable APIs, which means this
+project might break on Rust 1.0.0-beta. Please use nightly version instead.
+
 ## Why Handlebars?
 
 For information about handlebars, you will go to [handlebars.js](http://handlebarsjs.com).
