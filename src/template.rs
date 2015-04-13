@@ -1,6 +1,7 @@
 use std::cmp::min;
 use std::ops::BitOr;
 use std::num::FromPrimitive;
+use std::error;
 use std::fmt::{self, Debug, Formatter};
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
@@ -110,6 +111,18 @@ impl ToString for Helper {
 
 #[derive(Debug, Clone, Copy)]
 pub struct TemplateError;
+
+impl fmt::Display for TemplateError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "TemplateError")
+    }
+}
+
+impl error::Error for TemplateError {
+    fn description(&self) -> &str {
+        "Template error"
+    }
+}
 
 impl Helper {
     fn parse(source: String, block: bool) -> Result<Helper, TemplateError> {
