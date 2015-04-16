@@ -174,7 +174,7 @@ extern crate log;
 extern crate rustc_serialize as serialize;
 extern crate regex;
 
-pub use self::template::{Template, Helper};
+pub use self::template::{Template, TemplateError, Helper};
 pub use self::registry::Registry as Handlebars;
 pub use self::render::{Renderable, RenderError, RenderContext};
 pub use self::helpers::{HelperDef};
