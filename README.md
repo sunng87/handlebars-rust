@@ -4,7 +4,7 @@ handlebars-rust
 Rust templating with Handlebars.
 
 * travis-ci: [![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
-* crates.io: [handlebars](https://crates.io/crates/handlebars)
+* crates.io: [![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
 * document: [rust-doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html)
 
 **Warning**: This project, like rust, is in its early stage. Breaking
