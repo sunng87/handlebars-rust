@@ -43,7 +43,9 @@ Handlebars provides:
 Limitations:
 
 * As a static typed language, it's a little verbose to use handlebars
-* You will have to make your data `ToJson`-able, so we can render it.
+* You will have to make your data `ToJson`-able, so we can render
+it. We have [a syntax extension](https://github.com/sunng87/tojson_macros) to generate
+default `ToJson` implementation for you
 
 ## Usage
 
@@ -52,7 +54,7 @@ Check examples in the source. The example shows you how to:
 * Create a `Handlebars` and register the template from files
 * Create a custom Helper by impl `HelperDef`, and register it
 * Render something
-* Make your custom struct `ToJson`-able.
+* Make your custom struct `ToJson`-able with [tojson_macros](https://github.com/sunng87/tojson_macros).
 
 Run `cargo run --example render` to see results.
 (or `RUST_LOG=INFO cargo run --example render`) for logging output.

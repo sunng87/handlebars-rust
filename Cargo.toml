@@ -25,3 +25,4 @@ rustc-serialize = "*"
 
 [dev-dependencies]
 env_logger = "*"
+tojson_macros = "*"
