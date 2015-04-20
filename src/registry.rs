@@ -38,12 +38,11 @@ impl Registry {
 
     pub fn register_template_string(&mut self, name: &str, tpl_str: String) -> Result<(), TemplateError>{
         let t = Template::compile(tpl_str);
-        match t {
-            Ok(tpl) => {
-                self.templates.insert(name.to_string(), tpl);
-                Ok(())
-            },
-            Err(e) => Err(e)
+        if let Ok(tpl) = t {
+            self.templates.insert(name.to_string(), tpl);
+            Ok(())
+        } else {
+            Err(t.err().unwrap())
         }
     }
 
@@ -63,21 +62,19 @@ impl Registry {
         &self.templates
     }
 
-    pub fn render<'b, T :ToJson>(&self, name: &str, ctx: &'b T) -> Result<String, RenderError> {
-        let template = self.get_template(&name.to_string());
-        let context = Context::wraps(ctx);
-        let mut render_context = RenderContext::new();
-        match template {
-            Some(t) => {
+    pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError>
+        where T: ToJson {
+            let template = self.get_template(&name.to_string());
+            let context = Context::wraps(ctx);
+            let mut render_context = RenderContext::new();
+            if let Some(t) = template {
                 (*t).render(&context, self, &mut render_context)
-            },
-            None => {
+            } else {
                 Err(RenderError{
                     desc: "Template not found."
                 })
             }
         }
-    }
 }
 
 #[cfg(test)]

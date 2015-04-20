@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::error;
+use std::fmt;
 use serialize::json::Json;
 
 use template::{Template, TemplateElement};
@@ -11,6 +13,18 @@ pub static EMPTY: &'static str = "";
 #[derive(Debug, Clone, Copy)]
 pub struct RenderError {
     pub desc: &'static str
+}
+
+impl fmt::Display for RenderError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.desc)
+    }
+}
+
+impl error::Error for RenderError {
+    fn description(&self) -> &str {
+        self.desc
+    }
 }
 
 pub struct RenderContext {
@@ -87,7 +101,7 @@ impl RenderContext {
 
     pub fn get_local_var(&self, name: &String) -> &Json {
         match self.local_variables.get(name) {
-            Some(ref j) => *j,
+            Some(j) => j,
             None => &self.default_var
         }
     }
@@ -108,7 +122,7 @@ impl Renderable for Template {
                 Err(e) => return Err(e)
             }
         }
-        return Ok(output);
+        Ok(output)
     }
 }
 

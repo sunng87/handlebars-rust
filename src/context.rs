@@ -67,14 +67,13 @@ impl Context {
 
                     data = match root {
                         Some(d) => {
-                            match *d {
-                                Json::Array(ref l) => {
-                                    match idx.parse::<usize>() {
-                                        Ok(idx_u) => l.get(idx_u).unwrap(),
-                                        Err(_) => &self.default
-                                    }
-                                },
-                                _ => &self.default
+                            if let Json::Array(ref l) = *d {
+                                match idx.parse::<usize>() {
+                                    Ok(idx_u) => l.get(idx_u).unwrap(),
+                                    Err(_) => &self.default
+                                }
+                            } else {
+                                &self.default
                             }
                         },
                         None => &self.default
@@ -102,16 +101,10 @@ pub trait JsonTruthy {
 
 impl JsonRender for Json {
     fn render(&self) -> String {
-        match *self {
-            Json::String(_) => {
-                match self.as_string() {
-                    Some(s) => s.to_string(),
-                    None => String::new()
-                }
-            },
-            _ => {
-                format!("{}", *self)
-            }
+        if let Json::String(_) = *self {
+            self.as_string().unwrap_or("").to_string()
+        } else {
+            format!("{}", *self)
         }
     }
 }
