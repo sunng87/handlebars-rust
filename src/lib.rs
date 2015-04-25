@@ -1,4 +1,4 @@
-#![feature(plugin, core, collections)]
+#![feature(plugin, collections)]
 
 #![plugin(regex_macros)]
 
@@ -166,6 +166,7 @@ extern crate log;
 
 extern crate rustc_serialize as serialize;
 extern crate regex;
+extern crate num;
 
 pub use self::template::{Template, TemplateError, Helper};
 pub use self::registry::Registry as Handlebars;

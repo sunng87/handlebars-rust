@@ -1,4 +1,4 @@
-use std::num::ToPrimitive;
+use num::ToPrimitive;
 
 use serialize::json::Json;
 

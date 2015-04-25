@@ -1,11 +1,11 @@
 use std::cmp::min;
 use std::ops::BitOr;
-use std::num::FromPrimitive;
 use std::error;
 use std::fmt::{self, Debug, Formatter};
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
 use serialize::json::Json;
+use num::FromPrimitive;
 
 use self::TemplateElement::{RawString, Expression, HelperExpression,
                             HTMLExpression, HelperBlock, Comment};
@@ -160,12 +160,34 @@ impl Helper {
     }
 }
 
-#[derive(PartialEq, FromPrimitive)]
+#[derive(PartialEq)]
 enum WhiteSpaceOmit {
     Left = 0x01,
     Right = 0x10,
     Both = 0x11,
     None = 0x00
+}
+
+impl FromPrimitive for WhiteSpaceOmit {
+    fn from_i64(n: i64) -> Option<WhiteSpaceOmit> {
+        match n {
+            0x01 => Some(WhiteSpaceOmit::Left),
+            0x10 => Some(WhiteSpaceOmit::Right),
+            0x11 => Some(WhiteSpaceOmit::Both),
+            0x00 => Some(WhiteSpaceOmit::None),
+            _ => None
+        }
+    }
+
+    fn from_u64(n: u64) -> Option<WhiteSpaceOmit> {
+        match n {
+            0x01 => Some(WhiteSpaceOmit::Left),
+            0x10 => Some(WhiteSpaceOmit::Right),
+            0x11 => Some(WhiteSpaceOmit::Both),
+            0x00 => Some(WhiteSpaceOmit::None),
+            _ => None
+        }
+    }
 }
 
 impl BitOr<WhiteSpaceOmit> for WhiteSpaceOmit {

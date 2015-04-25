@@ -22,6 +22,7 @@ regex = "*"
 regex_macros = "*"
 log = "*"
 rustc-serialize = "*"
+num = "*"
 
 [dev-dependencies]
 env_logger = "*"
