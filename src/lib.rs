@@ -130,6 +130,11 @@
 //!   let mut handlebars = Handlebars::new();
 //!   handlebars.register_helper("simple-helper", Box::new(SimpleHelper));
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
+//!   // via closure
+//!   handlebars.register_helper("closure-helper",
+//!       Box::new(|c: &Context, h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> Result<String, RenderError>{
+//!         Ok(format!("..."))
+//!       }));
 //!
 //!   //...
 //! }
