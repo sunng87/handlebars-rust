@@ -46,6 +46,10 @@ impl Registry {
         }
     }
 
+    pub fn unregister_template(&mut self, name: &String) {
+        self.templates.remove(name);
+    }
+
     pub fn register_helper(&mut self, name: &str, def: Box<HelperDef + 'static>) -> Option<Box<HelperDef + 'static>> {
         self.helpers.insert(name.to_string(), def)
     }
@@ -60,6 +64,10 @@ impl Registry {
 
     pub fn get_templates(&self) -> &HashMap<String, Template> {
         &self.templates
+    }
+
+    pub fn clear_templates(&mut self) {
+        self.templates.clear();
     }
 
     pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError>
@@ -103,9 +111,18 @@ mod test {
         let t = Template::compile("<h1></h1>".to_string()).ok().unwrap();
         r.register_template("index", t.clone());
 
+        let t2 = Template::compile("<h2></h2>".to_string()).ok().unwrap();
+        r.register_template("index2", t2.clone());
+
         assert_eq!((*r.get_template(&("index".to_string())).unwrap()).to_string(),
                    t.to_string());
+        assert_eq!(r.templates.len(), 2);
+
+        r.unregister_template(&("index".to_string()));
         assert_eq!(r.templates.len(), 1);
+
+        r.clear_templates();
+        assert_eq!(r.templates.len(), 0);
 
         r.register_helper("dummy", Box::new(DUMMY_HELPER));
 
