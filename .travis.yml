@@ -1,8 +1,8 @@
 language: rust
 rust:
   - nightly
-#  - beta
-#  - 1.0.0
+  - beta
+  - 1.0.0
 sudo: false
 after_success: |
     cargo doc \
