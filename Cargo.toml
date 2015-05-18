@@ -19,7 +19,6 @@ path = "src/lib.rs"
 [dependencies]
 
 regex = "*"
-regex_macros = "*"
 log = "*"
 rustc-serialize = "*"
 num = "*"

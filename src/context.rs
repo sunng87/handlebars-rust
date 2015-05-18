@@ -4,11 +4,9 @@ use std::collections::VecDeque;
 
 pub struct Context {
     data: Json,
-    default: Json
+    default: Json,
+    array_index_matcher: Regex,
 }
-
-//pub static NULL_VALUE: &'static Json = &Json::Null;
-static ARRAY_INDEX_MATCHER: Regex = regex!(r"\[\d+\]$");
 
 #[inline]
 fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a String) {
@@ -35,14 +33,16 @@ impl Context {
     pub fn null() -> Context {
         Context {
             data: Json::Null,
-            default: Json::Null
+            default: Json::Null,
+            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap(),
         }
     }
 
     pub fn wraps<T: ToJson>(e: &T) -> Context {
         Context {
             data: e.to_json(),
-            default: Json::Null
+            default: Json::Null,
+            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap(),
         }
     }
 
@@ -54,7 +54,7 @@ impl Context {
         let paths :Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
-            match ARRAY_INDEX_MATCHER.find(*p) {
+            match self.array_index_matcher.find(*p) {
                 Some((s, _)) => {
                     let arr = &p[..s];
                     let idx = &p[s+1 .. p.len()-1];

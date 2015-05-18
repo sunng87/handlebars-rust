@@ -1,7 +1,3 @@
-#![feature(plugin, collections)]
-
-#![plugin(regex_macros)]
-
 //! # Handlebars
 //! Handlebars is a modern and extensible templating solution originally created in the JavaScript world. It's used by many popular frameworks like [Ember.js](http://emberjs.com) and Chaplin. It's also ported to some other platforms such as [Java](https://github.com/jknack/handlebars.java).
 //!
@@ -184,3 +180,4 @@ mod registry;
 mod render;
 mod helpers;
 mod context;
+mod support;

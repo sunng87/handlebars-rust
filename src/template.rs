@@ -7,6 +7,8 @@ use std::string::ToString;
 use serialize::json::Json;
 use num::FromPrimitive;
 
+use support::str::SliceChars;
+
 use self::TemplateElement::{RawString, Expression, HelperExpression,
                             HTMLExpression, HelperBlock, Comment};
 
@@ -231,18 +233,18 @@ impl Template {
         let mut ws_omitter = WhiteSpaceOmit::None;
         let source_len = source.chars().count();
         while c < source_len {
-            let mut slice = source.slice_chars(c, min(c+3, source_len)).to_string();
+            let mut slice = source.slice_chars_alt(c, min(c+3, source_len)).to_string();
             if slice == "{{~" {
                 ws_omitter = ws_omitter | WhiteSpaceOmit::Right;
                 // read another char and remove ~
-                slice = source.slice_chars(c, min(c+4, source_len)).to_string();
+                slice = source.slice_chars_alt(c, min(c+4, source_len)).to_string();
                 slice.remove(2);
                 c += 1;
             }
             if slice == "~}}" {
                 ws_omitter = ws_omitter | WhiteSpaceOmit::Left;
                 c += 1;
-                slice = source.slice_chars(c, min(c+3, source_len)).to_string();
+                slice = source.slice_chars_alt(c, min(c+3, source_len)).to_string();
             }
             state = match slice.as_ref() {
                 "{{{" | "{{!" | "{{#" | "{{/" => {
@@ -279,7 +281,7 @@ impl Template {
                     ParserState::Text
                 },
                 _ => {
-                    match if slice.len() > 2 { slice.slice_chars(0, 2) } else { slice.as_ref() } {
+                    match if slice.len() > 2 { slice.slice_chars_alt(0, 2) } else { slice.as_ref() } {
                         "{{" => {
                             c += 1;
                             if !buffer.is_empty() {
