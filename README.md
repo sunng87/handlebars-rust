@@ -50,7 +50,6 @@ Check examples in the source. The example shows you how to:
 * Create a `Handlebars` and register the template from files
 * Create a custom Helper with closure or struct implementing `HelperDef`, and register it
 * Render something
-* Make your custom struct `ToJson`-able with [tojson_macros](https://github.com/sunng87/tojson_macros).
 
 Run `cargo run --example render` to see results.
 (or `RUST_LOG=INFO cargo run --example render`) for logging output.
