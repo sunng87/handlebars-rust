@@ -52,9 +52,6 @@
 //! That means, if you want to render something, you have to ensure that it implements the `serialize::json::ToJson` trait. Luckily, most built-in types already have trait. However, if you want to render your custom struct, you need to implement this trait manually. (Rust has a deriving facility, but it's just for selected types. Maybe I will add some syntax extensions or macros to simplify this process.)
 //!
 //! ```
-//! #![feature(custom_derive, plugin)]
-//! #![plugin(tojson_macros)]
-//!
 //! extern crate rustc_serialize;
 //! extern crate handlebars;
 //!
@@ -63,10 +60,18 @@
 //!
 //! use handlebars::Handlebars;
 //!
-//! #[derive(ToJson)]
 //! struct Person {
 //!   name: String,
 //!   age: i16,
+//! }
+//!
+//! impl ToJson for Person {
+//!   fn to_json(&self) -> Json {
+//!     let mut m: BTreeMap<String, Json> = BTreeMap::new();
+//!     m.insert("name".to_string(), self.name.to_json());
+//!     m.insert("age".to_string(), self.age.to_json());
+//!     m.to_json()
+//!   }
 //! }
 //!
 //! fn main() {

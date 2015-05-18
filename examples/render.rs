@@ -1,7 +1,3 @@
-#![feature(custom_derive, plugin)]
-
-#![plugin(tojson_macros)]
-
 extern crate env_logger;
 extern crate handlebars;
 extern crate rustc_serialize;
@@ -15,10 +11,18 @@ use std::collections::BTreeMap;
 use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context};
 use rustc_serialize::json::{Json, ToJson};
 
-#[derive(ToJson)]
 struct Team {
     name: String,
     pts: u16
+}
+
+impl ToJson for Team {
+    fn to_json(&self) -> Json {
+        let mut m: BTreeMap<String, Json> = BTreeMap::new();
+        m.insert("name".to_string(), self.name.to_json());
+        m.insert("pts".to_string(), self.pts.to_json());
+        m.to_json()
+    }
 }
 
 fn format_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<String, RenderError> {
