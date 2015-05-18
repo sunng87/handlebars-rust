@@ -25,4 +25,4 @@ num = "*"
 
 [dev-dependencies]
 env_logger = "*"
-tojson_macros = "*"
+#tojson_macros = "*"
