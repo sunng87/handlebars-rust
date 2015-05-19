@@ -41,7 +41,7 @@
 //!
 //!   //compile returns an Option, we use unwrap() to deref it directly here
 //!   handlebars.register_template_string("helloworld", source.to_string())
-//!           .ok().expect("template created");
+//!           .ok().unwrap();
 //! }
 //! ```
 //!
@@ -79,7 +79,7 @@
 //!
 //!   let mut handlebars = Handlebars::new();
 //!   handlebars.register_template_string("helloworld", source.to_string())
-//!           .ok().expect("template creation failed");
+//!           .ok().unwrap();
 //!
 //!   let mut data = Person {
 //!       name: "Ning Sun".to_string(),

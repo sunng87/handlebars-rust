@@ -62,8 +62,7 @@ fn main() {
     let mut handlebars = Handlebars::new();
 
     let t = load_template("./examples/template.hbs").ok().unwrap();
-    handlebars.register_template_string("table", t)
-        .ok().expect("template creation failed");
+    handlebars.register_template_string("table", t).ok().unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
 //    handlebars.register_helper("format", Box::new(FORMAT_HELPER));
