@@ -95,10 +95,16 @@ impl error::Error for TemplateError {
     }
 }
 
+fn find_tokens(source: &String) -> Vec<String> {
+    let tokenizer = Regex::new(r"[^\s\(][^\s]*|\([^\)]*\)").unwrap();
+    tokenizer.captures_iter(&source).map(|c| c.at(0).unwrap().to_string()).collect()
+}
+
 impl HelperTemplate {
     fn parse(source: String, block: bool) -> Result<HelperTemplate, TemplateError> {
-        let mut tokens = source.split(|c: char| c.is_whitespace())
-            .filter(|s: &&str| !(*s).is_empty());
+        // FIXME, cache this regex
+        let tokens_vec = find_tokens(&source);
+        let mut tokens = tokens_vec.iter();
 
         let name = tokens.next();
         match name {
@@ -135,7 +141,7 @@ impl HelperTemplate {
 impl Parameter {
     fn parse(source: String) -> Result<Parameter, TemplateError> {
         // move this to static scope when regex! is stable
-        let subexpr_regex = Regex::new(r"\((\S+)\)").unwrap();
+        let subexpr_regex = Regex::new(r"\(([^\)]+)\)").unwrap();
 
         if let Some(caps) = subexpr_regex.captures(&source) {
             let parameter = caps.at(1).unwrap();
@@ -311,21 +317,22 @@ impl Template {
                                             h.template = Some(t);
                                             template_stack.push_front(Template{ elements: Vec::new() });
                                             ParserState::Text
-                                        } else if buffer.contains(' ') {
-                                            //inline helper
-                                            let helper = try!(HelperTemplate::parse(buffer.clone(), false));
-                                            let mut t = template_stack.front_mut().unwrap();
-                                            t.elements.push(HelperExpression(helper));
-                                            buffer.clear();
-                                            ParserState::Text
                                         } else {
-                                            let mut t = template_stack.front_mut().unwrap();
-                                            t.elements.push(Expression(
-                                                try!(Parameter::parse(buffer.clone().trim_matches(' ').to_string()))));
-                                            buffer.clear();
-                                            ParserState::Text
+                                            if find_tokens(&buffer).len() > 1 {
+                                                //inline helper
+                                                let helper = try!(HelperTemplate::parse(buffer.clone(), false));
+                                                let mut t = template_stack.front_mut().unwrap();
+                                                t.elements.push(HelperExpression(helper));
+                                                buffer.clear();
+                                                ParserState::Text
+                                            } else {
+                                                let mut t = template_stack.front_mut().unwrap();
+                                                t.elements.push(Expression(
+                                                    try!(Parameter::parse(buffer.clone().trim_matches(' ').to_string()))));
+                                                buffer.clear();
+                                                ParserState::Text
+                                            }
                                         }
-
                                     } else {
                                         ParserState::Invalid
                                     }
@@ -515,10 +522,10 @@ fn test_parse_error() {
 
 #[test]
 fn test_subexpression() {
-    let source = "{{foo (bar)}}";
+    let source = "{{foo (bar)}}{{foo (bar baz)}} hello {{#if (baz bar) then=(bar)}}world{{/if}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
 
-    assert_eq!(t.elements.len(), 1);
+    assert_eq!(t.elements.len(), 4);
     match *t.elements.get(0).unwrap() {
         HelperExpression(ref h) => {
             assert_eq!(h.name, "foo".to_string());
@@ -534,6 +541,43 @@ fn test_subexpression() {
         }
     };
 
+    match *t.elements.get(1).unwrap() {
+        HelperExpression(ref h) => {
+            assert_eq!(h.name, "foo".to_string());
+            assert_eq!(h.params.len(), 1);
+            if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
+                assert_eq!(t.to_string(), "{{bar baz}}".to_string());
+            } else {
+                panic!("Subexpression expected");
+            }
+        },
+        _ => {
+            panic!("Helper expression expected");
+        }
+    };
+
+    match *t.elements.get(3).unwrap() {
+        HelperBlock(ref h) => {
+            assert_eq!(h.name, "if".to_string());
+            assert_eq!(h.params.len(), 1);
+            assert_eq!(h.hash.len(), 1);
+
+            if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
+                assert_eq!(t.to_string(), "{{baz bar}}".to_string())
+            } else {
+                panic!("Subexpression expected (baz bar)");
+            }
+
+            if let &Parameter::Subexpression(ref t) = h.hash.get("then").unwrap() {
+                assert_eq!(t.to_string(), "{{bar}}".to_string())
+            } else {
+                panic!("Subexpression expected (bar)");
+            }
+        },
+        _ => {
+            panic!("HelperBlock expected");
+        }
+    }
 }
 
 #[test]
@@ -546,4 +590,17 @@ fn test_white_space_omitter() {
     assert_eq!(t.elements[0], RawString("hello~".to_string()));
     assert_eq!(t.elements[1], Expression(Parameter::Name("world".into())));
     assert_eq!(t.elements[2], RawString("!".to_string()));
+}
+
+#[test]
+fn test_find_tokens() {
+    let source: String = "hello   good (nice) (hello world)\n\t\t world hello=world hello=(world)".into();
+    let tokens: Vec<String> = find_tokens(&source);
+    assert_eq!(tokens, vec::<String>!["hello".to_string(),
+                                      "good".to_string(),
+                                      "(nice)".to_string(),
+                                      "(hello world)".to_string(),
+                                      "world".to_string(),
+                                      "hello=world".to_string(),
+                                      "hello=(world)".to_string()]);
 }
