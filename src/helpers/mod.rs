@@ -1,5 +1,4 @@
-use render::{RenderContext, RenderError};
-use template::{Helper};
+use render::{RenderContext, RenderError, Helper};
 use registry::{Registry};
 use context::{Context};
 
@@ -53,9 +52,9 @@ pub fn helper_dummy (ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderCon
 mod test {
     use context::{JsonRender, Context};
     use helpers::{HelperDef};
-    use template::{Helper, Template};
+    use template::Template;
     use registry::{Registry};
-    use render::{RenderContext, RenderError, Renderable};
+    use render::{RenderContext, RenderError, Renderable, Helper};
 
     #[derive(Clone, Copy)]
     struct MetaHelper;

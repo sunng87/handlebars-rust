@@ -1,8 +1,7 @@
 use helpers::{HelperDef};
-use template::{Helper};
 use registry::{Registry};
 use context::{Context};
-use render::{RenderContext, RenderError, render_error, EMPTY};
+use render::{RenderContext, RenderError, render_error, EMPTY, Helper};
 
 #[derive(Clone, Copy)]
 pub struct LogHelper;

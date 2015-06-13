@@ -3,10 +3,9 @@ use num::ToPrimitive;
 use serialize::json::Json;
 
 use helpers::{HelperDef};
-use template::{Helper};
 use registry::{Registry};
 use context::{Context, JsonRender};
-use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
+use render::{Renderable, RenderContext, RenderError, render_error, EMPTY, Helper};
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;

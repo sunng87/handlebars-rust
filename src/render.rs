@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::error;
 use std::fmt;
 use serialize::json::Json;
 
-use template::{Template, TemplateElement};
+use template::{Template, TemplateElement, Parameter, HelperTemplate};
 use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression, HelperExpression};
 use registry::Registry;
 use context::{Context, JsonRender};
@@ -107,8 +107,90 @@ impl RenderContext {
     }
 }
 
+pub struct Helper<'a> {
+    name: &'a String,
+    params: Vec<String>,
+    hash: BTreeMap<String, Json>,
+    template: &'a Option<Template>,
+    inverse: &'a Option<Template>,
+    block: bool
+}
+
+impl<'a> Helper<'a> {
+    fn from_template(ht: &'a HelperTemplate, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<Helper<'a>, RenderError> {
+        let mut evaluated_params = Vec::new();
+        for p in ht.params.iter() {
+            let r = try!(p.render(ctx, registry, rc));
+            evaluated_params.push(r);
+        }
+
+        let mut evaluated_hash = BTreeMap::new();
+        for (k, p) in ht.hash.iter() {
+            let r = try!(p.render(ctx, registry, rc));
+            // subexpress in hash values are all treated as json string for now
+            evaluated_hash.insert(k.clone(), Json::String(r));
+        }
+
+        Ok(Helper {
+            name: &ht.name,
+            params: evaluated_params,
+            hash: evaluated_hash,
+            template: &ht.template,
+            inverse: &ht.inverse,
+            block: ht.block
+        })
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn params(&self) -> &Vec<String> {
+        &self.params
+    }
+
+    pub fn hash(&self) -> &BTreeMap<String, Json> {
+        &self.hash
+    }
+
+    pub fn template(&self) -> Option<&Template> {
+        match *self.template {
+            Some(ref t) => {
+                Some(t)
+            },
+            None => None
+        }
+    }
+
+    pub fn inverse(&self) -> Option<&Template> {
+        match *self.inverse {
+            Some(ref t) => {
+                Some(t)
+            },
+            None => None
+        }
+    }
+
+    pub fn is_block(&self) -> bool {
+        self.block
+    }
+}
+
 pub trait Renderable {
     fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>;
+}
+
+impl Renderable for Parameter {
+    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+        match self {
+            &Parameter::Name(ref n) => {
+                Ok(n.clone())
+            },
+            &Parameter::Subexpression(ref t) => {
+                t.render(ctx, registry, rc)
+            }
+        }
+    }
 }
 
 impl Renderable for Template {
@@ -139,10 +221,11 @@ impl Renderable for TemplateElement {
                 Ok(v.clone())
             },
             Expression(ref v) => {
-                let value = if (*v).starts_with("@") {
-                    rc.get_local_var(v)
+                let name = try!(v.render(ctx, registry, rc));
+                let value = if name.starts_with("@") {
+                    rc.get_local_var(&name)
                 } else {
-                    ctx.navigate(rc.get_path(), v)
+                    ctx.navigate(rc.get_path(), &name)
                 };
                 let rendered = value.render();
                 Ok(rendered.replace("&", "&amp;")
@@ -151,27 +234,29 @@ impl Renderable for TemplateElement {
                    .replace(">", "&gt;"))
             },
             HTMLExpression(ref v) => {
-                let value = if (*v).starts_with("@") {
-                    rc.get_local_var(v)
+                let name = try!(v.render(ctx, registry, rc));
+                let value = if name.starts_with("@") {
+                    rc.get_local_var(&name)
                 } else {
-                    ctx.navigate(rc.get_path(), v)
+                    ctx.navigate(rc.get_path(), &name)
                 };
                 Ok(value.render())
             },
-            HelperExpression(ref helper) | HelperBlock(ref helper) => {
-                match registry.get_helper(helper.name()) {
+            HelperExpression(ref ht) | HelperBlock(ref ht) => {
+                let helper = try!(Helper::from_template(ht, ctx, registry, rc));
+                match registry.get_helper(&ht.name) {
                     Some(d) => {
-                        (**d).call(ctx, helper, registry, rc)
+                        (**d).call(ctx, &helper, registry, rc)
                     },
                     None => {
-                        let meta_helper_name = if helper.is_block() {
+                        let meta_helper_name = if ht.block {
                             "blockHelperMissing"
                         } else {
                             "helperMissing"
                         }.to_string();
                         match registry.get_helper(&meta_helper_name) {
                             Some (md) => {
-                                (**md).call(ctx, helper, registry, rc)
+                                (**md).call(ctx, &helper, registry, rc)
                             }
                             None => {
                                 Err(RenderError{
@@ -203,7 +288,7 @@ fn test_raw_string() {
 fn test_expression() {
     let r = Registry::new();
     let mut rc = RenderContext::new();
-    let element = Expression("hello".to_string());
+    let element = Expression(Parameter::Name("hello".into()));
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "<p></p>".to_string();
 
@@ -219,7 +304,7 @@ fn test_expression() {
 fn test_html_expression() {
     let r = Registry::new();
     let mut rc = RenderContext::new();
-    let element = HTMLExpression("hello".to_string());
+    let element = HTMLExpression(Parameter::Name("hello".into()));
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "world";
     m.insert("hello".to_string(), value.to_string());
@@ -239,7 +324,7 @@ fn test_template() {
     let e1 = RawString("<h1>".to_string());
     elements.push(e1);
 
-    let e2 = Expression("hello".to_string());
+    let e2 = Expression(Parameter::Name("hello".into()));
     elements.push(e2);
 
     let e3 = RawString("</h1>".to_string());
