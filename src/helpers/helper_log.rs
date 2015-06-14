@@ -8,7 +8,7 @@ pub struct LogHelper;
 
 impl HelperDef for LogHelper {
     fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-        let param = h.params().get(0);
+        let param = h.param(0);
 
         if param.is_none() {
             return Err(render_error("Param not found for helper \"log\""));

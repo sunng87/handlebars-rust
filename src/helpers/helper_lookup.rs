@@ -12,8 +12,8 @@ pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
     fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-        let value_param = h.params().get(0);
-        let index_param = h.params().get(1);
+        let value_param = h.param(0);
+        let index_param = h.param(1);
 
         if value_param.is_none() {
             return Err(render_error("Param not found for helper \"lookup\""));
