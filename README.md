@@ -3,12 +3,13 @@ handlebars-rust
 
 Rust templating with Handlebars.
 
-* travis-ci: [![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
-* crates.io: [![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
-* document: [rust-doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html)
+[![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
+[![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[rust-doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html)
 
 Thanks to [@blaenk](https://github.com/blaenk)'s patch,
-handlebars-rust now compiles on both nightly, beta and 1.0.0 channel.
+handlebars-rust now compiles on nightly, beta and 1.0 channel.
 
 ## Why Handlebars?
 
@@ -62,6 +63,7 @@ Run `cargo run --example render` to see results.
 * Parameter and hashes for helper
 * Partials, include
 * Omitting whitespace with `~`
+* Subexpression `{{(foo bar)}}`
 
 Feel free to report an issue if you find something broken. We aren't
 going to implement all features of handlebars-js, but we should have a
