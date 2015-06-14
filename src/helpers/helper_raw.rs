@@ -1,8 +1,7 @@
 use helpers::{HelperDef};
-use template::{Helper};
 use registry::{Registry};
 use context::{Context};
-use render::{RenderContext, RenderError};
+use render::{RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct RawHelper;

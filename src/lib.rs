@@ -174,9 +174,9 @@ extern crate rustc_serialize as serialize;
 extern crate regex;
 extern crate num;
 
-pub use self::template::{Template, TemplateError, Helper};
+pub use self::template::{Template, TemplateError};
 pub use self::registry::Registry as Handlebars;
-pub use self::render::{Renderable, RenderError, RenderContext};
+pub use self::render::{Renderable, RenderError, RenderContext, Helper};
 pub use self::helpers::{HelperDef};
 pub use self::context::{Context, JsonRender, JsonTruthy};
 

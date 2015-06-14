@@ -87,9 +87,9 @@ impl Registry {
 
 #[cfg(test)]
 mod test {
-    use template::{Template, Helper};
+    use template::{Template};
     use registry::{Registry};
-    use render::{RenderContext, Renderable, RenderError};
+    use render::{RenderContext, Renderable, RenderError, Helper};
     use helpers::{HelperDef};
     use context::{Context};
 

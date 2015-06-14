@@ -1,15 +1,14 @@
 use helpers::{HelperDef};
-use template::{Helper};
 use registry::{Registry};
 use context::{Context, JsonTruthy};
-use render::{Renderable, RenderContext, RenderError, render_error, EMPTY};
+use render::{Renderable, RenderContext, RenderError, render_error, EMPTY, Helper};
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
     fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-        let param = h.params().get(0);
+        let param = h.param(0);
 
         if param.is_none() {
             return Err(render_error("Param not found for helper \"with\""));

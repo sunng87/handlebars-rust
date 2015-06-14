@@ -25,4 +25,5 @@ num = "*"
 
 [dev-dependencies]
 env_logger = "*"
+maplit = "*"
 #tojson_macros = "*"

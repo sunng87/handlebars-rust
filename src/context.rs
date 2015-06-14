@@ -9,7 +9,7 @@ pub struct Context {
 }
 
 #[inline]
-fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a String) {
+fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
     for p in (*path).split('/') {
         match p {
             "this" | "." | "" => {
@@ -46,7 +46,7 @@ impl Context {
         }
     }
 
-    pub fn navigate(&self, path: &String, relative_path: &String) -> &Json {
+    pub fn navigate(&self, path: &str, relative_path: &str) -> &Json {
         let mut path_stack :VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, path);
         parse_json_visitor(&mut path_stack, relative_path);
