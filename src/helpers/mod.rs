@@ -50,6 +50,8 @@ pub fn helper_dummy (ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderCon
 
 #[cfg(test)]
 mod test {
+    use std::collections::BTreeMap;
+
     use context::{JsonRender, Context};
     use helpers::{HelperDef};
     use template::Template;
@@ -90,5 +92,35 @@ mod test {
 
         let r1 = handlebars.render("t1", &true);
         assert_eq!(r1.ok().unwrap(), "bar:true->nice".to_string());
+    }
+
+    #[test]
+    fn test_helper_for_subexpression() {
+        let t0 = Template::compile("{{#if (bar 0)}}hello{{^}}world{{/if}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#if (bar 1)}}hello{{^}}world{{/if}}".to_string()).ok().unwrap();
+        let t2 = Template::compile("{{foo value=(bar 0)}}".to_string()).ok().unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
+        handlebars.register_template("t2", t2);
+
+        handlebars.register_helper("helperMissing", Box::new(|_: &Context, h: &Helper, _: &Registry, _: &mut RenderContext| -> Result<String, RenderError>{
+            Ok(format!("{}{}", h.name(), h.param(0).unwrap()))
+        }));
+        handlebars.register_helper("foo", Box::new(|_: &Context, h: &Helper, _: &Registry, _: &mut RenderContext| -> Result<String, RenderError>{
+            Ok(format!("{}", h.hash_get("value").unwrap().as_string().unwrap()))
+        }));
+
+        let mut data = BTreeMap::new();
+        data.insert("bar0".to_string(), true);
+
+        let r0 = handlebars.render("t0", &data);
+        let r1 = handlebars.render("t1", &data);
+        let r2 = handlebars.render("t2", &data);
+
+        assert_eq!(r0.ok().unwrap(), "hello".to_string());
+        assert_eq!(r1.ok().unwrap(), "world".to_string());
+        assert_eq!(r2.ok().unwrap(), "bar0".to_string());
     }
 }

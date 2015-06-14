@@ -149,8 +149,16 @@ impl<'a> Helper<'a> {
         &self.params
     }
 
+    pub fn param(&self, idx: usize) -> Option<&String> {
+        self.params.get(idx)
+    }
+
     pub fn hash(&self) -> &BTreeMap<String, Json> {
         &self.hash
+    }
+
+    pub fn hash_get(&self, key: &str) -> Option<&Json> {
+        self.hash.get(key)
     }
 
     pub fn template(&self) -> Option<&Template> {
@@ -363,4 +371,33 @@ fn test_render_context_promotion_and_demotion() {
 
     assert_eq!(render_context.get_local_var(&"@index".to_string()),
                &0usize.to_json());
+}
+
+#[test]
+fn test_render_subexpression() {
+    let r = Registry::new();
+    let mut rc = RenderContext::new();
+    let mut elements: Vec<TemplateElement> = Vec::new();
+
+    let e1 = RawString("<h1>".to_string());
+    elements.push(e1);
+
+    let e2 = Expression(Parameter::parse("(hello)".into()).ok().unwrap());
+    elements.push(e2);
+
+    let e3 = RawString("</h1>".to_string());
+    elements.push(e3);
+
+    let template = Template {
+        elements: elements
+    };
+
+    let mut m: HashMap<String, String> = HashMap::new();
+    m.insert("hello".to_string(), "world".to_string());
+    m.insert("world".to_string(), "nice".to_string());
+
+    let ctx = Context::wraps(&m);
+
+    assert_eq!(template.render(&ctx, &r, &mut rc).ok().unwrap(),
+               "<h1>nice</h1>".to_string());
 }

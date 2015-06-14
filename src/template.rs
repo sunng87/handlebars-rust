@@ -96,12 +96,32 @@ impl error::Error for TemplateError {
 }
 
 fn find_tokens(source: &String) -> Vec<String> {
-    let tokenizer = Regex::new(r"[^\s\(][^\s]*|\([^\)]*\)").unwrap();
-    tokenizer.captures_iter(&source).map(|c| c.at(0).unwrap().to_string()).collect()
+    let tokenizer = Regex::new(r"[^\s\(\)]+|\([^\)]*\)").unwrap();
+
+    let mut hash_key: Option<&str> = None;
+    let mut results: Vec<String> = vec![];
+    tokenizer.captures_iter(&source).map(|c| c.at(0).unwrap())
+        .fold(&mut results, |r, item| {
+            match hash_key {
+                Some(k) => {
+                    r.push(format!("{}{}", k, item));
+                    hash_key = None
+                },
+                None => {
+                    if item.ends_with("=") {
+                        hash_key = Some(item);
+                    } else {
+                        r.push(item.to_string());
+                    }
+                }
+            }
+            r
+        });
+    results
 }
 
 impl HelperTemplate {
-    fn parse(source: String, block: bool) -> Result<HelperTemplate, TemplateError> {
+    pub fn parse(source: String, block: bool) -> Result<HelperTemplate, TemplateError> {
         // FIXME, cache this regex
         let tokens_vec = find_tokens(&source);
         let mut tokens = tokens_vec.iter();
@@ -139,7 +159,7 @@ impl HelperTemplate {
 }
 
 impl Parameter {
-    fn parse(source: String) -> Result<Parameter, TemplateError> {
+    pub fn parse(source: String) -> Result<Parameter, TemplateError> {
         // move this to static scope when regex! is stable
         let subexpr_regex = Regex::new(r"\(([^\)]+)\)").unwrap();
 
@@ -594,7 +614,7 @@ fn test_white_space_omitter() {
 
 #[test]
 fn test_find_tokens() {
-    let source: String = "hello   good (nice) (hello world)\n\t\t world hello=world hello=(world)".into();
+    let source: String = "hello   good (nice) (hello world)\n\t\t world hello=world hello=(world) hello=(world 0)".into();
     let tokens: Vec<String> = find_tokens(&source);
     assert_eq!(tokens, vec::<String>!["hello".to_string(),
                                       "good".to_string(),
@@ -602,5 +622,6 @@ fn test_find_tokens() {
                                       "(hello world)".to_string(),
                                       "world".to_string(),
                                       "hello=world".to_string(),
-                                      "hello=(world)".to_string()]);
+                                      "hello=(world)".to_string(),
+                                      "hello=(world 0)".to_string()]);
 }
