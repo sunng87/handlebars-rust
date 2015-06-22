@@ -75,17 +75,17 @@
 //! }
 //!
 //! fn main() {
-//!   let source = "hello {{world}}";
+//!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();
-//!   handlebars.register_template_string("helloworld", source.to_string())
+//!   handlebars.register_template_string("hello", source.to_string())
 //!           .ok().unwrap();
 //!
-//!   let mut data = Person {
+//!   let data = Person {
 //!       name: "Ning Sun".to_string(),
 //!       age: 27
 //!   };
-//!   let result = handlebars.render("helloworld", &data);
+//!   let result = handlebars.render("hello", &data);
 //! }
 //! ```
 //!
