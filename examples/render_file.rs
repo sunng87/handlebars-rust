@@ -1,0 +1,83 @@
+extern crate env_logger;
+extern crate handlebars;
+extern crate rustc_serialize;
+
+use std::io::prelude::*;
+use std::io;
+use std::fs::File;
+use std::path::Path;
+use std::collections::BTreeMap;
+
+use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context};
+use rustc_serialize::json::{Json, ToJson};
+
+struct Team {
+    name: String,
+    pts: u16
+}
+
+impl ToJson for Team {
+    fn to_json(&self) -> Json {
+        let mut m: BTreeMap<String, Json> = BTreeMap::new();
+        m.insert("name".to_string(), self.name.to_json());
+        m.insert("pts".to_string(), self.pts.to_json());
+        m.to_json()
+    }
+}
+
+fn format_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+    let param = h.params().get(0).unwrap();
+    let rendered = format!("{} pts", c.navigate(rc.get_path(), param));
+    try!(rc.writer.write(rendered.into_bytes().as_ref()));
+    Ok(())
+}
+
+fn load_template(name: &str) -> io::Result<String> {
+    let path = Path::new(name);
+
+    let mut file = try!(File::open(path));
+    let mut s = String::new();
+    try!(file.read_to_string(&mut s));
+    Ok(s)
+}
+
+fn make_data () -> BTreeMap<String, Json> {
+    let mut data = BTreeMap::new();
+
+    data.insert("year".to_string(), "2015".to_json());
+
+    let teams = vec![ Team { name: "Jiangsu Sainty".to_string(),
+                             pts: 43u16 },
+                      Team { name: "Beijing Guoan".to_string(),
+                             pts: 27u16 },
+                      Team { name: "Guangzhou Evergrand".to_string(),
+                             pts: 22u16 },
+                      Team { name: "Shandong Luneng".to_string(),
+                             pts: 12u16 } ];
+
+    data.insert("teams".to_string(), teams.to_json());
+    data
+}
+
+fn main() {
+    env_logger::init().unwrap();
+    let mut handlebars = Handlebars::new();
+
+    let t = load_template("./examples/template.hbs").ok().unwrap();
+    handlebars.register_template_string("table", t).ok().unwrap();
+
+    handlebars.register_helper("format", Box::new(format_helper));
+//    handlebars.register_helper("format", Box::new(FORMAT_HELPER));
+
+    let data = make_data();
+
+    if let Ok(ref mut file) = File::create("target/table.html") {
+        if let Ok(_) = handlebars.renderw("table", &data, file) {
+            println!("target/table.html generated");
+        } else {
+            println!("Failed to geneate target/table.html");
+        }
+    } else {
+        println!("Failed to create target/table.html");
+    }
+}
