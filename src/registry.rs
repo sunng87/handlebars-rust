@@ -1,5 +1,8 @@
 use std::collections::HashMap;
+use std::io::Write;
+
 use serialize::json::ToJson;
+
 use template::{Template, TemplateError};
 use render::{Renderable, RenderError, RenderContext};
 use helpers::{HelperDef};
@@ -71,23 +74,27 @@ impl Registry {
         self.templates.clear();
     }
 
-    pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError>
-        where T: ToJson {
-            let template = self.get_template(&name.to_string());
-            let context = Context::wraps(ctx);
-            let mut writer = StringWriter::new();
-            if let Some(t) = template {
-                {
-                    let mut render_context = RenderContext::new(&mut writer);
-                    try!((*t).render(&context, self, &mut render_context));
-                }
-                Ok(writer.to_string())
-            } else {
-                Err(RenderError{
-                    desc: "Template not found."
-                })
-            }
+    pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError> where T: ToJson {
+        let mut writer = StringWriter::new();
+        {
+            try!(self.renderw(name, ctx, &mut writer));
         }
+        Ok(writer.to_string())
+    }
+
+    pub fn renderw<T>(&self, name: &str, ctx: &T, writer: &mut Write) -> Result<(), RenderError> where T: ToJson {
+        let template = self.get_template(&name.to_string());
+        let context = Context::wraps(ctx);
+
+        if let Some(t) = template {
+            let mut render_context = RenderContext::new(writer);
+            (*t).render(&context, self, &mut render_context)
+        } else {
+            Err(RenderError{
+                desc: "Template not found."
+            })
+        }
+    }
 }
 
 #[cfg(test)]
