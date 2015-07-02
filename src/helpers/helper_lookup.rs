@@ -5,13 +5,13 @@ use serialize::json::Json;
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context, JsonRender};
-use render::{Renderable, RenderContext, RenderError, render_error, EMPTY, Helper};
+use render::{Renderable, RenderContext, RenderError, render_error, Helper};
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let value_param = h.param(0);
         let index_param = h.param(1);
 
@@ -26,17 +26,27 @@ impl HelperDef for LookupHelper {
         match *value {
             Json::Array (ref l) => {
                 let index_param_name = index_param.unwrap();
-                let index = rc.get_local_var(index_param_name);
-                match *index {
-                    Json::U64(i) => {
-                        match l.get(i.to_usize().unwrap()) {
-                            Some(v) => Ok(v.render()),
-                            None => Ok(EMPTY.to_string())
+                let render = {
+                    let index = rc.get_local_var(index_param_name);
+                    match *index {
+                        Json::U64(i) => {
+                            if let Some(v) = l.get(i.to_usize().unwrap()) {
+                                Some(v.render())
+                            } else {
+                                None
+                            }
+                        }
+                        _ => {
+                            None
+
                         }
                     }
-                    _ => {
-                        Err(render_error("Invalid index name in \"lookup\""))
-                    }
+                };
+                if let Some(r) = render {
+                    try!(rc.writer.write(r.into_bytes().as_ref()));
+                    Ok(())
+                } else {
+                    Err(render_error("Invalid index name in \"lookup\""))
                 }
             },
 

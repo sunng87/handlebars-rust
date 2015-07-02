@@ -1,14 +1,15 @@
 use std::collections::{HashMap, BTreeMap};
 use std::error;
 use std::fmt;
+use std::io::Write;
+use std::io::Error as IOError;
 use serialize::json::Json;
 
 use template::{Template, TemplateElement, Parameter, HelperTemplate};
 use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression, HelperExpression};
 use registry::Registry;
 use context::{Context, JsonRender};
-
-pub static EMPTY: &'static str = "";
+use support::str::StringWriter;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RenderError {
@@ -27,20 +28,38 @@ impl error::Error for RenderError {
     }
 }
 
-pub struct RenderContext {
+impl From<IOError> for RenderError {
+    fn from(_: IOError) -> RenderError {
+        render_error("IO Error")
+    }
+}
+
+pub struct RenderContext<'a> {
     partials: HashMap<String, Template>,
     path: String,
     local_variables: HashMap<String, Json>,
-    default_var: Json
+    default_var: Json,
+    pub writer: &'a mut Write
 }
 
-impl RenderContext {
-    pub fn new() -> RenderContext {
+impl<'a> RenderContext<'a> {
+    pub fn new(w: &'a mut Write) -> RenderContext<'a> {
         RenderContext {
             partials: HashMap::new(),
             path: ".".to_string(),
             local_variables: HashMap::new(),
-            default_var: Json::Null
+            default_var: Json::Null,
+            writer: w
+        }
+    }
+
+    pub fn with_writer<'b>(&self, w: &'b mut Write) -> RenderContext<'b> {
+        RenderContext {
+            partials: self.partials.clone(),
+            path: self.path.clone(),
+            local_variables: self.local_variables.clone(),
+            default_var: self.default_var.clone(),
+            writer: w
         }
     }
 
@@ -105,6 +124,10 @@ impl RenderContext {
             None => &self.default_var
         }
     }
+
+    pub fn writer(&mut self) -> &mut Write {
+        self.writer
+    }
 }
 
 pub struct Helper<'a> {
@@ -116,17 +139,17 @@ pub struct Helper<'a> {
     block: bool
 }
 
-impl<'a> Helper<'a> {
-    fn from_template(ht: &'a HelperTemplate, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<Helper<'a>, RenderError> {
+impl<'a, 'b> Helper<'a> {
+    fn from_template(ht: &'a HelperTemplate, ctx: &Context, registry: &Registry, rc: &'b mut RenderContext) -> Result<Helper<'a>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in ht.params.iter() {
-            let r = try!(p.render(ctx, registry, rc));
+            let r = try!(p.renders(ctx, registry, rc));
             evaluated_params.push(r);
         }
 
         let mut evaluated_hash = BTreeMap::new();
         for (k, p) in ht.hash.iter() {
-            let r = try!(p.render(ctx, registry, rc));
+            let r = try!(p.renders(ctx, registry, rc));
             // subexpress in hash values are all treated as json string for now
             evaluated_hash.insert(k.clone(), Json::String(r));
         }
@@ -185,34 +208,44 @@ impl<'a> Helper<'a> {
 }
 
 pub trait Renderable {
-    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>;
+    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
 
-impl Renderable for Parameter {
-    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+
+impl Parameter {
+    fn renders(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         match self {
             &Parameter::Name(ref n) => {
                 Ok(n.clone())
             },
             &Parameter::Subexpression(ref t) => {
-                t.render(ctx, registry, rc)
+                let mut local_writer = StringWriter::new();
+                let result = {
+                    let mut local_rc = rc.with_writer(&mut local_writer);
+                    t.render(ctx, registry, &mut local_rc)
+                };
+
+                match result {
+                    Ok(_) => {
+                        Ok(local_writer.to_string())
+                    },
+                    Err(e) => {
+                        Err(e)
+                    }
+                }
             }
         }
     }
 }
 
 impl Renderable for Template {
-    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-        let mut output = String::new();
+    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let iter = self.elements.iter();
         for t in iter {
             let c = ctx;
-            match t.render(c, registry, rc) {
-                Ok(r) => output.push_str(r.as_ref()),
-                Err(e) => return Err(e)
-            }
+            try!(t.render(c, registry, rc))
         }
-        Ok(output)
+        Ok(())
     }
 }
 
@@ -223,32 +256,41 @@ pub fn render_error(desc: &'static str) -> RenderError {
 }
 
 impl Renderable for TemplateElement {
-    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         match *self {
             RawString(ref v) => {
-                Ok(v.clone())
+                try!(rc.writer.write(v.clone().into_bytes().as_ref()));
+                Ok(())
             },
             Expression(ref v) => {
-                let name = try!(v.render(ctx, registry, rc));
-                let value = if name.starts_with("@") {
-                    rc.get_local_var(&name)
-                } else {
-                    ctx.navigate(rc.get_path(), &name)
+                let name = try!(v.renders(ctx, registry, rc));
+                let rendered = {
+                    let value = if name.starts_with("@") {
+                        rc.get_local_var(&name)
+                    } else {
+                        ctx.navigate(rc.get_path(), &name)
+                    };
+                    value.render()
                 };
-                let rendered = value.render();
-                Ok(rendered.replace("&", "&amp;")
-                   .replace("\"", "&quot;")
-                   .replace("<", "&lt;")
-                   .replace(">", "&gt;"))
+                let output = rendered.replace("&", "&amp;")
+                    .replace("\"", "&quot;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;");
+                try!(rc.writer.write(output.into_bytes().as_ref()));
+                Ok(())
             },
             HTMLExpression(ref v) => {
-                let name = try!(v.render(ctx, registry, rc));
-                let value = if name.starts_with("@") {
-                    rc.get_local_var(&name)
-                } else {
-                    ctx.navigate(rc.get_path(), &name)
+                let name = try!(v.renders(ctx, registry, rc));
+                let rendered = {
+                    let value = if name.starts_with("@") {
+                        rc.get_local_var(&name)
+                    } else {
+                        ctx.navigate(rc.get_path(), &name)
+                    };
+                    value.render()
                 };
-                Ok(value.render())
+                try!(rc.writer.write(rendered.into_bytes().as_ref()));
+                Ok(())
             },
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
                 let helper = try!(Helper::from_template(ht, ctx, registry, rc));
@@ -276,7 +318,7 @@ impl Renderable for TemplateElement {
                 }
             },
             Comment(_) => {
-                Ok(EMPTY.to_string())
+                Ok(())
             }
         }
     }
@@ -285,80 +327,95 @@ impl Renderable for TemplateElement {
 #[test]
 fn test_raw_string() {
     let r = Registry::new();
-    let mut rc = RenderContext::new();
-    let raw_string = RawString("<h1>hello world</h1>".to_string());
-    assert_eq!(raw_string.render(
-        &Context::null(), &r, &mut rc).ok().unwrap(),
-               "<h1>hello world</h1>".to_string());
+    let mut sw = StringWriter::new();
+    {
+        let mut rc = RenderContext::new(&mut sw);
+        let raw_string = RawString("<h1>hello world</h1>".to_string());
+
+        raw_string.render(&Context::null(), &r, &mut rc).ok().unwrap();
+    }
+    assert_eq!(sw.to_string(), "<h1>hello world</h1>".to_string());
 }
 
 #[test]
 fn test_expression() {
     let r = Registry::new();
-    let mut rc = RenderContext::new();
-    let element = Expression(Parameter::Name("hello".into()));
-    let mut m: HashMap<String, String> = HashMap::new();
-    let value = "<p></p>".to_string();
+    let mut sw = StringWriter::new();
+    {
+        let mut rc = RenderContext::new(&mut sw);
+        let element = Expression(Parameter::Name("hello".into()));
+        let mut m: HashMap<String, String> = HashMap::new();
+        let value = "<p></p>".to_string();
 
-    m.insert("hello".to_string(), value);
+        m.insert("hello".to_string(), value);
 
-    let ctx = Context::wraps(&m);
+        let ctx = Context::wraps(&m);
 
-    assert_eq!(element.render(&ctx, &r, &mut rc).ok().unwrap(),
-               "&lt;p&gt;&lt;/p&gt;".to_string());
+        element.render(&ctx, &r, &mut rc).ok().unwrap();
+    }
+
+    assert_eq!(sw.to_string(), "&lt;p&gt;&lt;/p&gt;".to_string());
 }
 
 #[test]
 fn test_html_expression() {
     let r = Registry::new();
-    let mut rc = RenderContext::new();
-    let element = HTMLExpression(Parameter::Name("hello".into()));
-    let mut m: HashMap<String, String> = HashMap::new();
+    let mut sw = StringWriter::new();
     let value = "world";
-    m.insert("hello".to_string(), value.to_string());
+    {
+        let mut rc = RenderContext::new(&mut sw);
+        let element = HTMLExpression(Parameter::Name("hello".into()));
+        let mut m: HashMap<String, String> = HashMap::new();
 
-    let ctx = Context::wraps(&m);
+        m.insert("hello".to_string(), value.to_string());
 
-    assert_eq!(element.render(&ctx, &r, &mut rc).ok().unwrap(),
-               value.to_string());
+        let ctx = Context::wraps(&m);
+        element.render(&ctx, &r, &mut rc).ok().unwrap();
+    }
+
+    assert_eq!(sw.to_string(), value.to_string());
 }
 
 #[test]
 fn test_template() {
     let r = Registry::new();
-    let mut rc = RenderContext::new();
-    let mut elements: Vec<TemplateElement> = Vec::new();
+    let mut sw = StringWriter::new();
+    {
+        let mut rc = RenderContext::new(&mut sw);
+        let mut elements: Vec<TemplateElement> = Vec::new();
 
-    let e1 = RawString("<h1>".to_string());
-    elements.push(e1);
+        let e1 = RawString("<h1>".to_string());
+        elements.push(e1);
 
-    let e2 = Expression(Parameter::Name("hello".into()));
-    elements.push(e2);
+        let e2 = Expression(Parameter::Name("hello".into()));
+        elements.push(e2);
 
-    let e3 = RawString("</h1>".to_string());
-    elements.push(e3);
+        let e3 = RawString("</h1>".to_string());
+        elements.push(e3);
 
-    let e4 = Comment("".to_string());
-    elements.push(e4);
+        let e4 = Comment("".to_string());
+        elements.push(e4);
 
-    let template = Template {
-        elements: elements
-    };
+        let template = Template {
+            elements: elements
+        };
 
-    let mut m: HashMap<String, String> = HashMap::new();
-    let value = "world".to_string();
-    m.insert("hello".to_string(), value);
+        let mut m: HashMap<String, String> = HashMap::new();
+        let value = "world".to_string();
+        m.insert("hello".to_string(), value);
 
-    let ctx = Context::wraps(&m);
+        let ctx = Context::wraps(&m);
+        template.render(&ctx, &r, &mut rc).ok().unwrap();
+    }
 
-    assert_eq!(template.render(&ctx, &r, &mut rc).ok().unwrap(),
-               "<h1>world</h1>".to_string());
+    assert_eq!(sw.to_string(), "<h1>world</h1>".to_string());
 }
 
 #[test]
 fn test_render_context_promotion_and_demotion() {
     use serialize::json::ToJson;
-    let mut render_context = RenderContext::new();
+    let mut sw = StringWriter::new();
+    let mut render_context = RenderContext::new(&mut sw);
 
     render_context.set_local_var("@index".to_string(), 0usize.to_json());
 
@@ -376,28 +433,31 @@ fn test_render_context_promotion_and_demotion() {
 #[test]
 fn test_render_subexpression() {
     let r = Registry::new();
-    let mut rc = RenderContext::new();
-    let mut elements: Vec<TemplateElement> = Vec::new();
+    let mut sw =StringWriter::new();
+    {
+        let mut rc = RenderContext::new(&mut sw);
+        let mut elements: Vec<TemplateElement> = Vec::new();
 
-    let e1 = RawString("<h1>".to_string());
-    elements.push(e1);
+        let e1 = RawString("<h1>".to_string());
+        elements.push(e1);
 
-    let e2 = Expression(Parameter::parse("(hello)".into()).ok().unwrap());
-    elements.push(e2);
+        let e2 = Expression(Parameter::parse("(hello)".into()).ok().unwrap());
+        elements.push(e2);
 
-    let e3 = RawString("</h1>".to_string());
-    elements.push(e3);
+        let e3 = RawString("</h1>".to_string());
+        elements.push(e3);
 
-    let template = Template {
-        elements: elements
-    };
+        let template = Template {
+            elements: elements
+        };
 
-    let mut m: HashMap<String, String> = HashMap::new();
-    m.insert("hello".to_string(), "world".to_string());
-    m.insert("world".to_string(), "nice".to_string());
+        let mut m: HashMap<String, String> = HashMap::new();
+        m.insert("hello".to_string(), "world".to_string());
+        m.insert("world".to_string(), "nice".to_string());
 
-    let ctx = Context::wraps(&m);
+        let ctx = Context::wraps(&m);
+        template.render(&ctx, &r, &mut rc).ok().unwrap();
+    }
 
-    assert_eq!(template.render(&ctx, &r, &mut rc).ok().unwrap(),
-               "<h1>nice</h1>".to_string());
+    assert_eq!(sw.to_string(), "<h1>nice</h1>".to_string());
 }

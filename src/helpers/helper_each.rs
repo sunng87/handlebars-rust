@@ -3,13 +3,13 @@ use serialize::json::{Json, ToJson};
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context};
-use render::{Renderable, RenderContext, RenderError, render_error, EMPTY, Helper};
+use render::{Renderable, RenderContext, RenderError, render_error, Helper};
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;
 
 impl HelperDef for EachHelper{
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = h.param(0);
 
         if param.is_none() {
@@ -22,7 +22,6 @@ impl HelperDef for EachHelper{
             Some(t) => {
                 let path = rc.get_path().clone();
                 let value = c.navigate(&path, param.unwrap());
-                let mut buffer = String::new();
 
                 rc.promote_local_vars();
 
@@ -36,18 +35,9 @@ impl HelperDef for EachHelper{
 
                             let new_path = format!("{}/{}[{}]", path, param.unwrap(), i);
                             rc.set_path(new_path);
-
-                            match t.render(c, r, rc) {
-                                Ok(r) => {
-                                    buffer.push_str(r.as_ref());
-                                }
-                                Err(r) => {
-                                    return Err(r);
-                                }
-                            }
-
+                            try!(t.render(c, r, rc));
                         }
-                        Ok(buffer)
+                        Ok(())
                     },
                     Json::Object(ref obj) => {
                         let mut first:bool = true;
@@ -60,17 +50,10 @@ impl HelperDef for EachHelper{
                             rc.set_local_var("@key".to_string(), k.to_json());
                             let new_path = format!("{}/{}/{}", path, param.unwrap(), k);
                             rc.set_path(new_path);
-                            match t.render(c, r, rc) {
-                                Ok(r) => {
-                                    buffer.push_str(r.as_ref());
-                                }
-                                Err(r) => {
-                                    return Err(r);
-                                }
-                            }
+                            try!(t.render(c, r, rc));
                         }
 
-                        Ok(buffer)
+                        Ok(())
                     },
                     _ => {
                         Err(render_error("Param is not an iteratable."))
@@ -80,7 +63,7 @@ impl HelperDef for EachHelper{
                 rc.demote_local_vars();
                 rendered
             },
-            None => Ok(EMPTY.to_string())
+            None => Ok(())
         }
     }
 }

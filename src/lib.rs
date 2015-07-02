@@ -97,33 +97,38 @@
 //!
 //! extern crate handlebars;
 //!
-//! use handlebars::{Handlebars, HelperDef, RenderError, RenderContext, Helper, Context};
+//! use std::io::Write;
+//! use handlebars::{Handlebars, HelperDef, RenderError, RenderContext, Helper, Context, JsonRender};
 //!
 //! // implement by a structure impls HelperDef
 //! #[derive(Clone, Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call(&self, c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<String, RenderError> {
+//!   fn call(&self, c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
 //!     let param = h.params().get(0).unwrap();
 //!
 //!     // get value from context data
 //!     // rc.get_path() is current json parent path, you should always use it like this
 //!     // param is the key of value you want to display
 //!     let value = c.navigate(rc.get_path(), param);
-//!     Ok(format!("My helper dumps: {} ", value))
+//!     try!(rc.writer.write("Ny helper dumps: ".as_bytes()));
+//!     try!(rc.writer.write(value.render().into_bytes().as_ref()));
+//!     Ok(())
 //!   }
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<String, RenderError> {
+//! fn another_simple_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
 //!     let param = h.params().get(0).unwrap();
 //!
 //!     // get value from context data
 //!     // rc.get_path() is current json parent path, you should always use it like this
 //!     // param is the key of value you want to display
 //!     let value = c.navigate(rc.get_path(), param);
-//!     Ok(format!("My second helper dumps: {} ", value))
+//!     try!(rc.writer.write("My second helper dumps: ".as_bytes()));
+//!     try!(rc.writer.write(value.render().into_bytes().as_ref()));
+//!     Ok(())
 //! }
 //!
 //!
@@ -133,8 +138,9 @@
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
-//!       Box::new(|c: &Context, h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> Result<String, RenderError>{
-//!         Ok(format!("..."))
+//!       Box::new(|c: &Context, h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> Result<(), RenderError>{
+//!         try!(rc.writer.write("...".as_bytes()));
+//!         Ok(())
 //!       }));
 //!
 //!   //...

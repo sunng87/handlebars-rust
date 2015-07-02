@@ -5,6 +5,7 @@ use render::{Renderable, RenderError, RenderContext};
 use helpers::{HelperDef};
 use context::{Context};
 use helpers;
+use support::str::StringWriter;
 
 pub struct Registry {
     templates: HashMap<String, Template>,
@@ -74,9 +75,13 @@ impl Registry {
         where T: ToJson {
             let template = self.get_template(&name.to_string());
             let context = Context::wraps(ctx);
-            let mut render_context = RenderContext::new();
+            let mut writer = StringWriter::new();
             if let Some(t) = template {
-                (*t).render(&context, self, &mut render_context)
+                {
+                    let mut render_context = RenderContext::new(&mut writer);
+                    try!((*t).render(&context, self, &mut render_context));
+                }
+                Ok(writer.to_string())
             } else {
                 Err(RenderError{
                     desc: "Template not found."
@@ -97,8 +102,9 @@ mod test {
     struct DummyHelper;
 
     impl HelperDef for DummyHelper {
-        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-            h.template().unwrap().render(c, r, rc)
+        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+            try!(h.template().unwrap().render(c, r, rc));
+            Ok(())
         }
     }
 

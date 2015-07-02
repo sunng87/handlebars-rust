@@ -25,9 +25,11 @@ impl ToJson for Team {
     }
 }
 
-fn format_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<String, RenderError> {
+fn format_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
     let param = h.params().get(0).unwrap();
-    Ok(format!("{} pts", c.navigate(rc.get_path(), param)))
+    let rendered = format!("{} pts", c.navigate(rc.get_path(), param));
+    try!(rc.writer.write(rendered.into_bytes().as_ref()));
+    Ok(())
 }
 
 fn load_template(name: &str) -> io::Result<String> {
