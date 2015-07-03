@@ -1,7 +1,7 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context, JsonTruthy};
-use render::{Renderable, RenderContext, RenderError, render_error, EMPTY, Helper};
+use render::{Renderable, RenderContext, RenderError, render_error, Helper};
 
 #[derive(Clone, Copy)]
 pub struct IfHelper {
@@ -9,7 +9,7 @@ pub struct IfHelper {
 }
 
 impl HelperDef for IfHelper{
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = h.param(0);
 
         if param.is_none() {
@@ -31,7 +31,7 @@ impl HelperDef for IfHelper{
         let tmpl = if value { h.template() } else { h.inverse() };
         match tmpl {
             Some(ref t) => t.render(c, r, rc),
-            None => Ok(EMPTY.to_string())
+            None => Ok(())
         }
     }
 }

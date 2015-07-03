@@ -1,13 +1,13 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context};
-use render::{RenderContext, RenderError, render_error, EMPTY, Helper};
+use render::{RenderContext, RenderError, render_error, Helper};
 
 #[derive(Clone, Copy)]
 pub struct LogHelper;
 
 impl HelperDef for LogHelper {
-    fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = h.param(0);
 
         if param.is_none() {
@@ -24,7 +24,7 @@ impl HelperDef for LogHelper {
 
         info!("{}: {}", name, value);
 
-        Ok(EMPTY.to_string())
+        Ok(())
     }
 }
 

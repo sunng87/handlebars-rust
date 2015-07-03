@@ -7,19 +7,18 @@ use render::{RenderContext, RenderError, Helper};
 pub struct RawHelper;
 
 impl HelperDef for RawHelper {
-    fn call(&self, _: &Context, h: &Helper, _: &Registry, _: &mut RenderContext) -> Result<String, RenderError> {
-        let mut buf = String::new();
+    fn call(&self, _: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let tpl = h.template();
         if tpl.is_some() {
-            buf.push_str(tpl.unwrap().to_string().as_ref());
+            try!(rc.writer.write(tpl.unwrap().to_string().into_bytes().as_ref()));
         }
         let ivs = h.inverse();
         if ivs.is_some() {
-            buf.push_str("{{else}}");
-            buf.push_str(ivs.unwrap().to_string().as_ref());
+            try!(rc.writer.write("{{else}}".to_owned().into_bytes().as_ref()));
+            try!(rc.writer.write(ivs.unwrap().to_string().into_bytes().as_ref()));
         }
 
-        Ok(buf)
+        Ok(())
     }
 }
 

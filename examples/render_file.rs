@@ -70,5 +70,14 @@ fn main() {
 //    handlebars.register_helper("format", Box::new(FORMAT_HELPER));
 
     let data = make_data();
-    println!("{}", handlebars.render("table", &data).ok().unwrap());
+
+    if let Ok(ref mut file) = File::create("target/table.html") {
+        if let Ok(_) = handlebars.renderw("table", &data, file) {
+            println!("target/table.html generated");
+        } else {
+            println!("Failed to geneate target/table.html");
+        }
+    } else {
+        println!("Failed to create target/table.html");
+    }
 }

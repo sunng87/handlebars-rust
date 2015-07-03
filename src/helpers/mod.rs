@@ -22,12 +22,12 @@ pub use self::helper_log::{LOG_HELPER};
 /// By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
 ///
 pub trait HelperDef: Send + Sync {
-    fn call(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>;
+    fn call(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
 
 /// implement HelperDef for bare function so we can use function as helper
-impl<F: Send + Sync + for<'a, 'b, 'c, 'd> Fn(&'a Context, &'b Helper, &'c Registry, &'d mut RenderContext) -> Result<String, RenderError>> HelperDef for F {
-    fn call(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError>{
+impl<F: Send + Sync + for<'a, 'b, 'c, 'd, 'e> Fn(&'a Context, &'b Helper, &'c Registry, &'d mut RenderContext) -> Result<(), RenderError>> HelperDef for F {
+    fn call(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>{
         (*self)(ctx, h, r, rc)
     }
 }
@@ -62,15 +62,19 @@ mod test {
     struct MetaHelper;
 
     impl HelperDef for MetaHelper {
-        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
             let v = c.navigate(rc.get_path(), h.params().get(0).unwrap());
 
-            let r = if !h.is_block() {
-                format!("{}:{}", h.name(), v.render())
+            if !h.is_block() {
+                let output = format!("{}:{}", h.name(), v.render());
+                try!(rc.writer.write(output.into_bytes().as_ref()));
             } else {
-                format!("{}:{}->{}", h.name(), v.render(), h.template().unwrap().render(c, r, rc).ok().unwrap())
+                let output = format!("{}:{}", h.name(), v.render());
+                try!(rc.writer.write(output.into_bytes().as_ref()));
+                try!(rc.writer.write("->".as_bytes()));
+                try!(h.template().unwrap().render(c, r, rc));
             };
-            Ok(r.to_string())
+            Ok(())
         }
     }
 
@@ -105,11 +109,15 @@ mod test {
         handlebars.register_template("t1", t1);
         handlebars.register_template("t2", t2);
 
-        handlebars.register_helper("helperMissing", Box::new(|_: &Context, h: &Helper, _: &Registry, _: &mut RenderContext| -> Result<String, RenderError>{
-            Ok(format!("{}{}", h.name(), h.param(0).unwrap()))
+        handlebars.register_helper("helperMissing", Box::new(|_: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError>{
+            let output = format!("{}{}", h.name(), h.param(0).unwrap());
+            try!(rc.writer.write(output.into_bytes().as_ref()));
+            Ok(())
         }));
-        handlebars.register_helper("foo", Box::new(|_: &Context, h: &Helper, _: &Registry, _: &mut RenderContext| -> Result<String, RenderError>{
-            Ok(format!("{}", h.hash_get("value").unwrap().as_string().unwrap()))
+        handlebars.register_helper("foo", Box::new(|_: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError>{
+            let output = format!("{}", h.hash_get("value").unwrap().as_string().unwrap());
+            try!(rc.writer.write(output.into_bytes().as_ref()));
+            Ok(())
         }));
 
         let mut data = BTreeMap::new();

@@ -1,7 +1,7 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context};
-use render::{Renderable, RenderContext, RenderError, render_error, EMPTY, Helper};
+use render::{Renderable, RenderContext, RenderError, render_error, Helper};
 
 #[derive(Clone, Copy)]
 pub struct IncludeHelper;
@@ -13,7 +13,7 @@ pub struct BlockHelper;
 pub struct PartialHelper;
 
 impl HelperDef for IncludeHelper {
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {
@@ -34,7 +34,7 @@ impl HelperDef for IncludeHelper {
 }
 
 impl HelperDef for BlockHelper {
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {
@@ -55,7 +55,7 @@ impl HelperDef for BlockHelper {
 }
 
 impl HelperDef for PartialHelper {
-    fn call(&self, _: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, _: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = h.params().get(0);
 
         if param.is_none() {
@@ -63,7 +63,7 @@ impl HelperDef for PartialHelper {
         }
 
         rc.set_partial(param.unwrap().clone(), h.template().unwrap().clone());
-        Ok(EMPTY.to_string())
+        Ok(())
     }
 }
 

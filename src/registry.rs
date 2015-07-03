@@ -1,10 +1,14 @@
 use std::collections::HashMap;
+use std::io::Write;
+
 use serialize::json::ToJson;
+
 use template::{Template, TemplateError};
 use render::{Renderable, RenderError, RenderContext};
 use helpers::{HelperDef};
 use context::{Context};
 use helpers;
+use support::str::StringWriter;
 
 pub struct Registry {
     templates: HashMap<String, Template>,
@@ -70,35 +74,47 @@ impl Registry {
         self.templates.clear();
     }
 
-    pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError>
-        where T: ToJson {
-            let template = self.get_template(&name.to_string());
-            let context = Context::wraps(ctx);
-            let mut render_context = RenderContext::new();
-            if let Some(t) = template {
-                (*t).render(&context, self, &mut render_context)
-            } else {
-                Err(RenderError{
-                    desc: "Template not found."
-                })
-            }
+    pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError> where T: ToJson {
+        let mut writer = StringWriter::new();
+        {
+            try!(self.renderw(name, ctx, &mut writer));
         }
+        Ok(writer.to_string())
+    }
+
+    pub fn renderw<T>(&self, name: &str, ctx: &T, writer: &mut Write) -> Result<(), RenderError> where T: ToJson {
+        let template = self.get_template(&name.to_string());
+        let context = Context::wraps(ctx);
+
+        if let Some(t) = template {
+            let mut render_context = RenderContext::new(writer);
+            (*t).render(&context, self, &mut render_context)
+        } else {
+            Err(RenderError{
+                desc: "Template not found."
+            })
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use serialize::json::Json;
+
     use template::{Template};
     use registry::{Registry};
     use render::{RenderContext, Renderable, RenderError, Helper};
     use helpers::{HelperDef};
     use context::{Context};
+    use support::str::StringWriter;
 
     #[derive(Clone, Copy)]
     struct DummyHelper;
 
     impl HelperDef for DummyHelper {
-        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-            h.template().unwrap().render(c, r, rc)
+        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+            try!(h.template().unwrap().render(c, r, rc));
+            Ok(())
         }
     }
 
@@ -128,5 +144,23 @@ mod test {
 
         // built-in helpers plus 1
         assert_eq!(r.helpers.len(), 10+1);
+    }
+
+    #[test]
+    fn test_renderw() {
+        let mut r = Registry::new();
+
+        let t = Template::compile("<h1></h1>".to_string()).ok().unwrap();
+        r.register_template("index", t.clone());
+
+        let mut sw = StringWriter::new();
+        let data = Json::Null;
+
+        {
+            r.renderw("index", &data, &mut sw).ok().unwrap();
+        }
+
+        assert_eq!("<h1></h1>".to_string(), sw.to_string());
+
     }
 }

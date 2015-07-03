@@ -1,13 +1,13 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context, JsonTruthy};
-use render::{Renderable, RenderContext, RenderError, render_error, EMPTY, Helper};
+use render::{Renderable, RenderContext, RenderError, render_error, Helper};
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = h.param(0);
 
         if param.is_none() {
@@ -33,7 +33,7 @@ impl HelperDef for WithHelper {
 
         let rendered = match template {
             Some(t) => t.render(c, r, rc),
-            None => Ok(EMPTY.to_string())
+            None => Ok(())
         };
 
         rc.set_path(path);
