@@ -99,11 +99,14 @@ impl Registry {
 
 #[cfg(test)]
 mod test {
+    use serialize::json::Json;
+
     use template::{Template};
     use registry::{Registry};
     use render::{RenderContext, Renderable, RenderError, Helper};
     use helpers::{HelperDef};
     use context::{Context};
+    use support::str::StringWriter;
 
     #[derive(Clone, Copy)]
     struct DummyHelper;
@@ -141,5 +144,23 @@ mod test {
 
         // built-in helpers plus 1
         assert_eq!(r.helpers.len(), 10+1);
+    }
+
+    #[test]
+    fn test_renderw() {
+        let mut r = Registry::new();
+
+        let t = Template::compile("<h1></h1>".to_string()).ok().unwrap();
+        r.register_template("index", t.clone());
+
+        let mut sw = StringWriter::new();
+        let data = Json::Null;
+
+        {
+            r.renderw("index", &data, &mut sw).ok().unwrap();
+        }
+
+        assert_eq!("<h1></h1>".to_string(), sw.to_string());
+
     }
 }
