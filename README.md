@@ -7,10 +7,26 @@ Rust templating with Handlebars.
 [![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[rust-doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html)
 
 Thanks to [@blaenk](https://github.com/blaenk)'s patch,
 handlebars-rust now compiles on nightly, beta and 1.0 channel.
+
+## Documents
+
+[Rust doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html).
+
+## Usage
+
+Check examples in the source. The example shows you how to:
+
+* Create a `Handlebars` and register the template from files
+* Create a custom Helper with closure or struct implementing `HelperDef`, and register it
+* Render something
+
+Run `cargo run --example render` to see results.
+(or `RUST_LOG=INFO cargo run --example render`) for logging output.
+
+Checkout `examples/` for more concrete demos of current API.
 
 ## Why Handlebars?
 
@@ -44,17 +60,6 @@ Limitations:
 * As a static typed language, it's a little verbose to use handlebars
 * You will have to make your data `ToJson`-able, so we can render
 it. If you are on nightly channel, we have [a syntax extension](https://github.com/sunng87/tojson_macros) to generate default `ToJson` implementation for you.
-
-## Usage
-
-Check examples in the source. The example shows you how to:
-
-* Create a `Handlebars` and register the template from files
-* Create a custom Helper with closure or struct implementing `HelperDef`, and register it
-* Render something
-
-Run `cargo run --example render` to see results.
-(or `RUST_LOG=INFO cargo run --example render`) for logging output.
 
 ## Handlebars-js features supported in Handlebars-rust
 
