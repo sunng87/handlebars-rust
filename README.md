@@ -5,6 +5,7 @@ Rust templating with Handlebars.
 
 [![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
 [![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
+[![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [rust-doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html)
 
