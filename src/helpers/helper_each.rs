@@ -30,7 +30,7 @@ impl HelperDef for EachHelper{
                         let len = list.len();
                         for i in 0..len {
                             rc.set_local_var("@first".to_string(), (i == 0usize).to_json());
-                            rc.set_local_var("@last".to_string(), (len > 1 && i == len - 1).to_json());
+                            rc.set_local_var("@last".to_string(), (i == len - 1).to_json());
                             rc.set_local_var("@index".to_string(), i.to_json());
 
                             let new_path = format!("{}/{}[{}]", path, param.unwrap(), i);
