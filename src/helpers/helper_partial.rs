@@ -14,22 +14,34 @@ pub struct PartialHelper;
 
 impl HelperDef for IncludeHelper {
     fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param = h.params().get(0);
+        let template = match h.params().get(0) {
+            Some(ref t) => r.get_template(t),
+            None => return Err(render_error("Param not found for helper")),
+        };
 
-        if param.is_none() {
-            return Err(render_error("Param not found for helper"));
-        }
-
-        let template = r.get_template(param.unwrap());
-
-        match template {
-            Some(t) => {
-                (*t).render(c, r, rc)
+        let context_param = h.params().get(1);
+        let old_path = match context_param {
+            Some(p) => {
+                let old_path = rc.get_path().clone();
+                rc.promote_local_vars();
+                let new_path = format!("{}/{}", old_path, p);
+                rc.set_path(new_path);
+                Some(old_path)
             },
-            None => {
-                Err(render_error("Template not found."))
-            }
+            None => None,
+        };
+
+        let result = match template {
+            Some(t) => (*t).render(c, r, rc),
+            None => Err(render_error("Template not found.")),
+        };
+
+        if let Some(path) = old_path {
+            rc.set_path(path);
+            rc.demote_local_vars();
         }
+
+        result
     }
 }
 
@@ -75,6 +87,7 @@ pub static PARTIAL_HELPER: PartialHelper = PartialHelper;
 mod test {
     use template::{Template};
     use registry::{Registry};
+    use std::collections::BTreeMap;
 
     #[test]
     fn test() {
@@ -92,5 +105,22 @@ mod test {
 
         let r1 = handlebars.render("t2", &true);
         assert_eq!(r1.ok().unwrap(), "<h1>default</h1><p>true</p>".to_string());
+    }
+
+    #[test]
+    fn test_context() {
+        let t0 = Template::compile("<h1>{{> (body) data}}</h1>".to_string()).ok().unwrap();
+        let t1 = Template::compile("<p>{{this}}</p>".to_string()).ok().unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
+
+        let mut map: BTreeMap<String, String> = BTreeMap::new();
+        map.insert("body".into(), "t1".into());
+        map.insert("data".into(), "hello".into());
+
+        let r0 = handlebars.render("t0", &map);
+        assert_eq!(r0.ok().unwrap(), "<h1><p>hello</p></h1>".to_string());
     }
 }
