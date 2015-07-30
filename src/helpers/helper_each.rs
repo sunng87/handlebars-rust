@@ -23,7 +23,7 @@ impl HelperDef for EachHelper{
                 let path = rc.get_path().clone();
                 let value = c.navigate(&path, param.unwrap());
 
-                rc.promote_local_vars();
+                rc.promote_local_vars(1usize);
 
                 let rendered = match *value {
                     Json::Array (ref list) => {
@@ -60,7 +60,7 @@ impl HelperDef for EachHelper{
                     }
                 };
                 rc.set_path(path);
-                rc.demote_local_vars();
+                rc.demote_local_vars(1usize);
                 rendered
             },
             None => Ok(())
