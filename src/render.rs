@@ -441,6 +441,50 @@ fn test_render_context_promotion_and_demotion() {
 }
 
 #[test]
+fn test_render_context_promotion_levels() {
+    use serialize::json::{Json, ToJson};
+    let mut sw = StringWriter::new();
+    let mut render_context = RenderContext::new(&mut sw);
+
+    render_context.set_local_var("@index".to_string(), 0usize.to_json());
+    render_context.set_local_var("@../index".to_string(), 1usize.to_json());
+    render_context.set_local_var("@../../index".to_string(), 2usize.to_json());
+
+    render_context.promote_local_vars(2usize);
+
+    assert_eq!(render_context.get_local_var(&"@index".to_string()),
+               &Json::Null);
+    assert_eq!(render_context.get_local_var(&"@../index".to_string()),
+               &Json::Null);
+    assert_eq!(render_context.get_local_var(&"@../../index".to_string()),
+               &0usize.to_json());
+    assert_eq!(render_context.get_local_var(&"@../../../index".to_string()),
+               &1usize.to_json());
+}
+
+#[test]
+fn test_render_context_demotion_levels() {
+    use serialize::json::{Json, ToJson};
+    let mut sw = StringWriter::new();
+    let mut render_context = RenderContext::new(&mut sw);
+
+    render_context.set_local_var("@index".to_string(), 0usize.to_json());
+    render_context.set_local_var("@../index".to_string(), 1usize.to_json());
+    render_context.set_local_var("@../../index".to_string(), 2usize.to_json());
+    render_context.set_local_var("@../../../index".to_string(), 3usize.to_json());
+    render_context.set_local_var("@../../../../index".to_string(), 4usize.to_json());
+
+    render_context.demote_local_vars(3usize);
+
+    assert_eq!(render_context.get_local_var(&"@index".to_string()),
+               &3usize.to_json());
+    assert_eq!(render_context.get_local_var(&"@../index".to_string()),
+               &4usize.to_json());
+    assert_eq!(render_context.get_local_var(&"@../../index".to_string()),
+               &Json::Null);
+}
+
+#[test]
 fn test_render_subexpression() {
     let r = Registry::new();
     let mut sw =StringWriter::new();
