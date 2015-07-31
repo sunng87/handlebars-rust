@@ -90,11 +90,14 @@ impl<'a> RenderContext<'a> {
         self.local_variables.clear();
     }
 
-    pub fn promote_local_vars(&mut self) {
+    pub fn promote_local_vars(&mut self, levels: usize) {
         let mut new_map: HashMap<String, Json> = HashMap::new();
         for key in self.local_variables.keys() {
             let mut new_key = String::new();
-            new_key.push_str("@../");
+            new_key.push_str("@");
+            for _ in (0..levels) {
+                new_key.push_str("../");
+            }
             new_key.push_str(&key[1..]);
 
             let v = self.local_variables.get(key).unwrap().clone();
@@ -103,13 +106,20 @@ impl<'a> RenderContext<'a> {
         self.local_variables = new_map;
     }
 
-    pub fn demote_local_vars(&mut self) {
+    pub fn demote_local_vars(&mut self, levels: usize) {
+        let mut expected_prefix = "@".to_owned();
+        for _ in (0..levels) {
+            expected_prefix.push_str("../");
+        }
+        let prefix_ref: &str = expected_prefix.as_ref();
+        let prefix_len = expected_prefix.len();
+
         let mut new_map: HashMap<String, Json> = HashMap::new();
         for key in self.local_variables.keys() {
-            if key.starts_with("@../") {
+            if key.starts_with(prefix_ref) {
                 let mut new_key = String::new();
                 new_key.push('@');
-                new_key.push_str(&key[4..]);
+                new_key.push_str(&key[prefix_len..]);
 
                 let v = self.local_variables.get(key).unwrap().clone();
                 new_map.insert(new_key, v);
@@ -419,15 +429,59 @@ fn test_render_context_promotion_and_demotion() {
 
     render_context.set_local_var("@index".to_string(), 0usize.to_json());
 
-    render_context.promote_local_vars();
+    render_context.promote_local_vars(1usize);
 
     assert_eq!(render_context.get_local_var(&"@../index".to_string()),
                &0usize.to_json());
 
-    render_context.demote_local_vars();
+    render_context.demote_local_vars(1usize);
 
     assert_eq!(render_context.get_local_var(&"@index".to_string()),
                &0usize.to_json());
+}
+
+#[test]
+fn test_render_context_promotion_levels() {
+    use serialize::json::{Json, ToJson};
+    let mut sw = StringWriter::new();
+    let mut render_context = RenderContext::new(&mut sw);
+
+    render_context.set_local_var("@index".to_string(), 0usize.to_json());
+    render_context.set_local_var("@../index".to_string(), 1usize.to_json());
+    render_context.set_local_var("@../../index".to_string(), 2usize.to_json());
+
+    render_context.promote_local_vars(2usize);
+
+    assert_eq!(render_context.get_local_var(&"@index".to_string()),
+               &Json::Null);
+    assert_eq!(render_context.get_local_var(&"@../index".to_string()),
+               &Json::Null);
+    assert_eq!(render_context.get_local_var(&"@../../index".to_string()),
+               &0usize.to_json());
+    assert_eq!(render_context.get_local_var(&"@../../../index".to_string()),
+               &1usize.to_json());
+}
+
+#[test]
+fn test_render_context_demotion_levels() {
+    use serialize::json::{Json, ToJson};
+    let mut sw = StringWriter::new();
+    let mut render_context = RenderContext::new(&mut sw);
+
+    render_context.set_local_var("@index".to_string(), 0usize.to_json());
+    render_context.set_local_var("@../index".to_string(), 1usize.to_json());
+    render_context.set_local_var("@../../index".to_string(), 2usize.to_json());
+    render_context.set_local_var("@../../../index".to_string(), 3usize.to_json());
+    render_context.set_local_var("@../../../../index".to_string(), 4usize.to_json());
+
+    render_context.demote_local_vars(3usize);
+
+    assert_eq!(render_context.get_local_var(&"@index".to_string()),
+               &3usize.to_json());
+    assert_eq!(render_context.get_local_var(&"@../index".to_string()),
+               &4usize.to_json());
+    assert_eq!(render_context.get_local_var(&"@../../index".to_string()),
+               &Json::Null);
 }
 
 #[test]

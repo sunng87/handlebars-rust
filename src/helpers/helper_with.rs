@@ -15,7 +15,7 @@ impl HelperDef for WithHelper {
         }
 
         let path = rc.get_path().clone();
-        rc.promote_local_vars();
+        rc.promote_local_vars(1usize);
 
         let value = c.navigate(rc.get_path(), param.unwrap());
 
@@ -37,7 +37,7 @@ impl HelperDef for WithHelper {
         };
 
         rc.set_path(path);
-        rc.demote_local_vars();
+        rc.demote_local_vars(1usize);
         rendered
     }
 }
