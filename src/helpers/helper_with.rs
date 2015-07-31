@@ -101,15 +101,20 @@ mod test {
 
         let t0 = Template::compile("{{#with addr}}{{city}}{{/with}}".to_string()).ok().unwrap();
         let t1 = Template::compile("{{#with notfound}}hello{{else}}world{{/with}}".to_string()).ok().unwrap();
+        let t2 = Template::compile("{{#with addr/country}}{{this}}{{/with}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
         handlebars.register_template("t1", t1);
+        handlebars.register_template("t2", t2);
 
         let r0 = handlebars.render("t0", &person);
         assert_eq!(r0.ok().unwrap(), "Beijing".to_string());
 
         let r1 = handlebars.render("t1", &person);
         assert_eq!(r1.ok().unwrap(), "world".to_string());
+
+        let r2 = handlebars.render("t2", &person);
+        assert_eq!(r2.ok().unwrap(), "China".to_string());
     }
 }
