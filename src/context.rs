@@ -209,8 +209,7 @@ mod test {
     fn test_render() {
         let v = "hello";
         let ctx = Context::wraps(&v.to_string());
-        let this = "this".to_string();
-        assert_eq!(ctx.navigate(&this, &this).render(), v.to_string());
+        assert_eq!(ctx.navigate(".", "this").render(), v.to_string());
     }
 
     #[test]
@@ -229,18 +228,13 @@ mod test {
         };
 
         let ctx = Context::wraps(&person);
-        let this = "this".to_string();
-        let that = "./name/../addr/country".to_string();
-
-        assert_eq!(ctx.navigate(&this, &that).render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(), "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
-        assert_eq!(ctx2.navigate(&"this".to_string(), &"this".to_string()).render(), "true".to_string());
+        assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
 
-        let this2 = "this".to_string();
-        let that2 = "titles[0]".to_string();
-        assert_eq!(ctx.navigate(&this2, &that2).render(), "programmer".to_string());
+        assert_eq!(ctx.navigate(".", "titles[0]").render(), "programmer".to_string());
     }
 
     #[test]
@@ -254,9 +248,8 @@ mod test {
         map_without_this.insert("age".to_string(), 4usize.to_json());
         let ctx2 = Context::wraps(&map_without_this);
 
-        let this = "this".to_owned();
-        assert_eq!(ctx1.navigate(&this, &this).render(), "hello".to_owned());
-        assert_eq!(ctx2.navigate(&this, &"age".to_owned()).render(), "4".to_owned());
+        assert_eq!(ctx1.navigate(".", "this").render(), "hello".to_owned());
+        assert_eq!(ctx2.navigate(".", "age").render(), "4".to_owned());
     }
 
     #[test]
