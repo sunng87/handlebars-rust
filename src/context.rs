@@ -1,7 +1,8 @@
 use serialize::json::{Json, ToJson, Object};
 use regex::Regex;
-use std::collections::VecDeque;
+use std::collections::{VecDeque, BTreeMap};
 
+#[derive(Debug)]
 pub struct Context {
     data: Json,
     default: Json,
@@ -29,6 +30,25 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
     }
 }
 
+fn merge_json(base: &Json, addition: &Object) -> Json {
+    let mut base_map = match base {
+        &Json::Object(ref m) => {
+            m.clone()
+        }
+        _ => {
+            let mut map: BTreeMap<String, Json> = BTreeMap::new();
+            map.insert("this".to_owned(), base.clone());
+            map
+        }
+    };
+
+    for (k, v) in addition.iter() {
+        base_map.insert(k.clone(), v.clone());
+    }
+
+    Json::Object(base_map)
+}
+
 impl Context {
     pub fn null() -> Context {
         Context {
@@ -43,6 +63,15 @@ impl Context {
             data: e.to_json(),
             default: Json::Null,
             array_index_matcher: Regex::new(r"\[\d+\]$").unwrap(),
+        }
+    }
+
+    pub fn merge_hash(&self, hash: &Object) -> Context {
+        let new_data = merge_json(&self.data, hash);
+        Context {
+            data: new_data,
+            default: Json::Null,
+            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap()
         }
     }
 
@@ -83,7 +112,6 @@ impl Context {
                     data = match data.find(*p) {
                         Some(d) => d,
                         None => {
-                            println!("{}", *p);
                             if *p == "this" {
                                 data
                             } else {
@@ -229,5 +257,26 @@ mod test {
         let this = "this".to_owned();
         assert_eq!(ctx1.navigate(&this, &this).render(), "hello".to_owned());
         assert_eq!(ctx2.navigate(&this, &"age".to_owned()).render(), "4".to_owned());
+    }
+
+    #[test]
+    fn test_merge_hash() {
+        let mut map = BTreeMap::new();
+        map.insert("age".to_string(), 4usize.to_json());
+        let ctx1 = Context::wraps(&map);
+
+        let s = "hello".to_owned();
+        let ctx2 = Context::wraps(&s);
+
+        let mut hash = BTreeMap::new();
+        hash.insert("tag".to_owned(), "h1".to_json());
+
+        let ctx_a1 = ctx1.merge_hash(&hash);
+        assert_eq!(ctx_a1.navigate(".", "age").render(), "4".to_owned());
+        assert_eq!(ctx_a1.navigate(".", "tag").render(), "h1".to_owned());
+
+        let ctx_a2 = ctx2.merge_hash(&hash);
+        assert_eq!(ctx_a2.navigate(".", "this").render(), "hello".to_owned());
+        assert_eq!(ctx_a2.navigate(".", "tag").render(), "h1".to_owned());
     }
 }
