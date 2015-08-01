@@ -1,4 +1,4 @@
-use serialize::json::{Json, ToJson};
+use serialize::json::{Json, ToJson, Object};
 use regex::Regex;
 use std::collections::VecDeque;
 
@@ -12,7 +12,7 @@ pub struct Context {
 fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
     for p in (*path).split('/') {
         match p {
-            "this" | "." | "" => {
+            "." | "" => {
                 continue;
             }
             ".." => {
@@ -20,9 +20,9 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
             }
             _ => {
                 for dot_p in p.split('.') {
-                    if dot_p != "this" {
+//                    if dot_p != "this" {
                         path_stack.push_back(dot_p);
-                    }
+//                    }
                 }
             }
         }
@@ -82,7 +82,14 @@ impl Context {
                 None => {
                     data = match data.find(*p) {
                         Some(d) => d,
-                        None => &self.default
+                        None => {
+                            println!("{}", *p);
+                            if *p == "this" {
+                                data
+                            } else {
+                                &self.default
+                            }
+                        }
                     };
                 }
             }
@@ -182,7 +189,7 @@ mod test {
     fn test_navigation() {
         let addr = Address {
             city: "Beijing".to_string(),
-            country: "China".to_string()
+            country: "China".to_string(),
         };
 
         let person = Person {
@@ -206,5 +213,21 @@ mod test {
         let this2 = "this".to_string();
         let that2 = "titles[0]".to_string();
         assert_eq!(ctx.navigate(&this2, &that2).render(), "programmer".to_string());
+    }
+
+    #[test]
+    fn test_this() {
+        let mut map_with_this = BTreeMap::new();
+        map_with_this.insert("this".to_string(), "hello".to_json());
+        map_with_this.insert("age".to_string(), 5usize.to_json());
+        let ctx1 = Context::wraps(&map_with_this);
+
+        let mut map_without_this = BTreeMap::new();
+        map_without_this.insert("age".to_string(), 4usize.to_json());
+        let ctx2 = Context::wraps(&map_without_this);
+
+        let this = "this".to_owned();
+        assert_eq!(ctx1.navigate(&this, &this).render(), "hello".to_owned());
+        assert_eq!(ctx2.navigate(&this, &"age".to_owned()).render(), "4".to_owned());
     }
 }
