@@ -1,7 +1,7 @@
 [package]
 
 name = "handlebars"
-version = "0.9.2"
+version = "0.9.3"
 authors = ["Ning Sun <sunng@about.me>"]
 description = "Handlebars templating implemented in Rust."
 license = "MIT"
@@ -18,10 +18,10 @@ path = "src/lib.rs"
 
 [dependencies]
 
-regex = "0.1.41"
-log = "0.3.1"
-rustc-serialize = "0.3.15"
-num = "0.1.25"
+regex = "^0.1.41"
+log = "^0.3.1"
+rustc-serialize = "^0.3.15"
+num = "^0.1.25"
 
 [dev-dependencies]
 env_logger = "*"
