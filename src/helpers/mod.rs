@@ -10,7 +10,7 @@ pub use self::helper_raw::{RAW_HELPER};
 pub use self::helper_partial::{INCLUDE_HELPER, BLOCK_HELPER, PARTIAL_HELPER};
 pub use self::helper_log::{LOG_HELPER};
 
-/// # Helper Definitions
+/// Helper Definition
 ///
 /// Implement `HelperDef` to create custom helper. You can retrieve useful information from these arguments.
 ///

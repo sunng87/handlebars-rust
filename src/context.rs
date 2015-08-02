@@ -2,6 +2,8 @@ use serialize::json::{Json, ToJson, Object};
 use regex::Regex;
 use std::collections::{VecDeque, BTreeMap};
 
+/// The context wrap data you render on your templates.
+///
 #[derive(Debug)]
 pub struct Context {
     data: Json,
@@ -50,6 +52,7 @@ fn merge_json(base: &Json, addition: &Object) -> Json {
 }
 
 impl Context {
+    /// Create a context with null data
     pub fn null() -> Context {
         Context {
             data: Json::Null,
@@ -58,6 +61,7 @@ impl Context {
         }
     }
 
+    /// Create a context with given data
     pub fn wraps<T: ToJson>(e: &T) -> Context {
         Context {
             data: e.to_json(),
@@ -66,6 +70,10 @@ impl Context {
         }
     }
 
+    /// Extend current context with another JSON object
+    /// If current context is a JSON object, it's identical to a normal merge
+    /// Otherwise, the current value will be stored in new JSON object with key `this`, and merged
+    /// keys are also available.
     pub fn extend(&self, hash: &Object) -> Context {
         let new_data = merge_json(&self.data, hash);
         Context {
@@ -75,9 +83,14 @@ impl Context {
         }
     }
 
-    pub fn navigate(&self, path: &str, relative_path: &str) -> &Json {
+    /// Navigate the context with base path and relative path
+    /// Typically you will set base path to `RenderContext.get_path()`
+    /// and set relative path to helper argument or so.
+    ///
+    /// If you want to navigate from top level, set the base path to `"."`
+    pub fn navigate(&self, base_path: &str, relative_path: &str) -> &Json {
         let mut path_stack :VecDeque<&str> = VecDeque::new();
-        parse_json_visitor(&mut path_stack, path);
+        parse_json_visitor(&mut path_stack, base_path);
         parse_json_visitor(&mut path_stack, relative_path);
 
         let paths :Vec<&str> = path_stack.iter().map(|x| *x).collect();

@@ -34,15 +34,22 @@ impl From<IOError> for RenderError {
     }
 }
 
+/// The context of a render call
+///
+/// this context stores information of a render and a writer where generated
+/// content is written to.
+///
 pub struct RenderContext<'a> {
     partials: HashMap<String, Template>,
     path: String,
     local_variables: HashMap<String, Json>,
     default_var: Json,
+    /// the `Write` where page is generated
     pub writer: &'a mut Write
 }
 
 impl<'a> RenderContext<'a> {
+    /// Create a render context from a `Write`
     pub fn new(w: &'a mut Write) -> RenderContext<'a> {
         RenderContext {
             partials: HashMap::new(),
@@ -53,6 +60,7 @@ impl<'a> RenderContext<'a> {
         }
     }
 
+    /// Create a new `RenderContext` with a different `Write`
     pub fn with_writer<'b>(&self, w: &'b mut Write) -> RenderContext<'b> {
         RenderContext {
             partials: self.partials.clone(),
