@@ -158,7 +158,8 @@ impl<'a, 'b> Helper<'a> {
         let mut evaluated_hash = BTreeMap::new();
         for (k, p) in ht.hash.iter() {
             let r = try!(p.renders(ctx, registry, rc));
-            // subexpress in hash values are all treated as json string for now
+            // subexpression in hash values are all treated as json string for now
+            // FIXME: allow different types evaluated as hash value
             evaluated_hash.insert(k.clone(), Json::String(r));
         }
 

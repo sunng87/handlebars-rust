@@ -32,7 +32,14 @@ impl HelperDef for IncludeHelper {
         };
 
         let result = match template {
-            Some(t) => (*t).render(c, r, rc),
+            Some(t) => {
+                if h.hash().is_empty() {
+                    t.render(c, r, rc)
+                } else {
+                    let new_ctx = c.extend(h.hash());
+                    t.render(&new_ctx, r, rc)
+                }
+            },
             None => Err(render_error("Template not found.")),
         };
 
@@ -122,5 +129,21 @@ mod test {
 
         let r0 = handlebars.render("t0", &map);
         assert_eq!(r0.ok().unwrap(), "<h1><p>hello</p></h1>".to_string());
+    }
+
+    #[test]
+    fn test_partial_hash_context() {
+        let t0 = Template::compile("<h1>{{> t1 hello=world}}</h1>".to_string()).ok().unwrap();
+        let t1 = Template::compile("<p>{{data}}</p><p>{{hello}}</p>".to_string()).ok().unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
+
+        let mut map: BTreeMap<String, String> = BTreeMap::new();
+        map.insert("data".into(), "hello".into());
+
+        let r0 = handlebars.render("t0", &map);
+        assert_eq!(r0.ok().unwrap(), "<h1><p>hello</p><p>world</p></h1>".to_string());
     }
 }
