@@ -66,7 +66,7 @@ impl Context {
         }
     }
 
-    pub fn merge_hash(&self, hash: &Object) -> Context {
+    pub fn extend(&self, hash: &Object) -> Context {
         let new_data = merge_json(&self.data, hash);
         Context {
             data: new_data,
@@ -253,7 +253,7 @@ mod test {
     }
 
     #[test]
-    fn test_merge_hash() {
+    fn test_extend() {
         let mut map = BTreeMap::new();
         map.insert("age".to_string(), 4usize.to_json());
         let ctx1 = Context::wraps(&map);
@@ -264,11 +264,11 @@ mod test {
         let mut hash = BTreeMap::new();
         hash.insert("tag".to_owned(), "h1".to_json());
 
-        let ctx_a1 = ctx1.merge_hash(&hash);
+        let ctx_a1 = ctx1.extend(&hash);
         assert_eq!(ctx_a1.navigate(".", "age").render(), "4".to_owned());
         assert_eq!(ctx_a1.navigate(".", "tag").render(), "h1".to_owned());
 
-        let ctx_a2 = ctx2.merge_hash(&hash);
+        let ctx_a2 = ctx2.extend(&hash);
         assert_eq!(ctx_a2.navigate(".", "this").render(), "hello".to_owned());
         assert_eq!(ctx_a2.navigate(".", "tag").render(), "h1".to_owned());
     }
