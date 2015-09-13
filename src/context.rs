@@ -8,7 +8,7 @@ use std::collections::{VecDeque, BTreeMap};
 pub struct Context {
     data: Json,
     default: Json,
-    array_index_matcher: Regex,
+    key_matcher: Regex,
 }
 
 #[inline]
@@ -57,7 +57,7 @@ impl Context {
         Context {
             data: Json::Null,
             default: Json::Null,
-            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap(),
+            key_matcher: Regex::new(r"\[.+\]$").unwrap(),
         }
     }
 
@@ -66,7 +66,7 @@ impl Context {
         Context {
             data: e.to_json(),
             default: Json::Null,
-            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap(),
+            key_matcher: Regex::new(r"\[.+\]$").unwrap(),
         }
     }
 
@@ -79,7 +79,7 @@ impl Context {
         Context {
             data: new_data,
             default: Json::Null,
-            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap()
+            key_matcher: Regex::new(r"\[.+\]$").unwrap()
         }
     }
 
@@ -96,12 +96,12 @@ impl Context {
         let paths :Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
-            match self.array_index_matcher.find(*p) {
+            match self.key_matcher.find(*p) {
                 Some((s, _)) => {
                     let arr = &p[..s];
                     let idx = &p[s+1 .. p.len()-1];
 
-                    let root = if arr == "this" {
+                    let root = if arr == "this" || arr == "" {
                         Some(data)
                     } else {
                         data.find(arr)
@@ -248,6 +248,7 @@ mod test {
         assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
 
         assert_eq!(ctx.navigate(".", "titles[0]").render(), "programmer".to_string());
+        assert_eq!(ctx.navigate(".", "titles.[0]").render(), "programmer".to_string());
     }
 
     #[test]
