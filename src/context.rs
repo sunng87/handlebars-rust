@@ -109,13 +109,17 @@ impl Context {
 
                     data = match root {
                         Some(d) => {
-                            if let Json::Array(ref l) = *d {
-                                match idx.parse::<usize>() {
-                                    Ok(idx_u) => l.get(idx_u).unwrap(),
-                                    Err(_) => &self.default
+                            match *d {
+                                Json::Array(ref l) => {
+                                    if let Ok(idx_u) = idx.parse::<usize>() {
+                                        l.get(idx_u).unwrap_or(&self.default)
+                                    } else {
+                                        &self.default
+                                    }
+                                },
+                                _ => {
+                                    &self.default
                                 }
-                            } else {
-                                &self.default
                             }
                         },
                         None => &self.default
