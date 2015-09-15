@@ -111,11 +111,9 @@ impl Context {
                         Some(d) => {
                             match *d {
                                 Json::Array(ref l) => {
-                                    if let Ok(idx_u) = idx.parse::<usize>() {
-                                        l.get(idx_u).unwrap_or(&self.default)
-                                    } else {
-                                        &self.default
-                                    }
+                                    idx.parse::<usize>().and_then(
+                                        |idx_u| Ok(l.get(idx_u).unwrap_or(&self.default)))
+                                        .unwrap_or(&self.default)
                                 },
                                 _ => {
                                     &self.default
