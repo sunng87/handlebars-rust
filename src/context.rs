@@ -114,6 +114,9 @@ impl Context {
                                         |idx_u| Ok(l.get(idx_u).unwrap_or(&self.default)))
                                         .unwrap_or(&self.default)
                                 },
+                                Json::Object(ref m) => {
+                                    m.get(idx).unwrap_or(&self.default)
+                                },
                                 _ => {
                                     &self.default
                                 }
@@ -239,6 +242,7 @@ mod test {
 
         let ctx = Context::wraps(&person);
         assert_eq!(ctx.navigate(".", "./name/../addr/country").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[country]").render(), "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
