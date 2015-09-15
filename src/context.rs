@@ -101,10 +101,9 @@ impl Context {
                     let arr = &p[..s];
                     let idx = &p[s+1 .. p.len()-1];
 
-                    let root = if arr == "this" || arr == "" {
-                        Some(data)
-                    } else {
-                        data.find(arr)
+                    let root = match arr{
+                        "this" | "" => Some(data),
+                        _ => data.find(arr)
                     };
 
                     data = match root {
@@ -124,16 +123,12 @@ impl Context {
                     };
                 },
                 None => {
-                    data = match data.find(*p) {
-                        Some(d) => d,
-                        None => {
-                            if *p == "this" {
-                                data
-                            } else {
-                                &self.default
-                            }
-                        }
-                    };
+                    data = data.find(*p)
+                        .unwrap_or_else(|| if *p == "this" {
+                            data
+                        } else {
+                            &self.default
+                        });
                 }
             }
         }
