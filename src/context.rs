@@ -8,7 +8,7 @@ use std::collections::{VecDeque, BTreeMap};
 pub struct Context {
     data: Json,
     default: Json,
-    array_index_matcher: Regex,
+    key_matcher: Regex,
 }
 
 #[inline]
@@ -57,7 +57,7 @@ impl Context {
         Context {
             data: Json::Null,
             default: Json::Null,
-            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap(),
+            key_matcher: Regex::new(r"\[.+\]$").unwrap(),
         }
     }
 
@@ -66,7 +66,7 @@ impl Context {
         Context {
             data: e.to_json(),
             default: Json::Null,
-            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap(),
+            key_matcher: Regex::new(r"\[.+\]$").unwrap(),
         }
     }
 
@@ -79,7 +79,7 @@ impl Context {
         Context {
             data: new_data,
             default: Json::Null,
-            array_index_matcher: Regex::new(r"\[\d+\]$").unwrap()
+            key_matcher: Regex::new(r"\[.+\]$").unwrap()
         }
     }
 
@@ -96,42 +96,42 @@ impl Context {
         let paths :Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
-            match self.array_index_matcher.find(*p) {
+            match self.key_matcher.find(*p) {
                 Some((s, _)) => {
                     let arr = &p[..s];
                     let idx = &p[s+1 .. p.len()-1];
 
-                    let root = if arr == "this" {
-                        Some(data)
-                    } else {
-                        data.find(arr)
+                    let root = match arr{
+                        "this" | "" => Some(data),
+                        _ => data.find(arr)
                     };
 
                     data = match root {
                         Some(d) => {
-                            if let Json::Array(ref l) = *d {
-                                match idx.parse::<usize>() {
-                                    Ok(idx_u) => l.get(idx_u).unwrap(),
-                                    Err(_) => &self.default
+                            match *d {
+                                Json::Array(ref l) => {
+                                    idx.parse::<usize>().and_then(
+                                        |idx_u| Ok(l.get(idx_u).unwrap_or(&self.default)))
+                                        .unwrap_or(&self.default)
+                                },
+                                Json::Object(ref m) => {
+                                    m.get(idx).unwrap_or(&self.default)
+                                },
+                                _ => {
+                                    &self.default
                                 }
-                            } else {
-                                &self.default
                             }
                         },
                         None => &self.default
                     };
                 },
                 None => {
-                    data = match data.find(*p) {
-                        Some(d) => d,
-                        None => {
-                            if *p == "this" {
-                                data
-                            } else {
-                                &self.default
-                            }
-                        }
-                    };
+                    data = data.find(*p)
+                        .unwrap_or_else(|| if *p == "this" {
+                            data
+                        } else {
+                            &self.default
+                        });
                 }
             }
         }
@@ -242,12 +242,14 @@ mod test {
 
         let ctx = Context::wraps(&person);
         assert_eq!(ctx.navigate(".", "./name/../addr/country").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[country]").render(), "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
         assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
 
         assert_eq!(ctx.navigate(".", "titles[0]").render(), "programmer".to_string());
+        assert_eq!(ctx.navigate(".", "titles.[0]").render(), "programmer".to_string());
     }
 
     #[test]
