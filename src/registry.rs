@@ -95,6 +95,40 @@ impl Registry {
             })
         }
     }
+
+    pub fn render_iter<T>(&self, ctx: &T) -> RendererIterator where T: ToJson {
+        RendererIterator {
+            iter: self.templates.iter(),
+            ctx: Context::wraps(ctx),
+            registry: self
+        }
+    }
+}
+
+pub struct RendererIterator<'a, 'r> {
+    iter: ::std::collections::hash_map::Iter<'a, String, Template>,
+    registry: &'r Registry,
+    ctx: Context
+}
+
+impl<'a, 'r> Iterator for RendererIterator<'a, 'r> {
+    type Item = (&'a String, Result<String, RenderError>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next() {
+            Some((key, template)) => {
+                let mut writer = StringWriter::new();
+                {
+                    let mut render_context = RenderContext::new(&mut writer);
+                    if let Err(err) = (*template).render(&self.ctx, self.registry, &mut render_context) {
+                        return Some((key, Err(err)))
+                    }
+                }
+                Some((key, Ok(writer.to_string())))
+            },
+            None => None
+        }
+    }
 }
 
 #[cfg(test)]
