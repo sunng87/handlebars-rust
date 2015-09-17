@@ -76,19 +76,19 @@ impl Registry {
 
     pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError> where T: ToJson {
         let mut writer = StringWriter::new();
+        let context = Context::wraps(ctx);
         {
-            try!(self.renderw(name, ctx, &mut writer));
+            try!(self.renderw(name, &context, &mut writer));
         }
         Ok(writer.to_string())
     }
 
-    pub fn renderw<T>(&self, name: &str, ctx: &T, writer: &mut Write) -> Result<(), RenderError> where T: ToJson {
+    pub fn renderw(&self, name: &str, context: &Context, writer: &mut Write) -> Result<(), RenderError> {
         let template = self.get_template(&name.to_string());
-        let context = Context::wraps(ctx);
 
         if let Some(t) = template {
             let mut render_context = RenderContext::new(writer);
-            (*t).render(&context, self, &mut render_context)
+            (*t).render(context, self, &mut render_context)
         } else {
             Err(RenderError{
                 desc: "Template not found."
@@ -154,10 +154,10 @@ mod test {
         r.register_template("index", t.clone());
 
         let mut sw = StringWriter::new();
-        let data = Json::Null;
+        let context = Context::null();
 
         {
-            r.renderw("index", &data, &mut sw).ok().unwrap();
+            r.renderw("index", &context, &mut sw).ok().unwrap();
         }
 
         assert_eq!("<h1></h1>".to_string(), sw.to_string());

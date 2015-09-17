@@ -69,7 +69,10 @@ fn main() {
     handlebars.register_helper("format", Box::new(format_helper));
 //    handlebars.register_helper("format", Box::new(FORMAT_HELPER));
 
-    let data = make_data();
+    let data = {
+        let data = make_data();
+        Context::wraps(&data)
+    };
 
     if let Ok(ref mut file) = File::create("target/table.html") {
         if let Ok(_) = handlebars.renderw("table", &data, file) {
