@@ -175,8 +175,8 @@
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //!
 
-#[macro_use]
-extern crate log;
+#[macro_use] extern crate log;
+#[macro_use] extern crate lazy_static;
 
 extern crate rustc_serialize as serialize;
 extern crate regex;
