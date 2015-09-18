@@ -2,13 +2,16 @@ use serialize::json::{Json, ToJson, Object};
 use regex::Regex;
 use std::collections::{VecDeque, BTreeMap};
 
+lazy_static! {
+    static ref KEY_MATCHER: Regex = Regex::new(r"\[.+\]$").unwrap();
+    static ref DEFAULT_VALUE: Json = Json::Null;
+}
+
 /// The context wrap data you render on your templates.
 ///
 #[derive(Debug)]
 pub struct Context {
-    data: Json,
-    default: Json,
-    key_matcher: Regex,
+    data: Json
 }
 
 #[inline]
@@ -55,18 +58,14 @@ impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
         Context {
-            data: Json::Null,
-            default: Json::Null,
-            key_matcher: Regex::new(r"\[.+\]$").unwrap(),
+            data: Json::Null
         }
     }
 
     /// Create a context with given data
     pub fn wraps<T: ToJson>(e: &T) -> Context {
         Context {
-            data: e.to_json(),
-            default: Json::Null,
-            key_matcher: Regex::new(r"\[.+\]$").unwrap(),
+            data: e.to_json()
         }
     }
 
@@ -77,9 +76,7 @@ impl Context {
     pub fn extend(&self, hash: &Object) -> Context {
         let new_data = merge_json(&self.data, hash);
         Context {
-            data: new_data,
-            default: Json::Null,
-            key_matcher: Regex::new(r"\[.+\]$").unwrap()
+            data: new_data
         }
     }
 
@@ -96,7 +93,7 @@ impl Context {
         let paths :Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
-            match self.key_matcher.find(*p) {
+            match KEY_MATCHER.find(*p) {
                 Some((s, _)) => {
                     let arr = &p[..s];
                     let idx = &p[s+1 .. p.len()-1];
@@ -111,18 +108,18 @@ impl Context {
                             match *d {
                                 Json::Array(ref l) => {
                                     idx.parse::<usize>().and_then(
-                                        |idx_u| Ok(l.get(idx_u).unwrap_or(&self.default)))
-                                        .unwrap_or(&self.default)
+                                        |idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
+                                        .unwrap_or(&DEFAULT_VALUE)
                                 },
                                 Json::Object(ref m) => {
-                                    m.get(idx).unwrap_or(&self.default)
+                                    m.get(idx).unwrap_or(&DEFAULT_VALUE)
                                 },
                                 _ => {
-                                    &self.default
+                                    &DEFAULT_VALUE
                                 }
                             }
                         },
-                        None => &self.default
+                        None => &DEFAULT_VALUE
                     };
                 },
                 None => {
@@ -130,7 +127,7 @@ impl Context {
                         .unwrap_or_else(|| if *p == "this" {
                             data
                         } else {
-                            &self.default
+                            &DEFAULT_VALUE
                         });
                 }
             }

@@ -22,6 +22,7 @@ regex = "^0.1.41"
 log = "^0.3.1"
 rustc-serialize = "^0.3.15"
 num = "^0.1.25"
+lazy_static = "^0.1.14"
 
 [dev-dependencies]
 env_logger = "*"
