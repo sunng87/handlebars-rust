@@ -2,12 +2,14 @@ language: rust
 rust:
   - nightly
   - beta
+  - 1.3.0
+  - 1.2.0
   - 1.1.0
   - 1.0.0
 after_success: |
   echo $TRAVIS_RUST_VERSION && \
   [ $TRAVIS_BRANCH == 'master' ] && \
-  [ $TRAVIS_RUST_VERSION == '1.1.0' ] && \
+  [ $TRAVIS_RUST_VERSION == '1.3.0' ] && \
   cargo doc && \
   echo '<meta http-equiv=refresh content=0;url=handlebars/index.html>' > target/doc/index.html && \
   sudo pip install ghp-import && \
