@@ -99,8 +99,6 @@ impl Registry {
 
 #[cfg(test)]
 mod test {
-    use serialize::json::Json;
-
     use template::{Template};
     use registry::{Registry};
     use render::{RenderContext, Renderable, RenderError, Helper};
