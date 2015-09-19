@@ -9,7 +9,7 @@ Rust templating with Handlebars.
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 Thanks to [@blaenk](https://github.com/blaenk)'s patch,
-handlebars-rust now compiles on nightly, beta and 1.0 channel.
+handlebars-rust now compiles on nightly, beta and stable channel.
 
 ## Documents
 
@@ -70,6 +70,7 @@ it. If you are on nightly channel, we have [a syntax extension](https://github.c
 * Partials, include
 * Omitting whitespace with `~`
 * Subexpression `{{(foo bar)}}`
+* Json expression `a.b.[0]` and `a.b.[c]`
 
 Feel free to report an issue if you find something broken. We aren't
 going to implement all features of handlebars-js, but we should have a
@@ -80,6 +81,15 @@ workaround for cases we don't support.
 I have started another project
 [handlebars-iron](https://github.com/sunng87/handlebars-iron) for
 the Iron web framework.
+
+## Break Change Log
+
+No doubt that we will try our best to keep API compatible in each
+release. But sometime we have to bring in break changes to improve the
+design when worthy.
+
+* 0.10.0: `renderw` now accepts `&Context` instead of `ToJson` to avoid
+unnecessary clone in batch rendering. [90274e7](https://github.com/sunng87/handlebars-rust/commit/90274e75feeffa1d509abde62a8c70ac2c0a4e76)
 
 ## License
 
