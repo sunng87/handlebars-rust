@@ -177,6 +177,7 @@
 
 #[macro_use] extern crate log;
 #[macro_use] extern crate lazy_static;
+#[cfg(test)] #[macro_use] extern crate maplit;
 
 extern crate rustc_serialize as serialize;
 extern crate regex;

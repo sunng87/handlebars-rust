@@ -4,6 +4,7 @@ use std::collections::{VecDeque, BTreeMap};
 
 lazy_static! {
     static ref KEY_MATCHER: Regex = Regex::new(r"\[.+\]$").unwrap();
+    static ref QUOT_MATCHER: Regex = Regex::new("['\"](.+)['\"]").unwrap();
     static ref DEFAULT_VALUE: Json = Json::Null;
 }
 
@@ -96,7 +97,8 @@ impl Context {
             match KEY_MATCHER.find(*p) {
                 Some((s, _)) => {
                     let arr = &p[..s];
-                    let idx = &p[s+1 .. p.len()-1];
+                    let mut idx = &p[s+1 .. p.len()-1];
+                    idx = QUOT_MATCHER.captures(idx).and_then(|c| c.at(1)).unwrap_or(idx);
 
                     let root = match arr{
                         "this" | "" => Some(data),
@@ -240,6 +242,8 @@ mod test {
         let ctx = Context::wraps(&person);
         assert_eq!(ctx.navigate(".", "./name/../addr/country").render(), "China".to_string());
         assert_eq!(ctx.navigate(".", "addr.[country]").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.['country']").render(), "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
