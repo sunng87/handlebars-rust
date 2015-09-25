@@ -1,6 +1,5 @@
 use std::cmp::min;
 use std::ops::BitOr;
-use std::error;
 use std::fmt::{self, Display, Formatter};
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
@@ -8,6 +7,7 @@ use num::FromPrimitive;
 use regex::Regex;
 
 use support::str::SliceChars;
+use TemplateError;
 
 use self::TemplateElement::{RawString, Expression, HelperExpression,
                             HTMLExpression, HelperBlock, Comment};
@@ -25,7 +25,6 @@ enum ParserState {
     HelperStart,
     HelperEnd,
     Expression,
-    Invalid
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -77,21 +76,6 @@ impl ToString for HelperTemplate {
             buf.push_str(format!("{{{{/{}}}}}", self.name).as_ref());
         }
         buf
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct TemplateError;
-
-impl fmt::Display for TemplateError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "TemplateError")
-    }
-}
-
-impl error::Error for TemplateError {
-    fn description(&self) -> &str {
-        "Template error"
     }
 }
 
@@ -153,7 +137,8 @@ impl HelperTemplate {
                 })
             },
             None =>
-                Err(TemplateError)
+                // As far as I can see this is bare "{{" at the end of file.
+                Err(TemplateError::UnclosedBraces)
         }
     }
 }
@@ -254,6 +239,7 @@ fn process_whitespace(buf: &String, wso: &mut WhiteSpaceOmit) -> String {
 
 impl Template {
     pub fn compile(source: String) -> Result<Template, TemplateError> {
+        use TemplateError::*;
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
         template_stack.push_front(Template{ elements: Vec::new() });
@@ -301,7 +287,7 @@ impl Template {
                             }
                             ParserState::HelperEnd
                         },
-                        _ => ParserState::Invalid
+                        _ => unreachable!(),  // because of check above
                     }
                 },
                 "}}}" => {
@@ -354,7 +340,7 @@ impl Template {
                                             }
                                         }
                                     } else {
-                                        ParserState::Invalid
+                                        return Err(UnclosedBraces)
                                     }
                                 },
                                 ParserState::Comment => {
@@ -380,10 +366,12 @@ impl Template {
                                         buffer.clear();
                                         ParserState::Text
                                     } else {
-                                        ParserState::Invalid
+                                        return Err(MismatchingClosedHelper(
+                                            helper_stack.front().unwrap().name.clone(),
+                                            name));
                                     }
                                 },
-                                _ => ParserState::Invalid
+                                _ => return Err(UnexpectedClosingBraces),
                             }
                         },
                         _ => {
@@ -393,9 +381,6 @@ impl Template {
                     }
                 }
             };
-            if state == ParserState::Invalid {
-                return Err(TemplateError);
-            }
             c += 1;
         }
 
@@ -406,7 +391,7 @@ impl Template {
         }
 
         if !helper_stack.is_empty() {
-            return Err(TemplateError);
+            return Err(UnclosedHelper(helper_stack.front().unwrap().name.clone()));
         }
 
         return Ok(template_stack.pop_front().unwrap());
@@ -537,7 +522,8 @@ fn test_parse_error() {
 
     let t = Template::compile(source.to_string());
 
-    assert!(t.is_err());
+    assert_eq!(format!("{}", t.unwrap_err()),
+        r#"helper "ifequals" was not closed on the end of file"#);
 }
 
 #[test]
