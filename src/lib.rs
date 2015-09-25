@@ -176,6 +176,7 @@
 //!
 
 #[macro_use] extern crate log;
+#[macro_use] extern crate quick_error;
 #[macro_use] extern crate lazy_static;
 #[cfg(test)] #[macro_use] extern crate maplit;
 
@@ -183,13 +184,15 @@ extern crate rustc_serialize as serialize;
 extern crate regex;
 extern crate num;
 
-pub use self::template::{Template, TemplateError};
+pub use self::template::{Template};
+pub use self::error::TemplateError;
 pub use self::registry::Registry as Handlebars;
 pub use self::render::{Renderable, RenderError, RenderContext, Helper};
 pub use self::helpers::{HelperDef};
 pub use self::context::{Context, JsonRender, JsonTruthy};
 
 mod template;
+mod error;
 mod registry;
 mod render;
 mod helpers;

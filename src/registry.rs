@@ -3,12 +3,13 @@ use std::io::Write;
 
 use serialize::json::ToJson;
 
-use template::{Template, TemplateError};
+use template::{Template};
 use render::{Renderable, RenderError, RenderContext};
 use helpers::{HelperDef};
 use context::{Context};
 use helpers;
 use support::str::StringWriter;
+use TemplateError;
 
 pub struct Registry {
     templates: HashMap<String, Template>,
