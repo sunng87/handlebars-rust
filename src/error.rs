@@ -3,7 +3,7 @@ quick_error! {
     #[derive(Debug, Clone)]
     pub enum TemplateError {
         UnclosedBraces {
-            description("closing braces `}}` expected but eof reached")
+            description("closing braces `}}` expected but EOF reached")
         }
         UnexpectedClosingBraces {
             description("can't close braces `}}` at this location")
@@ -14,8 +14,8 @@ quick_error! {
             description("wrong name of closing helper")
         }
         UnclosedHelper(name: String) {
-            display("helper {:?} was not closed on end of file", name)
-            description("some helper was not closed on end of file")
+            display("helper {:?} was not closed on the end of file", name)
+            description("some helper was not closed on the end of file")
         }
     }
 }
