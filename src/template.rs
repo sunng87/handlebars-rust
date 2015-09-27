@@ -105,7 +105,7 @@ fn find_tokens(source: &String) -> Vec<String> {
 }
 
 impl HelperTemplate {
-    pub fn parse(source: String, block: bool) -> Result<HelperTemplate, TemplateError> {
+    pub fn parse(source: String, block: bool, line_no: usize, col_no: usize) -> Result<HelperTemplate, TemplateError> {
         // FIXME, cache this regex
         let tokens_vec = find_tokens(&source);
         let mut tokens = tokens_vec.iter();
@@ -138,7 +138,7 @@ impl HelperTemplate {
             },
             None =>
                 // As far as I can see this is bare "{{" at the end of file.
-                Err(TemplateError::UnclosedBraces)
+                Err(TemplateError::UnclosedBraces(line_no, col_no))
         }
     }
 }
@@ -248,9 +248,18 @@ impl Template {
         let mut state = ParserState::Text;
 
         let mut c:usize = 0;
+        let mut line_no:usize = 1;
+        let mut col_no:usize = 0;
         let mut ws_omitter = WhiteSpaceOmit::None;
         let source_len = source.chars().count();
         while c < source_len {
+            if source.chars().nth(c).unwrap() == '\n' {
+                line_no = line_no + 1;
+                col_no = 0;
+            } else {
+                col_no = col_no + 1;
+            }
+
             let mut slice = source.slice_chars_alt(c, min(c+3, source_len)).to_string();
             if slice == "{{~" {
                 ws_omitter = ws_omitter | WhiteSpaceOmit::Right;
@@ -326,7 +335,7 @@ impl Template {
                                         } else {
                                             if find_tokens(&buffer).len() > 1 {
                                                 //inline helper
-                                                let helper = try!(HelperTemplate::parse(buffer.clone(), false));
+                                                let helper = try!(HelperTemplate::parse(buffer.clone(), false, line_no, col_no));
                                                 let mut t = template_stack.front_mut().unwrap();
                                                 t.elements.push(HelperExpression(helper));
                                                 buffer.clear();
@@ -340,7 +349,7 @@ impl Template {
                                             }
                                         }
                                     } else {
-                                        return Err(UnclosedBraces)
+                                        return Err(UnclosedBraces(line_no, col_no))
                                     }
                                 },
                                 ParserState::Comment => {
@@ -350,7 +359,7 @@ impl Template {
                                     ParserState::Text
                                 },
                                 ParserState::HelperStart => {
-                                    let helper = try!(HelperTemplate::parse(buffer.clone(), true));
+                                    let helper = try!(HelperTemplate::parse(buffer.clone(), true, line_no, col_no));
                                     helper_stack.push_front(helper);
                                     template_stack.push_front(Template{ elements: Vec::new() });
 
@@ -367,11 +376,12 @@ impl Template {
                                         ParserState::Text
                                     } else {
                                         return Err(MismatchingClosedHelper(
+                                            line_no, col_no,
                                             helper_stack.front().unwrap().name.clone(),
                                             name));
                                     }
                                 },
-                                _ => return Err(UnexpectedClosingBraces),
+                                _ => return Err(UnexpectedClosingBraces(line_no, col_no)),
                             }
                         },
                         _ => {
@@ -391,7 +401,7 @@ impl Template {
         }
 
         if !helper_stack.is_empty() {
-            return Err(UnclosedHelper(helper_stack.front().unwrap().name.clone()));
+            return Err(UnclosedHelper(line_no, col_no, helper_stack.front().unwrap().name.clone()));
         }
 
         return Ok(template_stack.pop_front().unwrap());
@@ -447,7 +457,7 @@ impl ToString for TemplateElement {
 #[test]
 fn test_parse_helper_start_tag() {
     let source = "if not name compare=1".to_string();
-    let h = HelperTemplate::parse(source, true).ok().unwrap();
+    let h = HelperTemplate::parse(source, true, 0, 0).ok().unwrap();
 
     assert_eq!(h.name, "if".to_string());
     assert_eq!(h.params, vec::<Parameter>![Parameter::Name("not".into()),
@@ -518,12 +528,12 @@ fn test_helper_to_string() {
 
 #[test]
 fn test_parse_error() {
-    let source = "{{#ifequals name compare=\"hello\"}}hello{{else}}good";
+    let source = "{{#ifequals name compare=\"hello\"}}\nhello\n\t{{else}}\ngood";
 
     let t = Template::compile(source.to_string());
 
     assert_eq!(format!("{}", t.unwrap_err()),
-        r#"helper "ifequals" was not closed on the end of file"#);
+               r#"helper "ifequals" was not closed on the end of file at line 4, column 4"#);
 }
 
 #[test]
