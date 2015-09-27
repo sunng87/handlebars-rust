@@ -42,13 +42,8 @@ impl Registry {
     }
 
     pub fn register_template_string(&mut self, name: &str, tpl_str: String) -> Result<(), TemplateError>{
-        let t = Template::compile(tpl_str);
-        if let Ok(tpl) = t {
-            self.templates.insert(name.to_string(), tpl);
-            Ok(())
-        } else {
-            Err(t.err().unwrap())
-        }
+        try!(Template::compile(tpl_str).and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
+        Ok(())
     }
 
     pub fn unregister_template(&mut self, name: &String) {
