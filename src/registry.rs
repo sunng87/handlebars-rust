@@ -46,7 +46,7 @@ impl Registry {
         Ok(())
     }
 
-    pub fn unregister_template(&mut self, name: &String) {
+    pub fn unregister_template(&mut self, name: &str) {
         self.templates.remove(name);
     }
 
@@ -54,11 +54,11 @@ impl Registry {
         self.helpers.insert(name.to_string(), def)
     }
 
-    pub fn get_template(&self, name: &String) -> Option<&Template> {
+    pub fn get_template(&self, name: &str) -> Option<&Template> {
         self.templates.get(name)
     }
 
-    pub fn get_helper(&self, name: &String) -> Option<&Box<HelperDef + 'static>> {
+    pub fn get_helper(&self, name: &str) -> Option<&Box<HelperDef + 'static>> {
         self.helpers.get(name)
     }
 
