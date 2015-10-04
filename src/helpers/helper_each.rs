@@ -10,21 +10,18 @@ pub struct EachHelper;
 
 impl HelperDef for EachHelper{
     fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param = h.param(0);
-
-        if param.is_none() {
-            return Err(render_error("Param not found for helper \"each\""));
-        }
+        let param = try!(h.param(0).ok_or_else(|| render_error("Param not found for helper \"each\"")));
 
         let template = h.template();
 
         match template {
             Some(t) => {
                 let path = rc.get_path().clone();
-                let value = c.navigate(&path, param.unwrap());
+                let value = c.navigate(&path, param);
 
                 rc.promote_local_vars();
 
+                debug!("each value {}", value);
                 let rendered = match *value {
                     Json::Array (ref list) => {
                         let len = list.len();
@@ -33,7 +30,8 @@ impl HelperDef for EachHelper{
                             rc.set_local_var("@last".to_string(), (i == len - 1).to_json());
                             rc.set_local_var("@index".to_string(), i.to_json());
 
-                            let new_path = format!("{}/{}[{}]", path, param.unwrap(), i);
+                            let new_path = format!("{}/{}.[{}]", path, param, i);
+                            debug!("each value {}", new_path);
                             rc.set_path(new_path);
                             try!(t.render(c, r, rc));
                         }
@@ -48,7 +46,7 @@ impl HelperDef for EachHelper{
                             }
 
                             rc.set_local_var("@key".to_string(), k.to_json());
-                            let new_path = format!("{}/{}/{}", path, param.unwrap(), k);
+                            let new_path = format!("{}/{}/{}", path, param, k);
                             rc.set_path(new_path);
                             try!(t.render(c, r, rc));
                         }
@@ -96,4 +94,15 @@ mod test {
         assert_eq!(r1.ok().unwrap(), "true|ftp:21|false|http:80|".to_string());
     }
 
+    #[test]
+    fn test_nested_array() {
+        let t0 = Template::compile("{{#each this.[0]}}{{this}}{{/each}}".to_owned()).ok().unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let r0 = handlebars.render("t0", &(vec![vec![1, 2, 3]]));
+
+        assert_eq!(r0.ok().unwrap(), "123".to_string());
+    }
 }

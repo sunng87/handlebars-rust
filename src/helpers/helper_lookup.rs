@@ -35,8 +35,8 @@ mod test {
 
     #[test]
     fn test_lookup() {
-        let t0 = Template::compile("{{#each v1}}{{lookup ../v2 @index}}{{/each}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#each v1}}{{lookup ../v2 1}}{{/each}}".to_string()).ok().unwrap();
+        let t0 = Template::compile("{{#each v1}}{{lookup ../../v2 @index}}{{/each}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#each v1}}{{lookup ../../v2 1}}{{/each}}".to_string()).ok().unwrap();
         let t2 = Template::compile("{{lookup kk \"a\"}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
