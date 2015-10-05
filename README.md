@@ -24,7 +24,7 @@ Check examples in the source. The example shows you how to:
 * Render something
 
 Run `cargo run --example render` to see results.
-(or `RUST_LOG=INFO cargo run --example render`) for logging output.
+(or `RUST_LOG=handlebars=info cargo run --example render` for logging output).
 
 Checkout `examples/` for more concrete demos of current API.
 
