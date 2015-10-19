@@ -1,6 +1,10 @@
 handlebars-rust
 ===============
 
+![4721045137_a05105da92_z](https://cloud.githubusercontent.com/assets/221942/10570641/aa0d31c4-7668-11e5-8ede-dca92bfd7299.jpg)
+
+([Photo ref](https://www.flickr.com/photos/jg33/4721045137))
+
 Rust templating with Handlebars.
 
 [![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
