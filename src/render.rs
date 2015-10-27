@@ -53,7 +53,11 @@ pub struct RenderContext<'a> {
     local_variables: HashMap<String, Json>,
     default_var: Json,
     /// the `Write` where page is generated
-    pub writer: &'a mut Write
+    pub writer: &'a mut Write,
+    /// current template name
+    pub current_template: Option<String>,
+    /// root template name
+    pub root_template: Option<String>
 }
 
 impl<'a> RenderContext<'a> {
@@ -64,7 +68,9 @@ impl<'a> RenderContext<'a> {
             path: ".".to_string(),
             local_variables: HashMap::new(),
             default_var: Json::Null,
-            writer: w
+            writer: w,
+            current_template: None,
+            root_template: None
         }
     }
 
@@ -75,7 +81,9 @@ impl<'a> RenderContext<'a> {
             path: self.path.clone(),
             local_variables: self.local_variables.clone(),
             default_var: self.default_var.clone(),
-            writer: w
+            writer: w,
+            current_template: self.current_template.clone(),
+            root_template: self.root_template.clone()
         }
     }
 
@@ -145,6 +153,14 @@ impl<'a> RenderContext<'a> {
         self.writer
     }
 }
+
+impl<'a> fmt::Debug for RenderContext<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "partials: {:?}, path: {:?}, local_variables: {:?}, current_template: {:?}, root_template: {:?}",
+               self.partials, self.path, self.local_variables, self.current_template, self.root_template)
+    }
+}
+
 
 pub struct Helper<'a> {
     name: &'a String,
@@ -257,6 +273,7 @@ impl Parameter {
 
 impl Renderable for Template {
     fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+        rc.current_template = self.name.clone();
         let iter = self.elements.iter();
         for t in iter {
             let c = ctx;
@@ -408,7 +425,8 @@ fn test_template() {
         elements.push(e4);
 
         let template = Template {
-            elements: elements
+            elements: elements,
+            name: None
         };
 
         let mut m: HashMap<String, String> = HashMap::new();
@@ -459,7 +477,8 @@ fn test_render_subexpression() {
         elements.push(e3);
 
         let template = Template {
-            elements: elements
+            elements: elements,
+            name: None
         };
 
         let mut m: HashMap<String, String> = HashMap::new();

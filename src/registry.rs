@@ -37,12 +37,14 @@ impl Registry {
         r
     }
 
-    pub fn register_template(&mut self, name: &str, template: Template) {
+    pub fn register_template(&mut self, name: &str, mut template: Template) {
+        template.name = Some(name.to_owned());
         self.templates.insert(name.to_string(), template);
     }
 
     pub fn register_template_string(&mut self, name: &str, tpl_str: String) -> Result<(), TemplateError>{
-        try!(Template::compile(tpl_str).and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
+        try!(Template::compile_with_name(tpl_str, name.to_owned())
+             .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
         Ok(())
     }
 
@@ -84,6 +86,7 @@ impl Registry {
 
         if let Some(t) = template {
             let mut render_context = RenderContext::new(writer);
+            render_context.root_template = t.name.clone();
             (*t).render(context, self, &mut render_context)
         } else {
             Err(RenderError::new(format!("Template not found: {}", name)))
