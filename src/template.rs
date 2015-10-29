@@ -3,6 +3,7 @@ use std::ops::BitOr;
 use std::fmt::{self, Display, Formatter};
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
+use std::rc::Rc;
 use num::FromPrimitive;
 use regex::Regex;
 
@@ -15,7 +16,7 @@ use self::TemplateElement::{RawString, Expression, HelperExpression,
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Template {
-    pub name: Option<String>,
+    pub name: Option<Rc<String>>,
     pub elements: Vec<TemplateElement>
 }
 
@@ -420,7 +421,7 @@ impl Template {
 
     pub fn compile_with_name<S: AsRef<str>>(source: S, name: String) -> Result<Template, TemplateError> {
         let mut t = try!(Template::compile(source));
-        t.name = Some(name);
+        t.name = Some(Rc::new(name));
         Ok(t)
     }
 }

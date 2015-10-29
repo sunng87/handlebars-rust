@@ -16,11 +16,13 @@ impl HelperDef for IncludeHelper {
     fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let template = match h.params().get(0) {
             Some(ref t) => {
-                if rc.current_template == Some((*t).to_string()) {
-                    return Err(RenderError::new("Cannot include self in >"));
-                } else {
-                    r.get_template(t)
+                if let Some(ref template_name_rc) = rc.current_template {
+                    if **template_name_rc == (*t).to_string() {
+                        return Err(RenderError::new("Cannot include self in >"));
+                    }
                 }
+
+                r.get_template(t)
             }
             None => return Err(RenderError::new("Param not found for helper")),
         };
