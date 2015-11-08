@@ -146,4 +146,18 @@ mod test {
         let r0 = handlebars.render("t0", &map);
         assert_eq!(r0.ok().unwrap(), "<h1><p>hello</p><p>world</p></h1>".to_string());
     }
+
+    #[test]
+    fn test_inline_partial() {
+        let t0 = Template::compile("{{#partial title}}hello {{name}}{{/partial}}<h1>include partial: {{#block title}}{{/block}}</h1>".to_string()).ok().unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let mut map: BTreeMap<String, String> = BTreeMap::new();
+        map.insert("name".into(), "world".into());
+
+        let r0 = handlebars.render("t0", &map);
+        assert_eq!(r0.ok().unwrap(), "<h1>include partial: hello world</h1>".to_string());
+    }
 }
