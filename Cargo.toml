@@ -1,31 +1,28 @@
 [package]
-
-name = "handlebars"
-version = "0.11.2"
 authors = ["Ning Sun <sunng@about.me>"]
 description = "Handlebars templating implemented in Rust."
-license = "MIT"
-keywords = ["handlebars", "templating", "web"]
-homepage = "https://github.com/sunng87/handlebars-rust"
-repository = "https://github.com/sunng87/handlebars-rust"
 documentation = "http://sunng.info/handlebars-rust/"
-readme = "README.md"
-
-[lib]
-
+homepage = "https://github.com/sunng87/handlebars-rust"
+keywords = ["handlebars", "templating", "web"]
+license = "MIT"
 name = "handlebars"
-path = "src/lib.rs"
+readme = "README.md"
+repository = "https://github.com/sunng87/handlebars-rust"
+version = "0.11.2"
 
 [dependencies]
-
-regex = "^0.1.41"
-log = "^0.3.1"
-rustc-serialize = "^0.3.15"
-num = "^0.1.25"
 lazy_static = "^0.1.14"
+log = "^0.3.1"
+num = "^0.1.25"
+pulldown-cmark = { git = "https://github.com/google/pulldown-cmark.git"}
 quick-error = "^0.1.3"
+regex = "^0.1.41"
+rustc-serialize = "^0.3.15"
 
 [dev-dependencies]
 env_logger = "*"
 maplit = "*"
-#tojson_macros = "*"
+
+[lib]
+name = "handlebars"
+path = "src/lib.rs"
