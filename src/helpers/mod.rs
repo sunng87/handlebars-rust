@@ -9,6 +9,7 @@ pub use self::helper_lookup::{LOOKUP_HELPER};
 pub use self::helper_raw::{RAW_HELPER};
 pub use self::helper_partial::{INCLUDE_HELPER, BLOCK_HELPER, PARTIAL_HELPER};
 pub use self::helper_log::{LOG_HELPER};
+pub use self::helper_markdown::{MARKDOWN_HELPER};
 
 /// Helper Definition
 ///
@@ -39,6 +40,7 @@ mod helper_lookup;
 mod helper_raw;
 mod helper_partial;
 mod helper_log;
+mod helper_markdown; 
 
 /*
 pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;

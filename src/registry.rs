@@ -33,7 +33,8 @@ impl Registry {
         r.register_helper("block", Box::new(helpers::BLOCK_HELPER));
         r.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
         r.register_helper("log", Box::new(helpers::LOG_HELPER));
-
+        r.register_helper("markdown", Box::new(helpers::MARKDOWN_HELPER));
+        
         r
     }
 
@@ -137,7 +138,7 @@ mod test {
         r.register_helper("dummy", Box::new(DUMMY_HELPER));
 
         // built-in helpers plus 1
-        assert_eq!(r.helpers.len(), 10+1);
+        assert_eq!(r.helpers.len(), 11+1);
     }
 
     #[test]
