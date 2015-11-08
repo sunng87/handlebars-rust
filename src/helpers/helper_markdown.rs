@@ -5,7 +5,6 @@ use render::{Renderable, RenderContext, RenderError, render_error, Helper};
 extern crate pulldown_cmark;
 
 use self::pulldown_cmark::Parser;
-use self::pulldown_cmark::{Options, OPTION_ENABLE_TABLES, OPTION_ENABLE_FOOTNOTES};
 use self::pulldown_cmark::html;
 
 
@@ -15,11 +14,8 @@ pub struct MarkdownHelper;
 
 
 pub fn render_html(text: String) -> String {
-    let mut opts = Options::empty();
-    opts.insert(OPTION_ENABLE_TABLES);
-    opts.insert(OPTION_ENABLE_FOOTNOTES);
     let mut s = String::with_capacity(text.len() * 3 / 2);
-    let p = Parser::new_ext(&*text, opts);
+    let p = Parser::new(&*text);
     html::push_html(&mut s, p);
     s
 }
