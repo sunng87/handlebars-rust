@@ -1,7 +1,7 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context, JsonTruthy};
-use render::{Renderable, RenderContext, RenderError, render_error, Helper};
+use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
@@ -11,7 +11,7 @@ impl HelperDef for WithHelper {
         let param = h.param(0);
 
         if param.is_none() {
-            return Err(render_error("Param not found for helper \"with\""));
+            return Err(RenderError::new("Param not found for helper \"with\""));
         }
 
         let path = rc.get_path().clone();

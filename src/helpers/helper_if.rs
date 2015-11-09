@@ -1,7 +1,7 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context, JsonTruthy};
-use render::{Renderable, RenderContext, RenderError, render_error, Helper};
+use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct IfHelper {
@@ -13,7 +13,7 @@ impl HelperDef for IfHelper{
         let param = h.param(0);
 
         if param.is_none() {
-            return Err(render_error("Param not found for helper \"if\""));
+            return Err(RenderError::new("Param not found for helper \"if\""));
         }
 
         let name = param.unwrap();

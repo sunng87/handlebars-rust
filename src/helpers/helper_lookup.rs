@@ -1,15 +1,15 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context, JsonRender};
-use render::{Renderable, RenderContext, RenderError, render_error, Helper};
+use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
     fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let value_param = try!(h.param(0).ok_or_else(|| render_error("Param not found for helper \"lookup\"")));
-        let index_param = try!(h.param(1).ok_or_else(|| render_error("Insuffitient params for helper \"lookup\"")));
+        let value_param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"lookup\"")));
+        let index_param = try!(h.param(1).ok_or_else(|| RenderError::new("Insuffitient params for helper \"lookup\"")));
 
         let partial_path: String = if index_param.starts_with("@") {
             rc.get_local_var(index_param).render()

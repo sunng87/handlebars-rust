@@ -11,9 +11,9 @@ use registry::Registry;
 use context::{Context, JsonRender};
 use support::str::StringWriter;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct RenderError {
-    pub desc: &'static str
+    pub desc: String
 }
 
 impl fmt::Display for RenderError {
@@ -24,13 +24,21 @@ impl fmt::Display for RenderError {
 
 impl error::Error for RenderError {
     fn description(&self) -> &str {
-        self.desc
+        &self.desc[..]
     }
 }
 
 impl From<IOError> for RenderError {
     fn from(_: IOError) -> RenderError {
-        render_error("IO Error")
+        RenderError::new("IO Error")
+    }
+}
+
+impl RenderError {
+    pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
+        RenderError {
+            desc: desc.as_ref().to_owned()
+        }
     }
 }
 
@@ -258,12 +266,6 @@ impl Renderable for Template {
     }
 }
 
-pub fn render_error(desc: &'static str) -> RenderError {
-    RenderError {
-        desc: desc
-    }
-}
-
 impl Renderable for TemplateElement {
     fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         match *self {
@@ -319,7 +321,7 @@ impl Renderable for TemplateElement {
                             }
                             None => {
                                 Err(RenderError{
-                                    desc: "Helper not defined."
+                                    desc: format!("Helper not defined: {:?}", ht.name)
                                 })
                             }
                         }
