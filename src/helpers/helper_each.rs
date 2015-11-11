@@ -105,4 +105,32 @@ mod test {
 
         assert_eq!(r0.ok().unwrap(), "123".to_string());
     }
+
+    #[test]
+    fn test_empty_key() {
+        let t0 = Template::compile("{{#each this}}{{@key}}-{{value}}\n{{/each}}".to_owned()).unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let r0 = handlebars.render("t0", &({
+            let mut rv = BTreeMap::new();
+            rv.insert("foo".to_owned(), {
+                let mut rv = BTreeMap::new();
+                rv.insert("value".to_owned(), "bar".to_owned());
+                rv
+            });
+            rv.insert("".to_owned(), {
+                let mut rv = BTreeMap::new();
+                rv.insert("value".to_owned(), "baz".to_owned());
+                rv
+            });
+            rv
+        })).unwrap();
+
+        let mut r0_sp: Vec<_> = r0.split('\n').collect();
+        r0_sp.sort();
+
+        assert_eq!(r0_sp, vec!["", "-baz", "foo-bar"]);
+    }
 }

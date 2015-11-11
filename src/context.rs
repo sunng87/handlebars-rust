@@ -19,7 +19,7 @@ pub struct Context {
 fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
     for p in (*path).split('/') {
         match p {
-            "." | "" => {
+            "." => {
                 continue;
             }
             ".." => {
