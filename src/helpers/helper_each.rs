@@ -46,7 +46,7 @@ impl HelperDef for EachHelper{
                             }
 
                             rc.set_local_var("@key".to_string(), k.to_json());
-                            let new_path = format!("{}/{}/{}", path, param, k);
+                            let new_path = format!("{}/{}.[{}]", path, param, k);
                             rc.set_path(new_path);
                             try!(t.render(c, r, rc));
                         }

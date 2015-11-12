@@ -3,8 +3,8 @@ use regex::Regex;
 use std::collections::{VecDeque, BTreeMap};
 
 lazy_static! {
-    static ref KEY_MATCHER: Regex = Regex::new(r"\[.+\]$").unwrap();
-    static ref QUOT_MATCHER: Regex = Regex::new("['\"](.+)['\"]").unwrap();
+    static ref KEY_MATCHER: Regex = Regex::new(r"\[.*\]$").unwrap();
+    static ref QUOT_MATCHER: Regex = Regex::new("['\"](.*?)['\"]").unwrap();
     static ref DEFAULT_VALUE: Json = Json::Null;
 }
 
