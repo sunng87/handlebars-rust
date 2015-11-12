@@ -3,14 +3,14 @@ use serialize::json::{Json, ToJson};
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context};
-use render::{Renderable, RenderContext, RenderError, render_error, Helper};
+use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;
 
 impl HelperDef for EachHelper{
     fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param = try!(h.param(0).ok_or_else(|| render_error("Param not found for helper \"each\"")));
+        let param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
 
         let template = h.template();
 
@@ -54,7 +54,7 @@ impl HelperDef for EachHelper{
                         Ok(())
                     },
                     _ => {
-                        Err(render_error("Param is not an iteratable."))
+                        Err(RenderError::new(format!("Param type is not iterable: {:?}", template)))
                     }
                 };
                 rc.set_path(path);

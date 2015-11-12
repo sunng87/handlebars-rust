@@ -1,7 +1,7 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context};
-use render::{RenderContext, RenderError, render_error, Helper};
+use render::{RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct LogHelper;
@@ -11,7 +11,7 @@ impl HelperDef for LogHelper {
         let param = h.param(0);
 
         if param.is_none() {
-            return Err(render_error("Param not found for helper \"log\""));
+            return Err(RenderError::new("Param not found for helper \"log\""));
         }
 
         let name = param.unwrap();

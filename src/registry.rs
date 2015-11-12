@@ -86,9 +86,7 @@ impl Registry {
             let mut render_context = RenderContext::new(writer);
             (*t).render(context, self, &mut render_context)
         } else {
-            Err(RenderError{
-                desc: "Template not found."
-            })
+            Err(RenderError::new(format!("Template not found: {}", name)))
         }
     }
 }

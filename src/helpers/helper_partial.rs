@@ -1,7 +1,7 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context};
-use render::{Renderable, RenderContext, RenderError, render_error, Helper};
+use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct IncludeHelper;
@@ -16,7 +16,7 @@ impl HelperDef for IncludeHelper {
     fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let template = match h.params().get(0) {
             Some(ref t) => r.get_template(t),
-            None => return Err(render_error("Param not found for helper")),
+            None => return Err(RenderError::new("Param not found for helper")),
         };
 
         let context_param = h.params().get(1);
@@ -40,7 +40,7 @@ impl HelperDef for IncludeHelper {
                     t.render(&new_ctx, r, rc)
                 }
             },
-            None => Err(render_error("Template not found.")),
+            None => Err(RenderError::new("Template not found.")),
         };
 
         if let Some(path) = old_path {
@@ -57,7 +57,7 @@ impl HelperDef for BlockHelper {
         let param = h.params().get(0);
 
         if param.is_none() {
-            return Err(render_error("Param not found for helper"));
+            return Err(RenderError::new("Param not found for helper"));
         }
 
         let partial_template = rc.get_partial(param.unwrap());
@@ -78,7 +78,7 @@ impl HelperDef for PartialHelper {
         let param = h.params().get(0);
 
         if param.is_none() {
-            return Err(render_error("Param not found for helper"));
+            return Err(RenderError::new("Param not found for helper"));
         }
 
         rc.set_partial(param.unwrap().clone(), h.template().unwrap().clone());
