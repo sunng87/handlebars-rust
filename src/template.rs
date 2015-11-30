@@ -79,7 +79,7 @@ impl ToString for HelperTemplate {
     }
 }
 
-fn find_tokens(source: &String) -> Vec<String> {
+fn find_tokens(source: &str) -> Vec<String> {
     let tokenizer = Regex::new(r"[^\s\(\)]+|\([^\)]*\)").unwrap();
 
     let mut hash_key: Option<&str> = None;
@@ -105,7 +105,8 @@ fn find_tokens(source: &String) -> Vec<String> {
 }
 
 impl HelperTemplate {
-    pub fn parse(source: String, block: bool, line_no: usize, col_no: usize) -> Result<HelperTemplate, TemplateError> {
+    pub fn parse<S: AsRef<str>>(source: S, block: bool, line_no: usize, col_no: usize) -> Result<HelperTemplate, TemplateError> {
+        let source = source.as_ref();
         // FIXME, cache this regex
         let tokens_vec = find_tokens(&source);
         let mut tokens = tokens_vec.iter();
@@ -144,7 +145,8 @@ impl HelperTemplate {
 }
 
 impl Parameter {
-    pub fn parse(source: String) -> Result<Parameter, TemplateError> {
+    pub fn parse<S: AsRef<str>>(source: S) -> Result<Parameter, TemplateError> {
+        let source = source.as_ref();
         // move this to static scope when regex! is stable
         let subexpr_regex = Regex::new(r"\(([^\)]+)\)").unwrap();
 
@@ -159,7 +161,7 @@ impl Parameter {
             let sub_template = try!(Template::compile(temp));
             Ok(Parameter::Subexpression(sub_template))
         } else {
-            Ok(Parameter::Name(source.clone()))
+            Ok(Parameter::Name(source.to_owned()))
         }
     }
 }
@@ -218,7 +220,7 @@ impl BitOr<WhiteSpaceOmit> for WhiteSpaceOmit {
 }
 
 
-fn process_whitespace(buf: &String, wso: &mut WhiteSpaceOmit) -> String {
+fn process_whitespace(buf: &str, wso: &mut WhiteSpaceOmit) -> String {
     let result = match *wso {
         WhiteSpaceOmit::Left => {
             buf.trim_left().to_string()
@@ -230,7 +232,7 @@ fn process_whitespace(buf: &String, wso: &mut WhiteSpaceOmit) -> String {
             buf.trim().to_string()
         },
         WhiteSpaceOmit::None => {
-            buf.clone()
+            buf.to_string()
         }
     };
     *wso = WhiteSpaceOmit::None;
@@ -238,8 +240,10 @@ fn process_whitespace(buf: &String, wso: &mut WhiteSpaceOmit) -> String {
 }
 
 impl Template {
-    pub fn compile(source: String) -> Result<Template, TemplateError> {
+    pub fn compile<S: AsRef<str>>(source: S) -> Result<Template, TemplateError> {
         use TemplateError::*;
+
+        let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
         template_stack.push_front(Template{ elements: Vec::new() });
@@ -611,7 +615,7 @@ fn test_white_space_omitter() {
 #[test]
 fn test_find_tokens() {
     let source: String = "hello   good (nice) (hello world)\n\t\t world hello=world hello=(world) hello=(world 0)".into();
-    let tokens: Vec<String> = find_tokens(&source);
+    let tokens: Vec<String> = find_tokens(&source[..]);
     assert_eq!(tokens, vec::<String>!["hello".to_string(),
                                       "good".to_string(),
                                       "(nice)".to_string(),

@@ -452,7 +452,7 @@ fn test_render_subexpression() {
         let e1 = RawString("<h1>".to_string());
         elements.push(e1);
 
-        let e2 = Expression(Parameter::parse("(hello)".into()).ok().unwrap());
+        let e2 = Expression(Parameter::parse("(hello)").ok().unwrap());
         elements.push(e2);
 
         let e3 = RawString("</h1>".to_string());
