@@ -3,17 +3,20 @@ use std::ops::BitOr;
 use std::fmt::{self, Display, Formatter};
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
+use std::rc::Rc;
 use num::FromPrimitive;
 use regex::Regex;
 
 use support::str::SliceChars;
 use TemplateError;
+use TemplateError::*;
 
 use self::TemplateElement::{RawString, Expression, HelperExpression,
                             HTMLExpression, HelperBlock, Comment};
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Template {
+    pub name: Option<Rc<String>>,
     pub elements: Vec<TemplateElement>
 }
 
@@ -240,13 +243,18 @@ fn process_whitespace(buf: &str, wso: &mut WhiteSpaceOmit) -> String {
 }
 
 impl Template {
-    pub fn compile<S: AsRef<str>>(source: S) -> Result<Template, TemplateError> {
-        use TemplateError::*;
+    pub fn new() -> Template {
+        Template {
+            elements: Vec::new(),
+            name: None
+        }
+    }
 
+    pub fn compile<S: AsRef<str>>(source: S) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
-        template_stack.push_front(Template{ elements: Vec::new() });
+        template_stack.push_front(Template::new());
 
         let mut buffer: String = String::new();
         let mut state = ParserState::Text;
@@ -334,7 +342,7 @@ impl Template {
                                             let t = template_stack.pop_front().unwrap();
                                             let h = helper_stack.front_mut().unwrap();
                                             h.template = Some(t);
-                                            template_stack.push_front(Template{ elements: Vec::new() });
+                                            template_stack.push_front(Template::new());
                                             ParserState::Text
                                         } else {
                                             if find_tokens(&buffer).len() > 1 {
@@ -365,7 +373,7 @@ impl Template {
                                 ParserState::HelperStart => {
                                     let helper = try!(HelperTemplate::parse(buffer.clone(), true, line_no, col_no));
                                     helper_stack.push_front(helper);
-                                    template_stack.push_front(Template{ elements: Vec::new() });
+                                    template_stack.push_front(Template::new());
 
                                     buffer.clear();
                                     ParserState::Text
@@ -409,6 +417,12 @@ impl Template {
         }
 
         return Ok(template_stack.pop_front().unwrap());
+    }
+
+    pub fn compile_with_name<S: AsRef<str>>(source: S, name: String) -> Result<Template, TemplateError> {
+        let mut t = try!(Template::compile(source));
+        t.name = Some(Rc::new(name));
+        Ok(t)
     }
 }
 
