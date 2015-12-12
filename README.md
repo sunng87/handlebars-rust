@@ -13,7 +13,7 @@ Rust templating with Handlebars.
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 Thanks to [@blaenk](https://github.com/blaenk)'s patch,
-handlebars-rust now compiles on nightly, beta and stable channel.
+handlebars-rust now compiles on nightly, beta and stable (1.4.0+) channel.
 
 ## Documents
 

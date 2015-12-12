@@ -3,10 +3,11 @@ rust:
   - nightly
   - beta
   - 1.4.0
+  - 1.5.0
 after_success: |
   echo $TRAVIS_RUST_VERSION && \
   [ $TRAVIS_BRANCH == 'master' ] && \
-  [ $TRAVIS_RUST_VERSION == '1.4.0' ] && \
+  [ $TRAVIS_RUST_VERSION == '1.5.0' ] && \
   [ "$TRAVIS_PULL_REQUEST" == "false" ] && \
   cargo doc && \
   echo '<meta http-equiv=refresh content=0;url=handlebars/index.html>' > target/doc/index.html && \
