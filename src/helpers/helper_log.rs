@@ -1,6 +1,6 @@
 use helpers::{HelperDef};
 use registry::{Registry};
-use context::{Context};
+use context::{JsonRender, Context};
 use render::{RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
@@ -22,7 +22,7 @@ impl HelperDef for LogHelper {
             c.navigate(rc.get_path(), name)
         };
 
-        info!("{}: {}", name, value);
+        info!("{}: {}", name, value.render());
 
         Ok(())
     }
