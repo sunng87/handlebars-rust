@@ -195,9 +195,6 @@ pub use self::error::TemplateError;
 pub use self::registry::Registry as Handlebars;
 pub use self::render::{Renderable, RenderError, RenderContext, Helper};
 pub use self::helpers::{HelperDef};
-#[cfg(not(feature = "serde_type"))]
-pub use self::context::{Context, JsonRender, JsonTruthy};
-#[cfg(feature = "serde_type")]
 pub use self::context::{Context, JsonRender, JsonTruthy};
 
 mod template;
@@ -205,8 +202,5 @@ mod error;
 mod registry;
 mod render;
 mod helpers;
-#[cfg(not(feature = "serde_type"))]
 mod context;
-#[cfg(feature = "serde_type")]
-mod context_serde;
 mod support;

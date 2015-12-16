@@ -1,4 +1,8 @@
+#[cfg(not(feature = "serde_type"))]
 use serialize::json::{Json, ToJson};
+#[cfg(feature = "serde_type")]
+use serde_json::value::Value as Json;
+
 
 use helpers::{HelperDef};
 use registry::{Registry};
