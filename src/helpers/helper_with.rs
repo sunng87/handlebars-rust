@@ -45,6 +45,7 @@ impl HelperDef for WithHelper {
 pub static WITH_HELPER: WithHelper = WithHelper;
 
 #[cfg(test)]
+#[cfg(not(feature = "serde_type"))]
 mod test {
     use template::{Template};
     use registry::{Registry};

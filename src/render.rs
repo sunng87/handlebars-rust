@@ -445,6 +445,7 @@ fn test_template() {
 }
 
 #[test]
+#[cfg(not(feature = "serde_type"))]
 fn test_render_context_promotion_and_demotion() {
     use serialize::json::ToJson;
     let mut sw = StringWriter::new();

@@ -210,6 +210,7 @@ impl JsonTruthy for Json {
 }
 
 #[cfg(test)]
+#[cfg(not(feature = "serde_type"))]
 mod test {
     use context::{JsonRender, Context};
     use std::collections::BTreeMap;
