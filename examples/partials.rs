@@ -1,7 +1,8 @@
+#![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
+#[cfg(not(feature = "serde_type"))]
 extern crate rustc_serialize;
-
 #[macro_use]
 extern crate maplit;
 
@@ -21,6 +22,7 @@ fn load_template(name: &str) -> io::Result<String> {
     Ok(s)
 }
 
+#[cfg(not(feature = "serde_type"))]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
@@ -48,3 +50,6 @@ fn main() {
     println!("Page 1");
     println!("{}", handlebars.render("template", &data1).ok().unwrap());
 }
+
+#[cfg(feature = "serde_type")]
+fn main() {}

@@ -53,7 +53,7 @@
 //!
 //! You can use default `render` function to render a template into `String`. From 0.9, there's `renderw` to render text into anything of `std::io::Write`.
 //!
-//! ```
+//! ```ignore
 //! extern crate rustc_serialize;
 //! extern crate handlebars;
 //!
