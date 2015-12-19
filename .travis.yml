@@ -4,6 +4,10 @@ rust:
   - beta
   - 1.4.0
   - 1.5.0
+script:
+  - |
+      cargo test &&
+      cargo test --features serde_type --no-default-features
 after_success: |
   echo $TRAVIS_RUST_VERSION && \
   [ $TRAVIS_BRANCH == 'master' ] && \
