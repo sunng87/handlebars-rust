@@ -91,6 +91,10 @@
 //! }
 //! ```
 //!
+//! #### Escaping
+//!
+//! As per the handlebars spec, output using `{{expression}}` is escaped by default (to be precise, the characters `&"<>` are replaced by their respective html / xml entities). However, since the use cases of a rust template engine are probably a bit more diverse than those of a JavaScript one, this implementation allows the user to supply a custom escape function to be used instead. For more information see the `EscapeFn` type and `Handlebars::register_escape_fn()` method.
+//!
 //! ### Custom Helper
 //!
 //! Handlebars is nothing without helpers. You can also create your own helpers with rust. Helpers in handlebars-rust are custom struct implements the `HelperDef` trait, concretely, the `call` function. For your convenience, most of stateless helpers can be implemented as bare functions.
@@ -186,7 +190,7 @@ extern crate num;
 
 pub use self::template::{Template};
 pub use self::error::TemplateError;
-pub use self::registry::Registry as Handlebars;
+pub use self::registry::{EscapeFn, Registry as Handlebars};
 pub use self::render::{Renderable, RenderError, RenderContext, Helper};
 pub use self::helpers::{HelperDef};
 pub use self::context::{Context, JsonRender, JsonTruthy};

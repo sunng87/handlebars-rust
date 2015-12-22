@@ -12,16 +12,37 @@ use helpers;
 use support::str::StringWriter;
 use TemplateError;
 
+/// This type represents an *escape fn*, that is a function who's purpose it is
+/// to escape potentially problematic characters in a string.
+///
+/// The default *escape fn* replaces the characters `&"<>`
+/// with the equivalent html / xml entities.
+///
+/// An *escape fn* is represented as a `Box` to avoid unnecessary type
+/// parameters (and because traits cannot be aliased using `type`).
+pub type EscapeFn = Box<Fn(&str) -> String>;
+
+fn get_default_escape_fn() -> EscapeFn {
+    Box::new(|data| {
+        data.replace("&", "&amp;")
+            .replace("\"", "&quot;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+    })
+}
+
 pub struct Registry {
     templates: HashMap<String, Template>,
-    helpers: HashMap<String, Box<HelperDef + 'static>>
+    helpers: HashMap<String, Box<HelperDef + 'static>>,
+    escape_fn: EscapeFn
 }
 
 impl Registry {
     pub fn new() -> Registry {
         let mut r = Registry {
             templates: HashMap::new(),
-            helpers: HashMap::new()
+            helpers: HashMap::new(),
+            escape_fn: get_default_escape_fn(),
         };
 
         r.register_helper("if", Box::new(helpers::IF_HELPER));
@@ -55,6 +76,21 @@ impl Registry {
 
     pub fn register_helper(&mut self, name: &str, def: Box<HelperDef + 'static>) -> Option<Box<HelperDef + 'static>> {
         self.helpers.insert(name.to_string(), def)
+    }
+
+    /// Register a new *escape fn* to be used from now on by this registry.
+    pub fn register_escape_fn<F: 'static + Fn(&str) -> String>(&mut self, escape_fn: F) {
+        self.escape_fn = Box::new(escape_fn);
+    }
+
+    /// Restore the default *escape fn*.
+    pub fn unregister_escape_fn(&mut self) {
+        self.escape_fn = get_default_escape_fn();
+    }
+
+    /// Get a reference to the current *escape fn*.
+    pub fn get_escape_fn(&self) -> &Fn(&str) -> String {
+        &*self.escape_fn
     }
 
     pub fn get_template(&self, name: &str) -> Option<&Template> {
@@ -158,5 +194,24 @@ mod test {
 
         assert_eq!("<h1></h1>".to_string(), sw.to_string());
 
+    }
+
+    #[test]
+    fn test_escape_fn() {
+        let mut r = Registry::new();
+
+        let input = String::from("\"<>&");
+
+        r.register_template_string("test", String::from("{{this}}")).unwrap();
+
+        assert_eq!("&quot;&lt;&gt;&amp;", r.render("test", &input).unwrap());
+
+        r.register_escape_fn(|s| s.into());
+
+        assert_eq!("\"<>&", r.render("test", &input).unwrap());
+
+        r.unregister_escape_fn();
+
+        assert_eq!("&quot;&lt;&gt;&amp;", r.render("test", &input).unwrap());
     }
 }
