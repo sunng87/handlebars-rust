@@ -1,3 +1,6 @@
+
+#![cfg_attr(all(feature="serde_type"), feature(custom_derive, plugin))]
+#![cfg_attr(all(feature="serde_type"), plugin(serde_macros))]
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
@@ -70,6 +73,36 @@ mod rustc_example {
     }
 }
 
+#[cfg(feature = "serde_type")]
+mod serde_example {
+    use std::collections::BTreeMap;
+    use serde_json::value::{self, Value};
+
+    #[derive(Serialize, Debug)]
+    pub struct Team {
+        name: String,
+        pts: u16
+    }
+
+    pub fn make_data () -> BTreeMap<String, Value> {
+        let mut data = BTreeMap::new();
+
+        data.insert("year".to_string(), value::to_value("2015"));
+
+        let teams = vec![ Team { name: "Jiangsu Sainty".to_string(),
+                                 pts: 43u16 },
+                          Team { name: "Beijing Guoan".to_string(),
+                                 pts: 27u16 },
+                          Team { name: "Guangzhou Evergrand".to_string(),
+                                 pts: 22u16 },
+                          Team { name: "Shandong Luneng".to_string(),
+                                 pts: 12u16 } ];
+
+        data.insert("teams".to_string(), value::to_value(&teams));
+        data
+    }
+}
+
 #[cfg(not(feature = "serde_type"))]
 fn main() {
     use rustc_example::*;
@@ -87,4 +120,17 @@ fn main() {
 }
 
 #[cfg(feature = "serde_type")]
-fn main(){}
+fn main(){
+    use serde_example::*;
+    env_logger::init().unwrap();
+    let mut handlebars = Handlebars::new();
+
+    let t = load_template("./examples/template.hbs").ok().unwrap();
+    handlebars.register_template_string("table", t).ok().unwrap();
+
+    handlebars.register_helper("format", Box::new(format_helper));
+    //    handlebars.register_helper("format", Box::new(FORMAT_HELPER));
+
+    let data = make_data();
+    println!("{}", handlebars.render("table", &data).ok().unwrap());
+}
