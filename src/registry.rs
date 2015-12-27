@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::io::Write;
-use std::rc::Rc;
 
 use serialize::json::ToJson;
 
@@ -39,7 +38,7 @@ impl Registry {
     }
 
     pub fn register_template(&mut self, name: &str, mut template: Template) {
-        template.name = Some(Rc::new(name.to_owned()));
+        template.name = Some(name.to_owned());
         self.templates.insert(name.to_string(), template);
     }
 

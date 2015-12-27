@@ -3,7 +3,6 @@ use std::error;
 use std::fmt;
 use std::io::Write;
 use std::io::Error as IOError;
-use std::rc::Rc;
 use serialize::json::Json;
 
 use template::{Template, TemplateElement, Parameter, HelperTemplate};
@@ -56,9 +55,9 @@ pub struct RenderContext<'a> {
     /// the `Write` where page is generated
     pub writer: &'a mut Write,
     /// current template name
-    pub current_template: Option<Rc<String>>,
+    pub current_template: Option<String>,
     /// root template name
-    pub root_template: Option<Rc<String>>
+    pub root_template: Option<String>
 }
 
 impl<'a> RenderContext<'a> {
