@@ -300,10 +300,7 @@ impl Renderable for TemplateElement {
                     };
                     value.render()
                 };
-                let output = rendered.replace("&", "&amp;")
-                    .replace("\"", "&quot;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;");
+                let output = registry.get_escape_fn()(&rendered);
                 try!(rc.writer.write(output.into_bytes().as_ref()));
                 Ok(())
             },
