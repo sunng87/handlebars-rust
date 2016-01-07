@@ -35,6 +35,6 @@ serde_type = ["serde", "serde_json"]
 env_logger = "*"
 maplit = "*"
 #tojson_macros = "*"
-serde_codegen = "*"
+serde_codegen = { version = "*", default-features = false }
 serde_macros = "*"
 #syntex = "*"
