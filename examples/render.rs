@@ -69,6 +69,7 @@ mod rustc_example {
                                  pts: 12u16 } ];
 
         data.insert("teams".to_string(), teams.to_json());
+        data.insert("engine".to_string(), "rustc_serialize".to_json());
         data
     }
 }
@@ -89,7 +90,6 @@ mod serde_example {
 
         data.insert("year".to_string(), value::to_value(&"2015"));
 
-
         let teams = vec![ Team { name: "Jiangsu Sainty".to_string(),
                                  pts: 43u16 },
                           Team { name: "Beijing Guoan".to_string(),
@@ -100,7 +100,9 @@ mod serde_example {
                                  pts: 12u16 } ];
 
         data.insert("teams".to_string(), value::to_value(&teams));
+        data.insert("engine".to_string(), value::to_value(&"serde_json"));
         data
+
     }
 }
 
