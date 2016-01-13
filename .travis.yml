@@ -11,7 +11,7 @@ before_script:
 script:
   - |
       cargo test &&
-      travis-cargo --only nightly test -- --features serde_type --no-default-features
+      travis-cargo --only nightly test -- --no-default-features
 after_success: |
   echo $TRAVIS_RUST_VERSION && \
   [ $TRAVIS_BRANCH == 'master' ] && \
