@@ -1,6 +1,6 @@
 use std::cmp::min;
 use std::ops::BitOr;
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{self};
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
 use num::FromPrimitive;

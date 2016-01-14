@@ -1,4 +1,8 @@
+#[cfg(not(feature = "serde_type"))]
 use serialize::json::{Json, ToJson};
+#[cfg(feature = "serde_type")]
+use serde_json::value::{self, Value as Json};
+
 
 use helpers::{HelperDef};
 use registry::{Registry};
@@ -9,6 +13,7 @@ use render::{Renderable, RenderContext, RenderError, Helper};
 pub struct EachHelper;
 
 impl HelperDef for EachHelper{
+    #[cfg(not(feature = "serde_type"))]
     fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
 
@@ -21,7 +26,7 @@ impl HelperDef for EachHelper{
 
                 rc.promote_local_vars();
 
-                debug!("each value {}", value);
+                debug!("each value {:?}", value);
                 let rendered = match *value {
                     Json::Array (ref list) => {
                         let len = list.len();
@@ -31,7 +36,7 @@ impl HelperDef for EachHelper{
                             rc.set_local_var("@index".to_string(), i.to_json());
 
                             let new_path = format!("{}/{}.[{}]", path, param, i);
-                            debug!("each value {}", new_path);
+                            debug!("each value {:?}", new_path);
                             rc.set_path(new_path);
                             try!(t.render(c, r, rc));
                         }
@@ -64,6 +69,64 @@ impl HelperDef for EachHelper{
             None => Ok(())
         }
     }
+
+    #[cfg(feature = "serde_type")]
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+        let param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
+
+        let template = h.template();
+
+        match template {
+            Some(t) => {
+                let path = rc.get_path().clone();
+                let value = c.navigate(&path, param);
+
+                rc.promote_local_vars();
+
+                debug!("each value {:?}", value);
+                let rendered = match *value {
+                    Json::Array (ref list) => {
+                        let len = list.len();
+                        for i in 0..len {
+                            rc.set_local_var("@first".to_string(), value::to_value(&(i == 0usize)));
+                            rc.set_local_var("@last".to_string(), value::to_value(&(i == len - 1)));
+                            rc.set_local_var("@index".to_string(), value::to_value(&i));
+
+                            let new_path = format!("{}/{}.[{}]", path, param, i);
+                            debug!("each value {:?}", new_path);
+                            rc.set_path(new_path);
+                            try!(t.render(c, r, rc));
+                        }
+                        Ok(())
+                    },
+                    Json::Object(ref obj) => {
+                        let mut first:bool = true;
+                        for k in obj.keys() {
+                            rc.set_local_var("@first".to_string(), value::to_value(&first));
+                            if first {
+                                first = false;
+                            }
+
+                            rc.set_local_var("@key".to_string(), value::to_value(&k));
+                            let new_path = format!("{}/{}.[{}]", path, param, k);
+                            rc.set_path(new_path);
+                            try!(t.render(c, r, rc));
+                        }
+
+                        Ok(())
+                    },
+                    _ => {
+                        Err(RenderError::new(format!("Param type is not iterable: {:?}", template)))
+                    }
+                };
+                rc.set_path(path);
+                rc.demote_local_vars();
+                rendered
+            },
+            None => Ok(())
+        }
+    }
+
 }
 
 pub static EACH_HELPER: EachHelper = EachHelper;

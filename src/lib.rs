@@ -53,7 +53,7 @@
 //!
 //! You can use default `render` function to render a template into `String`. From 0.9, there's `renderw` to render text into anything of `std::io::Write`.
 //!
-//! ```
+//! ```ignore
 //! extern crate rustc_serialize;
 //! extern crate handlebars;
 //!
@@ -184,9 +184,15 @@
 #[macro_use] extern crate lazy_static;
 #[cfg(test)] #[macro_use] extern crate maplit;
 
+#[cfg(not(feature = "serde_type"))]
 extern crate rustc_serialize as serialize;
 extern crate regex;
 extern crate num;
+
+#[cfg(feature = "serde_type")]
+extern crate serde;
+#[cfg(feature = "serde_type")]
+extern crate serde_json;
 
 pub use self::template::{Template};
 pub use self::error::TemplateError;

@@ -1,4 +1,11 @@
-use serialize::json::{Json, ToJson, Object};
+#[cfg(not(feature = "serde_type"))]
+use serialize::json::{Json, ToJson};
+
+#[cfg(feature = "serde_type")]
+use serde::ser::Serialize;
+#[cfg(feature = "serde_type")]
+use serde_json::value::{self, Value as Json};
+
 use regex::Regex;
 use std::collections::{VecDeque, BTreeMap};
 
@@ -7,6 +14,8 @@ lazy_static! {
     static ref QUOT_MATCHER: Regex = Regex::new("['\"](.*?)['\"]").unwrap();
     static ref DEFAULT_VALUE: Json = Json::Null;
 }
+
+pub type Object = BTreeMap<String, Json>;
 
 /// The context wrap data you render on your templates.
 ///
@@ -63,10 +72,19 @@ impl Context {
         }
     }
 
+    #[cfg(not(feature = "serde_type"))]
     /// Create a context with given data
     pub fn wraps<T: ToJson>(e: &T) -> Context {
         Context {
             data: e.to_json()
+        }
+    }
+
+    #[cfg(feature = "serde_type")]
+    /// Create a context with given data
+    pub fn wraps<T: Serialize>(e: &T) -> Context {
+        Context {
+            data: value::to_value(e)
         }
     }
 
@@ -148,10 +166,27 @@ pub trait JsonTruthy {
 
 impl JsonRender for Json {
     fn render(&self) -> String {
-        if let Json::String(_) = *self {
-            self.as_string().unwrap_or("").to_string()
-        } else {
-            format!("{}", *self)
+        match *self {
+            Json::String(ref s) => s.to_string(),
+            Json::I64(i) => i.to_string(),
+            Json::U64(i) => i.to_string(),
+            Json::F64(f) => f.to_string(),
+            #[cfg(not(feature = "serde_type"))]
+            Json::Boolean (i) => i.to_string(),
+            #[cfg(feature = "serde_type")]
+            Json::Bool (i) => i.to_string(),
+            Json::Null => "".to_owned(),
+            Json::Array (ref a) => {
+                let mut buf = String::new();
+                buf.push('[');
+                for i in a.iter() {
+                    buf.push_str(i.render().as_ref());
+                    buf.push_str(", ");
+                }
+                buf.push(']');
+                buf
+            },
+            Json::Object (_) => "[object]".to_owned()
         }
     }
 }
@@ -162,7 +197,10 @@ impl JsonTruthy for Json {
             Json::I64(i) => i != 0,
             Json::U64(i) => i != 0,
             Json::F64(i) => i != 0.0 || ! i.is_nan(),
+            #[cfg(not(feature = "serde_type"))]
             Json::Boolean (ref i) => *i,
+            #[cfg(feature = "serde_type")]
+            Json::Bool (ref i) => *i,
             Json::Null => false,
             Json::String (ref i) => i.len() > 0,
             Json::Array (ref i) => i.len() > 0,
@@ -172,6 +210,7 @@ impl JsonTruthy for Json {
 }
 
 #[cfg(test)]
+#[cfg(not(feature = "serde_type"))]
 mod test {
     use context::{JsonRender, Context};
     use std::collections::BTreeMap;

@@ -4,6 +4,14 @@ rust:
   - beta
   - 1.4.0
   - 1.5.0
+before_script:
+- |
+    pip install 'travis-cargo<0.2' --user &&
+    export PATH=$HOME/.local/bin:$PATH
+script:
+  - |
+      cargo test &&
+      travis-cargo --only nightly test -- --no-default-features
 after_success: |
   echo $TRAVIS_RUST_VERSION && \
   [ $TRAVIS_BRANCH == 'master' ] && \
