@@ -32,6 +32,12 @@ Run `cargo run --example render` to see results.
 
 Checkout `examples/` for more concrete demos of current API.
 
+From 0.13, you can use either `rustc_serialize` or `serde` for your
+data type. By default we use `ToJson` from `rustc_serialize` to
+convert your data into handlebars internal types. If you use `serde`
+framework in your project, you can enable `serde_type` feature of this
+crate and we will use `Serialize` from `serde` to convert.
+
 ## Why Handlebars?
 
 For information about handlebars, you will go to [handlebars.js](http://handlebarsjs.com).
@@ -63,7 +69,7 @@ Limitations:
 
 * As a static typed language, it's a little verbose to use handlebars
 * You will have to make your data `ToJson`-able, so we can render
-it. If you are on nightly channel, we have [a syntax extension](https://github.com/sunng87/tojson_macros) to generate default `ToJson` implementation for you.
+it. If you are on nightly channel, we have [a syntax extension](https://github.com/sunng87/tojson_macros) to generate default `ToJson` implementation for you. If you use [serde](https://github.com/serde-rs/serde), you can enable `serde_type` feature of handlebars-rust and add `#[Serialize]` for your types.
 
 ## Handlebars-js features supported in Handlebars-rust
 
