@@ -22,7 +22,7 @@ use TemplateError;
 ///
 /// An *escape fn* is represented as a `Box` to avoid unnecessary type
 /// parameters (and because traits cannot be aliased using `type`).
-pub type EscapeFn = Box<Fn(&str) -> String>;
+pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
 
 fn get_default_escape_fn() -> EscapeFn {
     Box::new(|data| {
@@ -81,7 +81,7 @@ impl Registry {
     }
 
     /// Register a new *escape fn* to be used from now on by this registry.
-    pub fn register_escape_fn<F: 'static + Fn(&str) -> String>(&mut self, escape_fn: F) {
+    pub fn register_escape_fn<F: 'static + Fn(&str) -> String + Send + Sync>(&mut self, escape_fn: F) {
         self.escape_fn = Box::new(escape_fn);
     }
 
