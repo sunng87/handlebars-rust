@@ -188,6 +188,7 @@
 extern crate rustc_serialize as serialize;
 extern crate regex;
 extern crate num;
+extern crate itertools;
 
 #[cfg(feature = "serde_type")]
 extern crate serde;
