@@ -7,7 +7,6 @@ use num::FromPrimitive;
 use regex::Regex;
 use itertools::PutBackN;
 
-use support::str::SliceChars;
 use TemplateError;
 use TemplateError::*;
 
@@ -347,7 +346,7 @@ impl Template {
                                     ParserState::Text
                                 },
                                 _ => {
-                                    match if slice.len() > 2 { slice.slice_chars_alt(0, 2) } else { slice.as_ref() } {
+                                    match if slice.len() > 2 { &slice[0..2] } else { slice.as_ref() } {
                                         "{{" => {
                                             iter_skip(&mut it, 2);
                                             if !buffer.is_empty() {
@@ -525,10 +524,11 @@ fn test_parse_helper_start_tag() {
 #[test]
 fn test_parse_template() {
     let source = "<h1>{{title}} 你好</h1> {{{content}}}
-{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}{{#unless true}}kitkat{{^}}lollipop{{/unless}}";
+{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}中文你好
+{{#unless true}}kitkat{{^}}lollipop{{/unless}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
 
-    assert_eq!(t.elements.len(), 9);
+    assert_eq!(t.elements.len(), 10);
     assert_eq!((*t.elements.get(0).unwrap()).to_string(), "<h1>".to_string());
     assert_eq!(*t.elements.get(1).unwrap(), Expression(Parameter::Name("title".to_string())));
 
@@ -556,7 +556,7 @@ fn test_parse_template() {
         }
     };
 
-    match *t.elements.get(8).unwrap() {
+    match *t.elements.get(9).unwrap() {
         HelperBlock(ref h) => {
             assert_eq!(h.name, "unless".to_string());
             assert_eq!(h.params.len(), 1);
