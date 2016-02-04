@@ -210,6 +210,129 @@ impl JsonTruthy for Json {
 }
 
 #[cfg(test)]
+#[cfg(feature = "serde_type")]
+mod test {
+    use context::{JsonRender, Context};
+    use std::collections::BTreeMap;
+    use serde_json::value::{self, Value as Json};
+    use serde::ser::{Serialize, Serializer};
+
+    #[test]
+    fn test_json_render() {
+        let raw = "<p>Hello world</p>\n<p thing=\"hello\"</p>";
+        let thing = Json::String(raw.to_string());
+
+        assert_eq!(raw, thing.render());
+    }
+
+    struct Address {
+        city: String,
+        country: String
+    }
+
+    impl Serialize for Address {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: Serializer {
+            let mut m = BTreeMap::new();
+            m.insert("city".to_string(), value::to_value(&self.city));
+            m.insert("country".to_string(), value::to_value(&self.country));
+            m.serialize(serializer)
+        }
+    }
+
+    struct Person {
+        name: String,
+        age: i16,
+        addr: Address,
+        titles: Vec<String>
+    }
+
+    impl Serialize for Person {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: Serializer {
+            let mut m = BTreeMap::new();
+            m.insert("name".to_string(), value::to_value(&self.name));
+            m.insert("age".to_string(), value::to_value(&self.age));
+            m.insert("addr".to_string(), value::to_value(&self.addr));
+            m.insert("titles".to_string(), value::to_value(&self.titles));
+            m.serialize(serializer)
+        }
+    }
+
+    #[test]
+    fn test_render() {
+        let v = "hello";
+        let ctx = Context::wraps(&v.to_string());
+        assert_eq!(ctx.navigate(".", "this").render(), v.to_string());
+    }
+
+    #[test]
+    fn test_navigation() {
+        let addr = Address {
+            city: "Beijing".to_string(),
+            country: "China".to_string(),
+        };
+
+        let person = Person {
+            name: "Ning Sun".to_string(),
+            age: 27,
+            addr: addr,
+            titles: vec!["programmer".to_string(),
+                         "cartographier".to_string()]
+        };
+
+        let ctx = Context::wraps(&person);
+        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[country]").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.['country']").render(), "China".to_string());
+
+        let v = true;
+        let ctx2 = Context::wraps(&v);
+        assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
+
+        assert_eq!(ctx.navigate(".", "titles[0]").render(), "programmer".to_string());
+        assert_eq!(ctx.navigate(".", "titles.[0]").render(), "programmer".to_string());
+    }
+
+    #[test]
+    fn test_this() {
+        let mut map_with_this = BTreeMap::new();
+        map_with_this.insert("this".to_string(), value::to_value(&"hello"));
+        map_with_this.insert("age".to_string(), value::to_value(&5usize));
+        let ctx1 = Context::wraps(&map_with_this);
+
+        let mut map_without_this = BTreeMap::new();
+        map_without_this.insert("age".to_string(), value::to_value(&4usize));
+        let ctx2 = Context::wraps(&map_without_this);
+
+        assert_eq!(ctx1.navigate(".", "this").render(), "hello".to_owned());
+        assert_eq!(ctx2.navigate(".", "age").render(), "4".to_owned());
+    }
+
+    #[test]
+    fn test_extend() {
+        let mut map = BTreeMap::new();
+        map.insert("age".to_string(), value::to_value(&4usize));
+        let ctx1 = Context::wraps(&map);
+
+        let s = "hello".to_owned();
+        let ctx2 = Context::wraps(&s);
+
+        let mut hash = BTreeMap::new();
+        hash.insert("tag".to_owned(), value::to_value(&"h1"));
+
+        let ctx_a1 = ctx1.extend(&hash);
+        assert_eq!(ctx_a1.navigate(".", "age").render(), "4".to_owned());
+        assert_eq!(ctx_a1.navigate(".", "tag").render(), "h1".to_owned());
+
+        let ctx_a2 = ctx2.extend(&hash);
+        assert_eq!(ctx_a2.navigate(".", "this").render(), "hello".to_owned());
+        assert_eq!(ctx_a2.navigate(".", "tag").render(), "h1".to_owned());
+    }
+}
+
+#[cfg(test)]
 #[cfg(not(feature = "serde_type"))]
 mod test {
     use context::{JsonRender, Context};
