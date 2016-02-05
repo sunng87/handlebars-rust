@@ -1,6 +1,4 @@
 use std::io::{Error as IOError};
-use std::error::Error;
-use std::fmt::{Formatter, Display, Error as FmtError};
 
 quick_error! {
     /// Template parsing error
@@ -29,34 +27,16 @@ quick_error! {
     }
 }
 
-#[derive(Debug)]
-pub enum TemplateFileError {
-    TemplateError (TemplateError),
-    IOError (IOError)
-}
-
-impl Display for TemplateFileError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
-        match *self {
-            TemplateFileError::TemplateError (ref e) => {
-                e.fmt(f)
-            },
-            TemplateFileError::IOError (ref e) => {
-                e.fmt(f)
-            }
+quick_error! {
+    #[derive(Debug)]
+    pub enum TemplateFileError {
+        TemplateError(err: TemplateError) {
+            from()
+            cause(err)
         }
-    }
-}
-
-impl Error for TemplateFileError {
-    fn description(&self) -> &str {
-        match *self {
-            TemplateFileError::TemplateError (ref e) => {
-                e.description()
-            },
-            TemplateFileError::IOError (ref e) => {
-                e.description()
-            }
+        IOError(err: IOError) {
+            from()
+            cause(err)
         }
     }
 }

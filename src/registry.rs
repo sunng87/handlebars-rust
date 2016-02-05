@@ -83,18 +83,10 @@ impl Registry {
     }
 
     pub fn register_template_file(&mut self, name: &str, tpl_path: &Path) -> Result<(), TemplateFileError> {
-        match load_template_from_file(tpl_path) {
-            Ok(source) => {
-                if let Err(e) = self.register_template_string(name, source) {
-                    Err(TemplateFileError::TemplateError(e))
-                } else {
-                    Ok(())
-                }
-            }
-            Err(e) => {
-                Err(TemplateFileError::IOError(e))
-            }
-        }
+        load_template_from_file(tpl_path)
+            .map_err(TemplateFileError::from)
+            .and_then(|s| self.register_template_string(name, s)
+                      .map_err(TemplateFileError::from))
     }
 
     pub fn unregister_template(&mut self, name: &str) {
