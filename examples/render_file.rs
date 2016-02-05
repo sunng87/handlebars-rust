@@ -4,6 +4,7 @@ extern crate handlebars;
 #[cfg(not(feature = "serde_type"))]
 extern crate rustc_serialize;
 
+use std::io::Write;
 use std::fs::File;
 use std::path::Path;
 
