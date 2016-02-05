@@ -4,8 +4,6 @@ extern crate handlebars;
 #[cfg(not(feature = "serde_type"))]
 extern crate rustc_serialize;
 
-use std::io::prelude::*;
-use std::io;
 use std::fs::File;
 use std::path::Path;
 
@@ -16,15 +14,6 @@ fn format_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContex
     let rendered = format!("{} pts", c.navigate(rc.get_path(), param).render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
     Ok(())
-}
-
-fn load_template(name: &str) -> io::Result<String> {
-    let path = Path::new(name);
-
-    let mut file = try!(File::open(path));
-    let mut s = String::new();
-    try!(file.read_to_string(&mut s));
-    Ok(s)
 }
 
 #[cfg(not(feature = "serde_type"))]
@@ -69,16 +58,12 @@ mod render_example {
 
 #[cfg(not(feature = "serde_type"))]
 fn main() {
-
-
     use render_example::*;
-
 
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    let t = load_template("./examples/template.hbs").ok().unwrap();
-    handlebars.register_template_string("table", t).ok().unwrap();
+    handlebars.register_template_file("table", &Path::new("./examples/template.hbs")).ok().unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
     //    handlebars.register_helper("format", Box::new(FORMAT_HELPER));

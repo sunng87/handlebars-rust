@@ -1,3 +1,7 @@
+use std::io::{Error as IOError};
+use std::error::Error;
+use std::fmt::{Formatter, Display, Error as FmtError};
+
 quick_error! {
     /// Template parsing error
     #[derive(Debug, Clone)]
@@ -21,6 +25,38 @@ quick_error! {
             display("helper {:?} was not closed on the end of file at line {:?}, column {:?}",
                     name, line_no, col_no)
             description("some helper was not closed on the end of file")
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum TemplateFileError {
+    TemplateError (TemplateError),
+    IOError (IOError)
+}
+
+impl Display for TemplateFileError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        match *self {
+            TemplateFileError::TemplateError (ref e) => {
+                e.fmt(f)
+            },
+            TemplateFileError::IOError (ref e) => {
+                e.fmt(f)
+            }
+        }
+    }
+}
+
+impl Error for TemplateFileError {
+    fn description(&self) -> &str {
+        match *self {
+            TemplateFileError::TemplateError (ref e) => {
+                e.description()
+            },
+            TemplateFileError::IOError (ref e) => {
+                e.description()
+            }
         }
     }
 }

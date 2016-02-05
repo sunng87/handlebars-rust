@@ -6,33 +6,17 @@ extern crate rustc_serialize;
 #[macro_use]
 extern crate maplit;
 
-use std::io::prelude::*;
-use std::io;
-use std::fs::File;
 use std::path::Path;
-
-use handlebars::{Handlebars};
-
-fn load_template(name: &str) -> io::Result<String> {
-    let path = Path::new(name);
-
-    let mut file = try!(File::open(path));
-    let mut s = String::new();
-    try!(file.read_to_string(&mut s));
-    Ok(s)
-}
+use handlebars::Handlebars;
 
 #[cfg(not(feature = "serde_type"))]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    let t = load_template("./examples/template2.hbs").ok().unwrap();
-    handlebars.register_template_string("template", t).ok().unwrap();
-    let base0 = load_template("./examples/base0.hbs").ok().unwrap();
-    handlebars.register_template_string("base0", base0).ok().unwrap();
-    let base1 = load_template("./examples/base1.hbs").ok().unwrap();
-    handlebars.register_template_string("base1", base1).ok().unwrap();
+    handlebars.register_template_file("template", &Path::new("./examples/template2.hbs")).ok().unwrap();
+    handlebars.register_template_file("base0", &Path::new("./examples/base0.hbs")).ok().unwrap();
+    handlebars.register_template_file("base1", &Path::new("./examples/base1.hbs")).ok().unwrap();
 
     let data0 = btreemap! {
         "title".to_string() => "example 0".to_string(),

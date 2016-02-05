@@ -1,5 +1,5 @@
 {{#partial page}}
   <p>Rendered in partial, parent is {{parent}}<p>
 {{/partial}}
-
-{{> (parent)}}
+{{! remove whitespaces with ~ }}
+{{~> (parent)~}}

@@ -1,5 +1,8 @@
 use std::collections::HashMap;
-use std::io::Write;
+use std::io::prelude::*;
+use std::io;
+use std::fs::File;
+use std::path::Path;
 
 #[cfg(not(feature = "serde_type"))]
 use serialize::json::ToJson;
@@ -12,7 +15,7 @@ use helpers::{HelperDef};
 use context::{Context};
 use helpers;
 use support::str::StringWriter;
-use TemplateError;
+use error::{TemplateError, TemplateFileError};
 
 /// This type represents an *escape fn*, that is a function who's purpose it is
 /// to escape potentially problematic characters in a string.
@@ -31,6 +34,13 @@ fn get_default_escape_fn() -> EscapeFn {
             .replace("<", "&lt;")
             .replace(">", "&gt;")
     })
+}
+
+fn load_template_from_file (path: &Path) -> io::Result<String> {
+    let mut file = try!(File::open(path));
+    let mut s = String::new();
+    try!(file.read_to_string(&mut s));
+    Ok(s)
 }
 
 pub struct Registry {
@@ -66,10 +76,25 @@ impl Registry {
         self.templates.insert(name.to_string(), template);
     }
 
-    pub fn register_template_string(&mut self, name: &str, tpl_str: String) -> Result<(), TemplateError>{
+    pub fn register_template_string(&mut self, name: &str, tpl_str: String) -> Result<(), TemplateError> {
         try!(Template::compile_with_name(tpl_str, name.to_owned())
              .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
         Ok(())
+    }
+
+    pub fn register_template_file(&mut self, name: &str, tpl_path: &Path) -> Result<(), TemplateFileError> {
+        match load_template_from_file(tpl_path) {
+            Ok(source) => {
+                if let Err(e) = self.register_template_string(name, source) {
+                    Err(TemplateFileError::TemplateError(e))
+                } else {
+                    Ok(())
+                }
+            }
+            Err(e) => {
+                Err(TemplateFileError::IOError(e))
+            }
+        }
     }
 
     pub fn unregister_template(&mut self, name: &str) {
