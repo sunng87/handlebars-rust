@@ -24,6 +24,10 @@ quick_error! {
                     name, line_no, col_no)
             description("some helper was not closed on the end of file")
         }
+        UnclosedExpression(line_no: usize, col_no: usize) {
+            display("expression or comment was not closed on the end of file at line {:?}, column {:?}", line_no, col_no)
+            description("some expression or comment was not closed on the end of file")
+        }
     }
 }
 

@@ -447,8 +447,12 @@ impl Template {
             t.elements.push(TemplateElement::RawString(buf_clone));
         }
 
-        if !helper_stack.is_empty() {
+        if !helper_stack.is_empty(){
             return Err(UnclosedHelper(line_no, col_no, helper_stack.front().unwrap().name.clone()));
+        }
+
+        if state != ParserState::Text {
+            return Err(UnclosedExpression(line_no, col_no));
         }
 
         return Ok(template_stack.pop_front().unwrap());
@@ -674,4 +678,23 @@ fn test_find_tokens() {
                                       "hello=world".to_string(),
                                       "hello=(world)".to_string(),
                                       "hello=(world 0)".to_string()]);
+}
+
+#[test]
+fn test_unclosed_expression() {
+    let sources = ["{{invalid", "{{{invalid", "{{invalid}", "{{!hello"];
+    for s in sources.iter() {
+        let result = Template::compile(s.to_owned());
+        if let Err(e) = result {
+            match e {
+                TemplateError::UnclosedExpression(_, _) => {
+                },
+                _ => {
+                    panic!("Unexpected error type");
+                }
+            }
+        } else {
+            panic!("Undetected error");
+        }
+    }
 }
