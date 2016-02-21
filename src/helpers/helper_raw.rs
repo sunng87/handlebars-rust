@@ -8,6 +8,7 @@ pub struct RawHelper;
 
 impl HelperDef for RawHelper {
     fn call(&self, _: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+        
         let tpl = h.template();
         if tpl.is_some() {
             try!(rc.writer.write(tpl.unwrap().to_string().into_bytes().as_ref()));
@@ -38,5 +39,34 @@ mod test {
 
         let r = handlebars.render("t0", &());
         assert_eq!(r.ok().unwrap(), "a{{content}}{{else}}hello");
+    }
+    
+    static TEMPLATE: &'static str = r#"a
+{{#raw}}
+    {{content}}
+        Hi!
+    {{else}}
+        hello
+{{/raw}}
+"#;
+
+    static RESULT: &'static str = r#"a
+
+    {{content}}
+        Hi!
+    {{else}}
+        hello
+
+"#;
+    
+    #[test]
+    fn test_raw_helper_2 () {
+        let t = Template::compile(TEMPLATE.to_string()).ok().unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t1", t);
+
+        let r = handlebars.render("t1", &());
+        assert_eq!(r.ok().unwrap(), RESULT);
     }
 }
