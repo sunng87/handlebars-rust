@@ -69,4 +69,15 @@ mod test {
         let r = handlebars.render("t1", &());
         assert_eq!(r.ok().unwrap(), RESULT);
     }
+    
+    #[test]
+    fn test_raw_helper_3 () {
+        let t = Template::compile("a{{#raw}}{{{{content}}{{else}}hello{{/raw}}".to_string()).ok().unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t);
+
+        let r = handlebars.render("t0", &());
+        assert_eq!(r.ok().unwrap(), "a{{{{content}}{{else}}hello");
+    }
 }
