@@ -62,7 +62,6 @@ impl Registry {
         r.register_helper("each", Box::new(helpers::EACH_HELPER));
         r.register_helper("with", Box::new(helpers::WITH_HELPER));
         r.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
-        r.register_helper("raw", Box::new(helpers::RAW_HELPER));
         r.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
         r.register_helper("block", Box::new(helpers::BLOCK_HELPER));
         r.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
@@ -194,7 +193,7 @@ mod test {
         r.register_helper("dummy", Box::new(DUMMY_HELPER));
 
         // built-in helpers plus 1
-        assert_eq!(r.helpers.len(), 10+1);
+        assert_eq!(r.helpers.len(), 9+1);
     }
 
     #[test]

@@ -19,7 +19,7 @@ pub struct Template {
     pub elements: Vec<TemplateElement>
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 enum ParserState {
     Text,
     HtmlExpression,
@@ -27,6 +27,7 @@ enum ParserState {
     HelperStart,
     HelperEnd,
     Expression,
+    Raw,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -279,6 +280,7 @@ impl Template {
 
         let mut buffer: String = String::new();
         let mut state = ParserState::Text;
+        let mut old_state = ParserState::Text;
 
         let mut line_no:usize = 1;
         let mut col_no:usize = 0;
@@ -298,6 +300,30 @@ impl Template {
                     // interested characters, peek more chars
                     '{' | '~' | '}' => {
                         it.put_back(c);
+                        
+                        if let Some(slice) = peek_chars(&mut it, 8) {
+                          if slice == "{{#raw}}" {
+                              old_state = state;
+                              state = ParserState::Raw;
+                              iter_skip(&mut it, 8);
+                              continue;
+                          }
+                        }
+                        
+                        if let Some(slice) = peek_chars(&mut it, 8) {
+                          if slice == "{{/raw}}" {
+                              state = old_state;
+                              iter_skip(&mut it, 8);
+                              continue;
+                          }
+                        }
+                        
+                        if state == ParserState::Raw {
+                            iter_skip(&mut it, 1);
+                            buffer.push(c);
+                            continue;
+                        }
+                            
                         if let Some(mut slice) = peek_chars(&mut it, 3) {
                             if slice == "{{~" {
                                 ws_omitter = ws_omitter | WhiteSpaceOmit::Right;
