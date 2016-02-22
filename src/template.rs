@@ -7,6 +7,9 @@ use num::FromPrimitive;
 use regex::Regex;
 use itertools::PutBackN;
 
+#[cfg(test)]
+use registry::Registry;
+
 use TemplateError;
 use TemplateError::*;
 
@@ -725,4 +728,77 @@ fn test_unclosed_expression() {
             panic!("Undetected error");
         }
     }
+}
+
+#[test]
+fn test_raw () {
+    let t = Template::compile("a{{#raw}}{{content}}{{else}}hello{{/raw}}".to_string()).ok().unwrap();
+
+    let mut handlebars = Registry::new();
+    handlebars.register_template("t0", t);
+
+    let r = handlebars.render("t0", &());
+    assert_eq!(r.ok().unwrap(), "a{{content}}{{else}}hello");
+}
+    
+#[test]
+fn test_raw_2 () {
+
+    static TEMPLATE: &'static str = r#"a
+{{#raw}}
+    {{content}}
+        Hi!
+    {{else}}
+        hello
+{{/raw}}
+"#;
+
+    static RESULT: &'static str = r#"a
+
+    {{content}}
+        Hi!
+    {{else}}
+        hello
+
+"#;
+
+    let t = Template::compile(TEMPLATE.to_string()).ok().unwrap();
+
+    let mut handlebars = Registry::new();
+    handlebars.register_template("t1", t);
+
+    let r = handlebars.render("t1", &());
+    assert_eq!(r.ok().unwrap(), RESULT);
+}
+
+#[test]
+fn test_raw_3 () {
+    let t = match Template::compile("a{{#raw}}{{{{content}}{{else}}hello{{/raw}}".to_string()) {
+        Ok(t) => t,
+        Err(e) => {
+            panic!("{}", e);
+        }
+    };
+
+    let mut handlebars = Registry::new();
+    handlebars.register_template("t2", t);
+
+    let r = handlebars.render("t2", &());
+    assert_eq!(r.ok().unwrap(), "a{{{{content}}{{else}}hello");
+}
+
+#[test]
+fn test_raw_4 () {
+    let t = match Template::compile("a{{#raw}}{{#raw}}{{{{content}}{{else}}hello{{/raw}}".to_string()) {
+        Ok(t) => t,
+        Err(e) => {
+            panic!("{}", e);
+        }
+    };
+
+    let mut handlebars = Registry::new();
+    handlebars.register_template("t3", t);
+
+    let r = handlebars.render("t3", &());
+    assert_eq!(r.ok().unwrap(), "a{{#raw}}{{{{content}}{{else}}hello");
 }

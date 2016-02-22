@@ -35,7 +35,6 @@ mod helper_if;
 mod helper_each;
 mod helper_with;
 mod helper_lookup;
-mod helper_raw;
 mod helper_partial;
 mod helper_log;
 
