@@ -7,6 +7,9 @@ use num::FromPrimitive;
 use regex::Regex;
 use itertools::PutBackN;
 
+#[cfg(test)]
+use registry::Registry;
+
 use TemplateError;
 use TemplateError::*;
 
@@ -19,7 +22,7 @@ pub struct Template {
     pub elements: Vec<TemplateElement>
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 enum ParserState {
     Text,
     HtmlExpression,
@@ -27,6 +30,7 @@ enum ParserState {
     HelperStart,
     HelperEnd,
     Expression,
+    Raw,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -279,6 +283,7 @@ impl Template {
 
         let mut buffer: String = String::new();
         let mut state = ParserState::Text;
+        let mut old_state = ParserState::Text;
 
         let mut line_no:usize = 1;
         let mut col_no:usize = 0;
@@ -298,6 +303,32 @@ impl Template {
                     // interested characters, peek more chars
                     '{' | '~' | '}' => {
                         it.put_back(c);
+                        
+                        if state != ParserState::Raw {
+                            if let Some(slice) = peek_chars(&mut it, 8) {
+                                if slice == "{{#raw}}" {
+                                    old_state = state;
+                                    state = ParserState::Raw;
+                                    iter_skip(&mut it, 8);
+                                    continue;
+                                }
+                            }
+                        }
+                        
+                        if let Some(slice) = peek_chars(&mut it, 8) {
+                            if slice == "{{/raw}}" {
+                                state = old_state;
+                                iter_skip(&mut it, 8);
+                                continue;
+                            }
+                        }
+                        
+                        if state == ParserState::Raw {
+                            iter_skip(&mut it, 1);
+                            buffer.push(c);
+                            continue;
+                        }
+                            
                         if let Some(mut slice) = peek_chars(&mut it, 3) {
                             if slice == "{{~" {
                                 ws_omitter = ws_omitter | WhiteSpaceOmit::Right;
@@ -697,4 +728,77 @@ fn test_unclosed_expression() {
             panic!("Undetected error");
         }
     }
+}
+
+#[test]
+fn test_raw () {
+    let t = Template::compile("a{{#raw}}{{content}}{{else}}hello{{/raw}}".to_string()).ok().unwrap();
+
+    let mut handlebars = Registry::new();
+    handlebars.register_template("t0", t);
+
+    let r = handlebars.render("t0", &());
+    assert_eq!(r.ok().unwrap(), "a{{content}}{{else}}hello");
+}
+    
+#[test]
+fn test_raw_2 () {
+
+    static TEMPLATE: &'static str = r#"a
+{{#raw}}
+    {{content}}
+        Hi!
+    {{else}}
+        hello
+{{/raw}}
+"#;
+
+    static RESULT: &'static str = r#"a
+
+    {{content}}
+        Hi!
+    {{else}}
+        hello
+
+"#;
+
+    let t = Template::compile(TEMPLATE.to_string()).ok().unwrap();
+
+    let mut handlebars = Registry::new();
+    handlebars.register_template("t1", t);
+
+    let r = handlebars.render("t1", &());
+    assert_eq!(r.ok().unwrap(), RESULT);
+}
+
+#[test]
+fn test_raw_3 () {
+    let t = match Template::compile("a{{#raw}}{{{{content}}{{else}}hello{{/raw}}".to_string()) {
+        Ok(t) => t,
+        Err(e) => {
+            panic!("{}", e);
+        }
+    };
+
+    let mut handlebars = Registry::new();
+    handlebars.register_template("t2", t);
+
+    let r = handlebars.render("t2", &());
+    assert_eq!(r.ok().unwrap(), "a{{{{content}}{{else}}hello");
+}
+
+#[test]
+fn test_raw_4 () {
+    let t = match Template::compile("a{{#raw}}{{#raw}}{{{{content}}{{else}}hello{{/raw}}".to_string()) {
+        Ok(t) => t,
+        Err(e) => {
+            panic!("{}", e);
+        }
+    };
+
+    let mut handlebars = Registry::new();
+    handlebars.register_template("t3", t);
+
+    let r = handlebars.render("t3", &());
+    assert_eq!(r.ok().unwrap(), "a{{#raw}}{{{{content}}{{else}}hello");
 }
