@@ -301,21 +301,23 @@ impl Template {
                     '{' | '~' | '}' => {
                         it.put_back(c);
                         
-                        if let Some(slice) = peek_chars(&mut it, 8) {
-                          if slice == "{{#raw}}" {
-                              old_state = state;
-                              state = ParserState::Raw;
-                              iter_skip(&mut it, 8);
-                              continue;
-                          }
+                        if state != ParserState::Raw {
+                            if let Some(slice) = peek_chars(&mut it, 8) {
+                                if slice == "{{#raw}}" {
+                                    old_state = state;
+                                    state = ParserState::Raw;
+                                    iter_skip(&mut it, 8);
+                                    continue;
+                                }
+                            }
                         }
                         
                         if let Some(slice) = peek_chars(&mut it, 8) {
-                          if slice == "{{/raw}}" {
-                              state = old_state;
-                              iter_skip(&mut it, 8);
-                              continue;
-                          }
+                            if slice == "{{/raw}}" {
+                                state = old_state;
+                                iter_skip(&mut it, 8);
+                                continue;
+                            }
                         }
                         
                         if state == ParserState::Raw {
