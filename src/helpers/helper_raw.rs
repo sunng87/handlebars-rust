@@ -1,24 +1,19 @@
 use helpers::{HelperDef};
 use registry::{Registry};
 use context::{Context};
-use render::{RenderContext, RenderError, Helper};
+use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct RawHelper;
 
 impl HelperDef for RawHelper {
-    fn call(&self, _: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let tpl = h.template();
-        if tpl.is_some() {
-            try!(rc.writer.write(tpl.unwrap().to_string().into_bytes().as_ref()));
+        if let Some(t) = tpl {
+            t.render(c, r, rc)
+        } else {
+            Ok(())
         }
-        let ivs = h.inverse();
-        if ivs.is_some() {
-            try!(rc.writer.write("{{else}}".to_owned().into_bytes().as_ref()));
-            try!(rc.writer.write(ivs.unwrap().to_string().into_bytes().as_ref()));
-        }
-
-        Ok(())
     }
 }
 
@@ -31,7 +26,7 @@ mod test {
 
     #[test]
     fn test_raw_helper () {
-        let t = Template::compile("a{{#raw}}{{content}}{{else}}hello{{/raw}}".to_string()).ok().unwrap();
+        let t = Template::compile("a{{{{raw}}}}{{content}}{{else}}hello{{{{/raw}}}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t);
