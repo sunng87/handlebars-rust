@@ -27,6 +27,9 @@ enum ParserState {
     HelperStart,
     HelperEnd,
     Expression,
+    RawHelperStart,
+    RawHelperEnd,
+    RawText
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -298,6 +301,82 @@ impl Template {
                     // interested characters, peek more chars
                     '{' | '~' | '}' => {
                         it.put_back(c);
+
+                        // raw helper
+                        if let Some(slice) = peek_chars(&mut it, 5) {
+                            if slice == "{{{{/" {
+                                iter_skip(&mut it, 5);
+                                //TODO: remove dup code
+                                if !buffer.is_empty() {
+                                    let mut t = template_stack.front_mut().unwrap();
+                                    let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
+                                    t.elements.push(RawString(buf_clone));
+                                    buffer.clear();
+                                }
+                                let t = template_stack.pop_front().unwrap();
+                                let h = helper_stack.front_mut().unwrap();
+                                h.template = Some(t);
+                                state = ParserState::RawHelperEnd;
+                                continue;
+                            }
+                        }
+
+                        if let Some(slice) = peek_chars(&mut it, 4) {
+                            if slice == "{{{{" {
+                                iter_skip(&mut it, 4);
+                                //TODO: remove dup code
+                                if !buffer.is_empty() {
+                                    let mut t = template_stack.front_mut().unwrap();
+                                    let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
+                                    t.elements.push(RawString(buf_clone));
+                                    buffer.clear();
+                                }
+                                state = ParserState::RawHelperStart;
+                                continue;
+                            } else if slice == "}}}}" {
+                                match state {
+                                    ParserState::RawHelperStart => {
+                                        iter_skip(&mut it, 4);
+                                        let helper = try!(HelperTemplate::parse(buffer.clone(), true, line_no, col_no));
+                                        helper_stack.push_front(helper);
+                                        template_stack.push_front(Template::new());
+
+                                        buffer.clear();
+                                        state = ParserState::RawText;
+                                        continue;
+                                    },
+
+                                    ParserState::RawHelperEnd => {
+                                        iter_skip(&mut it, 4);
+                                        let name = buffer.trim_matches(' ').to_string();
+                                        if name == helper_stack.front().unwrap().name {
+                                            let h = helper_stack.pop_front().unwrap();
+                                            let mut t = template_stack.front_mut().unwrap();
+                                            t.elements.push(HelperBlock(h));
+                                            buffer.clear();
+                                            state = ParserState::Text;
+                                            continue;
+                                        } else {
+                                            return Err(MismatchingClosedHelper(
+                                                line_no, col_no,
+                                                helper_stack.front().unwrap().name.clone(),
+                                                name));
+                                        }
+                                    },
+
+                                    _ => {
+                                    }
+                                }
+                            }
+                        }
+
+                        // within a raw helper, any character will be treated as raw string
+                        if state == ParserState::RawText {
+                            iter_skip(&mut it, 1);
+                            buffer.push(c);
+                            continue
+                        }
+
                         if let Some(mut slice) = peek_chars(&mut it, 3) {
                             if slice == "{{~" {
                                 ws_omitter = ws_omitter | WhiteSpaceOmit::Right;
@@ -690,11 +769,41 @@ fn test_unclosed_expression() {
                 TemplateError::UnclosedExpression(_, _) => {
                 },
                 _ => {
-                    panic!("Unexpected error type");
+                    panic!("Unexpected error type {}", e);
                 }
             }
         } else {
             panic!("Undetected error");
         }
+    }
+}
+
+#[test]
+fn test_raw_helper() {
+    let source = "hello{{{{raw}}}}good{{night}}{{{{/raw}}}}world";
+    match Template::compile(source.to_owned()) {
+        Ok(t) => {
+            assert_eq!(t.elements.len(), 3);
+            assert_eq!(t.elements[0], RawString("hello".to_owned()));
+            assert_eq!(t.elements[2], RawString("world".to_owned()));
+            match t.elements[1] {
+                HelperBlock(ref h) => {
+                    assert_eq!(h.name, "raw".to_owned());
+                    if let Some(ref ht) = h.template {
+                        assert_eq!(ht.elements.len(), 1);
+                        assert_eq!(ht.to_string(), "good{{night}}".to_owned());
+                    } else {
+                        panic!("helper template not found");
+                    }
+                },
+                _ => {
+                    panic!("Unexpected element type");
+                }
+            }
+        },
+        Err(e) => {
+            panic!("{}", e);
+        }
+
     }
 }
