@@ -14,7 +14,7 @@ use helpers::{HelperDef};
 use context::{Context};
 use helpers;
 use support::str::StringWriter;
-use error::{TemplateError, TemplateFileError};
+use error::{TemplateError, TemplateFileError, TemplateRenderError};
 
 /// This type represents an *escape fn*, that is a function who's purpose it is
 /// to escape potentially problematic characters in a string.
@@ -139,6 +139,7 @@ impl Registry {
         self.templates.clear();
     }
 
+
     /// Render a registered template with some data into a string
     pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError> where T: ToJson {
         let mut writer = StringWriter::new();
@@ -148,6 +149,7 @@ impl Registry {
         }
         Ok(writer.to_string())
     }
+
 
     /// Render a registered template with some data to the `std::io::Write`
     pub fn renderw(&self, name: &str, context: &Context, writer: &mut Write) -> Result<(), RenderError> {
@@ -160,6 +162,23 @@ impl Registry {
         } else {
             Err(RenderError::new(format!("Template not found: {}", name)))
         }
+    }
+
+    /// render a template string using current registry without register it
+    pub fn template_render<T>(&self, template_string: &str, ctx: &T) -> Result<String, TemplateRenderError> where T: ToJson {
+        let mut writer = StringWriter::new();
+        let context = Context::wraps(ctx);
+        {
+            try!(self.template_renderw(template_string, &context, &mut writer));
+        }
+        Ok(writer.to_string())
+    }
+
+    /// render a template string using current registry without register it
+    pub fn template_renderw(&self, template_string: &str, context: &Context, writer: &mut Write) -> Result<(), TemplateRenderError> {
+        let tpl = try!(Template::compile(template_string).map_err(TemplateRenderError::from));
+        let mut render_context = RenderContext::new(writer);
+        tpl.render(context, self, &mut render_context).map_err(TemplateRenderError::from)
     }
 }
 
@@ -245,5 +264,28 @@ mod test {
         r.unregister_escape_fn();
 
         assert_eq!("&quot;&lt;&gt;&amp;", r.render("test", &input).unwrap());
+    }
+
+    #[test]
+    fn test_template_render() {
+        let mut r = Registry::new();
+
+        let t = Template::compile("<h1></h1>".to_string()).ok().unwrap();
+        r.register_template("index", t.clone());
+
+        assert_eq!("<h1></h1>".to_string(),
+                   r.template_render("{{> index}}", &{}).unwrap());
+
+        assert_eq!("hello world".to_string(),
+                   r.template_render("hello {{this}}", &"world".to_string()).unwrap());
+
+        let mut sw = StringWriter::new();
+        let context = Context::null();
+
+        {
+            r.template_renderw("{{> index}}", &context, &mut sw).unwrap();
+        }
+
+        assert_eq!("<h1></h1>".to_string(), sw.to_string());
     }
 }

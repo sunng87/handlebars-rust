@@ -1,5 +1,7 @@
 use std::io::{Error as IOError};
 
+use render::RenderError;
+
 quick_error! {
     /// Template parsing error
     #[derive(Debug, Clone)]
@@ -39,6 +41,20 @@ quick_error! {
             cause(err)
         }
         IOError(err: IOError) {
+            from()
+            cause(err)
+        }
+    }
+}
+
+quick_error! {
+    #[derive(Debug)]
+    pub enum TemplateRenderError {
+        TemplateError(err: TemplateError) {
+            from()
+            cause(err)
+        }
+        RenderError(err: RenderError) {
             from()
             cause(err)
         }
