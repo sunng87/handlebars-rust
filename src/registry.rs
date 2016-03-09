@@ -190,6 +190,7 @@ mod test {
     use helpers::{HelperDef};
     use context::{Context};
     use support::str::StringWriter;
+    use error::TemplateRenderError;
 
     #[derive(Clone, Copy)]
     struct DummyHelper;
@@ -287,5 +288,17 @@ mod test {
         }
 
         assert_eq!("<h1></h1>".to_string(), sw.to_string());
+
+        // fail for template error
+        match r.template_render("{{ hello", &{}).unwrap_err() {
+            TemplateRenderError::TemplateError(_) => {},
+            _ => { panic!(); }
+        }
+
+        // fail to render error
+        match r.template_render("{{> notfound}}", &{}).unwrap_err() {
+            TemplateRenderError::RenderError(_) => {},
+            _ => { panic!(); }
+        }
     }
 }
