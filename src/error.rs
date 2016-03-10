@@ -58,5 +58,9 @@ quick_error! {
             from()
             cause(err)
         }
+        IOError(err: IOError) {
+            from()
+            cause(err)
+        }
     }
 }

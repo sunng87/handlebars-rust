@@ -180,6 +180,13 @@ impl Registry {
         let mut render_context = RenderContext::new(writer);
         tpl.render(context, self, &mut render_context).map_err(TemplateRenderError::from)
     }
+
+    /// render a template source using current registry without register it
+    pub fn template_renderw2(&self, template_source: &mut Read, context: &Context, writer: &mut Write) -> Result<(), TemplateRenderError> {
+        let mut tpl_str = String::new();
+        try!(template_source.read_to_string(&mut tpl_str));
+        self.template_renderw(&tpl_str, context, writer)
+    }
 }
 
 #[cfg(test)]
