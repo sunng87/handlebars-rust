@@ -9,8 +9,8 @@
 //!
 //! You can go to [Handlebars.js](http://handlebarsjs.com/) website for its syntax. This implementation should be compatible with most parts of the spec, except:
 //!
-//! * raw helper syntax `{{{raw-helper}}}...{{{/raw-helper}}}` is implemented as block helper raw.
 //! * configurable logging (hard-coded to rust native logging, with fixed level `INFO`)
+//! * mustache iterators, block is not work in this implementation
 //!
 //! ### Extensions
 //!
