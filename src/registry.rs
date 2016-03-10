@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::io::prelude::*;
-use std::io;
 use std::fs::File;
 use std::path::Path;
 
@@ -36,13 +35,9 @@ fn get_default_escape_fn() -> EscapeFn {
     })
 }
 
-fn load_template_from_file (path: &Path) -> io::Result<String> {
-    let mut file = try!(File::open(path));
-    let mut s = String::new();
-    try!(file.read_to_string(&mut s));
-    Ok(s)
-}
-
+/// The single entry point of your Handlebars templates
+///
+/// It maintains compiled templates and registered helpers.
 pub struct Registry {
     templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<HelperDef + 'static>>,
@@ -71,28 +66,40 @@ impl Registry {
         r
     }
 
+    /// Register a template
     pub fn register_template(&mut self, name: &str, mut template: Template) {
         template.name = Some(name.to_owned());
         self.templates.insert(name.to_string(), template);
     }
 
+    /// Register a template string
     pub fn register_template_string(&mut self, name: &str, tpl_str: String) -> Result<(), TemplateError> {
         try!(Template::compile_with_name(tpl_str, name.to_owned())
              .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
         Ok(())
     }
 
+    /// Register a template from a path
     pub fn register_template_file(&mut self, name: &str, tpl_path: &Path) -> Result<(), TemplateFileError> {
-        load_template_from_file(tpl_path)
-            .map_err(TemplateFileError::from)
-            .and_then(|s| self.register_template_string(name, s)
-                      .map_err(TemplateFileError::from))
+        let mut file = try!(File::open(tpl_path));
+        self.register_template_source(name, &mut file)
     }
 
+    /// Register a template from `std::io::Read` source
+    pub fn register_template_source(&mut self, name: &str, tpl_source: &mut Read) -> Result<(), TemplateFileError> {
+        let mut buf = String::new();
+        try!(tpl_source.read_to_string(&mut buf));
+        try!(Template::compile_with_name(&buf, name.to_owned())
+             .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
+        Ok(())
+    }
+
+    /// remove a template from the registry
     pub fn unregister_template(&mut self, name: &str) {
         self.templates.remove(name);
     }
 
+    /// register a helper
     pub fn register_helper(&mut self, name: &str, def: Box<HelperDef + 'static>) -> Option<Box<HelperDef + 'static>> {
         self.helpers.insert(name.to_string(), def)
     }
@@ -112,22 +119,27 @@ impl Registry {
         &*self.escape_fn
     }
 
+    /// Return a registered template,
     pub fn get_template(&self, name: &str) -> Option<&Template> {
         self.templates.get(name)
     }
 
+    /// Return a registered helper
     pub fn get_helper(&self, name: &str) -> Option<&Box<HelperDef + 'static>> {
         self.helpers.get(name)
     }
 
+    /// Return all templates registered
     pub fn get_templates(&self) -> &HashMap<String, Template> {
         &self.templates
     }
 
+    /// Unregister all templates
     pub fn clear_templates(&mut self) {
         self.templates.clear();
     }
 
+    /// Render a registered template with some data into a string
     pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError> where T: ToJson {
         let mut writer = StringWriter::new();
         let context = Context::wraps(ctx);
@@ -137,6 +149,7 @@ impl Registry {
         Ok(writer.to_string())
     }
 
+    /// Render a registered template with some data to the `std::io::Write`
     pub fn renderw(&self, name: &str, context: &Context, writer: &mut Write) -> Result<(), RenderError> {
         let template = self.get_template(&name.to_string());
 
