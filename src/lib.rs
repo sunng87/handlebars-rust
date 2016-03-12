@@ -91,6 +91,24 @@
 //! }
 //! ```
 //!
+//! Or if you don't need the template to be cached or referenced by other ones, you can
+//! simply render it without registering.
+//!
+//! ```ignore
+//! fn main() {
+//!   let source = "Hello, {{name}}";
+//!
+//!   let mut handlebars = Handlebars::new();
+//!
+//!   let data = Person {
+//!       name: "Ning Sun".to_string(),
+//!       age: 27
+//!   };
+//!   let result = handlebars.template_render("Hello, {{name}}", &data);
+//! }
+//! ```
+//!
+//!
 //! #### Escaping
 //!
 //! As per the handlebars spec, output using `{{expression}}` is escaped by default (to be precise, the characters `&"<>` are replaced by their respective html / xml entities). However, since the use cases of a rust template engine are probably a bit more diverse than those of a JavaScript one, this implementation allows the user to supply a custom escape function to be used instead. For more information see the `EscapeFn` type and `Handlebars::register_escape_fn()` method.

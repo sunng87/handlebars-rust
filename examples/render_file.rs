@@ -4,9 +4,8 @@ extern crate handlebars;
 #[cfg(not(feature = "serde_type"))]
 extern crate rustc_serialize;
 
-use std::io::Write;
+use std::io::{Write, Read};
 use std::fs::File;
-use std::path::Path;
 
 use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender};
 
@@ -56,15 +55,12 @@ mod render_example {
 }
 
 
-
 #[cfg(not(feature = "serde_type"))]
 fn main() {
     use render_example::*;
 
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
-
-    handlebars.register_template_file("table", &Path::new("./examples/template.hbs")).ok().unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
     //    handlebars.register_helper("format", Box::new(FORMAT_HELPER));
@@ -74,15 +70,15 @@ fn main() {
         Context::wraps(&data)
     };
 
-    if let Ok(ref mut file) = File::create("target/table.html") {
-        if let Ok(_) = handlebars.renderw("table", &data, file) {
-            println!("target/table.html generated");
-        } else {
-            println!("Failed to geneate target/table.html");
-        }
+    // I'm using unwrap directly here to demostration.
+    // Never use this style in your real-world projects.
+    let mut source_template = File::open(&"./examples/template.hbs").unwrap();
+    let mut output_file = File::create("target/table.html").unwrap();
+    if let Ok(_) = handlebars.template_renderw2(&mut source_template, &data, &mut output_file) {
+        println!("target/table.html generated");
     } else {
-        println!("Failed to create target/table.html");
-    }
+        println!("Failed to geneate target/table.html");
+    };
 }
 
 #[cfg(feature = "serde_type")]
