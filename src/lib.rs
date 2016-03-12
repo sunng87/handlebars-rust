@@ -214,7 +214,7 @@ extern crate serde;
 extern crate serde_json;
 
 pub use self::template::{Template};
-pub use self::error::{TemplateError, TemplateFileError};
+pub use self::error::{TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::registry::{EscapeFn, Registry as Handlebars};
 pub use self::render::{Renderable, RenderError, RenderContext, Helper};
 pub use self::helpers::{HelperDef};
