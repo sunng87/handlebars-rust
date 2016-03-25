@@ -3,25 +3,70 @@
 //!
 //! And this is handlebars Rust implementation, designed for server-side page generation. It's a general-purpose library so you use it for any kind of text generation.
 //!
-//! ## Handlebars spec
+//! ## Why (this) Handlebars?
 //!
-//! ### Base
+//! Handlebars is a real-world templating system that you can use to build
+//! your application without pain.
 //!
-//! You can go to [Handlebars.js](http://handlebarsjs.com/) website for its syntax. This implementation should be compatible with most parts of the spec, except:
+//! ### Features
 //!
-//! * configurable logging (hard-coded to rust native logging, with fixed level `INFO`)
-//! * mustache iterators, block is not work in this implementation
+//! #### Isolation of Rust and HTML
 //!
-//! ### Extensions
+//! This library doesn't attempt to use some macro magic to allow you to
+//! write your template within your rust code. I admit that it's fun to do
+//! that but it doesn't fit real-world use case.
 //!
-//! We have template reuse facilities supported via built-in helpers `>`, `partial` and `block`.
+//! #### Limited but essential control structure built-in
 //!
-//! There are two ways to reuse a template:
+//! Only essential control directive `if` and `each` were built-in. This
+//! prevents you to put too much application logic into your template.
 //!
-//! * include (using `>`)
-//! * inheritance (using `>` together with `block` and `partial`)
+//! #### Extensible helper system
 //!
-//! Consult [Handlebar.java document about template inheritance](http://jknack.github.io/handlebars.java/reuse.html).
+//! You can write your own helper with Rust! It can be a block helper or
+//! inline helper. Put you logic into the helper and don't repeat
+//! yourself.
+//!
+//! A helper can be as a simple as a Rust function like:
+//!
+//! ```no_run
+//! fn hex_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+//!     let param = h.params().get(0).unwrap();
+//!     let rendered = format!("{:x}", c.navigate(rc.get_path(), param).render());
+//!     try!(rc.writer.write(rendered.into_bytes().as_ref()));
+//!     Ok(())
+//! }
+//!
+//! /// register the helper
+//! handlebars.register_helper("hex", Box::new(hex_helper));
+//! ```
+//!
+//! #### Template inheritance
+//!
+//! Every time I look into a templating system, I will investigate its
+//! support for [template
+//! inheritance](https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inh
+//! eritance).
+//!
+//! Template include is not enough. In most case you will need a skeleton
+//! of page as parent (header, footer, etc.), and embed you page into this
+//! parent.
+//!
+//! You can find a real example for template inheritance in
+//! `examples/partials.rs`, and templates used by this file.
+//!
+//! ### Limitations
+//!
+//! * This implementation is **not fully compatible** with the original
+//!   javascript version
+//! * As a static typed language, it's a little verbose to use handlebars
+//! * You will have to make your data `ToJson`-able, so we can render
+//!   it. If you are on nightly channel, we have [a syntax
+//!   extension](https://github.com/sunng87/tojson_macros) to generate
+//!   default `ToJson` implementation for you. If you use
+//!   [serde](https://github.com/serde-rs/serde), you can enable
+//!   `serde_type` feature of handlebars-rust and add `#[Serialize]` for
+//!   your types.
 //!
 //! ## Usage
 //!
@@ -44,6 +89,14 @@
 //!           .ok().unwrap();
 //! }
 //! ```
+//!
+//! On registeration, the template is parsed and cached in the registry. So further
+//! usage will benifite from the one-time work. Also features like include, inheritance
+//! that involves template reference requires you to register those template first so
+//! the registry can find it.
+//!
+//! If you template is small or just to expirement, you can use `template_render` APIs
+//! without registeration.
 //!
 //! ### Rendering Something
 //!

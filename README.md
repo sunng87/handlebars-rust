@@ -1,10 +1,6 @@
 handlebars-rust
 ===============
 
-![4721045137_a05105da92_z](https://cloud.githubusercontent.com/assets/221942/10570641/aa0d31c4-7668-11e5-8ede-dca92bfd7299.jpg)
-
-([Photo ref](https://www.flickr.com/photos/jg33/4721045137))
-
 Rust templating with Handlebars.
 
 [![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
@@ -12,23 +8,25 @@ Rust templating with Handlebars.
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-Thanks to [@blaenk](https://github.com/blaenk)'s patch,
-handlebars-rust now compiles on nightly, beta and stable (1.4.0+) channel.
+![4721045137_a05105da92_z](https://cloud.githubusercontent.com/assets/221942/10570641/aa0d31c4-7668-11e5-8ede-dca92bfd7299.jpg)
 
-## Documents
+([Photo ref](https://www.flickr.com/photos/jg33/4721045137))
 
-[Rust doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html).
+This library works on stable Rust 1.4.0 and above. In most time, it
+also works on beta and nightly channel.
 
-## Usage
+## Getting Started
 
 Check examples in the source. The example shows you how to:
 
 * Create a `Handlebars` and register the template from files
-* Create a custom Helper with closure or struct implementing `HelperDef`, and register it
+* Create a custom Helper with closure or struct implementing
+ `HelperDef`, and register it
 * Render something
 
 Run `cargo run --example render` to see results.
-(or `RUST_LOG=handlebars=info cargo run --example render` for logging output).
+(or `RUST_LOG=handlebars=info cargo run --example render` for logging
+output).
 
 Checkout `examples/` for more concrete demos of current API.
 
@@ -38,49 +36,105 @@ convert your data into handlebars internal types. If you use `serde`
 framework in your project, you can enable `serde_type` feature of this
 crate and we will use `Serialize` from `serde` to convert.
 
-## Why Handlebars?
+## Documents
 
-For information about handlebars, you will go to [handlebars.js](http://handlebarsjs.com).
+[Rust
+doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html).
 
-It's my favorite templating tool by far. I used it in
-[Delicious.com](https://delicious.com) as javascript-side template in
-2013. Also I maintained a Clojure wrapper for Handlebars.java,
-[hbs](http://github.com/sunng87/hbs). And you may notice the
-close relationship between Ember.js and Rust community, handlebars is
-the default templating language of Ember.js framework, which powers
-[crates.io](http://crates.io).
+## Changelog
 
-Reasons I prefer Handlebars:
+Change log is available in the source tree named as `CHANGELOG.md`.
 
-* Never ruin your Rust with HTML
-* Never ruin your HTML with Rust
-* Templating without a reuse mechanism is shit
-* Templating without customization is nothing but shit
+## Why (this) Handlebars?
 
-Handlebars provides:
+Handlebars is a real-world templating system that you can use to build
+your application without pain.
 
-* Separation of Rust and HTML
-* A few control structures makes templating easier
-* Few control structures stops you to put logic into templates
-* Template reuse with include(`>`), `partial` and `block`
-* Customize template behavior with **helper**s
+### Features
 
-Limitations:
+#### Isolation of Rust and HTML
 
+This library doesn't attempt to use some macro magic to allow you to
+write your template within your rust code. I admit that it's fun to do
+that but it doesn't fit real-world use case.
+
+#### Limited but essential control structure built-in
+
+Only essential control directive `if` and `each` were built-in. This
+prevents you to put too much application logic into your template.
+
+#### Extensible helper system
+
+You can write your own helper with Rust! It can be a block helper or
+inline helper. Put you logic into the helper and don't repeat
+yourself.
+
+A helper can be as a simple as a Rust function like:
+
+```rust
+fn hex_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+    let param = h.params().get(0).unwrap();
+    let rendered = format!("{:x}", c.navigate(rc.get_path(), param).render());
+    try!(rc.writer.write(rendered.into_bytes().as_ref()));
+    Ok(())
+}
+
+/// register the helper
+handlebars.register_helper("hex", Box::new(hex_helper));
+```
+
+#### Template inheritance
+
+Every time I look into a templating system, I will investigate its
+support for [template
+inheritance](https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance).
+
+Template include is not enough. In most case you will need a skeleton
+of page as parent (header, footer, etc.), and embed you page into this
+parent.
+
+You can find a real example for template inheritance in
+`examples/partials.rs`, and templates used by this file.
+
+### Limitations
+
+* This implementation is **not fully compatible** with the original
+  javascript version
 * As a static typed language, it's a little verbose to use handlebars
 * You will have to make your data `ToJson`-able, so we can render
-it. If you are on nightly channel, we have [a syntax extension](https://github.com/sunng87/tojson_macros) to generate default `ToJson` implementation for you. If you use [serde](https://github.com/serde-rs/serde), you can enable `serde_type` feature of handlebars-rust and add `#[Serialize]` for your types.
+  it. If you are on nightly channel, we have [a syntax
+  extension](https://github.com/sunng87/tojson_macros) to generate
+  default `ToJson` implementation for you. If you use
+  [serde](https://github.com/serde-rs/serde), you can enable
+  `serde_type` feature of handlebars-rust and add `#[Serialize]` for
+  your types.
 
-## Handlebars-js features supported in Handlebars-rust
+### Handlebars-js features supported in Handlebars-rust
 
 * Expression / Block Helpers
 * Built-in helpers
-* Customizing helper
+  * each
+  * if
+  * with
+  * lookup
+  * partial
+  * block
+  * include `>`
+  * log
+* Custom helper
 * Parameter and hashes for helper
 * Partials, include
 * Omitting whitespace with `~`
 * Subexpression `{{(foo bar)}}`
 * Json expression `a.b.[0]` and `a.b.[c]`
+* RawHelper syntax `{{{{raw-helper}}}}...{{{{/raw-helper}}}}`
+
+### JavaScript implementation features we don't have
+
+* Mustache block (use `if`/`each` instead)
+* Block params (Perhaps using `this`)
+* Chained else
+* ...
 
 Feel free to report an issue if you find something broken. We aren't
 going to implement all features of handlebars-js, but we should have a
@@ -92,18 +146,9 @@ I have started another project
 [handlebars-iron](https://github.com/sunng87/handlebars-iron) for
 the Iron web framework.
 
-## Break Change Log
-
-No doubt that we will try our best to keep API compatible in each
-release. But sometime we have to bring in break changes to improve the
-design when worthy.
-
-* 0.10.0: `renderw` now accepts `&Context` instead of `ToJson` to avoid
-unnecessary clone in batch rendering. [90274e7](https://github.com/sunng87/handlebars-rust/commit/90274e75feeffa1d509abde62a8c70ac2c0a4e76)
-
 ## License
 
-MIT, of course.
+This library (handlebars-rust) is open sourced under MIT License.
 
 ## Contact
 
