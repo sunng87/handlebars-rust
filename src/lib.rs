@@ -29,7 +29,7 @@
 //!
 //! A helper can be as a simple as a Rust function like:
 //!
-//! ```no_run
+//! ```ignore
 //! fn hex_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
 //!     let param = h.params().get(0).unwrap();
 //!     let rendered = format!("{:x}", c.navigate(rc.get_path(), param).render());
