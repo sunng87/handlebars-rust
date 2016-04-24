@@ -3,15 +3,15 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
 
-#[cfg(not(feature = "serde_type"))]
+#[cfg(feature = "rustc_ser_type")]
 use serialize::json::ToJson;
 #[cfg(feature = "serde_type")]
 use serde::ser::Serialize as ToJson;
 
-use template::{Template};
+use template::Template;
 use render::{Renderable, RenderError, RenderContext};
-use helpers::{HelperDef};
-use context::{Context};
+use helpers::HelperDef;
+use context::Context;
 use helpers;
 use support::str::StringWriter;
 use error::{TemplateError, TemplateFileError, TemplateRenderError};
@@ -41,7 +41,7 @@ fn get_default_escape_fn() -> EscapeFn {
 pub struct Registry {
     templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<HelperDef + 'static>>,
-    escape_fn: EscapeFn
+    escape_fn: EscapeFn,
 }
 
 impl Registry {
@@ -73,24 +73,33 @@ impl Registry {
     }
 
     /// Register a template string
-    pub fn register_template_string(&mut self, name: &str, tpl_str: String) -> Result<(), TemplateError> {
+    pub fn register_template_string(&mut self,
+                                    name: &str,
+                                    tpl_str: String)
+                                    -> Result<(), TemplateError> {
         try!(Template::compile_with_name(tpl_str, name.to_owned())
-             .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
+                 .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
         Ok(())
     }
 
     /// Register a template from a path
-    pub fn register_template_file(&mut self, name: &str, tpl_path: &Path) -> Result<(), TemplateFileError> {
+    pub fn register_template_file(&mut self,
+                                  name: &str,
+                                  tpl_path: &Path)
+                                  -> Result<(), TemplateFileError> {
         let mut file = try!(File::open(tpl_path));
         self.register_template_source(name, &mut file)
     }
 
     /// Register a template from `std::io::Read` source
-    pub fn register_template_source(&mut self, name: &str, tpl_source: &mut Read) -> Result<(), TemplateFileError> {
+    pub fn register_template_source(&mut self,
+                                    name: &str,
+                                    tpl_source: &mut Read)
+                                    -> Result<(), TemplateFileError> {
         let mut buf = String::new();
         try!(tpl_source.read_to_string(&mut buf));
         try!(Template::compile_with_name(&buf, name.to_owned())
-             .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
+                 .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
         Ok(())
     }
 
@@ -100,12 +109,16 @@ impl Registry {
     }
 
     /// register a helper
-    pub fn register_helper(&mut self, name: &str, def: Box<HelperDef + 'static>) -> Option<Box<HelperDef + 'static>> {
+    pub fn register_helper(&mut self,
+                           name: &str,
+                           def: Box<HelperDef + 'static>)
+                           -> Option<Box<HelperDef + 'static>> {
         self.helpers.insert(name.to_string(), def)
     }
 
     /// Register a new *escape fn* to be used from now on by this registry.
-    pub fn register_escape_fn<F: 'static + Fn(&str) -> String + Send + Sync>(&mut self, escape_fn: F) {
+    pub fn register_escape_fn<F: 'static + Fn(&str) -> String + Send + Sync>(&mut self,
+                                                                             escape_fn: F) {
         self.escape_fn = Box::new(escape_fn);
     }
 
@@ -141,7 +154,9 @@ impl Registry {
 
 
     /// Render a registered template with some data into a string
-    pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError> where T: ToJson {
+    pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError>
+        where T: ToJson
+    {
         let mut writer = StringWriter::new();
         let context = Context::wraps(ctx);
         {
@@ -152,7 +167,11 @@ impl Registry {
 
 
     /// Render a registered template with some data to the `std::io::Write`
-    pub fn renderw(&self, name: &str, context: &Context, writer: &mut Write) -> Result<(), RenderError> {
+    pub fn renderw(&self,
+                   name: &str,
+                   context: &Context,
+                   writer: &mut Write)
+                   -> Result<(), RenderError> {
         let template = self.get_template(&name.to_string());
 
         if let Some(t) = template {
@@ -165,7 +184,12 @@ impl Registry {
     }
 
     /// render a template string using current registry without register it
-    pub fn template_render<T>(&self, template_string: &str, ctx: &T) -> Result<String, TemplateRenderError> where T: ToJson {
+    pub fn template_render<T>(&self,
+                              template_string: &str,
+                              ctx: &T)
+                              -> Result<String, TemplateRenderError>
+        where T: ToJson
+    {
         let mut writer = StringWriter::new();
         let context = Context::wraps(ctx);
         {
@@ -175,14 +199,22 @@ impl Registry {
     }
 
     /// render a template string using current registry without register it
-    pub fn template_renderw(&self, template_string: &str, context: &Context, writer: &mut Write) -> Result<(), TemplateRenderError> {
+    pub fn template_renderw(&self,
+                            template_string: &str,
+                            context: &Context,
+                            writer: &mut Write)
+                            -> Result<(), TemplateRenderError> {
         let tpl = try!(Template::compile(template_string).map_err(TemplateRenderError::from));
         let mut render_context = RenderContext::new(writer);
         tpl.render(context, self, &mut render_context).map_err(TemplateRenderError::from)
     }
 
     /// render a template source using current registry without register it
-    pub fn template_renderw2(&self, template_source: &mut Read, context: &Context, writer: &mut Write) -> Result<(), TemplateRenderError> {
+    pub fn template_renderw2(&self,
+                             template_source: &mut Read,
+                             context: &Context,
+                             writer: &mut Write)
+                             -> Result<(), TemplateRenderError> {
         let mut tpl_str = String::new();
         try!(template_source.read_to_string(&mut tpl_str));
         self.template_renderw(&tpl_str, context, writer)
@@ -191,11 +223,11 @@ impl Registry {
 
 #[cfg(test)]
 mod test {
-    use template::{Template};
-    use registry::{Registry};
+    use template::Template;
+    use registry::Registry;
     use render::{RenderContext, Renderable, RenderError, Helper};
-    use helpers::{HelperDef};
-    use context::{Context};
+    use helpers::HelperDef;
+    use context::Context;
     use support::str::StringWriter;
     use error::TemplateRenderError;
 
@@ -203,7 +235,12 @@ mod test {
     struct DummyHelper;
 
     impl HelperDef for DummyHelper {
-        fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+        fn call(&self,
+                c: &Context,
+                h: &Helper,
+                r: &Registry,
+                rc: &mut RenderContext)
+                -> Result<(), RenderError> {
             try!(h.template().unwrap().render(c, r, rc));
             Ok(())
         }
@@ -234,7 +271,7 @@ mod test {
         r.register_helper("dummy", Box::new(DUMMY_HELPER));
 
         // built-in helpers plus 1
-        assert_eq!(r.helpers.len(), 10+1);
+        assert_eq!(r.helpers.len(), 10 + 1);
     }
 
     #[test]
@@ -298,14 +335,18 @@ mod test {
 
         // fail for template error
         match r.template_render("{{ hello", &{}).unwrap_err() {
-            TemplateRenderError::TemplateError(_) => {},
-            _ => { panic!(); }
+            TemplateRenderError::TemplateError(_) => {}
+            _ => {
+                panic!();
+            }
         }
 
         // fail to render error
         match r.template_render("{{> notfound}}", &{}).unwrap_err() {
-            TemplateRenderError::RenderError(_) => {},
-            _ => { panic!(); }
+            TemplateRenderError::RenderError(_) => {}
+            _ => {
+                panic!();
+            }
         }
     }
 }

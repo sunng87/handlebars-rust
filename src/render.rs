@@ -4,20 +4,21 @@ use std::fmt;
 use std::io::Write;
 use std::io::Error as IOError;
 
-#[cfg(not(feature = "serde_type"))]
+#[cfg(feature = "rustc_ser_type")]
 use serialize::json::Json;
 #[cfg(feature = "serde_type")]
 use serde_json::value::Value as Json;
 
 use template::{Template, TemplateElement, Parameter, HelperTemplate};
-use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression, HelperExpression};
+use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression,
+                                HelperExpression};
 use registry::Registry;
 use context::{Context, JsonRender};
 use support::str::StringWriter;
 
 #[derive(Debug, Clone)]
 pub struct RenderError {
-    pub desc: String
+    pub desc: String,
 }
 
 impl fmt::Display for RenderError {
@@ -40,9 +41,7 @@ impl From<IOError> for RenderError {
 
 impl RenderError {
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
-        RenderError {
-            desc: desc.as_ref().to_owned()
-        }
+        RenderError { desc: desc.as_ref().to_owned() }
     }
 }
 
@@ -61,7 +60,7 @@ pub struct RenderContext<'a> {
     /// current template name
     pub current_template: Option<String>,
     /// root template name
-    pub root_template: Option<String>
+    pub root_template: Option<String>,
 }
 
 impl<'a> RenderContext<'a> {
@@ -74,7 +73,7 @@ impl<'a> RenderContext<'a> {
             default_var: Json::Null,
             writer: w,
             current_template: None,
-            root_template: None
+            root_template: None,
         }
     }
 
@@ -87,14 +86,14 @@ impl<'a> RenderContext<'a> {
             default_var: self.default_var.clone(),
             writer: w,
             current_template: self.current_template.clone(),
-            root_template: self.root_template.clone()
+            root_template: self.root_template.clone(),
         }
     }
 
     pub fn get_partial(&self, name: &String) -> Option<Template> {
         match self.partials.get(name) {
             Some(t) => Some(t.clone()),
-            None => None
+            None => None,
         }
     }
 
@@ -114,7 +113,7 @@ impl<'a> RenderContext<'a> {
         self.local_variables.insert(name, value);
     }
 
-    pub fn clear_local_vars(&mut self){
+    pub fn clear_local_vars(&mut self) {
         self.local_variables.clear();
     }
 
@@ -149,7 +148,7 @@ impl<'a> RenderContext<'a> {
     pub fn get_local_var(&self, name: &String) -> &Json {
         match self.local_variables.get(name) {
             Some(j) => j,
-            None => &self.default_var
+            None => &self.default_var,
         }
     }
 
@@ -160,8 +159,14 @@ impl<'a> RenderContext<'a> {
 
 impl<'a> fmt::Debug for RenderContext<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "partials: {:?}, path: {:?}, local_variables: {:?}, current_template: {:?}, root_template: {:?}",
-               self.partials, self.path, self.local_variables, self.current_template, self.root_template)
+        write!(f,
+               "partials: {:?}, path: {:?}, local_variables: {:?}, current_template: {:?}, \
+                root_template: {:?}",
+               self.partials,
+               self.path,
+               self.local_variables,
+               self.current_template,
+               self.root_template)
     }
 }
 
@@ -172,11 +177,15 @@ pub struct Helper<'a> {
     hash: BTreeMap<String, Json>,
     template: &'a Option<Template>,
     inverse: &'a Option<Template>,
-    block: bool
+    block: bool,
 }
 
 impl<'a, 'b> Helper<'a> {
-    fn from_template(ht: &'a HelperTemplate, ctx: &Context, registry: &Registry, rc: &'b mut RenderContext) -> Result<Helper<'a>, RenderError> {
+    fn from_template(ht: &'a HelperTemplate,
+                     ctx: &Context,
+                     registry: &Registry,
+                     rc: &'b mut RenderContext)
+                     -> Result<Helper<'a>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in ht.params.iter() {
             let r = try!(p.renders(ctx, registry, rc));
@@ -197,7 +206,7 @@ impl<'a, 'b> Helper<'a> {
             hash: evaluated_hash,
             template: &ht.template,
             inverse: &ht.inverse,
-            block: ht.block
+            block: ht.block,
         })
     }
 
@@ -223,19 +232,15 @@ impl<'a, 'b> Helper<'a> {
 
     pub fn template(&self) -> Option<&Template> {
         match *self.template {
-            Some(ref t) => {
-                Some(t)
-            },
-            None => None
+            Some(ref t) => Some(t),
+            None => None,
         }
     }
 
     pub fn inverse(&self) -> Option<&Template> {
         match *self.inverse {
-            Some(ref t) => {
-                Some(t)
-            },
-            None => None
+            Some(ref t) => Some(t),
+            None => None,
         }
     }
 
@@ -245,16 +250,22 @@ impl<'a, 'b> Helper<'a> {
 }
 
 pub trait Renderable {
-    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
+    fn render(&self,
+              ctx: &Context,
+              registry: &Registry,
+              rc: &mut RenderContext)
+              -> Result<(), RenderError>;
 }
 
 
 impl Parameter {
-    fn renders(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+    fn renders(&self,
+               ctx: &Context,
+               registry: &Registry,
+               rc: &mut RenderContext)
+               -> Result<String, RenderError> {
         match self {
-            &Parameter::Name(ref n) => {
-                Ok(n.clone())
-            },
+            &Parameter::Name(ref n) => Ok(n.clone()),
             &Parameter::Subexpression(ref t) => {
                 let mut local_writer = StringWriter::new();
                 let result = {
@@ -263,12 +274,8 @@ impl Parameter {
                 };
 
                 match result {
-                    Ok(_) => {
-                        Ok(local_writer.to_string())
-                    },
-                    Err(e) => {
-                        Err(e)
-                    }
+                    Ok(_) => Ok(local_writer.to_string()),
+                    Err(e) => Err(e),
                 }
             }
         }
@@ -276,7 +283,11 @@ impl Parameter {
 }
 
 impl Renderable for Template {
-    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn render(&self,
+              ctx: &Context,
+              registry: &Registry,
+              rc: &mut RenderContext)
+              -> Result<(), RenderError> {
         rc.current_template = self.name.clone();
         let iter = self.elements.iter();
         for t in iter {
@@ -288,12 +299,16 @@ impl Renderable for Template {
 }
 
 impl Renderable for TemplateElement {
-    fn render(&self, ctx: &Context, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn render(&self,
+              ctx: &Context,
+              registry: &Registry,
+              rc: &mut RenderContext)
+              -> Result<(), RenderError> {
         match *self {
             RawString(ref v) => {
                 try!(rc.writer.write(v.clone().into_bytes().as_ref()));
                 Ok(())
-            },
+            }
             Expression(ref v) => {
                 let name = try!(v.renders(ctx, registry, rc));
                 let rendered = {
@@ -307,7 +322,7 @@ impl Renderable for TemplateElement {
                 let output = registry.get_escape_fn()(&rendered);
                 try!(rc.writer.write(output.into_bytes().as_ref()));
                 Ok(())
-            },
+            }
             HTMLExpression(ref v) => {
                 let name = try!(v.renders(ctx, registry, rc));
                 let rendered = {
@@ -320,35 +335,30 @@ impl Renderable for TemplateElement {
                 };
                 try!(rc.writer.write(rendered.into_bytes().as_ref()));
                 Ok(())
-            },
+            }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
                 let helper = try!(Helper::from_template(ht, ctx, registry, rc));
                 match registry.get_helper(&ht.name) {
-                    Some(d) => {
-                        (**d).call(ctx, &helper, registry, rc)
-                    },
+                    Some(d) => (**d).call(ctx, &helper, registry, rc),
                     None => {
                         let meta_helper_name = if ht.block {
-                            "blockHelperMissing"
-                        } else {
-                            "helperMissing"
-                        }.to_string();
+                                                   "blockHelperMissing"
+                                               } else {
+                                                   "helperMissing"
+                                               }
+                                               .to_string();
                         match registry.get_helper(&meta_helper_name) {
-                            Some (md) => {
-                                (**md).call(ctx, &helper, registry, rc)
-                            }
+                            Some(md) => (**md).call(ctx, &helper, registry, rc),
                             None => {
-                                Err(RenderError{
-                                    desc: format!("Helper not defined: {:?}", ht.name)
+                                Err(RenderError {
+                                    desc: format!("Helper not defined: {:?}", ht.name),
                                 })
                             }
                         }
                     }
                 }
-            },
-            Comment(_) => {
-                Ok(())
             }
+            Comment(_) => Ok(()),
         }
     }
 }
@@ -427,7 +437,7 @@ fn test_template() {
 
         let template = Template {
             elements: elements,
-            name: None
+            name: None,
         };
 
         let mut m: HashMap<String, String> = HashMap::new();
@@ -442,7 +452,7 @@ fn test_template() {
 }
 
 #[test]
-#[cfg(not(feature = "serde_type"))]
+#[cfg(feature = "rustc_ser_type")]
 fn test_render_context_promotion_and_demotion() {
     use serialize::json::ToJson;
     let mut sw = StringWriter::new();
@@ -464,7 +474,7 @@ fn test_render_context_promotion_and_demotion() {
 #[test]
 fn test_render_subexpression() {
     let r = Registry::new();
-    let mut sw =StringWriter::new();
+    let mut sw = StringWriter::new();
     {
         let mut rc = RenderContext::new(&mut sw);
         let mut elements: Vec<TemplateElement> = Vec::new();
@@ -480,7 +490,7 @@ fn test_render_subexpression() {
 
         let template = Template {
             elements: elements,
-            name: None
+            name: None,
         };
 
         let mut m: HashMap<String, String> = HashMap::new();

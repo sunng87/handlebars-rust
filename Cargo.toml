@@ -30,7 +30,8 @@ serde_macros = { version = "^0.7.0", optional = true }
 itertools = "^0.4.7"
 
 [features]
-default = ["rustc-serialize"]
+default = ["rustc_ser_type"]
+rustc_ser_type = ["rustc-serialize"]
 serde_type = ["serde", "serde_json"]
 unstable = ["serde_type", "serde_macros"]
 

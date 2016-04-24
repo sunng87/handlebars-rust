@@ -1,9 +1,9 @@
-use std::io::{Error as IOError};
+use std::io::Error as IOError;
 
 use render::RenderError;
 
 quick_error! {
-    /// Template parsing error
+/// Template parsing error
     #[derive(Debug, Clone)]
     pub enum TemplateError {
         UnclosedBraces(line_no: usize, col_no: usize) {

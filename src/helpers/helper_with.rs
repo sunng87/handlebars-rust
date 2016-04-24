@@ -1,5 +1,5 @@
-use helpers::{HelperDef};
-use registry::{Registry};
+use helpers::HelperDef;
+use registry::Registry;
 use context::{Context, JsonTruthy};
 use render::{Renderable, RenderContext, RenderError, Helper};
 
@@ -7,7 +7,12 @@ use render::{Renderable, RenderContext, RenderError, Helper};
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(&self,
+            c: &Context,
+            h: &Helper,
+            r: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
         let param = h.param(0);
 
         if param.is_none() {
@@ -33,7 +38,7 @@ impl HelperDef for WithHelper {
 
         let rendered = match template {
             Some(t) => t.render(c, r, rc),
-            None => Ok(())
+            None => Ok(()),
         };
 
         rc.set_path(path);
@@ -45,17 +50,17 @@ impl HelperDef for WithHelper {
 pub static WITH_HELPER: WithHelper = WithHelper;
 
 #[cfg(test)]
-#[cfg(not(feature = "serde_type"))]
+#[cfg(feature = "rustc_ser_type")]
 mod test {
-    use template::{Template};
-    use registry::{Registry};
+    use template::Template;
+    use registry::Registry;
 
     use std::collections::BTreeMap;
     use serialize::json::{Json, ToJson};
 
     struct Address {
         city: String,
-        country: String
+        country: String,
     }
 
     impl ToJson for Address {
@@ -71,7 +76,7 @@ mod test {
         name: String,
         age: i16,
         addr: Address,
-        titles: Vec<String>
+        titles: Vec<String>,
     }
 
     impl ToJson for Person {
@@ -89,20 +94,23 @@ mod test {
     fn test_with() {
         let addr = Address {
             city: "Beijing".to_string(),
-            country: "China".to_string()
+            country: "China".to_string(),
         };
 
         let person = Person {
             name: "Ning Sun".to_string(),
             age: 27,
             addr: addr,
-            titles: vec!["programmer".to_string(),
-                         "cartographier".to_string()]
+            titles: vec!["programmer".to_string(), "cartographier".to_string()],
         };
 
         let t0 = Template::compile("{{#with addr}}{{city}}{{/with}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#with notfound}}hello{{else}}world{{/with}}".to_string()).ok().unwrap();
-        let t2 = Template::compile("{{#with addr/country}}{{this}}{{/with}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#with notfound}}hello{{else}}world{{/with}}".to_string())
+                     .ok()
+                     .unwrap();
+        let t2 = Template::compile("{{#with addr/country}}{{this}}{{/with}}".to_string())
+                     .ok()
+                     .unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);

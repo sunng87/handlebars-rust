@@ -1,6 +1,6 @@
 use std::ops::BitOr;
 use std::str::Chars;
-use std::fmt::{self};
+use std::fmt;
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
 use num::FromPrimitive;
@@ -10,13 +10,13 @@ use itertools::PutBackN;
 use TemplateError;
 use TemplateError::*;
 
-use self::TemplateElement::{RawString, Expression, HelperExpression,
-                            HTMLExpression, HelperBlock, Comment};
+use self::TemplateElement::{RawString, Expression, HelperExpression, HTMLExpression, HelperBlock,
+                            Comment};
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Template {
     pub name: Option<String>,
-    pub elements: Vec<TemplateElement>
+    pub elements: Vec<TemplateElement>,
 }
 
 #[derive(PartialEq, Debug)]
@@ -29,13 +29,13 @@ enum ParserState {
     Expression,
     RawHelperStart,
     RawHelperEnd,
-    RawText
+    RawText,
 }
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Parameter {
     Name(String),
-    Subexpression(Template)
+    Subexpression(Template),
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -45,7 +45,7 @@ pub struct HelperTemplate {
     pub hash: BTreeMap<String, Parameter>,
     pub template: Option<Template>,
     pub inverse: Option<Template>,
-    pub block: bool
+    pub block: bool,
 }
 
 impl ToString for HelperTemplate {
@@ -89,28 +89,33 @@ fn find_tokens(source: &str) -> Vec<String> {
 
     let mut hash_key: Option<&str> = None;
     let mut results: Vec<String> = vec![];
-    tokenizer.captures_iter(&source).map(|c| c.at(0).unwrap())
-        .fold(&mut results, |r, item| {
-            match hash_key {
-                Some(k) => {
-                    r.push(format!("{}{}", k, item));
-                    hash_key = None
-                },
-                None => {
-                    if item.ends_with("=") {
-                        hash_key = Some(item);
-                    } else {
-                        r.push(item.to_string());
-                    }
-                }
-            }
-            r
-        });
+    tokenizer.captures_iter(&source)
+             .map(|c| c.at(0).unwrap())
+             .fold(&mut results, |r, item| {
+                 match hash_key {
+                     Some(k) => {
+                         r.push(format!("{}{}", k, item));
+                         hash_key = None
+                     }
+                     None => {
+                         if item.ends_with("=") {
+                             hash_key = Some(item);
+                         } else {
+                             r.push(item.to_string());
+                         }
+                     }
+                 }
+                 r
+             });
     results
 }
 
 impl HelperTemplate {
-    pub fn parse<S: AsRef<str>>(source: S, block: bool, line_no: usize, col_no: usize) -> Result<HelperTemplate, TemplateError> {
+    pub fn parse<S: AsRef<str>>(source: S,
+                                block: bool,
+                                line_no: usize,
+                                col_no: usize)
+                                -> Result<HelperTemplate, TemplateError> {
         let source = source.as_ref();
         // FIXME, cache this regex
         let tokens_vec = find_tokens(&source);
@@ -174,12 +179,12 @@ impl Parameter {
 impl fmt::Display for Parameter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &Parameter::Name(ref name) => {
-                try!(write!(f, "{}", name))
-            },
+            &Parameter::Name(ref name) => try!(write!(f, "{}", name)),
             &Parameter::Subexpression(ref template) => {
                 let template_string = template.to_string();
-                try!(write!(f, "({})", template_string[2..template_string.len()-2].to_string()))
+                try!(write!(f,
+                            "({})",
+                            template_string[2..template_string.len() - 2].to_string()))
             }
         }
         Ok(())
@@ -191,7 +196,7 @@ enum WhiteSpaceOmit {
     Left = 0x01,
     Right = 0x10,
     Both = 0x11,
-    None = 0x00
+    None = 0x00,
 }
 
 impl FromPrimitive for WhiteSpaceOmit {
@@ -201,7 +206,7 @@ impl FromPrimitive for WhiteSpaceOmit {
             0x10 => Some(WhiteSpaceOmit::Right),
             0x11 => Some(WhiteSpaceOmit::Both),
             0x00 => Some(WhiteSpaceOmit::None),
-            _ => None
+            _ => None,
         }
     }
 
@@ -211,7 +216,7 @@ impl FromPrimitive for WhiteSpaceOmit {
             0x10 => Some(WhiteSpaceOmit::Right),
             0x11 => Some(WhiteSpaceOmit::Both),
             0x00 => Some(WhiteSpaceOmit::None),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -227,18 +232,10 @@ impl BitOr<WhiteSpaceOmit> for WhiteSpaceOmit {
 
 fn process_whitespace(buf: &str, wso: &mut WhiteSpaceOmit) -> String {
     let result = match *wso {
-        WhiteSpaceOmit::Left => {
-            buf.trim_left().to_string()
-        },
-        WhiteSpaceOmit::Right => {
-            buf.trim_right().to_string()
-        },
-        WhiteSpaceOmit::Both => {
-            buf.trim().to_string()
-        },
-        WhiteSpaceOmit::None => {
-            buf.to_string()
-        }
+        WhiteSpaceOmit::Left => buf.trim_left().to_string(),
+        WhiteSpaceOmit::Right => buf.trim_right().to_string(),
+        WhiteSpaceOmit::Both => buf.trim().to_string(),
+        WhiteSpaceOmit::None => buf.to_string(),
     };
     *wso = WhiteSpaceOmit::None;
     result
@@ -270,7 +267,7 @@ impl Template {
     pub fn new() -> Template {
         Template {
             elements: Vec::new(),
-            name: None
+            name: None,
         }
     }
 
@@ -283,8 +280,8 @@ impl Template {
         let mut buffer: String = String::new();
         let mut state = ParserState::Text;
 
-        let mut line_no:usize = 1;
-        let mut col_no:usize = 0;
+        let mut line_no: usize = 1;
+        let mut col_no: usize = 0;
         let mut ws_omitter = WhiteSpaceOmit::None;
         let mut it = PutBackN::new(source.chars());
 
@@ -306,7 +303,7 @@ impl Template {
                         if let Some(slice) = peek_chars(&mut it, 5) {
                             if slice == "{{{{/" {
                                 iter_skip(&mut it, 5);
-                                //TODO: remove dup code
+                                // TODO: remove dup code
                                 if !buffer.is_empty() {
                                     let mut t = template_stack.front_mut().unwrap();
                                     let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
@@ -324,7 +321,7 @@ impl Template {
                         if let Some(slice) = peek_chars(&mut it, 4) {
                             if slice == "{{{{" {
                                 iter_skip(&mut it, 4);
-                                //TODO: remove dup code
+                                // TODO: remove dup code
                                 if !buffer.is_empty() {
                                     let mut t = template_stack.front_mut().unwrap();
                                     let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
@@ -337,14 +334,17 @@ impl Template {
                                 match state {
                                     ParserState::RawHelperStart => {
                                         iter_skip(&mut it, 4);
-                                        let helper = try!(HelperTemplate::parse(buffer.clone(), true, line_no, col_no));
+                                        let helper = try!(HelperTemplate::parse(buffer.clone(),
+                                                                                true,
+                                                                                line_no,
+                                                                                col_no));
                                         helper_stack.push_front(helper);
                                         template_stack.push_front(Template::new());
 
                                         buffer.clear();
                                         state = ParserState::RawText;
                                         continue;
-                                    },
+                                    }
 
                                     ParserState::RawHelperEnd => {
                                         iter_skip(&mut it, 4);
@@ -362,10 +362,9 @@ impl Template {
                                                 helper_stack.front().unwrap().name.clone(),
                                                 name));
                                         }
-                                    },
-
-                                    _ => {
                                     }
+
+                                    _ => {}
                                 }
                             }
                         }
@@ -374,7 +373,7 @@ impl Template {
                         if state == ParserState::RawText {
                             iter_skip(&mut it, 1);
                             buffer.push(c);
-                            continue
+                            continue;
                         }
 
                         if let Some(mut slice) = peek_chars(&mut it, 3) {
@@ -395,7 +394,8 @@ impl Template {
                                     iter_skip(&mut it, 3);
                                     if !buffer.is_empty() {
                                         let mut t = template_stack.front_mut().unwrap();
-                                        let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
+                                        let buf_clone = process_whitespace(&buffer,
+                                                                           &mut ws_omitter);
                                         t.elements.push(RawString(buf_clone));
                                         buffer.clear();
                                     }
@@ -412,10 +412,10 @@ impl Template {
                                                 h.template = Some(t);
                                             }
                                             ParserState::HelperEnd
-                                        },
+                                        }
                                         _ => unreachable!(),  // because of check above
                                     }
-                                },
+                                }
                                 "}}}" => {
                                     iter_skip(&mut it, 3);
                                     let mut t = template_stack.front_mut().unwrap();
@@ -423,42 +423,55 @@ impl Template {
                                         try!(Parameter::parse(buffer.clone().trim_matches(' ').to_string()))));
                                     buffer.clear();
                                     ParserState::Text
-                                },
+                                }
                                 _ => {
-                                    match if slice.len() > 2 { &slice[0..2] } else { slice.as_ref() } {
+                                    match if slice.len() > 2 {
+                                        &slice[0..2]
+                                    } else {
+                                        slice.as_ref()
+                                    } {
                                         "{{" => {
                                             iter_skip(&mut it, 2);
                                             if !buffer.is_empty() {
                                                 let mut t = template_stack.front_mut().unwrap();
-                                                let buf_clone = process_whitespace(&buffer, &mut ws_omitter);
+                                                let buf_clone = process_whitespace(&buffer,
+                                                                                   &mut ws_omitter);
                                                 t.elements.push(RawString(buf_clone));
                                                 buffer.clear();
                                             }
                                             ParserState::Expression
-                                        },
+                                        }
                                         "}}" => {
                                             iter_skip(&mut it, 2);
                                             match state {
                                                 ParserState::Expression => {
                                                     if !buffer.is_empty() {
                                                         // {{else}} or {{^}} within a helper block
-                                                        if buffer.trim() == "else" || buffer.trim() == "^" {
+                                                        if buffer.trim() == "else" ||
+                                                           buffer.trim() == "^" {
                                                             buffer.clear(); // drop else
-                                                            let t = template_stack.pop_front().unwrap();
-                                                            let h = helper_stack.front_mut().unwrap();
+                                                            let t = template_stack.pop_front()
+                                                                                  .unwrap();
+                                                            let h = helper_stack.front_mut()
+                                                                                .unwrap();
                                                             h.template = Some(t);
                                                             template_stack.push_front(Template::new());
                                                             ParserState::Text
                                                         } else {
                                                             if find_tokens(&buffer).len() > 1 {
-                                                                //inline helper
+                                                                // inline helper
                                                                 let helper = try!(HelperTemplate::parse(buffer.clone(), false, line_no, col_no));
-                                                                let mut t = template_stack.front_mut().unwrap();
-                                                                t.elements.push(HelperExpression(helper));
+                                                                let mut t =
+                                                                    template_stack.front_mut()
+                                                                                  .unwrap();
+                                                                t.elements
+                                                                 .push(HelperExpression(helper));
                                                                 buffer.clear();
                                                                 ParserState::Text
                                                             } else {
-                                                                let mut t = template_stack.front_mut().unwrap();
+                                                                let mut t =
+                                                                    template_stack.front_mut()
+                                                                                  .unwrap();
                                                                 t.elements.push(Expression(
                                                                     try!(Parameter::parse(buffer.clone().trim_matches(' ').to_string()))));
                                                                 buffer.clear();
@@ -466,28 +479,33 @@ impl Template {
                                                             }
                                                         }
                                                     } else {
-                                                        return Err(UnclosedBraces(line_no, col_no))
+                                                        return Err(UnclosedBraces(line_no, col_no));
                                                     }
-                                                },
+                                                }
                                                 ParserState::Comment => {
                                                     let mut t = template_stack.front_mut().unwrap();
                                                     t.elements.push(Comment(buffer.clone()));
                                                     buffer.clear();
                                                     ParserState::Text
-                                                },
+                                                }
                                                 ParserState::HelperStart => {
-                                                    let helper = try!(HelperTemplate::parse(buffer.clone(), true, line_no, col_no));
+                                                    let helper =
+                                                        try!(HelperTemplate::parse(buffer.clone(),
+                                                                                   true,
+                                                                                   line_no,
+                                                                                   col_no));
                                                     helper_stack.push_front(helper);
                                                     template_stack.push_front(Template::new());
 
                                                     buffer.clear();
                                                     ParserState::Text
-                                                },
+                                                }
                                                 ParserState::HelperEnd => {
                                                     let name = buffer.trim_matches(' ').to_string();
                                                     if name == helper_stack.front().unwrap().name {
                                                         let h = helper_stack.pop_front().unwrap();
-                                                        let mut t = template_stack.front_mut().unwrap();
+                                                        let mut t = template_stack.front_mut()
+                                                                                  .unwrap();
                                                         t.elements.push(HelperBlock(h));
                                                         buffer.clear();
                                                         ParserState::Text
@@ -497,10 +515,13 @@ impl Template {
                                                             helper_stack.front().unwrap().name.clone(),
                                                             name));
                                                     }
-                                                },
-                                                _ => return Err(UnexpectedClosingBraces(line_no, col_no)),
+                                                }
+                                                _ => {
+                                                    return Err(UnexpectedClosingBraces(line_no,
+                                                                                       col_no))
+                                                }
                                             }
-                                        },
+                                        }
                                         _ => {
                                             iter_skip(&mut it, 1);
                                             buffer.push(c);
@@ -510,7 +531,7 @@ impl Template {
                                 }
                             }
                         }
-                    },
+                    }
                     _ => {
                         buffer.push(c);
                     }
@@ -526,7 +547,7 @@ impl Template {
             t.elements.push(TemplateElement::RawString(buf_clone));
         }
 
-        if !helper_stack.is_empty(){
+        if !helper_stack.is_empty() {
             return Err(UnclosedHelper(line_no, col_no, helper_stack.front().unwrap().name.clone()));
         }
 
@@ -537,7 +558,9 @@ impl Template {
         return Ok(template_stack.pop_front().unwrap());
     }
 
-    pub fn compile_with_name<S: AsRef<str>>(source: S, name: String) -> Result<Template, TemplateError> {
+    pub fn compile_with_name<S: AsRef<str>>(source: S,
+                                            name: String)
+                                            -> Result<Template, TemplateError> {
         let mut t = try!(Template::compile(source));
         t.name = Some(name);
         Ok(t)
@@ -567,25 +590,15 @@ pub enum TemplateElement {
 impl ToString for TemplateElement {
     fn to_string(&self) -> String {
         match *self {
-            RawString(ref v) => {
-                v.clone()
-            },
+            RawString(ref v) => v.clone(),
             Expression(ref v) => {
                 // {{ escape to {
                 format!("{{{{{}}}}}", v)
-            },
-            HTMLExpression(ref v) => {
-                format!("{{{{{{{}}}}}}}", v)
-            },
-            HelperExpression(ref helper) => {
-                helper.to_string()
             }
-            HelperBlock(ref helper) => {
-                helper.to_string()
-            }
-            Comment(ref v) => {
-                format!("{{!{}}}", v)
-            }
+            HTMLExpression(ref v) => format!("{{{{{{{}}}}}}}", v),
+            HelperExpression(ref helper) => helper.to_string(),
+            HelperBlock(ref helper) => helper.to_string(),
+            Comment(ref v) => format!("{{!{}}}", v),
         }
     }
 }
@@ -596,8 +609,8 @@ fn test_parse_helper_start_tag() {
     let h = HelperTemplate::parse(source, true, 0, 0).ok().unwrap();
 
     assert_eq!(h.name, "if".to_string());
-    assert_eq!(h.params, vec::<Parameter>![Parameter::Name("not".into()),
-                                           Parameter::Name("name".into())]);
+    assert_eq!(h.params,
+               vec![Parameter::Name("not".into()), Parameter::Name("name".into())]);
 
     let key = "compare".to_string();
     let value = h.hash.get(&key).unwrap();
@@ -612,17 +625,20 @@ fn test_parse_template() {
     let t = Template::compile(source.to_string()).ok().unwrap();
 
     assert_eq!(t.elements.len(), 10);
-    assert_eq!((*t.elements.get(0).unwrap()).to_string(), "<h1>".to_string());
-    assert_eq!(*t.elements.get(1).unwrap(), Expression(Parameter::Name("title".to_string())));
+    assert_eq!((*t.elements.get(0).unwrap()).to_string(),
+               "<h1>".to_string());
+    assert_eq!(*t.elements.get(1).unwrap(),
+               Expression(Parameter::Name("title".to_string())));
 
-    assert_eq!((*t.elements.get(3).unwrap()).to_string(), "{{{content}}}".to_string());
+    assert_eq!((*t.elements.get(3).unwrap()).to_string(),
+               "{{{content}}}".to_string());
 
     match *t.elements.get(5).unwrap() {
         HelperBlock(ref h) => {
             assert_eq!(h.name, "if".to_string());
             assert_eq!(h.params.len(), 1);
             assert_eq!(h.template.as_ref().unwrap().elements.len(), 1);
-        },
+        }
         _ => {
             panic!("Helper expected here.");
         }
@@ -633,7 +649,7 @@ fn test_parse_template() {
             assert_eq!(h.name, "foo".to_string());
             assert_eq!(h.params.len(), 1);
             assert_eq!(*(h.params.get(0).unwrap()), Parameter::Name("bar".into()));
-        },
+        }
         _ => {
             panic!("Helper expression here");
         }
@@ -644,7 +660,7 @@ fn test_parse_template() {
             assert_eq!(h.name, "unless".to_string());
             assert_eq!(h.params.len(), 1);
             assert_eq!(h.inverse.as_ref().unwrap().elements.len(), 1);
-        },
+        }
         _ => {
             panic!("Helper expression here");
         }
@@ -688,7 +704,7 @@ fn test_subexpression() {
             } else {
                 panic!("Subexpression expected");
             }
-        },
+        }
         _ => {
             panic!("Helper expression expected");
         }
@@ -703,7 +719,7 @@ fn test_subexpression() {
             } else {
                 panic!("Subexpression expected");
             }
-        },
+        }
         _ => {
             panic!("Helper expression expected");
         }
@@ -726,7 +742,7 @@ fn test_subexpression() {
             } else {
                 panic!("Subexpression expected (bar)");
             }
-        },
+        }
         _ => {
             panic!("HelperBlock expected");
         }
@@ -747,16 +763,19 @@ fn test_white_space_omitter() {
 
 #[test]
 fn test_find_tokens() {
-    let source: String = "hello   good (nice) (hello world)\n\t\t world hello=world hello=(world) hello=(world 0)".into();
+    let source: String = "hello   good (nice) (hello world)\n\t\t world hello=world hello=(world) \
+                          hello=(world 0)"
+                             .into();
     let tokens: Vec<String> = find_tokens(&source[..]);
-    assert_eq!(tokens, vec::<String>!["hello".to_string(),
-                                      "good".to_string(),
-                                      "(nice)".to_string(),
-                                      "(hello world)".to_string(),
-                                      "world".to_string(),
-                                      "hello=world".to_string(),
-                                      "hello=(world)".to_string(),
-                                      "hello=(world 0)".to_string()]);
+    assert_eq!(tokens,
+               vec!["hello".to_string(),
+                    "good".to_string(),
+                    "(nice)".to_string(),
+                    "(hello world)".to_string(),
+                    "world".to_string(),
+                    "hello=world".to_string(),
+                    "hello=(world)".to_string(),
+                    "hello=(world 0)".to_string()]);
 }
 
 #[test]
@@ -766,8 +785,7 @@ fn test_unclosed_expression() {
         let result = Template::compile(s.to_owned());
         if let Err(e) = result {
             match e {
-                TemplateError::UnclosedExpression(_, _) => {
-                },
+                TemplateError::UnclosedExpression(_, _) => {}
                 _ => {
                     panic!("Unexpected error type {}", e);
                 }
@@ -795,12 +813,12 @@ fn test_raw_helper() {
                     } else {
                         panic!("helper template not found");
                     }
-                },
+                }
                 _ => {
                     panic!("Unexpected element type");
                 }
             }
-        },
+        }
         Err(e) => {
             panic!("{}", e);
         }

@@ -252,12 +252,17 @@
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //!
 
-#[macro_use] extern crate log;
-#[macro_use] extern crate quick_error;
-#[macro_use] extern crate lazy_static;
-#[cfg(test)] #[macro_use] extern crate maplit;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate quick_error;
+#[macro_use]
+extern crate lazy_static;
+#[cfg(test)]
+#[macro_use]
+extern crate maplit;
 
-#[cfg(not(feature = "serde_type"))]
+#[cfg(feature = "rustc_ser_type")]
 extern crate rustc_serialize as serialize;
 extern crate regex;
 extern crate num;
@@ -268,11 +273,11 @@ extern crate serde;
 #[cfg(feature = "serde_type")]
 extern crate serde_json;
 
-pub use self::template::{Template};
+pub use self::template::Template;
 pub use self::error::{TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::registry::{EscapeFn, Registry as Handlebars};
 pub use self::render::{Renderable, RenderError, RenderContext, Helper};
-pub use self::helpers::{HelperDef};
+pub use self::helpers::HelperDef;
 pub use self::context::{Context, JsonRender, JsonTruthy};
 
 mod template;

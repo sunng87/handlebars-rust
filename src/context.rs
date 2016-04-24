@@ -1,4 +1,4 @@
-#[cfg(not(feature = "serde_type"))]
+#[cfg(feature = "rustc_ser_type")]
 use serialize::json::{Json, ToJson};
 
 #[cfg(feature = "serde_type")]
@@ -21,7 +21,7 @@ pub type Object = BTreeMap<String, Json>;
 ///
 #[derive(Debug)]
 pub struct Context {
-    data: Json
+    data: Json,
 }
 
 #[inline]
@@ -36,9 +36,9 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
             }
             _ => {
                 for dot_p in p.split('.') {
-//                    if dot_p != "this" {
-                        path_stack.push_back(dot_p);
-//                    }
+                    // if dot_p != "this" {
+                    path_stack.push_back(dot_p);
+                    // }
                 }
             }
         }
@@ -47,9 +47,7 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
 
 fn merge_json(base: &Json, addition: &Object) -> Json {
     let mut base_map = match base {
-        &Json::Object(ref m) => {
-            m.clone()
-        }
+        &Json::Object(ref m) => m.clone(),
         _ => {
             let mut map: BTreeMap<String, Json> = BTreeMap::new();
             map.insert("this".to_owned(), base.clone());
@@ -67,25 +65,19 @@ fn merge_json(base: &Json, addition: &Object) -> Json {
 impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
-        Context {
-            data: Json::Null
-        }
+        Context { data: Json::Null }
     }
 
-    #[cfg(not(feature = "serde_type"))]
+    #[cfg(feature = "rustc_ser_type")]
     /// Create a context with given data
     pub fn wraps<T: ToJson>(e: &T) -> Context {
-        Context {
-            data: e.to_json()
-        }
+        Context { data: e.to_json() }
     }
 
     #[cfg(feature = "serde_type")]
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: &T) -> Context {
-        Context {
-            data: value::to_value(e)
-        }
+        Context { data: value::to_value(e) }
     }
 
     /// Extend current context with another JSON object
@@ -94,9 +86,7 @@ impl Context {
     /// keys are also available.
     pub fn extend(&self, hash: &Object) -> Context {
         let new_data = merge_json(&self.data, hash);
-        Context {
-            data: new_data
-        }
+        Context { data: new_data }
     }
 
     /// Navigate the context with base path and relative path
@@ -105,50 +95,48 @@ impl Context {
     ///
     /// If you want to navigate from top level, set the base path to `"."`
     pub fn navigate(&self, base_path: &str, relative_path: &str) -> &Json {
-        let mut path_stack :VecDeque<&str> = VecDeque::new();
+        let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path);
         parse_json_visitor(&mut path_stack, relative_path);
 
-        let paths :Vec<&str> = path_stack.iter().map(|x| *x).collect();
+        let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
             match KEY_MATCHER.find(*p) {
                 Some((s, _)) => {
                     let arr = &p[..s];
-                    let mut idx = &p[s+1 .. p.len()-1];
+                    let mut idx = &p[s + 1..p.len() - 1];
                     idx = QUOT_MATCHER.captures(idx).and_then(|c| c.at(1)).unwrap_or(idx);
 
-                    let root = match arr{
+                    let root = match arr {
                         "this" | "" => Some(data),
-                        _ => data.find(arr)
+                        _ => data.find(arr),
                     };
 
                     data = match root {
                         Some(d) => {
                             match *d {
                                 Json::Array(ref l) => {
-                                    idx.parse::<usize>().and_then(
-                                        |idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
-                                        .unwrap_or(&DEFAULT_VALUE)
-                                },
-                                Json::Object(ref m) => {
-                                    m.get(idx).unwrap_or(&DEFAULT_VALUE)
-                                },
-                                _ => {
-                                    &DEFAULT_VALUE
+                                    idx.parse::<usize>()
+                                       .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
+                                       .unwrap_or(&DEFAULT_VALUE)
                                 }
+                                Json::Object(ref m) => m.get(idx).unwrap_or(&DEFAULT_VALUE),
+                                _ => &DEFAULT_VALUE,
                             }
-                        },
-                        None => &DEFAULT_VALUE
+                        }
+                        None => &DEFAULT_VALUE,
                     };
-                },
+                }
                 None => {
                     data = data.find(*p)
-                        .unwrap_or_else(|| if *p == "this" {
-                            data
-                        } else {
-                            &DEFAULT_VALUE
-                        });
+                               .unwrap_or_else(|| {
+                                   if *p == "this" {
+                                       data
+                                   } else {
+                                       &DEFAULT_VALUE
+                                   }
+                               });
                 }
             }
         }
@@ -171,12 +159,12 @@ impl JsonRender for Json {
             Json::I64(i) => i.to_string(),
             Json::U64(i) => i.to_string(),
             Json::F64(f) => f.to_string(),
-            #[cfg(not(feature = "serde_type"))]
-            Json::Boolean (i) => i.to_string(),
+            #[cfg(feature = "rustc_ser_type")]
+            Json::Boolean(i) => i.to_string(),
             #[cfg(feature = "serde_type")]
-            Json::Bool (i) => i.to_string(),
+            Json::Bool(i) => i.to_string(),
             Json::Null => "".to_owned(),
-            Json::Array (ref a) => {
+            Json::Array(ref a) => {
                 let mut buf = String::new();
                 buf.push('[');
                 for i in a.iter() {
@@ -185,8 +173,8 @@ impl JsonRender for Json {
                 }
                 buf.push(']');
                 buf
-            },
-            Json::Object (_) => "[object]".to_owned()
+            }
+            Json::Object(_) => "[object]".to_owned(),
         }
     }
 }
@@ -196,15 +184,15 @@ impl JsonTruthy for Json {
         match *self {
             Json::I64(i) => i != 0,
             Json::U64(i) => i != 0,
-            Json::F64(i) => i != 0.0 || ! i.is_nan(),
-            #[cfg(not(feature = "serde_type"))]
-            Json::Boolean (ref i) => *i,
+            Json::F64(i) => i != 0.0 || !i.is_nan(),
+            #[cfg(feature = "rustc_ser_type")]
+            Json::Boolean(ref i) => *i,
             #[cfg(feature = "serde_type")]
-            Json::Bool (ref i) => *i,
+            Json::Bool(ref i) => *i,
             Json::Null => false,
-            Json::String (ref i) => i.len() > 0,
-            Json::Array (ref i) => i.len() > 0,
-            Json::Object (ref i) => i.len() > 0
+            Json::String(ref i) => i.len() > 0,
+            Json::Array(ref i) => i.len() > 0,
+            Json::Object(ref i) => i.len() > 0,
         }
     }
 }
@@ -227,12 +215,13 @@ mod test {
 
     struct Address {
         city: String,
-        country: String
+        country: String,
     }
 
     impl Serialize for Address {
         fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-            where S: Serializer {
+            where S: Serializer
+        {
             let mut m = BTreeMap::new();
             m.insert("city".to_string(), value::to_value(&self.city));
             m.insert("country".to_string(), value::to_value(&self.country));
@@ -244,12 +233,13 @@ mod test {
         name: String,
         age: i16,
         addr: Address,
-        titles: Vec<String>
+        titles: Vec<String>,
     }
 
     impl Serialize for Person {
         fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-            where S: Serializer {
+            where S: Serializer
+        {
             let mut m = BTreeMap::new();
             m.insert("name".to_string(), value::to_value(&self.name));
             m.insert("age".to_string(), value::to_value(&self.age));
@@ -277,22 +267,27 @@ mod test {
             name: "Ning Sun".to_string(),
             age: 27,
             addr: addr,
-            titles: vec!["programmer".to_string(),
-                         "cartographier".to_string()]
+            titles: vec!["programmer".to_string(), "cartographier".to_string()],
         };
 
         let ctx = Context::wraps(&person);
-        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(), "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[country]").render(), "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(), "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.['country']").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(),
+                   "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[country]").render(),
+                   "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(),
+                   "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.['country']").render(),
+                   "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
         assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]").render(), "programmer".to_string());
-        assert_eq!(ctx.navigate(".", "titles.[0]").render(), "programmer".to_string());
+        assert_eq!(ctx.navigate(".", "titles[0]").render(),
+                   "programmer".to_string());
+        assert_eq!(ctx.navigate(".", "titles.[0]").render(),
+                   "programmer".to_string());
     }
 
     #[test]
@@ -333,7 +328,7 @@ mod test {
 }
 
 #[cfg(test)]
-#[cfg(not(feature = "serde_type"))]
+#[cfg(feature = "rustc_ser_type")]
 mod test {
     use context::{JsonRender, Context};
     use std::collections::BTreeMap;
@@ -349,7 +344,7 @@ mod test {
 
     struct Address {
         city: String,
-        country: String
+        country: String,
     }
 
     impl ToJson for Address {
@@ -365,7 +360,7 @@ mod test {
         name: String,
         age: i16,
         addr: Address,
-        titles: Vec<String>
+        titles: Vec<String>,
     }
 
     impl ToJson for Person {
@@ -397,22 +392,27 @@ mod test {
             name: "Ning Sun".to_string(),
             age: 27,
             addr: addr,
-            titles: vec!["programmer".to_string(),
-                         "cartographier".to_string()]
+            titles: vec!["programmer".to_string(), "cartographier".to_string()],
         };
 
         let ctx = Context::wraps(&person);
-        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(), "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[country]").render(), "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(), "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.['country']").render(), "China".to_string());
+        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(),
+                   "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[country]").render(),
+                   "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(),
+                   "China".to_string());
+        assert_eq!(ctx.navigate(".", "addr.['country']").render(),
+                   "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
         assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]").render(), "programmer".to_string());
-        assert_eq!(ctx.navigate(".", "titles.[0]").render(), "programmer".to_string());
+        assert_eq!(ctx.navigate(".", "titles[0]").render(),
+                   "programmer".to_string());
+        assert_eq!(ctx.navigate(".", "titles.[0]").render(),
+                   "programmer".to_string());
     }
 
     #[test]
