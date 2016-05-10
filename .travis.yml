@@ -15,13 +15,3 @@ script:
   - |
       cargo test &&
       travis-cargo --only nightly test -- --no-default-features
-after_success: |
-  echo $TRAVIS_RUST_VERSION && \
-  [ $TRAVIS_BRANCH == 'master' ] && \
-  [ $TRAVIS_RUST_VERSION == '1.6.0' ] && \
-  [ "$TRAVIS_PULL_REQUEST" == "false" ] && \
-  cargo doc && \
-  echo '<meta http-equiv=refresh content=0;url=handlebars/index.html>' > target/doc/index.html && \
-  sudo pip install ghp-import && \
-  ghp-import -n target/doc && \
-  git push -qf https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
