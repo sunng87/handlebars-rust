@@ -83,15 +83,21 @@ fn hex_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) 
 handlebars.register_helper("hex", Box::new(hex_helper));
 ```
 
+And using it in your template:
+
+```handlebars
+{{hex my_value}}
+```
+
 #### Template inheritance
 
 Every time I look into a templating system, I will investigate its
 support for [template
 inheritance](https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance).
 
-Template include is not enough. In most case you will need a skeleton
-of page as parent (header, footer, etc.), and embed you page into this
-parent.
+Template include is not sufficient for template reuse. In most case
+you will need a skeleton of page as parent (header, footer, etc.), and
+embed you page into this parent.
 
 You can find a real example for template inheritance in
 `examples/partials.rs`, and templates used by this file.
@@ -99,15 +105,16 @@ You can find a real example for template inheritance in
 ### Limitations
 
 * This implementation is **not fully compatible** with the original
-  javascript version
-* As a static typed language, it's a little verbose to use handlebars
-* You will have to make your data `ToJson`-able, so we can render
-  it. If you are on nightly channel, we have [a syntax
+  javascript version. Specifically, mustache list iteration and null
+  check doesn't work. But you can use `#each` and `#if` for same
+  behavior.
+* You will need to make your data `ToJson`-able, so we can render
+  it. If you were on nightly channel, we have [a syntax
   extension](https://github.com/sunng87/tojson_macros) to generate
   default `ToJson` implementation for you. If you use
   [serde](https://github.com/serde-rs/serde), you can enable
-  `serde_type` feature of handlebars-rust and add `#[Serialize]` for
-  your types.
+  `serde_type` feature of handlebars-rust and add `#derive[Serialize]`
+  for your types.
 
 ### Handlebars-js features supported in Handlebars-rust
 
