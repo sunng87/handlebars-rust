@@ -1,15 +1,24 @@
-use helpers::{HelperDef};
-use registry::{Registry};
+use helpers::HelperDef;
+use registry::Registry;
 use context::{Context, JsonRender};
-use render::{Renderable, RenderContext, RenderError, Helper};
+use render::{RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let value_param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"lookup\"")));
-        let index_param = try!(h.param(1).ok_or_else(|| RenderError::new("Insuffitient params for helper \"lookup\"")));
+    fn call(&self,
+            c: &Context,
+            h: &Helper,
+            _: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
+        let value_param = try!(h.param(0).ok_or_else(|| {
+            RenderError::new("Param not found for helper \"lookup\"")
+        }));
+        let index_param = try!(h.param(1).ok_or_else(|| {
+            RenderError::new("Insuffitient params for helper \"lookup\"")
+        }));
 
         let partial_path: String = if index_param.starts_with("@") {
             rc.get_local_var(index_param).render()
@@ -28,15 +37,19 @@ pub static LOOKUP_HELPER: LookupHelper = LookupHelper;
 
 #[cfg(test)]
 mod test {
-    use template::{Template};
-    use registry::{Registry};
+    use template::Template;
+    use registry::Registry;
 
     use std::collections::BTreeMap;
 
     #[test]
     fn test_lookup() {
-        let t0 = Template::compile("{{#each v1}}{{lookup ../../v2 @index}}{{/each}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#each v1}}{{lookup ../../v2 1}}{{/each}}".to_string()).ok().unwrap();
+        let t0 = Template::compile("{{#each v1}}{{lookup ../../v2 @index}}{{/each}}".to_string())
+                     .ok()
+                     .unwrap();
+        let t1 = Template::compile("{{#each v1}}{{lookup ../../v2 1}}{{/each}}".to_string())
+                     .ok()
+                     .unwrap();
         let t2 = Template::compile("{{lookup kk \"a\"}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
@@ -44,7 +57,7 @@ mod test {
         handlebars.register_template("t1", t1);
         handlebars.register_template("t2", t2);
 
-        let mut m :BTreeMap<String, Vec<u16>> = BTreeMap::new();
+        let mut m: BTreeMap<String, Vec<u16>> = BTreeMap::new();
         m.insert("v1".to_string(), vec![1u16, 2u16, 3u16]);
         m.insert("v2".to_string(), vec![9u16, 8u16, 7u16]);
 
