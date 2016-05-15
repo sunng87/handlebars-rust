@@ -8,7 +8,7 @@ license = "MIT"
 keywords = ["handlebars", "templating", "web"]
 homepage = "https://github.com/sunng87/handlebars-rust"
 repository = "https://github.com/sunng87/handlebars-rust"
-documentation = "http://sunng.info/handlebars-rust/"
+documentation = "http://sunng87.github.io/handlebars-rust/"
 readme = "README.md"
 
 [lib]
