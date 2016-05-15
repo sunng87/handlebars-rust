@@ -3,7 +3,6 @@ use std::str::Chars;
 use std::fmt;
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
-use num::FromPrimitive;
 use regex::Regex;
 use itertools::PutBackN;
 
@@ -199,24 +198,14 @@ enum WhiteSpaceOmit {
     None = 0x00,
 }
 
-impl FromPrimitive for WhiteSpaceOmit {
-    fn from_i64(n: i64) -> Option<WhiteSpaceOmit> {
+impl From<u8> for WhiteSpaceOmit {
+    fn from(n: u8) -> WhiteSpaceOmit {
         match n {
-            0x01 => Some(WhiteSpaceOmit::Left),
-            0x10 => Some(WhiteSpaceOmit::Right),
-            0x11 => Some(WhiteSpaceOmit::Both),
-            0x00 => Some(WhiteSpaceOmit::None),
-            _ => None,
-        }
-    }
-
-    fn from_u64(n: u64) -> Option<WhiteSpaceOmit> {
-        match n {
-            0x01 => Some(WhiteSpaceOmit::Left),
-            0x10 => Some(WhiteSpaceOmit::Right),
-            0x11 => Some(WhiteSpaceOmit::Both),
-            0x00 => Some(WhiteSpaceOmit::None),
-            _ => None,
+            0x01 => WhiteSpaceOmit::Left,
+            0x10 => WhiteSpaceOmit::Right,
+            0x11 => WhiteSpaceOmit::Both,
+            0x00 => WhiteSpaceOmit::None,
+            _ => WhiteSpaceOmit::None,
         }
     }
 }
@@ -225,7 +214,7 @@ impl BitOr<WhiteSpaceOmit> for WhiteSpaceOmit {
     type Output = WhiteSpaceOmit;
 
     fn bitor(self, right: WhiteSpaceOmit) -> WhiteSpaceOmit {
-        FromPrimitive::from_u8((self as u8) | (right as u8)).unwrap()
+        WhiteSpaceOmit::from((self as u8) | (right as u8))
     }
 }
 

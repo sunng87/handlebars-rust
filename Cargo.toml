@@ -21,7 +21,6 @@ path = "src/lib.rs"
 regex = "^0.1.41"
 log = "^0.3.1"
 rustc-serialize = { version = "^0.3.15", optional = true }
-num = "^0.1.25"
 lazy_static = "^0.1.14"
 quick-error = "^1.0.0"
 serde = { version = "^0.7.0", optional = true }
