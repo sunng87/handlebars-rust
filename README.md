@@ -74,7 +74,7 @@ A helper can be as a simple as a Rust function like:
 ```rust
 fn hex_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
     let param = h.params().get(0).unwrap();
-    let rendered = format!("{:x}", c.navigate(rc.get_path(), param).render());
+    let rendered = format!("0x{:x}", c.navigate(rc.get_path(), param).as_u64().unwrap());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
     Ok(())
 }
