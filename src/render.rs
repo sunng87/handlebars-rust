@@ -61,6 +61,7 @@ pub struct RenderContext<'a> {
     pub current_template: Option<String>,
     /// root template name
     pub root_template: Option<String>,
+    pub disable_escape: bool,
 }
 
 impl<'a> RenderContext<'a> {
@@ -74,6 +75,7 @@ impl<'a> RenderContext<'a> {
             writer: w,
             current_template: None,
             root_template: None,
+            disable_escape: false,
         }
     }
 
@@ -87,6 +89,7 @@ impl<'a> RenderContext<'a> {
             writer: w,
             current_template: self.current_template.clone(),
             root_template: self.root_template.clone(),
+            disable_escape: self.disable_escape,
         }
     }
 
@@ -161,20 +164,36 @@ impl<'a> fmt::Debug for RenderContext<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f,
                "partials: {:?}, path: {:?}, local_variables: {:?}, current_template: {:?}, \
-                root_template: {:?}",
+                root_template: {:?}, disable_escape: {:?}",
                self.partials,
                self.path,
                self.local_variables,
                self.current_template,
-               self.root_template)
+               self.root_template,
+               self.disable_escape)
     }
 }
 
+#[derive(Debug)]
+pub struct ContextJson {
+    path: Option<String>,
+    value: Json,
+}
+
+impl ContextJson {
+    pub fn path(&self) -> Option<&String> {
+        self.path.as_ref()
+    }
+
+    pub fn value(&self) -> &Json {
+        &self.value
+    }
+}
 
 pub struct Helper<'a> {
-    name: &'a String,
-    params: Vec<String>,
-    hash: BTreeMap<String, Json>,
+    name: &'a str,
+    params: Vec<ContextJson>,
+    hash: BTreeMap<String, ContextJson>,
     template: &'a Option<Template>,
     inverse: &'a Option<Template>,
     block: bool,
@@ -188,16 +207,16 @@ impl<'a, 'b> Helper<'a> {
                      -> Result<Helper<'a>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in ht.params.iter() {
-            let r = try!(p.renders(ctx, registry, rc));
+            let r = try!(p.expand(ctx, registry, rc));
             evaluated_params.push(r);
         }
 
         let mut evaluated_hash = BTreeMap::new();
         for (k, p) in ht.hash.iter() {
-            let r = try!(p.renders(ctx, registry, rc));
+            let r = try!(p.expand(ctx, registry, rc));
             // subexpression in hash values are all treated as json string for now
             // FIXME: allow different types evaluated as hash value
-            evaluated_hash.insert(k.clone(), Json::String(r));
+            evaluated_hash.insert(k.clone(), r);
         }
 
         Ok(Helper {
@@ -210,23 +229,23 @@ impl<'a, 'b> Helper<'a> {
         })
     }
 
-    pub fn name(&self) -> &String {
+    pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn params(&self) -> &Vec<String> {
+    pub fn params(&self) -> &Vec<ContextJson> {
         &self.params
     }
 
-    pub fn param(&self, idx: usize) -> Option<&String> {
+    pub fn param(&self, idx: usize) -> Option<&ContextJson> {
         self.params.get(idx)
     }
 
-    pub fn hash(&self) -> &BTreeMap<String, Json> {
+    pub fn hash(&self) -> &BTreeMap<String, ContextJson> {
         &self.hash
     }
 
-    pub fn hash_get(&self, key: &str) -> Option<&Json> {
+    pub fn hash_get(&self, key: &str) -> Option<&ContextJson> {
         self.hash.get(key)
     }
 
@@ -258,23 +277,52 @@ pub trait Renderable {
 }
 
 
+// FIXME: return borrowed Json here to avoid clone
 impl Parameter {
-    fn renders(&self,
-               ctx: &Context,
-               registry: &Registry,
-               rc: &mut RenderContext)
-               -> Result<String, RenderError> {
+    fn expand(&self,
+              ctx: &Context,
+              registry: &Registry,
+              rc: &mut RenderContext)
+              -> Result<ContextJson, RenderError> {
         match self {
-            &Parameter::Name(ref n) => Ok(n.clone()),
+            &Parameter::Name(ref name) => {
+                if name.starts_with("@") {
+                    Ok(ContextJson {
+                        path: None,
+                        value: rc.get_local_var(&name).clone(),
+                    })
+                } else {
+                    Ok(ContextJson {
+                        path: Some(name.to_owned()),
+                        value: ctx.navigate(rc.get_path(), name).clone(),
+                    })
+                }
+            }
+            &Parameter::Literal(ref j) => {
+                Ok(ContextJson {
+                    path: None,
+                    value: j.clone(),
+                })
+            }
             &Parameter::Subexpression(ref t) => {
                 let mut local_writer = StringWriter::new();
                 let result = {
                     let mut local_rc = rc.with_writer(&mut local_writer);
+                    // disable html escape for subexpression
+                    local_rc.disable_escape = true;
+
                     t.render(ctx, registry, &mut local_rc)
                 };
 
                 match result {
-                    Ok(_) => Ok(local_writer.to_string()),
+                    Ok(_) => {
+                        let n = local_writer.to_string();
+
+                        try!(Parameter::parse(&n).map_err(|_| {
+                            RenderError::new("subexpression generates invalid value")
+                        }))
+                            .expand(ctx, registry, rc)
+                    }
                     Err(e) => Err(e),
                 }
             }
@@ -310,29 +358,20 @@ impl Renderable for TemplateElement {
                 Ok(())
             }
             Expression(ref v) => {
-                let name = try!(v.renders(ctx, registry, rc));
-                let rendered = {
-                    let value = if name.starts_with("@") {
-                        rc.get_local_var(&name)
-                    } else {
-                        ctx.navigate(rc.get_path(), &name)
-                    };
-                    value.render()
+                let context_json = try!(v.expand(ctx, registry, rc));
+                let rendered = context_json.value.render();
+
+                let output = if !rc.disable_escape {
+                    registry.get_escape_fn()(&rendered)
+                } else {
+                    rendered
                 };
-                let output = registry.get_escape_fn()(&rendered);
                 try!(rc.writer.write(output.into_bytes().as_ref()));
                 Ok(())
             }
             HTMLExpression(ref v) => {
-                let name = try!(v.renders(ctx, registry, rc));
-                let rendered = {
-                    let value = if name.starts_with("@") {
-                        rc.get_local_var(&name)
-                    } else {
-                        ctx.navigate(rc.get_path(), &name)
-                    };
-                    value.render()
-                };
+                let context_json = try!(v.expand(ctx, registry, rc));
+                let rendered = context_json.value.render();
                 try!(rc.writer.write(rendered.into_bytes().as_ref()));
                 Ok(())
             }
@@ -477,25 +516,12 @@ fn test_render_subexpression() {
     let mut sw = StringWriter::new();
     {
         let mut rc = RenderContext::new(&mut sw);
-        let mut elements: Vec<TemplateElement> = Vec::new();
-
-        let e1 = RawString("<h1>".to_string());
-        elements.push(e1);
-
-        let e2 = Expression(Parameter::parse("(hello)").ok().unwrap());
-        elements.push(e2);
-
-        let e3 = RawString("</h1>".to_string());
-        elements.push(e3);
-
-        let template = Template {
-            elements: elements,
-            name: None,
-        };
+        let template = Template::compile("<h1>{{#if (const)}}{{(hello)}}{{/if}}</h1>").unwrap();
 
         let mut m: HashMap<String, String> = HashMap::new();
         m.insert("hello".to_string(), "world".to_string());
         m.insert("world".to_string(), "nice".to_string());
+        m.insert("const".to_string(), "\"truthy\"".to_string());
 
         let ctx = Context::wraps(&m);
         template.render(&ctx, &r, &mut rc).ok().unwrap();

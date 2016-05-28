@@ -26,13 +26,15 @@ use error::{TemplateError, TemplateFileError, TemplateRenderError};
 /// parameters (and because traits cannot be aliased using `type`).
 pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
 
-fn get_default_escape_fn() -> EscapeFn {
-    Box::new(|data| {
-        data.replace("&", "&amp;")
-            .replace("\"", "&quot;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-    })
+pub fn html_escape(data: &str) -> String {
+    data.replace("&", "&amp;")
+        .replace("\"", "&quot;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+}
+
+pub fn no_escape(data: &str) -> String {
+    data.to_owned()
 }
 
 /// The single entry point of your Handlebars templates
@@ -49,7 +51,7 @@ impl Registry {
         let mut r = Registry {
             templates: HashMap::new(),
             helpers: HashMap::new(),
-            escape_fn: get_default_escape_fn(),
+            escape_fn: Box::new(html_escape),
         };
 
         r.register_helper("if", Box::new(helpers::IF_HELPER));
@@ -124,7 +126,7 @@ impl Registry {
 
     /// Restore the default *escape fn*.
     pub fn unregister_escape_fn(&mut self) {
-        self.escape_fn = get_default_escape_fn();
+        self.escape_fn = Box::new(html_escape);
     }
 
     /// Get a reference to the current *escape fn*.
@@ -258,11 +260,10 @@ mod test {
         let t2 = Template::compile("<h2></h2>".to_string()).ok().unwrap();
         r.register_template("index2", t2.clone());
 
-        assert_eq!((*r.get_template(&("index".to_string())).unwrap()).to_string(),
-                   t.to_string());
+        assert_eq!(r.get_template("index").unwrap().elements, t.elements);
         assert_eq!(r.templates.len(), 2);
 
-        r.unregister_template(&("index".to_string()));
+        r.unregister_template("index");
         assert_eq!(r.templates.len(), 1);
 
         r.clear_templates();

@@ -1,10 +1,17 @@
 use std::ops::BitOr;
 use std::str::Chars;
-use std::fmt;
+// use std::fmt;
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
 use regex::Regex;
 use itertools::PutBackN;
+
+#[cfg(feature = "rustc_ser_type")]
+use serialize::json::Json;
+#[cfg(feature = "serde_type")]
+use serde_json::value::Value as Json;
+#[cfg(feature = "serde_type")]
+use std::str::FromStr;
 
 use TemplateError;
 use TemplateError::*;
@@ -34,6 +41,7 @@ enum ParserState {
 #[derive(PartialEq, Clone, Debug)]
 pub enum Parameter {
     Name(String),
+    Literal(Json),
     Subexpression(Template),
 }
 
@@ -45,42 +53,6 @@ pub struct HelperTemplate {
     pub template: Option<Template>,
     pub inverse: Option<Template>,
     pub block: bool,
-}
-
-impl ToString for HelperTemplate {
-    fn to_string(&self) -> String {
-
-        let mut buf = String::new();
-
-        if self.block {
-            buf.push_str(format!("{{{{#{}", self.name).as_ref());
-        } else {
-            buf.push_str(format!("{{{{{}", self.name).as_ref());
-        }
-
-        for p in self.params.iter() {
-            buf.push_str(format!(" {}", p).as_ref());
-        }
-
-        for k in self.hash.keys() {
-            buf.push_str(format!(" {}={}", k, self.hash.get(k).unwrap()).as_ref());
-        }
-
-        buf.push_str("}}");
-
-        if self.block {
-            if let Some(ref tpl) = self.template {
-                buf.push_str(tpl.to_string().as_ref())
-            }
-
-            if let Some(ref ivs) = self.inverse {
-                buf.push_str("{{else}}");
-                buf.push_str(ivs.to_string().as_ref());
-            }
-            buf.push_str(format!("{{{{/{}}}}}", self.name).as_ref());
-        }
-        buf
-    }
 }
 
 fn find_tokens(source: &str) -> Vec<String> {
@@ -116,7 +88,6 @@ impl HelperTemplate {
                                 col_no: usize)
                                 -> Result<HelperTemplate, TemplateError> {
         let source = source.as_ref();
-        // FIXME, cache this regex
         let tokens_vec = find_tokens(&source);
         let mut tokens = tokens_vec.iter();
 
@@ -170,23 +141,12 @@ impl Parameter {
             let sub_template = try!(Template::compile(temp));
             Ok(Parameter::Subexpression(sub_template))
         } else {
-            Ok(Parameter::Name(source.to_owned()))
-        }
-    }
-}
-
-impl fmt::Display for Parameter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Parameter::Name(ref name) => try!(write!(f, "{}", name)),
-            &Parameter::Subexpression(ref template) => {
-                let template_string = template.to_string();
-                try!(write!(f,
-                            "({})",
-                            template_string[2..template_string.len() - 2].to_string()))
+            if let Ok(json) = Json::from_str(source) {
+                Ok(Parameter::Literal(json))
+            } else {
+                Ok(Parameter::Name(source.to_owned()))
             }
         }
-        Ok(())
     }
 }
 
@@ -556,16 +516,6 @@ impl Template {
     }
 }
 
-impl ToString for Template {
-    fn to_string(&self) -> String {
-        let mut buf = String::new();
-        for v in self.elements.iter() {
-            buf.push_str(v.to_string().as_ref());
-        }
-        buf
-    }
-}
-
 #[derive(PartialEq, Clone, Debug)]
 pub enum TemplateElement {
     RawString(String),
@@ -574,22 +524,6 @@ pub enum TemplateElement {
     HelperExpression(HelperTemplate),
     HelperBlock(HelperTemplate),
     Comment(String),
-}
-
-impl ToString for TemplateElement {
-    fn to_string(&self) -> String {
-        match *self {
-            RawString(ref v) => v.clone(),
-            Expression(ref v) => {
-                // {{ escape to {
-                format!("{{{{{}}}}}", v)
-            }
-            HTMLExpression(ref v) => format!("{{{{{{{}}}}}}}", v),
-            HelperExpression(ref helper) => helper.to_string(),
-            HelperBlock(ref helper) => helper.to_string(),
-            Comment(ref v) => format!("{{!{}}}", v),
-        }
-    }
 }
 
 #[test]
@@ -603,7 +537,7 @@ fn test_parse_helper_start_tag() {
 
     let key = "compare".to_string();
     let value = h.hash.get(&key).unwrap();
-    assert_eq!(*value, Parameter::Name("1".into()));
+    assert_eq!(*value, Parameter::Literal(Json::U64(1)));
 }
 
 #[test]
@@ -614,13 +548,13 @@ fn test_parse_template() {
     let t = Template::compile(source.to_string()).ok().unwrap();
 
     assert_eq!(t.elements.len(), 10);
-    assert_eq!((*t.elements.get(0).unwrap()).to_string(),
-               "<h1>".to_string());
+
+    assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
     assert_eq!(*t.elements.get(1).unwrap(),
                Expression(Parameter::Name("title".to_string())));
 
-    assert_eq!((*t.elements.get(3).unwrap()).to_string(),
-               "{{{content}}}".to_string());
+    assert_eq!(*t.elements.get(3).unwrap(),
+               HTMLExpression(Parameter::Name("content".to_string())));
 
     match *t.elements.get(5).unwrap() {
         HelperBlock(ref h) => {
@@ -658,17 +592,6 @@ fn test_parse_template() {
 }
 
 #[test]
-fn test_helper_to_string() {
-    let source = "{{#ifequals name compare=\"hello\"}}hello{{else}}good{{/ifequals}}".to_string();
-
-    let t = Template::compile(source.to_string()).ok().unwrap();
-
-    assert_eq!(t.elements.len(), 1);
-    assert_eq!(t.elements.get(0).unwrap().to_string(), source);
-}
-
-
-#[test]
 fn test_parse_error() {
     let source = "{{#ifequals name compare=\"hello\"}}\nhello\n\t{{else}}\ngood";
 
@@ -689,7 +612,8 @@ fn test_subexpression() {
             assert_eq!(h.name, "foo".to_string());
             assert_eq!(h.params.len(), 1);
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
-                assert_eq!(t.to_string(), "{{bar}}".to_string());
+                assert_eq!(*t.elements.get(0).unwrap(),
+                           Expression(Parameter::Name("bar".to_string())));
             } else {
                 panic!("Subexpression expected");
             }
@@ -704,7 +628,15 @@ fn test_subexpression() {
             assert_eq!(h.name, "foo".to_string());
             assert_eq!(h.params.len(), 1);
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
-                assert_eq!(t.to_string(), "{{bar baz}}".to_string());
+                assert_eq!(*t.elements.get(0).unwrap(),
+                           HelperExpression(HelperTemplate {
+                               name: "bar".to_owned(),
+                               params: vec![Parameter::Name("baz".to_owned())],
+                               hash: BTreeMap::new(),
+                               template: None,
+                               inverse: None,
+                               block: false,
+                           }));
             } else {
                 panic!("Subexpression expected");
             }
@@ -721,13 +653,22 @@ fn test_subexpression() {
             assert_eq!(h.hash.len(), 1);
 
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
-                assert_eq!(t.to_string(), "{{baz bar}}".to_string())
+                assert_eq!(*t.elements.get(0).unwrap(),
+                           HelperExpression(HelperTemplate {
+                               name: "baz".to_owned(),
+                               params: vec![Parameter::Name("bar".to_owned())],
+                               hash: BTreeMap::new(),
+                               template: None,
+                               inverse: None,
+                               block: false,
+                           }));
             } else {
                 panic!("Subexpression expected (baz bar)");
             }
 
             if let &Parameter::Subexpression(ref t) = h.hash.get("then").unwrap() {
-                assert_eq!(t.to_string(), "{{bar}}".to_string())
+                assert_eq!(*t.elements.get(0).unwrap(),
+                           Expression(Parameter::Name("bar".to_string())));
             } else {
                 panic!("Subexpression expected (bar)");
             }
@@ -798,7 +739,8 @@ fn test_raw_helper() {
                     assert_eq!(h.name, "raw".to_owned());
                     if let Some(ref ht) = h.template {
                         assert_eq!(ht.elements.len(), 1);
-                        assert_eq!(ht.to_string(), "good{{night}}".to_owned());
+                        assert_eq!(*ht.elements.get(0).unwrap(),
+                                   RawString("good{{night}}".to_owned()));
                     } else {
                         panic!("helper template not found");
                     }
@@ -812,5 +754,39 @@ fn test_raw_helper() {
             panic!("{}", e);
         }
 
+    }
+}
+
+#[test]
+#[cfg(rust_ser_type)]
+fn test_literal_parameter_parser() {
+    match Template::compile("{{hello 1 name=\"value\" valid=false ref=someref}}") {
+        Ok(t) => {
+            if let HelperExpression(ref ht) = t.elements[0] {
+                assert_eq!(ht.params[0], Parameter::Literal(Json::U64(1)));
+                assert_eq!(ht.hash["name"],
+                           Parameter::Literal(Json::String("value".to_owned())));
+                assert_eq!(ht.hash["valid"], Parameter::Literal(Json::Boolean(false)));
+                assert_eq!(ht.hash["ref"], Parameter::Name("someref".to_owned()));
+            }
+        }
+        Err(e) => panic!("{}", e),
+    }
+}
+
+#[test]
+#[cfg(serde_type)]
+fn test_literal_parameter_parser() {
+    match Template::compile("{{hello 1 name=\"value\" valid=false ref=someref}}") {
+        Ok(t) => {
+            if let HelperExpression(ref ht) = t.elements[0] {
+                assert_eq!(ht.params[0], Parameter::Literal(Json::U64(1)));
+                assert_eq!(ht.hash["name"],
+                           Parameter::Literal(Json::String("value".to_owned())));
+                assert_eq!(ht.hash["valid"], Parameter::Literal(Json::Bool(false)));
+                assert_eq!(ht.hash["ref"], Parameter::Name("someref".to_owned()));
+            }
+        }
+        Err(e) => panic!("{}", e),
     }
 }
