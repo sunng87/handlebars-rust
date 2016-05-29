@@ -19,13 +19,12 @@ use error::{TemplateError, TemplateFileError, TemplateRenderError};
 /// This type represents an *escape fn*, that is a function who's purpose it is
 /// to escape potentially problematic characters in a string.
 ///
-/// The default *escape fn* replaces the characters `&"<>`
-/// with the equivalent html / xml entities.
-///
 /// An *escape fn* is represented as a `Box` to avoid unnecessary type
 /// parameters (and because traits cannot be aliased using `type`).
 pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
 
+/// The default *escape fn* replaces the characters `&"<>`
+/// with the equivalent html / xml entities.
 pub fn html_escape(data: &str) -> String {
     data.replace("&", "&amp;")
         .replace("\"", "&quot;")
@@ -33,6 +32,8 @@ pub fn html_escape(data: &str) -> String {
         .replace(">", "&gt;")
 }
 
+/// `EscapeFn` that donot change any thing. Useful when using in a non-html
+/// environment.
 pub fn no_escape(data: &str) -> String {
     data.to_owned()
 }

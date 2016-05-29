@@ -174,6 +174,8 @@ impl<'a> fmt::Debug for RenderContext<'a> {
     }
 }
 
+/// Json wrapper that holds the Json value and reference path information
+///
 #[derive(Debug)]
 pub struct ContextJson {
     path: Option<String>,
@@ -181,15 +183,19 @@ pub struct ContextJson {
 }
 
 impl ContextJson {
+    /// Returns relative path when the value is referenced
+    /// If the value is from a literal, the path is `None`
     pub fn path(&self) -> Option<&String> {
         self.path.as_ref()
     }
 
+    /// Returns the value
     pub fn value(&self) -> &Json {
         &self.value
     }
 }
 
+/// Render-time Helper data when using in a helper definition
 pub struct Helper<'a> {
     name: &'a str,
     params: Vec<ContextJson>,
@@ -214,8 +220,6 @@ impl<'a, 'b> Helper<'a> {
         let mut evaluated_hash = BTreeMap::new();
         for (k, p) in ht.hash.iter() {
             let r = try!(p.expand(ctx, registry, rc));
-            // subexpression in hash values are all treated as json string for now
-            // FIXME: allow different types evaluated as hash value
             evaluated_hash.insert(k.clone(), r);
         }
 
@@ -229,26 +233,32 @@ impl<'a, 'b> Helper<'a> {
         })
     }
 
+    /// Returns helper name
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Returns all helper params, resolved within the context
     pub fn params(&self) -> &Vec<ContextJson> {
         &self.params
     }
 
+    /// Returns nth helper param, resolved within the context
     pub fn param(&self, idx: usize) -> Option<&ContextJson> {
         self.params.get(idx)
     }
 
+    /// Returns hash, resolved within the context
     pub fn hash(&self) -> &BTreeMap<String, ContextJson> {
         &self.hash
     }
 
+    /// Return hash value of a given key, resolved within the context
     pub fn hash_get(&self, key: &str) -> Option<&ContextJson> {
         self.hash.get(key)
     }
 
+    /// Returns the default inner template if any
     pub fn template(&self) -> Option<&Template> {
         match *self.template {
             Some(ref t) => Some(t),
@@ -256,6 +266,7 @@ impl<'a, 'b> Helper<'a> {
         }
     }
 
+    /// Returns the template of `else` branch if any
     pub fn inverse(&self) -> Option<&Template> {
         match *self.inverse {
             Some(ref t) => Some(t),
@@ -263,6 +274,7 @@ impl<'a, 'b> Helper<'a> {
         }
     }
 
+    /// Returns if the helper is a block one `{{#helper}}{{/helper}}` or not `{{helper 123}}`
     pub fn is_block(&self) -> bool {
         self.block
     }
@@ -277,7 +289,6 @@ pub trait Renderable {
 }
 
 
-// FIXME: return borrowed Json here to avoid clone
 impl Parameter {
     fn expand(&self,
               ctx: &Context,
