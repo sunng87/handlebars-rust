@@ -1,3 +1,8 @@
+#[cfg(feature = "rustc_ser_type")]
+use serialize::json::Json;
+#[cfg(feature = "serde_type")]
+use serde_json::value::Value as Json;
+
 use helpers::HelperDef;
 use registry::Registry;
 use context::{Context, JsonRender};
@@ -8,25 +13,35 @@ pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
     fn call(&self,
-            c: &Context,
+            _: &Context,
             h: &Helper,
             _: &Registry,
             rc: &mut RenderContext)
             -> Result<(), RenderError> {
-        let value_param = try!(h.param(0).ok_or_else(|| {
+        let collection_value = try!(h.param(0).ok_or_else(|| {
             RenderError::new("Param not found for helper \"lookup\"")
         }));
-        let index_param = try!(h.param(1).ok_or_else(|| {
+        let index = try!(h.param(1).ok_or_else(|| {
             RenderError::new("Insuffitient params for helper \"lookup\"")
         }));
 
-        let partial_path: String = if index_param.starts_with("@") {
-            rc.get_local_var(index_param).render()
-        } else {
-            index_param.to_owned()
+        let null = Json::Null;
+        let value = match collection_value.value() {
+            &Json::Array(ref v) => {
+                index.value()
+                     .as_u64()
+                     .and_then(|u| Some(u as usize))
+                     .and_then(|u| v.get(u))
+                     .unwrap_or(&null)
+            }
+            &Json::Object(ref m) => {
+                index.value()
+                     .as_string()
+                     .and_then(|k| m.get(k))
+                     .unwrap_or(&null)
+            }
+            _ => &null,
         };
-        let lookup_path = format!("{}.[{}]", value_param, partial_path);
-        let value = c.navigate(rc.get_path(), &lookup_path);
         let r = value.render();
         try!(rc.writer.write(r.into_bytes().as_ref()));
         Ok(())

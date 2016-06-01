@@ -31,8 +31,8 @@
 //!
 //! ```ignore
 //! fn hex_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-//!     let param = h.params().get(0).unwrap();
-//!     let rendered = format!("{:x}", c.navigate(rc.get_path(), param).render());
+//!     let param = h.param(0).unwrap();
+//!     let rendered = format!("{:x}", param.value().render());
 //!     try!(rc.writer.write(rendered.into_bytes().as_ref()));
 //!     Ok(())
 //! }
@@ -185,28 +185,20 @@
 //!
 //! impl HelperDef for SimpleHelper {
 //!   fn call(&self, c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-//!     let param = h.params().get(0).unwrap();
+//!     let param = h.param(0).unwrap();
 //!
-//!     // get value from context data
-//!     // rc.get_path() is current json parent path, you should always use it like this
-//!     // param is the key of value you want to display
-//!     let value = c.navigate(rc.get_path(), param);
 //!     try!(rc.writer.write("Ny helper dumps: ".as_bytes()));
-//!     try!(rc.writer.write(value.render().into_bytes().as_ref()));
+//!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
 //!     Ok(())
 //!   }
 //! }
 //!
 //! // implement via bare function
 //! fn another_simple_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-//!     let param = h.params().get(0).unwrap();
+//!     let param = h.param(0).unwrap();
 //!
-//!     // get value from context data
-//!     // rc.get_path() is current json parent path, you should always use it like this
-//!     // param is the key of value you want to display
-//!     let value = c.navigate(rc.get_path(), param);
 //!     try!(rc.writer.write("My second helper dumps: ".as_bytes()));
-//!     try!(rc.writer.write(value.render().into_bytes().as_ref()));
+//!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
 //!     Ok(())
 //! }
 //!
@@ -274,8 +266,8 @@ extern crate serde_json;
 
 pub use self::template::Template;
 pub use self::error::{TemplateError, TemplateFileError, TemplateRenderError};
-pub use self::registry::{EscapeFn, Registry as Handlebars};
-pub use self::render::{Renderable, RenderError, RenderContext, Helper};
+pub use self::registry::{EscapeFn, no_escape, html_escape, Registry as Handlebars};
+pub use self::render::{Renderable, RenderError, RenderContext, Helper, ContextJson};
 pub use self::helpers::HelperDef;
 pub use self::context::{Context, JsonRender, JsonTruthy};
 

@@ -1,5 +1,5 @@
-use helpers::{HelperDef};
-use registry::{Registry};
+use helpers::HelperDef;
+use registry::Registry;
 use context::{JsonRender, Context};
 use render::{RenderContext, RenderError, Helper};
 
@@ -7,22 +7,18 @@ use render::{RenderContext, RenderError, Helper};
 pub struct LogHelper;
 
 impl HelperDef for LogHelper {
-    fn call(&self, c: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param = h.param(0);
+    fn call(&self,
+            _: &Context,
+            h: &Helper,
+            _: &Registry,
+            _: &mut RenderContext)
+            -> Result<(), RenderError> {
+        let param = try!(h.param(0)
+                          .ok_or_else(|| RenderError::new("Param not found for helper \"log\"")));
 
-        if param.is_none() {
-            return Err(RenderError::new("Param not found for helper \"log\""));
-        }
-
-        let name = param.unwrap();
-
-        let value = if name.starts_with("@") {
-            rc.get_local_var(name)
-        } else {
-            c.navigate(rc.get_path(), name)
-        };
-
-        info!("{}: {}", name, value.render());
+        info!("{}: {}",
+              param.path().unwrap_or(&"".to_owned()),
+              param.value().render());
 
         Ok(())
     }

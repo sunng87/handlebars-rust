@@ -13,18 +13,13 @@ impl HelperDef for WithHelper {
             r: &Registry,
             rc: &mut RenderContext)
             -> Result<(), RenderError> {
-        let param = h.param(0);
-
-        if param.is_none() {
-            return Err(RenderError::new("Param not found for helper \"with\""));
-        }
+        let param = try!(h.param(0)
+                          .ok_or_else(|| RenderError::new("Param not found for helper \"with\"")));
 
         let path = rc.get_path().clone();
         rc.promote_local_vars();
 
-        let value = c.navigate(rc.get_path(), param.unwrap());
-
-        let not_empty = value.is_truthy();
+        let not_empty = param.value().is_truthy();
         let template = if not_empty {
             h.template()
         } else {
@@ -32,8 +27,10 @@ impl HelperDef for WithHelper {
         };
 
         if not_empty {
-            let new_path = format!("{}/{}", path, param.unwrap());
-            rc.set_path(new_path);
+            if let Some(inner_path) = param.path() {
+                let new_path = format!("{}/{}", path, inner_path);
+                rc.set_path(new_path);
+            }
         }
 
         let rendered = match template {

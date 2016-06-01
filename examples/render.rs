@@ -16,13 +16,13 @@ use std::path::Path;
 
 use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender};
 
-fn format_helper(c: &Context,
+fn format_helper(_: &Context,
                  h: &Helper,
                  _: &Handlebars,
                  rc: &mut RenderContext)
                  -> Result<(), RenderError> {
-    let param = h.params().get(0).unwrap();
-    let rendered = format!("{} pts", c.navigate(rc.get_path(), param).render());
+    let param = h.param(0).unwrap();
+    let rendered = format!("{} pts", param.value().render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
     Ok(())
 }

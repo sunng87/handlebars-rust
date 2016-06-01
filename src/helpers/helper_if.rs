@@ -1,37 +1,37 @@
-use helpers::{HelperDef};
-use registry::{Registry};
+use helpers::HelperDef;
+use registry::Registry;
 use context::{Context, JsonTruthy};
 use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct IfHelper {
-    positive: bool
+    positive: bool,
 }
 
-impl HelperDef for IfHelper{
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param = h.param(0);
+impl HelperDef for IfHelper {
+    fn call(&self,
+            c: &Context,
+            h: &Helper,
+            r: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
+        let param = try!(h.param(0)
+                          .ok_or_else(|| RenderError::new("Param not found for helper \"if\"")));
 
-        if param.is_none() {
-            return Err(RenderError::new("Param not found for helper \"if\""));
-        }
-
-        let name = param.unwrap();
-
-        let mut value = if name.starts_with("@") {
-            rc.get_local_var(name).is_truthy()
-        } else {
-            c.navigate(rc.get_path(), name).is_truthy()
-        };
+        let mut value = param.value().is_truthy();
 
         if !self.positive {
             value = !value;
         }
 
-        let tmpl = if value { h.template() } else { h.inverse() };
+        let tmpl = if value {
+            h.template()
+        } else {
+            h.inverse()
+        };
         match tmpl {
             Some(ref t) => t.render(c, r, rc),
-            None => Ok(())
+            None => Ok(()),
         }
     }
 }
@@ -41,13 +41,15 @@ pub static UNLESS_HELPER: IfHelper = IfHelper { positive: false };
 
 #[cfg(test)]
 mod test {
-    use template::{Template};
-    use registry::{Registry};
+    use template::Template;
+    use registry::Registry;
 
     #[test]
     fn test_if() {
         let t0 = Template::compile("{{#if this}}hello{{/if}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#unless this}}hello{{else}}world{{/unless}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#unless this}}hello{{else}}world{{/unless}}".to_string())
+                     .ok()
+                     .unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);

@@ -1,6 +1,9 @@
-use helpers::{HelperDef};
-use registry::{Registry};
-use context::{Context};
+use std::collections::BTreeMap;
+use std::iter::FromIterator;
+
+use helpers::HelperDef;
+use registry::Registry;
+use context::Context;
 use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
@@ -13,19 +16,29 @@ pub struct BlockHelper;
 pub struct PartialHelper;
 
 impl HelperDef for IncludeHelper {
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(&self,
+            c: &Context,
+            h: &Helper,
+            r: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
         let template = match h.params().get(0) {
             Some(ref t) => {
-                if rc.current_template == Some((*t).to_string()) {
-                    return Err(RenderError::new("Cannot include self in >"));
+                if let Some(include_path) = t.path() {
+                    if rc.current_template == Some(include_path.to_owned()) {
+                        return Err(RenderError::new("Cannot include self in >"));
+                    } else {
+                        r.get_template(&include_path)
+                    }
                 } else {
-                    r.get_template(t)
+                    return Err(RenderError::new("Do not use literal here, use template name \
+                                                 directly."));
                 }
             }
             None => return Err(RenderError::new("Param not found for helper")),
         };
 
-        let context_param = h.params().get(1);
+        let context_param = h.params().get(1).and_then(|p| p.path());
         let old_path = match context_param {
             Some(p) => {
                 let old_path = rc.get_path().clone();
@@ -33,7 +46,7 @@ impl HelperDef for IncludeHelper {
                 let new_path = format!("{}/{}", old_path, p);
                 rc.set_path(new_path);
                 Some(old_path)
-            },
+            }
             None => None,
         };
 
@@ -42,10 +55,15 @@ impl HelperDef for IncludeHelper {
                 if h.hash().is_empty() {
                     t.render(c, r, rc)
                 } else {
-                    let new_ctx = c.extend(h.hash());
+                    let hash_ctx = BTreeMap::from_iter(h.hash()
+                                                        .iter()
+                                                        .map(|(k, v)| {
+                                                            (k.clone(), v.value().clone())
+                                                        }));
+                    let new_ctx = c.extend(&hash_ctx);
                     t.render(&new_ctx, r, rc)
                 }
-            },
+            }
             None => Err(RenderError::new("Template not found.")),
         };
 
@@ -59,35 +77,40 @@ impl HelperDef for IncludeHelper {
 }
 
 impl HelperDef for BlockHelper {
-    fn call(&self, c: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param = h.params().get(0);
+    fn call(&self,
+            c: &Context,
+            h: &Helper,
+            r: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
+        let param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper")));
 
-        if param.is_none() {
-            return Err(RenderError::new("Param not found for helper"));
-        }
+        if let Some(partial_path) = param.path() {
+            let partial_template = rc.get_partial(partial_path);
 
-        let partial_template = rc.get_partial(param.unwrap());
-
-        match partial_template {
-            Some(partial_template) => {
-                partial_template.render(c, r, rc)
-            },
-            None => {
-                h.template().unwrap().render(c, r, rc)
+            match partial_template {
+                Some(partial_template) => partial_template.render(c, r, rc),
+                None => h.template().unwrap().render(c, r, rc),
             }
+        } else {
+            Err(RenderError::new("Do not use literal here, use template name directly."))
         }
     }
 }
 
 impl HelperDef for PartialHelper {
-    fn call(&self, _: &Context, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param = h.params().get(0);
+    fn call(&self,
+            _: &Context,
+            h: &Helper,
+            _: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
+        let param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper")));
 
-        if param.is_none() {
-            return Err(RenderError::new("Param not found for helper"));
+        if let Some(partial_path) = param.path() {
+            rc.set_partial(partial_path.to_owned(), h.template().unwrap().clone());
         }
 
-        rc.set_partial(param.unwrap().clone(), h.template().unwrap().clone());
         Ok(())
     }
 }
@@ -98,14 +121,18 @@ pub static PARTIAL_HELPER: PartialHelper = PartialHelper;
 
 #[cfg(test)]
 mod test {
-    use template::{Template};
-    use registry::{Registry};
+    use template::Template;
+    use registry::Registry;
     use std::collections::BTreeMap;
 
     #[test]
     fn test() {
-        let t0 = Template::compile("<h1>{{#block title}}default{{/block}}</h1>".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#partial title}}{{this}}{{/partial}}{{> t0}}".to_string()).ok().unwrap();
+        let t0 = Template::compile("<h1>{{#block title}}default{{/block}}</h1>".to_string())
+                     .ok()
+                     .unwrap();
+        let t1 = Template::compile("{{#partial title}}{{this}}{{/partial}}{{> t0}}".to_string())
+                     .ok()
+                     .unwrap();
         let t2 = Template::compile("{{> t0}}<p>{{this}}</p>".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
@@ -139,7 +166,7 @@ mod test {
 
     #[test]
     fn test_partial_hash_context() {
-        let t0 = Template::compile("<h1>{{> t1 hello=world}}</h1>".to_string()).ok().unwrap();
+        let t0 = Template::compile("<h1>{{> t1 hello=\"world\"}}</h1>".to_string()).ok().unwrap();
         let t1 = Template::compile("<p>{{data}}</p><p>{{hello}}</p>".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
@@ -150,12 +177,17 @@ mod test {
         map.insert("data".into(), "hello".into());
 
         let r0 = handlebars.render("t0", &map);
-        assert_eq!(r0.ok().unwrap(), "<h1><p>hello</p><p>world</p></h1>".to_string());
+        assert_eq!(r0.ok().unwrap(),
+                   "<h1><p>hello</p><p>world</p></h1>".to_string());
     }
 
     #[test]
     fn test_inline_partial() {
-        let t0 = Template::compile("{{#partial title}}hello {{name}}{{/partial}}<h1>include partial: {{#block title}}{{/block}}</h1>".to_string()).ok().unwrap();
+        let t0 = Template::compile("{{#partial title}}hello {{name}}{{/partial}}<h1>include \
+                                    partial: {{#block title}}{{/block}}</h1>"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
@@ -164,7 +196,8 @@ mod test {
         map.insert("name".into(), "world".into());
 
         let r0 = handlebars.render("t0", &map);
-        assert_eq!(r0.ok().unwrap(), "<h1>include partial: hello world</h1>".to_string());
+        assert_eq!(r0.ok().unwrap(),
+                   "<h1>include partial: hello world</h1>".to_string());
     }
 
     #[test]

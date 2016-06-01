@@ -20,7 +20,7 @@ impl HelperDef for EachHelper {
             r: &Registry,
             rc: &mut RenderContext)
             -> Result<(), RenderError> {
-        let param = try!(h.param(0)
+        let value = try!(h.param(0)
                           .ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
 
         let template = h.template();
@@ -28,27 +28,30 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => {
                 let path = rc.get_path().clone();
-                let value = c.navigate(&path, param);
 
                 rc.promote_local_vars();
 
-                debug!("each value {:?}", value);
-                let rendered = match *value {
-                    Json::Array(ref list) => {
+                debug!("each value {:?}", value.value());
+                let rendered = match value.value() {
+                    &Json::Array(ref list) => {
                         let len = list.len();
                         for i in 0..len {
                             rc.set_local_var("@first".to_string(), (i == 0usize).to_json());
                             rc.set_local_var("@last".to_string(), (i == len - 1).to_json());
                             rc.set_local_var("@index".to_string(), i.to_json());
 
-                            let new_path = format!("{}/{}.[{}]", path, param, i);
-                            debug!("each value {:?}", new_path);
-                            rc.set_path(new_path);
+                            if let Some(inner_path) = value.path() {
+                                let new_path = format!("{}/{}.[{}]", path, inner_path, i);
+                                debug!("each value {:?}", new_path);
+                                rc.set_path(new_path);
+                            }
+                            // FIXME: context for literal
+
                             try!(t.render(c, r, rc));
                         }
                         Ok(())
                     }
-                    Json::Object(ref obj) => {
+                    &Json::Object(ref obj) => {
                         let mut first: bool = true;
                         for k in obj.keys() {
                             rc.set_local_var("@first".to_string(), first.to_json());
@@ -57,8 +60,12 @@ impl HelperDef for EachHelper {
                             }
 
                             rc.set_local_var("@key".to_string(), k.to_json());
-                            let new_path = format!("{}/{}.[{}]", path, param, k);
-                            rc.set_path(new_path);
+
+                            if let Some(inner_path) = value.path() {
+                                let new_path = format!("{}/{}.[{}]", path, inner_path, k);
+                                rc.set_path(new_path);
+                            }
+
                             try!(t.render(c, r, rc));
                         }
 
@@ -83,7 +90,7 @@ impl HelperDef for EachHelper {
             r: &Registry,
             rc: &mut RenderContext)
             -> Result<(), RenderError> {
-        let param = try!(h.param(0)
+        let value = try!(h.param(0)
                           .ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
 
         let template = h.template();
@@ -91,27 +98,28 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => {
                 let path = rc.get_path().clone();
-                let value = c.navigate(&path, param);
 
                 rc.promote_local_vars();
 
-                debug!("each value {:?}", value);
-                let rendered = match *value {
-                    Json::Array(ref list) => {
+                debug!("each value {:?}", value.value());
+                let rendered = match value.value() {
+                    &Json::Array(ref list) => {
                         let len = list.len();
                         for i in 0..len {
                             rc.set_local_var("@first".to_string(), value::to_value(&(i == 0usize)));
                             rc.set_local_var("@last".to_string(), value::to_value(&(i == len - 1)));
                             rc.set_local_var("@index".to_string(), value::to_value(&i));
 
-                            let new_path = format!("{}/{}.[{}]", path, param, i);
-                            debug!("each value {:?}", new_path);
-                            rc.set_path(new_path);
+                            if let Some(inner_path) = value.path() {
+                                let new_path = format!("{}/{}.[{}]", path, inner_path, i);
+                                debug!("each value {:?}", new_path);
+                                rc.set_path(new_path);
+                            }
                             try!(t.render(c, r, rc));
                         }
                         Ok(())
                     }
-                    Json::Object(ref obj) => {
+                    &Json::Object(ref obj) => {
                         let mut first: bool = true;
                         for k in obj.keys() {
                             rc.set_local_var("@first".to_string(), value::to_value(&first));
@@ -120,8 +128,12 @@ impl HelperDef for EachHelper {
                             }
 
                             rc.set_local_var("@key".to_string(), value::to_value(&k));
-                            let new_path = format!("{}/{}.[{}]", path, param, k);
-                            rc.set_path(new_path);
+                            if let Some(inner_path) = value.path() {
+                                let new_path = format!("{}/{}.[{}]", path, inner_path, k);
+                                debug!("each value {:?}", new_path);
+                                rc.set_path(new_path);
+                            }
+
                             try!(t.render(c, r, rc));
                         }
 
