@@ -20,7 +20,7 @@ use self::TemplateElement::{RawString, Expression, HelperExpression, HTMLExpress
                             Comment};
 
 #[derive(PartialEq, Clone, Debug)]
-pub struct TemplateMapping(usize, usize);
+pub struct TemplateMapping(pub usize, pub usize);
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Template {

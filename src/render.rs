@@ -9,7 +9,7 @@ use serialize::json::Json;
 #[cfg(feature = "serde_type")]
 use serde_json::value::Value as Json;
 
-use template::{Template, TemplateElement, Parameter, HelperTemplate};
+use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMapping};
 use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression,
                                 HelperExpression};
 use registry::Registry;
@@ -19,11 +19,17 @@ use support::str::StringWriter;
 #[derive(Debug, Clone)]
 pub struct RenderError {
     pub desc: String,
+    pub line_no: Option<usize>,
+    pub column_no: Option<usize>,
 }
 
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.desc)
+        match (self.line_no, self.column_no) {
+            (Some(line), Some(col)) => write!(f, "{} at line {}, col {}", self.desc, line, col),
+            _ => write!(f, "{}", self.desc),
+        }
+
     }
 }
 
@@ -41,7 +47,11 @@ impl From<IOError> for RenderError {
 
 impl RenderError {
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
-        RenderError { desc: desc.as_ref().to_owned() }
+        RenderError {
+            desc: desc.as_ref().to_owned(),
+            line_no: None,
+            column_no: None,
+        }
     }
 }
 
@@ -349,9 +359,19 @@ impl Renderable for Template {
               -> Result<(), RenderError> {
         rc.current_template = self.name.clone();
         let iter = self.elements.iter();
+        let mut idx = 0;
         for t in iter {
             let c = ctx;
-            try!(t.render(c, registry, rc))
+            if let Err(mut e) = t.render(c, registry, rc) {
+                if let Some(ref mapping) = self.mapping {
+                    if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
+                        e.line_no = Some(line);
+                        e.column_no = Some(col);
+                    }
+                }
+                return Err(e);
+            }
+            idx = idx + 1;
         }
         Ok(())
     }
@@ -400,9 +420,7 @@ impl Renderable for TemplateElement {
                         match registry.get_helper(&meta_helper_name) {
                             Some(md) => (**md).call(ctx, &helper, registry, rc),
                             None => {
-                                Err(RenderError {
-                                    desc: format!("Helper not defined: {:?}", ht.name),
-                                })
+                                Err(RenderError::new(format!("Helper not defined: {:?}", ht.name)))
                             }
                         }
                     }
