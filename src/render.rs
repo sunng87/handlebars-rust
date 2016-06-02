@@ -506,6 +506,7 @@ fn test_template() {
         let template = Template {
             elements: elements,
             name: None,
+            mapping: None,
         };
 
         let mut m: HashMap<String, String> = HashMap::new();
