@@ -363,10 +363,12 @@ impl Renderable for Template {
         for t in iter {
             let c = ctx;
             if let Err(mut e) = t.render(c, registry, rc) {
-                if let Some(ref mapping) = self.mapping {
-                    if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
-                        e.line_no = Some(line);
-                        e.column_no = Some(col);
+                if e.line_no.is_none() {
+                    if let Some(ref mapping) = self.mapping {
+                        if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
+                            e.line_no = Some(line);
+                            e.column_no = Some(col);
+                        }
                     }
                 }
                 return Err(e);
