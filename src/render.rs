@@ -561,3 +561,22 @@ fn test_render_subexpression() {
 
     assert_eq!(sw.to_string(), "<h1>nice</h1>".to_string());
 }
+
+#[test]
+fn test_render_error_line_no() {
+    let r = Registry::new();
+    let mut sw = StringWriter::new();
+    let mut rc = RenderContext::new(&mut sw);
+    let template = Template::compile2("<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}", true)
+                       .unwrap();
+
+    let m: HashMap<String, String> = HashMap::new();
+
+    let ctx = Context::wraps(&m);
+    if let Err(e) = template.render(&ctx, &r, &mut rc) {
+        assert_eq!(e.line_no.unwrap(), 3);
+        assert_eq!(e.column_no.unwrap(), 3);
+    } else {
+        panic!("Error expected");
+    }
+}
