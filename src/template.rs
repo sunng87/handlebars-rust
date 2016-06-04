@@ -222,7 +222,7 @@ impl Template {
             elements: Vec::new(),
             name: None,
             mapping: if mapping {
-                Some(Vec::new())
+                Some(vec![TemplateMapping(1, 1)])
             } else {
                 None
             },
@@ -529,7 +529,12 @@ impl Template {
             return Err(UnclosedExpression(line_no, col_no));
         }
 
-        return Ok(template_stack.pop_front().unwrap());
+        let mut t = template_stack.pop_front().unwrap();
+        if let Some(ref mut mapping) = t.mapping {
+            mapping.pop();
+        }
+
+        return Ok(t);
     }
 
     pub fn compile_with_name<S: AsRef<str>>(source: S,
@@ -810,6 +815,23 @@ fn test_literal_parameter_parser() {
                            Parameter::Literal(Json::String("value".to_owned())));
                 assert_eq!(ht.hash["valid"], Parameter::Literal(Json::Bool(false)));
                 assert_eq!(ht.hash["ref"], Parameter::Name("someref".to_owned()));
+            }
+        }
+        Err(e) => panic!("{}", e),
+    }
+}
+
+#[test]
+fn test_template_mapping() {
+    match Template::compile2("hello\n  {{~world}}\n{{#if nice}}\n\thello\n{{/if}}", true) {
+        Ok(t) => {
+            if let Some(ref mapping) = t.mapping {
+                assert_eq!(mapping.len(), t.elements.len());
+                assert_eq!(mapping[0], TemplateMapping(1, 1));
+                assert_eq!(mapping[1], TemplateMapping(2, 3));
+                assert_eq!(mapping[3], TemplateMapping(3, 1));
+            } else {
+                panic!("should contains mapping");
             }
         }
         Err(e) => panic!("{}", e),
