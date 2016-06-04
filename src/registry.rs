@@ -45,6 +45,7 @@ pub struct Registry {
     templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<HelperDef + 'static>>,
     escape_fn: EscapeFn,
+    source_map: bool,
 }
 
 impl Registry {
@@ -53,6 +54,7 @@ impl Registry {
             templates: HashMap::new(),
             helpers: HashMap::new(),
             escape_fn: Box::new(html_escape),
+            source_map: true,
         };
 
         r.register_helper("if", Box::new(helpers::IF_HELPER));
@@ -69,6 +71,11 @@ impl Registry {
         r
     }
 
+    /// Enable handlebars template source map
+    pub fn source_map_enable(&mut self, enable: bool) {
+        self.source_map = enable;
+    }
+
     /// Register a template
     pub fn register_template(&mut self, name: &str, mut template: Template) {
         template.name = Some(name.to_owned());
@@ -80,7 +87,7 @@ impl Registry {
                                     name: &str,
                                     tpl_str: String)
                                     -> Result<(), TemplateError> {
-        try!(Template::compile_with_name(tpl_str, name.to_owned())
+        try!(Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)
                  .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
         Ok(())
     }
@@ -101,8 +108,7 @@ impl Registry {
                                     -> Result<(), TemplateFileError> {
         let mut buf = String::new();
         try!(tpl_source.read_to_string(&mut buf));
-        try!(Template::compile_with_name(&buf, name.to_owned())
-                 .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
+        try!(self.register_template_string(name, buf));
         Ok(())
     }
 
