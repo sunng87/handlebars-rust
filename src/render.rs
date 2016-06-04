@@ -19,6 +19,7 @@ use support::str::StringWriter;
 #[derive(Debug, Clone)]
 pub struct RenderError {
     pub desc: String,
+    pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
 }
@@ -26,7 +27,14 @@ pub struct RenderError {
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match (self.line_no, self.column_no) {
-            (Some(line), Some(col)) => write!(f, "{} at line {}, col {}", self.desc, line, col),
+            (Some(line), Some(col)) => {
+                write!(f,
+                       "{} at {} line {}, col {}",
+                       self.desc,
+                       self.template_name.as_ref().unwrap_or(&"Unnamed template".to_owned()),
+                       line,
+                       col)
+            }
             _ => write!(f, "{}", self.desc),
         }
 
@@ -49,6 +57,7 @@ impl RenderError {
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
         RenderError {
             desc: desc.as_ref().to_owned(),
+            template_name: None,
             line_no: None,
             column_no: None,
         }
@@ -368,9 +377,12 @@ impl Renderable for Template {
                         if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
                             e.line_no = Some(line);
                             e.column_no = Some(col);
+
                         }
                     }
                 }
+
+                e.template_name = self.name.clone();
                 return Err(e);
             }
             idx = idx + 1;
@@ -567,8 +579,11 @@ fn test_render_error_line_no() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
     let mut rc = RenderContext::new(&mut sw);
-    let template = Template::compile2("<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}", true)
-                       .unwrap();
+    let name = "invalid_template";
+    let mut template = Template::compile2("<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}",
+                                          true)
+                           .unwrap();
+    template.name = Some(name.to_owned());
 
     let m: HashMap<String, String> = HashMap::new();
 
@@ -576,6 +591,7 @@ fn test_render_error_line_no() {
     if let Err(e) = template.render(&ctx, &r, &mut rc) {
         assert_eq!(e.line_no.unwrap(), 3);
         assert_eq!(e.column_no.unwrap(), 3);
+        assert_eq!(e.template_name, Some(name.to_owned()));
     } else {
         panic!("Error expected");
     }
