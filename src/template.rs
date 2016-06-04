@@ -538,9 +538,10 @@ impl Template {
     }
 
     pub fn compile_with_name<S: AsRef<str>>(source: S,
-                                            name: String)
+                                            name: String,
+                                            mapping: bool)
                                             -> Result<Template, TemplateError> {
-        let mut t = try!(Template::compile(source));
+        let mut t = try!(Template::compile2(source, mapping));
         t.name = Some(name);
         Ok(t)
     }
