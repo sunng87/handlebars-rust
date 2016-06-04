@@ -20,6 +20,25 @@ fn format_helper(_: &Context,
     Ok(())
 }
 
+fn rank_helper(_: &Context,
+               h: &Helper,
+               _: &Handlebars,
+               rc: &mut RenderContext)
+               -> Result<(), RenderError> {
+    let rank = h.param(0).unwrap().value().as_u64().unwrap() as usize;
+    let teams = h.param(1).unwrap().value().as_array().unwrap();
+    let total = teams.len();
+    if rank == 0 {
+        try!(rc.writer.write("champion".as_bytes()));
+    } else if rank >= total - 2 {
+        try!(rc.writer.write("relegation".as_bytes()));
+    } else if rank <= 2 {
+        try!(rc.writer.write("acl".as_bytes()));
+    }
+    Ok(())
+}
+
+
 #[cfg(feature = "rustc_ser_type")]
 mod render_example {
     use std::collections::BTreeMap;
@@ -45,11 +64,15 @@ mod render_example {
         data.insert("year".to_string(), "2015".to_json());
 
         let teams = vec![Team {
-                             name: "Jiangsu Sainty".to_string(),
+                             name: "Jiangsu Suning".to_string(),
                              pts: 43u16,
                          },
                          Team {
-                             name: "Beijing Guoan".to_string(),
+                             name: "Shanghai SIPG".to_string(),
+                             pts: 39u16,
+                         },
+                         Team {
+                             name: "Hebei CFFC".to_string(),
                              pts: 27u16,
                          },
                          Team {
@@ -59,9 +82,22 @@ mod render_example {
                          Team {
                              name: "Shandong Luneng".to_string(),
                              pts: 12u16,
+                         },
+                         Team {
+                             name: "Beijing Guoan".to_string(),
+                             pts: 7u16,
+                         },
+                         Team {
+                             name: "Hangzhou Greentown".to_string(),
+                             pts: 7u16,
+                         },
+                         Team {
+                             name: "Shanghai Shenhua".to_string(),
+                             pts: 4u16,
                          }];
 
         data.insert("teams".to_string(), teams.to_json());
+        data.insert("engine".to_string(), "rustc_serialize".to_json());
         data
     }
 }
@@ -74,6 +110,7 @@ fn main() {
     let mut handlebars = Handlebars::new();
 
     handlebars.register_helper("format", Box::new(format_helper));
+    handlebars.register_helper("ranking_label", Box::new(rank_helper));
     // handlebars.register_helper("format", Box::new(FORMAT_HELPER));
 
     let data = {

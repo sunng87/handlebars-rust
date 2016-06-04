@@ -13,6 +13,7 @@ extern crate serde;
 extern crate serde_json;
 
 use std::path::Path;
+use std::error::Error;
 
 use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender};
 
@@ -24,6 +25,24 @@ fn format_helper(_: &Context,
     let param = h.param(0).unwrap();
     let rendered = format!("{} pts", param.value().render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
+    Ok(())
+}
+
+fn rank_helper(_: &Context,
+               h: &Helper,
+               _: &Handlebars,
+               rc: &mut RenderContext)
+               -> Result<(), RenderError> {
+    let rank = h.param(0).unwrap().value().as_u64().unwrap() as usize;
+    let teams = h.param(1).unwrap().value().as_array().unwrap();
+    let total = teams.len();
+    if rank == 0 {
+        try!(rc.writer.write("champion".as_bytes()));
+    } else if rank >= total - 2 {
+        try!(rc.writer.write("relegation".as_bytes()));
+    } else if rank <= 2 {
+        try!(rc.writer.write("acl".as_bytes()));
+    }
     Ok(())
 }
 
@@ -52,11 +71,15 @@ mod rustc_example {
         data.insert("year".to_string(), "2015".to_json());
 
         let teams = vec![Team {
-                             name: "Jiangsu Sainty".to_string(),
+                             name: "Jiangsu Suning".to_string(),
                              pts: 43u16,
                          },
                          Team {
-                             name: "Beijing Guoan".to_string(),
+                             name: "Shanghai SIPG".to_string(),
+                             pts: 39u16,
+                         },
+                         Team {
+                             name: "Hebei CFFC".to_string(),
                              pts: 27u16,
                          },
                          Team {
@@ -66,6 +89,18 @@ mod rustc_example {
                          Team {
                              name: "Shandong Luneng".to_string(),
                              pts: 12u16,
+                         },
+                         Team {
+                             name: "Beijing Guoan".to_string(),
+                             pts: 7u16,
+                         },
+                         Team {
+                             name: "Hangzhou Greentown".to_string(),
+                             pts: 7u16,
+                         },
+                         Team {
+                             name: "Shanghai Shenhua".to_string(),
+                             pts: 4u16,
                          }];
 
         data.insert("teams".to_string(), teams.to_json());
@@ -91,11 +126,15 @@ mod serde_example {
         data.insert("year".to_string(), value::to_value(&"2015"));
 
         let teams = vec![Team {
-                             name: "Jiangsu Sainty".to_string(),
+                             name: "Jiangsu Suning".to_string(),
                              pts: 43u16,
                          },
                          Team {
-                             name: "Beijing Guoan".to_string(),
+                             name: "Shanghai SIPG".to_string(),
+                             pts: 39u16,
+                         },
+                         Team {
+                             name: "Hebei CFFC".to_string(),
                              pts: 27u16,
                          },
                          Team {
@@ -105,6 +144,18 @@ mod serde_example {
                          Team {
                              name: "Shandong Luneng".to_string(),
                              pts: 12u16,
+                         },
+                         Team {
+                             name: "Beijing Guoan".to_string(),
+                             pts: 7u16,
+                         },
+                         Team {
+                             name: "Hangzhou Greentown".to_string(),
+                             pts: 7u16,
+                         },
+                         Team {
+                             name: "Shanghai Shenhua".to_string(),
+                             pts: 4u16,
                          }];
 
         data.insert("teams".to_string(), value::to_value(&teams));
@@ -120,13 +171,17 @@ fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("table", &Path::new("./examples/template.hbs")).ok().unwrap();
+    handlebars.register_template_file("table", &Path::new("./examples/template.hbs"))
+              .ok()
+              .unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
+    handlebars.register_helper("ranking_label", Box::new(rank_helper));
     // handlebars.register_helper("format", Box::new(FORMAT_HELPER));
 
     let data = make_data();
-    println!("{}", handlebars.render("table", &data).ok().unwrap());
+    println!("{}",
+             handlebars.render("table", &data).unwrap_or_else(|e| e.description().to_owned()));
 }
 
 #[cfg(feature = "serde_type")]
@@ -135,11 +190,16 @@ fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("table", &Path::new("./examples/template.hbs")).ok().unwrap();
+    handlebars.register_template_file("table", &Path::new("./examples/template.hbs"))
+              .ok()
+              .unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
+    handlebars.register_helper("ranking_label", Box::new(rank_helper));
     // handlebars.register_helper("format", Box::new(FORMAT_HELPER));
 
     let data = make_data();
-    println!("{}", handlebars.render("table", &data).ok().unwrap());
+    println!("{}",
+             handlebars.render("table", &data).unwrap_or_else(|e| e.description().to_owned()));
+
 }
