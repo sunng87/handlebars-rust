@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.17.0] - 2016-06-05
+
+* [Added] JSON literals as helper param or hash, and subexpression
+  return value.
+* [Added] RenderError now reports template name, line and column
+  number. Enabled by default. This behavior can be disabled via
+  `registry.source_map_enable(false)` on production.
+* [Changed] Helper API **break change**: `param(..)` and `hash(...)`
+  now returns a  `ContextJson` as value which contains path as well as
+  parsed Json value. No need to call `ctx.navigate(...)` any more.
+* [Removed] `to_string` of `Template` and `TemplateElement` which is
+  unnecessary and contains issue
+
 ## [0.16.1] - 2016-05-15
 
 * [Removed] `num` crate dependency which is unnecessary
