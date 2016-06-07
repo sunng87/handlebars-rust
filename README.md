@@ -7,6 +7,7 @@ Rust templating with Handlebars.
 [![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Gitter](https://img.shields.io/gitter/room/sunng87/handlebars-rust.svg?maxAge=2592000)](https://gitter.im/sunng87/handlebars-rust)
 
 ![4721045137_a05105da92_z](https://cloud.githubusercontent.com/assets/221942/10570641/aa0d31c4-7668-11e5-8ede-dca92bfd7299.jpg)
 
