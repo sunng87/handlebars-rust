@@ -13,6 +13,7 @@ use serde_json::value::Value as Json;
 #[cfg(feature = "serde_type")]
 use std::str::FromStr;
 
+use grammar::Rdp;
 use TemplateError;
 use TemplateError::*;
 

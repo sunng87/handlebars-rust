@@ -27,6 +27,7 @@ serde = { version = "^0.7.0", optional = true }
 serde_json = { version = "^0.7.0", optional = true }
 serde_macros = { version = "^0.7.0", optional = true }
 itertools = "^0.4.7"
+pest = "^0.2.0"
 
 [features]
 default = ["rustc_ser_type"]
