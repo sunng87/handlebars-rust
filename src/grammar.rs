@@ -17,10 +17,10 @@ impl_rdp! {
                      null_literal |
                      boolean_literal }
 
-        null_literal = @{ ["null"] }
-        boolean_literal = @{ ["true"]|["false"] }
+        null_literal = { ["null"] }
+        boolean_literal = { ["true"]|["false"] }
         number_literal = @{ ["-"]? ~ ['0'..'9']+ ~ ["."]? ~ ['0'..'9']* ~ (["E"] ~ ["-"]? ~ ['0'..'9']+)? }
-        string_literal = { ["\""] ~ (!["\""] ~ (["\\\""] | any))* ~ ["\""] }
+        string_literal = @{ ["\""] ~ (!["\""] ~ (["\\\""] | any))* ~ ["\""] }
         array_literal = { ["["] ~ literal? ~ ([","] ~ literal)* ~ ["]"] }
         object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)? ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
 
