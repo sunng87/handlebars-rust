@@ -34,31 +34,35 @@ impl_rdp! {
 
         param = { literal | reference | subexpression }
         hash = @{ identifier ~ ["="] ~ param }
-        exp_line = _{ name ~ (hash|param)* }
+        exp_line = _{ identifier ~ (hash|param)* }
 
         subexpression = { ["("] ~ name ~ (hash|param)* ~ [")"] }
 
-        whitespace_omitter = { ["~"] }
+        pre_whitespace_omitter = { ["~"] }
+        pro_whitespace_omitter = { ["~"] }
 
-        expression = { ["{{"] ~ whitespace_omitter? ~ exp_line ~
-                                whitespace_omitter? ~ ["}}"] }
+        expression = { ["{{"] ~ pre_whitespace_omitter? ~ name ~
+                                pro_whitespace_omitter? ~ ["}}"] }
 
-        html_expression = { ["{{{"] ~ whitespace_omitter? ~ exp_line ~
-                                      whitespace_omitter? ~ ["}}}"] }
+        html_expression = { ["{{{"] ~ pre_whitespace_omitter? ~ name ~
+                                      pro_whitespace_omitter? ~ ["}}}"] }
+
+        helper_expression = { ["{{"] ~ pre_whitespace_omitter? ~ exp_line ~
+                                       pro_whitespace_omitter? ~ ["}}"] }
 
         invert_tag = { ["{{else}}"]|["{{^}}"] }
-        helper_block_start = { ["{{"] ~ whitespace_omitter? ~ ["#"] ~ exp_line ~
-                                        whitespace_omitter? ~ ["}}"] }
-        helper_block_end = { ["{{"] ~ whitespace_omitter? ~ ["/"] ~ name ~
-                                      whitespace_omitter? ~ ["}}"] }
+        helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
+                                        pro_whitespace_omitter? ~ ["}}"] }
+        helper_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                                      pro_whitespace_omitter? ~ ["}}"] }
         helper_block = { helper_block_start ~ template ~
                          (invert_tag ~ template)? ~
                          helper_block_end }
 
-        raw_block_start = { ["{{{{"] ~ whitespace_omitter? ~ ["#"] ~ exp_line ~
-                                       whitespace_omitter? ~ ["}}}}"] }
-        raw_block_end = { ["{{{{"] ~ whitespace_omitter? ~ ["/"] ~ name ~
-                                     whitespace_omitter? ~ ["}}}}"] }
+        raw_block_start = { ["{{{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
+                                       pro_whitespace_omitter? ~ ["}}}}"] }
+        raw_block_end = { ["{{{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                                     pro_whitespace_omitter? ~ ["}}}}"] }
         raw_block = { raw_block_start ~ raw_block_text ~ raw_block_end }
 
         comment = { ["{{!"] ~ (!["}}"] ~ any)* ~ ["}}"] }
@@ -67,10 +71,13 @@ impl_rdp! {
             raw_text |
             expression |
             html_expression |
+            helper_expression |
             helper_block |
             raw_block |
             comment )*
         }
+
+        handlebars = _ { template ~ eoi }
     }
 }
 
@@ -164,14 +171,7 @@ fn test_comment() {
 
 #[test]
 fn test_expression() {
-    let s = vec!["{{exp}}",
-                 "{{exp 1}}",
-                 "{{exp \"literal\"}}",
-                 "{{exp ref}}",
-                 "{{exp (sub)}}",
-                 "{{exp (sub 123)}}",
-                 "{{exp []}}",
-                 "{{exp {}}}"];
+    let s = vec!["{{exp}}", "{{(exp)}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.expression());
@@ -180,15 +180,24 @@ fn test_expression() {
 }
 
 #[test]
+fn test_helper_expression() {
+    let s = vec!["{{exp 1}}",
+                 "{{exp \"literal\"}}",
+                 "{{exp ref}}",
+                 "{{exp (sub)}}",
+                 "{{exp (sub 123)}}",
+                 "{{exp []}}",
+                 "{{exp {}}}"];
+    for i in s.iter() {
+        let mut rdp = Rdp::new(StringInput::new(i));
+        assert!(rdp.helper_expression());
+        assert!(rdp.end());
+    }
+}
+
+#[test]
 fn test_html_expression() {
-    let s = vec!["{{{html}}}",
-                 "{{{html 1}}}",
-                 "{{{html \"literal\"}}}",
-                 "{{{html ref}}}",
-                 "{{{html (sub)}}}",
-                 "{{{html (sub 123)}}}",
-                 "{{{html []}}}",
-                 "{{{html {}}}}"];
+    let s = vec!["{{{html}}}", "{{{(html)}}}", "{{{(html)}}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.html_expression());
