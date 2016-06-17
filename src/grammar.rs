@@ -30,7 +30,7 @@ impl_rdp! {
 
         identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
         reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])* ~ reference* }
-        name = { subexpression | identifier }
+        name = _{ subexpression | identifier }
 
         param = { literal | reference | subexpression }
         hash = @{ identifier ~ ["="] ~ param }
@@ -41,14 +41,14 @@ impl_rdp! {
         pre_whitespace_omitter = { ["~"] }
         pro_whitespace_omitter = { ["~"] }
 
-        expression = { ["{{"] ~ pre_whitespace_omitter? ~ name ~
-                                pro_whitespace_omitter? ~ ["}}"] }
+        expression = { !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ name ~
+                        pro_whitespace_omitter? ~ ["}}"] }
 
         html_expression = { ["{{{"] ~ pre_whitespace_omitter? ~ name ~
                                       pro_whitespace_omitter? ~ ["}}}"] }
 
-        helper_expression = { ["{{"] ~ pre_whitespace_omitter? ~ exp_line ~
-                                       pro_whitespace_omitter? ~ ["}}"] }
+        helper_expression = { !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ exp_line ~
+                               pro_whitespace_omitter? ~ ["}}"] }
 
         invert_tag = { ["{{else}}"]|["{{^}}"] }
         helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
