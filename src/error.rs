@@ -30,6 +30,13 @@ quick_error! {
             display("expression or comment was not closed on the end of file at line {:?}, column {:?}", line_no, col_no)
             description("some expression or comment was not closed on the end of file")
         }
+        Unknown {
+
+        }
+        NestedSubexpression(line_no: usize, col_no: usize) {
+            display("nested subexpression at line {:?}, column {:?} is not supported.", line_no, col_no)
+            description("nested subexpression is not supported")
+        }
     }
 }
 

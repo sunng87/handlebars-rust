@@ -10,12 +10,12 @@ impl_rdp! {
 // Note: this is not full and strict json literal definition, just for tokenize string,
 // array and object types which may contains whitespace. We will use a real json parser
 // for real json processing
-        literal = _{ string_literal |
-                     array_literal |
-                     object_literal |
-                     number_literal |
-                     null_literal |
-                     boolean_literal }
+        literal = { string_literal |
+                    array_literal |
+                    object_literal |
+                    number_literal |
+                    null_literal |
+                    boolean_literal }
 
         null_literal = { ["null"] }
         boolean_literal = { ["true"]|["false"] }

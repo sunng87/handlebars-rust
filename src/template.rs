@@ -1,10 +1,13 @@
+use std::slice::Iter;
+use std::iter::Peekable;
 use std::ops::BitOr;
 use std::str::Chars;
 // use std::fmt;
 use std::collections::{BTreeMap, VecDeque};
 use std::string::ToString;
 use regex::Regex;
-use itertools::PutBackN;
+use itertools::{PutBack, PutBackN};
+use pest::prelude::*;
 
 #[cfg(feature = "rustc_ser_type")]
 use serialize::json::Json;
@@ -13,7 +16,8 @@ use serde_json::value::Value as Json;
 #[cfg(feature = "serde_type")]
 use std::str::FromStr;
 
-use grammar::Rdp;
+use grammar::{Rdp, Rule};
+
 use TemplateError;
 use TemplateError::*;
 
@@ -44,10 +48,26 @@ enum ParserState {
 }
 
 #[derive(PartialEq, Clone, Debug)]
+pub struct Subexpression {
+    pub name: String,
+    pub params: Vec<Parameter>,
+    pub hash: BTreeMap<String, Parameter>,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct ExpressionSpec {
+    pub name: Parameter,
+    pub params: Vec<Parameter>,
+    pub hash: BTreeMap<String, Parameter>,
+    pub omit_pre_ws: bool,
+    pub omit_pro_ws: bool,
+}
+
+#[derive(PartialEq, Clone, Debug)]
 pub enum Parameter {
     Name(String),
     Literal(Json),
-    Subexpression(Template),
+    Subexpression(Subexpression),
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -153,6 +173,14 @@ impl Parameter {
             }
         }
     }
+
+    pub fn as_name(self) -> Option<String> {
+        if let Parameter::Name(n) = self {
+            Some(n)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(PartialEq)]
@@ -239,6 +267,308 @@ impl Template {
 
     pub fn compile<S: AsRef<str>>(source: S) -> Result<Template, TemplateError> {
         Template::compile2(source, false)
+    }
+
+    fn parse_subexpression<'a>(parser: &'a Rdp<'a, StringInput<'a>>,
+                               it: &'a mut Peekable<Iter<Token<Rule>>>,
+                               limit: usize)
+                               -> Result<Parameter, TemplateError> {
+        let espec = try!(Template::parse_expression(parser, it, limit));
+        if let Parameter::Name(name) = espec.name {
+            Ok(Parameter::Subexpression(Subexpression {
+                name: name,
+                params: espec.params,
+                hash: espec.hash,
+            }))
+        } else {
+            // line/col no
+            Err(TemplateError::NestedSubexpression(0, 0))
+        }
+    }
+
+    fn parse_name<'a>(parser: &'a Rdp<'a, StringInput<'a>>,
+                      it: &'a mut Peekable<Iter<Token<Rule>>>,
+                      limit: usize)
+                      -> Result<Parameter, TemplateError> {
+        let name_node = it.next().unwrap();
+        match name_node.rule {
+            Rule::literal => {
+                Ok(Parameter::Name(parser.slice_input(name_node.start, name_node.end).to_owned()))
+            }
+            Rule::subexpression => Template::parse_subexpression(parser, it, name_node.end),
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_param<'a>(parser: &'a Rdp<'a, StringInput<'a>>,
+                       it: &'a mut Peekable<Iter<Token<Rule>>>,
+                       limit: usize)
+                       -> Result<Parameter, TemplateError> {
+        let param = it.next().unwrap();
+        let result = match param.rule {
+            Rule::reference => {
+                Parameter::Name(parser.slice_input(param.start, param.end).to_owned())
+            }
+            Rule::literal => {
+                let s = parser.slice_input(param.start, param.end);
+                if let Ok(json) = Json::from_str(s) {
+                    Parameter::Literal(json)
+                } else {
+                    Parameter::Name(s.to_owned())
+                }
+            }
+            Rule::subexpression => try!(Template::parse_subexpression(parser, it, param.end)),
+            _ => unreachable!(),
+        };
+        loop {
+            if let Some(n) = it.peek() {
+                if n.end <= param.end {
+                    it.next();
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        Ok(result)
+    }
+
+    fn parse_hash<'a>(parser: &'a Rdp<'a, StringInput<'a>>,
+                      it: &'a mut Peekable<Iter<Token<Rule>>>,
+                      limit: usize)
+                      -> Result<(String, Parameter), TemplateError> {
+        let name = it.next().unwrap();
+        // identifier
+        let key = parser.slice_input(name.start, name.end).to_owned();
+
+        // param
+        let value = try!(Template::parse_param(parser, it, limit));
+        Ok((key, value))
+    }
+
+    fn parse_expression<'a>(parser: &'a Rdp<'a, StringInput<'a>>,
+                            it: &'a mut Peekable<Iter<Token<Rule>>>,
+                            limit: usize)
+                            -> Result<ExpressionSpec, TemplateError> {
+        let name = try!(Template::parse_name(parser, it, limit));
+        let mut params: Vec<Parameter> = Vec::new();
+        let mut hashes: BTreeMap<String, Parameter> = BTreeMap::new();
+        let mut omit_pre_ws = false;
+        let mut omit_pro_ws = false;
+        loop {
+            if let Some(ref token) = it.peek() {
+                if token.end <= limit {
+                    let node = it.next().unwrap();
+                    match node.rule {
+                        Rule::param => {
+                            params.push(try!(Template::parse_param(parser, it, node.end)));
+                        }
+                        Rule::hash => {
+                            let (key, value) = try!(Template::parse_hash(parser, it, node.end));
+                            hashes.insert(key, value);
+                        }
+                        Rule::pre_whitespace_omitter => {
+                            omit_pre_ws = true;
+                        }
+                        Rule::pro_whitespace_omitter => {
+                            omit_pro_ws = true;
+                        }
+                        _ => unreachable!(),
+                    }
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        Ok(ExpressionSpec {
+            name: name,
+            params: params,
+            hash: hashes,
+            omit_pre_ws: omit_pre_ws,
+            omit_pro_ws: omit_pro_ws,
+        })
+    }
+
+    pub fn compile3<S: AsRef<str>>(source: S, mapping: bool) -> Result<Template, TemplateError> {
+        let source = source.as_ref();
+        let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
+        let mut template_stack: VecDeque<Template> = VecDeque::new();
+
+        // let mut omit_pre_ws = false;
+        let mut omit_pro_ws = false;
+
+        let input = StringInput::new(source);
+        let i2 = StringInput::new(source);
+        let mut parser = Rdp::new(input);
+
+        if !parser.handlebars() {
+            return Err(TemplateError::Unknown);
+        }
+
+        let mut it = parser.queue().iter().peekable();
+        loop {
+            let mut t = template_stack.front_mut().unwrap();
+
+
+
+            if let Some(ref token) = it.next() {
+                let (line_no, col_no) = i2.line_col(token.start);
+
+                match token.rule {
+                    Rule::template => {
+                        template_stack.push_front(Template::new(mapping));
+                    }
+                    Rule::raw_text => {
+                        let mut text = parser.slice_input(token.start, token.end);
+                        if omit_pro_ws {
+                            text = text.trim_left();
+                        }
+                        t.push_element(RawString(text.to_owned()), line_no, col_no);
+                    }
+                    Rule::helper_block => {}
+                    Rule::helper_block_start | Rule::raw_block_start => {
+                        let exp = try!(Template::parse_expression(&parser, &mut it, token.end));
+                        let helper_template = HelperTemplate {
+                            name: exp.name.as_name().unwrap(),
+                            params: exp.params,
+                            hash: exp.hash,
+                            block: true,
+                            template: None,
+                            inverse: None,
+                        };
+                        helper_stack.push_front(helper_template);
+                        if exp.omit_pre_ws {
+                            if let Some(el) = t.elements.pop() {
+                                if let RawString(ref text) = el {
+                                    t.elements.push(RawString(text.trim_right().to_owned()));
+                                } else {
+                                    t.elements.push(el);
+                                }
+                            }
+                        }
+
+                        omit_pro_ws = exp.omit_pro_ws;
+                    }
+                    Rule::invert_tag => {
+                        let t = template_stack.pop_front().unwrap();
+                        let mut h = helper_stack.front_mut().unwrap();
+                        h.template = Some(t);
+                    }
+                    Rule::raw_block_text => {
+                        let mut text = parser.slice_input(token.start, token.end);
+                        if omit_pro_ws {
+                            text = text.trim_left();
+                        }
+                        let mut t = Template::new(mapping);
+                        t.push_element(RawString(text.to_owned()), line_no, col_no);
+                        template_stack.push_front(t);
+                    }
+                    Rule::helper_block_end | Rule::raw_block_end => {
+                        let exp = try!(Template::parse_expression(&parser, &mut it, token.end));
+                        if exp.omit_pre_ws {
+                            if let Some(el) = t.elements.pop() {
+                                if let RawString(ref text) = el {
+                                    t.elements.push(RawString(text.trim_right().to_owned()));
+                                } else {
+                                    t.elements.push(el);
+                                }
+                            }
+                        }
+                        omit_pro_ws = exp.omit_pro_ws;
+
+                        let mut h = helper_stack.front_mut().unwrap();
+                        let close_tag_name = exp.name.as_name().unwrap();
+                        if h.name == close_tag_name {
+                            let t = template_stack.pop_front().unwrap();
+                            if h.template.is_some() {
+                                h.inverse = Some(t);
+                            } else {
+                                h.template = Some(t);
+                            }
+                            let ht = helper_stack.pop_front().unwrap();
+                            t.push_element(HelperBlock(ht), line_no, col_no);
+                        } else {
+                            return Err(TemplateError::MismatchingClosedHelper(line_no,
+                                                                              col_no,
+                                                                              h.name,
+                                                                              close_tag_name));
+                        }
+                    }
+                    Rule::expression => {
+                        // expression or helper expression
+                        // ( identifier | subexpression )
+                        let exp = try!(Template::parse_expression(&parser, &mut it, token.end));
+                        if exp.omit_pre_ws {
+                            if let Some(el) = t.elements.pop() {
+                                if let RawString(ref text) = el {
+                                    t.elements.push(RawString(text.trim_right().to_owned()));
+                                } else {
+                                    t.elements.push(el);
+                                }
+                            }
+                        }
+
+                        omit_pro_ws = exp.omit_pro_ws;
+
+                        let el = Expression(exp.name);
+                        t.push_element(el, line_no, col_no);
+                    }
+                    Rule::html_expression => {
+                        // expression or helper expression
+                        // ( identifier | subexpression )
+                        let exp = try!(Template::parse_expression(&parser, &mut it, token.end));
+                        if exp.omit_pre_ws {
+                            if let Some(el) = t.elements.pop() {
+                                if let RawString(ref text) = el {
+                                    t.elements.push(RawString(text.trim_right().to_owned()));
+                                } else {
+                                    t.elements.push(el);
+                                }
+                            }
+                        }
+                        omit_pro_ws = exp.omit_pro_ws;
+
+                        let el = HTMLExpression(exp.name);
+                        t.push_element(el, line_no, col_no);
+                    }
+                    Rule::helper_expression => {
+                        let exp = try!(Template::parse_expression(&parser, &mut it, token.end));
+                        if exp.omit_pre_ws {
+                            if let Some(el) = t.elements.pop() {
+                                if let RawString(ref text) = el {
+                                    t.elements.push(RawString(text.trim_right().to_owned()));
+                                } else {
+                                    t.elements.push(el);
+                                }
+                            }
+                        }
+                        omit_pro_ws = exp.omit_pro_ws;
+
+                        let helper_template = HelperTemplate {
+                            name: exp.name.as_name().unwrap(),
+                            params: exp.params,
+                            hash: exp.hash,
+                            block: false,
+                            template: None,
+                            inverse: None,
+                        };
+                        let el = HelperExpression(helper_template);
+                        t.push_element(el, line_no, col_no);
+                    }
+                    Rule::raw_block => {}
+                    Rule::comment => {}
+                    Rule::eoi => {
+                        return Ok(template_stack.pop_front().unwrap());
+                    }
+                    _ => {}
+                }
+            } else {
+                return Ok(template_stack.pop_front().unwrap());
+            }
+        }
     }
 
     pub fn compile2<S: AsRef<str>>(source: S, mapping: bool) -> Result<Template, TemplateError> {
