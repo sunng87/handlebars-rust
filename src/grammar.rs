@@ -59,7 +59,7 @@ impl_rdp! {
                          (invert_tag ~ template)? ~
                          helper_block_end }
 
-        raw_block_start = { ["{{{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
+        raw_block_start = { ["{{{{"] ~ pre_whitespace_omitter? ~ exp_line ~
                                        pro_whitespace_omitter? ~ ["}}}}"] }
         raw_block_end = { ["{{{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                      pro_whitespace_omitter? ~ ["}}}}"] }
@@ -251,8 +251,8 @@ fn test_helper_block() {
 
 #[test]
 fn test_raw_block() {
-    let s = vec!["{{{{#if hello}}}}good {{hello}}{{{{/if}}}}",
-                 "{{{{#if hello}}}}{{#if nice}}{{/if}}{{{{/if}}}}"];
+    let s = vec!["{{{{if hello}}}}good {{hello}}{{{{/if}}}}",
+                 "{{{{if hello}}}}{{#if nice}}{{/if}}{{{{/if}}}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.raw_block());

@@ -118,7 +118,7 @@ impl Template {
             elements: Vec::new(),
             name: None,
             mapping: if mapping {
-                Some(vec![TemplateMapping(1, 1)])
+                Some(Vec::new())
             } else {
                 None
             },
@@ -141,7 +141,7 @@ impl Template {
                                it: &mut Peekable<Iter<Token<Rule>>>,
                                limit: usize)
                                -> Result<Parameter, TemplateError> {
-        let espec = try!(Template::parse_expression(source, it, limit));
+        let espec = try!(Template::parse_expression(source, it.by_ref(), limit));
         if let Parameter::Name(name) = espec.name {
             Ok(Parameter::Subexpression(Subexpression {
                 name: name,
@@ -161,8 +161,12 @@ impl Template {
                       -> Result<Parameter, TemplateError> {
         let name_node = it.next().unwrap();
         match name_node.rule {
-            Rule::literal => Ok(Parameter::Name(source[name_node.start..name_node.end].to_owned())),
-            Rule::subexpression => Template::parse_subexpression(source, it, name_node.end),
+            Rule::identifier => {
+                Ok(Parameter::Name(source[name_node.start..name_node.end].to_owned()))
+            }
+            Rule::subexpression => {
+                Template::parse_subexpression(source, it.by_ref(), name_node.end)
+            }
             _ => unreachable!(),
         }
     }
@@ -172,7 +176,10 @@ impl Template {
                        it: &mut Peekable<Iter<Token<Rule>>>,
                        _: usize)
                        -> Result<Parameter, TemplateError> {
-        let param = it.next().unwrap();
+        let mut param = it.next().unwrap();
+        if param.rule == Rule::param {
+            param = it.next().unwrap();
+        }
         let result = match param.rule {
             Rule::reference => Parameter::Name(source[param.start..param.end].to_owned()),
             Rule::literal => {
@@ -183,7 +190,9 @@ impl Template {
                     Parameter::Name(s.to_owned())
                 }
             }
-            Rule::subexpression => try!(Template::parse_subexpression(source, it, param.end)),
+            Rule::subexpression => {
+                try!(Template::parse_subexpression(source, it.by_ref(), param.end))
+            }
             _ => unreachable!(),
         };
 
@@ -211,8 +220,7 @@ impl Template {
         // identifier
         let key = source[name.start..name.end].to_owned();
 
-        // param
-        let value = try!(Template::parse_param(source, it, limit));
+        let value = try!(Template::parse_param(source, it.by_ref(), limit));
         Ok((key, value))
     }
 
@@ -221,11 +229,18 @@ impl Template {
                             it: &mut Peekable<Iter<Token<Rule>>>,
                             limit: usize)
                             -> Result<ExpressionSpec, TemplateError> {
-        let name = try!(Template::parse_name(source, it, limit));
         let mut params: Vec<Parameter> = Vec::new();
         let mut hashes: BTreeMap<String, Parameter> = BTreeMap::new();
         let mut omit_pre_ws = false;
         let mut omit_pro_ws = false;
+
+        if it.peek().unwrap().rule == Rule::pre_whitespace_omitter {
+            omit_pre_ws = true;
+            it.next();
+        }
+
+        let name = try!(Template::parse_name(source, it.by_ref(), limit));
+
         loop {
             let rule;
             let end;
@@ -240,24 +255,21 @@ impl Template {
                 break;
             }
 
+            it.next();
+
             match rule {
                 Rule::param => {
-                    params.push(try!(Template::parse_param(source, it, end)));
+                    params.push(try!(Template::parse_param(source, it.by_ref(), end)));
                 }
                 Rule::hash => {
-                    let (key, value) = try!(Template::parse_hash(source, it, end));
+                    let (key, value) = try!(Template::parse_hash(source, it.by_ref(), end));
                     hashes.insert(key, value);
-                }
-                Rule::pre_whitespace_omitter => {
-                    omit_pre_ws = true;
                 }
                 Rule::pro_whitespace_omitter => {
                     omit_pro_ws = true;
                 }
-                _ => unreachable!(),
+                _ => {}
             }
-
-            it.next();
         }
         Ok(ExpressionSpec {
             name: name,
@@ -284,9 +296,18 @@ impl Template {
             return Err(TemplateError::Unknown);
         }
 
+        for i in parser.queue() {
+            println!("{:?} {:?}", i, source[i.start..i.end].to_owned());
+        }
+
+        println!("=======");
+
         let mut it = parser.queue().iter().peekable();
         loop {
             if let Some(ref token) = it.next() {
+                println!("++++ {:?} {:?}",
+                         token.rule,
+                         source[token.start..token.end].to_owned());
 
                 let (line_no, col_no) = i2.line_col(token.start);
                 match token.rule {
@@ -294,7 +315,7 @@ impl Template {
                         template_stack.push_front(Template::new(mapping));
                     }
                     Rule::raw_text => {
-                        let mut text = parser.slice_input(token.start, token.end);
+                        let mut text = &source[token.start..token.end];
                         if omit_pro_ws {
                             text = text.trim_left();
                         }
@@ -303,7 +324,7 @@ impl Template {
                     }
                     Rule::helper_block => {}
                     Rule::helper_block_start | Rule::raw_block_start => {
-                        let exp = try!(Template::parse_expression(source, &mut it, token.end));
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
                         let helper_template = HelperTemplate {
                             name: exp.name.as_name().unwrap(),
                             params: exp.params,
@@ -326,6 +347,10 @@ impl Template {
                         }
 
                         omit_pro_ws = exp.omit_pro_ws;
+
+                        if let Some(ref mut maps) = t.mapping {
+                            maps.push(TemplateMapping(line_no, col_no));
+                        }
                     }
                     Rule::invert_tag => {
                         let t = template_stack.pop_front().unwrap();
@@ -333,7 +358,7 @@ impl Template {
                         h.template = Some(t);
                     }
                     Rule::raw_block_text => {
-                        let mut text = parser.slice_input(token.start, token.end);
+                        let mut text = &source[token.start..token.end];
                         if omit_pro_ws {
                             text = text.trim_left();
                         }
@@ -342,7 +367,7 @@ impl Template {
                         template_stack.push_front(t);
                     }
                     Rule::helper_block_end | Rule::raw_block_end => {
-                        let exp = try!(Template::parse_expression(source, &mut it, token.end));
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
 
                         if exp.omit_pre_ws {
                             let mut t = template_stack.front_mut().unwrap();
@@ -367,7 +392,7 @@ impl Template {
                             }
 
                             let t = template_stack.front_mut().unwrap();
-                            t.push_element(HelperBlock(h), line_no, col_no);
+                            t.elements.push(HelperBlock(h));
                         } else {
                             return Err(TemplateError::MismatchingClosedHelper(line_no,
                                                                               col_no,
@@ -378,7 +403,7 @@ impl Template {
                     Rule::expression => {
                         // expression or helper expression
                         // ( identifier | subexpression )
-                        let exp = try!(Template::parse_expression(source, &mut it, token.end));
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
                         let mut t = template_stack.front_mut().unwrap();
                         if exp.omit_pre_ws {
                             if let Some(el) = t.elements.pop() {
@@ -398,7 +423,7 @@ impl Template {
                     Rule::html_expression => {
                         // expression or helper expression
                         // ( identifier | subexpression )
-                        let exp = try!(Template::parse_expression(source, &mut it, token.end));
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
                         let mut t = template_stack.front_mut().unwrap();
                         if exp.omit_pre_ws {
                             if let Some(el) = t.elements.pop() {
@@ -415,7 +440,7 @@ impl Template {
                         t.push_element(el, line_no, col_no);
                     }
                     Rule::helper_expression => {
-                        let exp = try!(Template::parse_expression(source, &mut it, token.end));
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
                         let mut t = template_stack.front_mut().unwrap();
                         if exp.omit_pre_ws {
                             if let Some(el) = t.elements.pop() {
@@ -450,6 +475,7 @@ impl Template {
                     }
                     _ => {}
                 }
+                println!("----");
             } else {
                 return Ok(template_stack.pop_front().unwrap());
             }
@@ -478,12 +504,12 @@ pub enum TemplateElement {
 
 #[test]
 fn test_parse_template() {
-    let source = "<h1>{{title}} 你好</h1> {{{content}}}
-{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}中文你好
+    let source = "<h1>{{title}} nihao</h1> {{{content}}}
+{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}niheo
 {{#unless true}}kitkat{{^}}lollipop{{/unless}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
 
-    assert_eq!(t.elements.len(), 10);
+    assert_eq!(t.elements.len(), 9);
 
     assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
     assert_eq!(*t.elements.get(1).unwrap(),
@@ -492,7 +518,7 @@ fn test_parse_template() {
     assert_eq!(*t.elements.get(3).unwrap(),
                HTMLExpression(Parameter::Name("content".to_string())));
 
-    match *t.elements.get(5).unwrap() {
+    match *t.elements.get(4).unwrap() {
         HelperBlock(ref h) => {
             assert_eq!(h.name, "if".to_string());
             assert_eq!(h.params.len(), 1);
@@ -503,7 +529,7 @@ fn test_parse_template() {
         }
     };
 
-    match *t.elements.get(7).unwrap() {
+    match *t.elements.get(6).unwrap() {
         HelperExpression(ref h) => {
             assert_eq!(h.name, "foo".to_string());
             assert_eq!(h.params.len(), 1);
@@ -514,7 +540,7 @@ fn test_parse_template() {
         }
     };
 
-    match *t.elements.get(9).unwrap() {
+    match *t.elements.get(8).unwrap() {
         HelperBlock(ref h) => {
             assert_eq!(h.name, "unless".to_string());
             assert_eq!(h.params.len(), 1);
@@ -533,8 +559,7 @@ fn test_parse_error() {
 
     let t = Template::compile(source.to_string());
 
-    assert_eq!(format!("{}", t.unwrap_err()),
-               r#"helper "ifequals" was not closed on the end of file at line 4, column 4"#);
+    assert_eq!(t.unwrap_err(), TemplateError::Unknown);
 }
 
 #[test]
@@ -711,7 +736,7 @@ fn test_template_mapping() {
                 assert_eq!(mapping.len(), t.elements.len());
                 assert_eq!(mapping[0], TemplateMapping(1, 1));
                 assert_eq!(mapping[1], TemplateMapping(2, 3));
-                assert_eq!(mapping[3], TemplateMapping(3, 1));
+                assert_eq!(mapping[2], TemplateMapping(3, 1));
             } else {
                 panic!("should contains mapping");
             }

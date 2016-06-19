@@ -4,7 +4,7 @@ use render::RenderError;
 
 quick_error! {
 /// Template parsing error
-    #[derive(Debug, Clone)]
+    #[derive(PartialEq, Debug, Clone)]
     pub enum TemplateError {
         UnclosedBraces(line_no: usize, col_no: usize) {
             display("closing braces `}}` expected but EOF reached at line {:?}, column {:?}",
