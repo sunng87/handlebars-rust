@@ -202,9 +202,10 @@ mod test {
 
     #[test]
     fn test_empty_key() {
-        let t0 = Template::compile("{{#each this}}{{@key}}-{{value}}\n{{/each}}".to_owned())
+        let t0 = Template::compile("{{#each this}}{{@key}}-{{value}}${{/each}}".to_owned())
                      .unwrap();
 
+        println!("{:?}", t0);
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
 
@@ -225,7 +226,7 @@ mod test {
                                    }))
                            .unwrap();
 
-        let mut r0_sp: Vec<_> = r0.split('\n').collect();
+        let mut r0_sp: Vec<_> = r0.split('$').collect();
         r0_sp.sort();
 
         assert_eq!(r0_sp, vec!["", "-baz", "foo-bar"]);

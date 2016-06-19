@@ -25,7 +25,7 @@ impl_rdp! {
         object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)? ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
 
 // FIXME: a[0], a["b]
-        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"] }
+        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["<"]|[">"] }
         path_char = _{ ["/"] }
 
         identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
@@ -33,7 +33,7 @@ impl_rdp! {
         name = _{ subexpression | identifier }
 
         param = { literal | reference | subexpression }
-        hash = @{ identifier ~ ["="] ~ param }
+        hash = { identifier ~ ["="] ~ param }
         exp_line = _{ identifier ~ (hash|param)* }
 
         subexpression = { ["("] ~ name ~ (hash|param)* ~ [")"] }
@@ -135,7 +135,7 @@ fn test_param() {
 
 #[test]
 fn test_hash() {
-    let s = vec!["hello=world", "hello=\"world\"", "hello=(world)"];
+    let s = vec!["hello=world", "hello=\"world\"", "hello=(world)", "hello=(world 0)"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.hash());
@@ -171,6 +171,16 @@ fn test_comment() {
 }
 
 #[test]
+fn test_subexpression() {
+    let s = vec!["(sub)", "(sub 0)", "(sub a=1)"];
+    for i in s.iter() {
+        let mut rdp = Rdp::new(StringInput::new(i));
+        assert!(rdp.subexpression());
+        assert!(rdp.end());
+    }
+}
+
+#[test]
 fn test_expression() {
     let s = vec!["{{exp}}", "{{(exp)}}"];
     for i in s.iter() {
@@ -188,7 +198,11 @@ fn test_helper_expression() {
                  "{{exp (sub)}}",
                  "{{exp (sub 123)}}",
                  "{{exp []}}",
-                 "{{exp {}}}"];
+                 "{{exp {}}}",
+                 "{{exp key=1}}",
+                 "{{exp key=ref}}",
+                 "{{exp key=(sub)}}",
+                 "{{exp key=(sub 0)}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.helper_expression());

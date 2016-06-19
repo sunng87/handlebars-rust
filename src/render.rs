@@ -567,7 +567,9 @@ fn test_render_subexpression() {
         m.insert("const".to_string(), "\"truthy\"".to_string());
 
         let ctx = Context::wraps(&m);
-        template.render(&ctx, &r, &mut rc).ok().unwrap();
+        if let Err(e) = template.render(&ctx, &r, &mut rc) {
+            panic!("{}", e);
+        }
     }
 
     assert_eq!(sw.to_string(), "<h1>nice</h1>".to_string());

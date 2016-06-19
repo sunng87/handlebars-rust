@@ -38,7 +38,7 @@ pub struct Subexpression {
 
 impl Subexpression {
     pub fn is_helper(&self) -> bool {
-        self.params.is_empty() && self.hash.is_empty()
+        !(self.params.is_empty() && self.hash.is_empty())
     }
 
     pub fn as_template(&self) -> Template {
@@ -245,7 +245,7 @@ impl Template {
             let rule;
             let end;
             if let Some(ref token) = it.peek() {
-                if token.end <= limit {
+                if token.end < limit {
                     rule = token.rule;
                     end = token.end;
                 } else {
@@ -294,6 +294,10 @@ impl Template {
 
         if !parser.handlebars() {
             return Err(TemplateError::Unknown);
+        }
+
+        for i in parser.queue() {
+            println!("{:?}", i);
         }
 
         let mut it = parser.queue().iter().peekable();
@@ -380,7 +384,7 @@ impl Template {
                             } else {
                                 h.template = Some(prev_t);
                             }
-
+                            println!("{:?}", template_stack);
                             let t = template_stack.front_mut().unwrap();
                             t.elements.push(HelperBlock(h));
                         } else {
