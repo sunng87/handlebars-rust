@@ -296,19 +296,9 @@ impl Template {
             return Err(TemplateError::Unknown);
         }
 
-        for i in parser.queue() {
-            println!("{:?} {:?}", i, source[i.start..i.end].to_owned());
-        }
-
-        println!("=======");
-
         let mut it = parser.queue().iter().peekable();
         loop {
             if let Some(ref token) = it.next() {
-                println!("++++ {:?} {:?}",
-                         token.rule,
-                         source[token.start..token.end].to_owned());
-
                 let (line_no, col_no) = i2.line_col(token.start);
                 match token.rule {
                     Rule::template => {
@@ -475,7 +465,6 @@ impl Template {
                     }
                     _ => {}
                 }
-                println!("----");
             } else {
                 return Ok(template_stack.pop_front().unwrap());
             }
