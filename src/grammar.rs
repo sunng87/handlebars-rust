@@ -65,7 +65,7 @@ impl_rdp! {
                                      pro_whitespace_omitter? ~ ["}}}}"] }
         raw_block = { raw_block_start ~ raw_block_text ~ raw_block_end }
 
-        comment = { ["{{!"] ~ (!["}}"] ~ any)* ~ ["}}"] }
+        hbs_comment = { ["{{!"] ~ (!["}}"] ~ any)* ~ ["}}"] }
 
         template = { (
             raw_text |
@@ -74,10 +74,11 @@ impl_rdp! {
             helper_expression |
             helper_block |
             raw_block |
-            comment )*
+            hbs_comment )*
         }
 
-        handlebars = _ { template ~ eoi }
+        parameter = _{ param ~ eoi }
+        handlebars = _{ template ~ eoi }
     }
 }
 
@@ -164,7 +165,7 @@ fn test_comment() {
     let s = vec!["{{! hello }}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
-        assert!(rdp.comment());
+        assert!(rdp.hbs_comment());
         assert!(rdp.end());
     }
 }

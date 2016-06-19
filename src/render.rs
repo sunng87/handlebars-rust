@@ -341,13 +341,12 @@ impl Parameter {
                     // disable html escape for subexpression
                     local_rc.disable_escape = true;
 
-                    t.render(ctx, registry, &mut local_rc)
+                    t.as_template().render(ctx, registry, &mut local_rc)
                 };
 
                 match result {
                     Ok(_) => {
                         let n = local_writer.to_string();
-
                         try!(Parameter::parse(&n).map_err(|_| {
                             RenderError::new("subexpression generates invalid value")
                         }))
