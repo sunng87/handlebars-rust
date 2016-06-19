@@ -205,7 +205,6 @@ mod test {
         let t0 = Template::compile("{{#each this}}{{@key}}-{{value}}${{/each}}".to_owned())
                      .unwrap();
 
-        println!("{:?}", t0);
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
 

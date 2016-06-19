@@ -296,10 +296,6 @@ impl Template {
             return Err(TemplateError::Unknown);
         }
 
-        for i in parser.queue() {
-            println!("{:?}", i);
-        }
-
         let mut it = parser.queue().iter().peekable();
         loop {
             if let Some(ref token) = it.next() {
@@ -384,7 +380,6 @@ impl Template {
                             } else {
                                 h.template = Some(prev_t);
                             }
-                            println!("{:?}", template_stack);
                             let t = template_stack.front_mut().unwrap();
                             t.elements.push(HelperBlock(h));
                         } else {
