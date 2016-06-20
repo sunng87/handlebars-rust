@@ -297,22 +297,40 @@ impl Template {
         }
 
         let mut it = parser.queue().iter().peekable();
+        let mut prev_end = 0;
         loop {
             if let Some(ref token) = it.next() {
+
+                if token.rule != Rule::template {
+                    if token.start != prev_end && !omit_pro_ws && token.rule != Rule::raw_text &&
+                       token.rule != Rule::raw_block_text {
+                        let (line_no, col_no) = i2.line_col(prev_end);
+                        if token.rule == Rule::raw_block_end {
+                            let text = &source[prev_end..token.start];
+                            let mut t = Template::new(mapping);
+                            t.push_element(RawString(text.to_owned()), line_no, col_no);
+                            template_stack.push_front(t);
+                        } else {
+                            let text = &source[prev_end..token.start];
+                            let mut t = template_stack.front_mut().unwrap();
+                            t.push_element(RawString(text.to_owned()), line_no, col_no);
+                        }
+                    }
+                }
+
                 let (line_no, col_no) = i2.line_col(token.start);
                 match token.rule {
                     Rule::template => {
                         template_stack.push_front(Template::new(mapping));
                     }
                     Rule::raw_text => {
-                        let mut text = &source[token.start..token.end];
+                        let mut text = &source[prev_end..token.end];
                         if omit_pro_ws {
                             text = text.trim_left();
                         }
                         let mut t = template_stack.front_mut().unwrap();
                         t.push_element(RawString(text.to_owned()), line_no, col_no);
                     }
-                    Rule::helper_block => {}
                     Rule::helper_block_start | Rule::raw_block_start => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
                         let helper_template = HelperTemplate {
@@ -348,7 +366,7 @@ impl Template {
                         h.template = Some(t);
                     }
                     Rule::raw_block_text => {
-                        let mut text = &source[token.start..token.end];
+                        let mut text = &source[prev_end..token.end];
                         if omit_pro_ws {
                             text = text.trim_left();
                         }
@@ -453,18 +471,24 @@ impl Template {
                         let el = HelperExpression(helper_template);
                         t.push_element(el, line_no, col_no);
                     }
-                    Rule::raw_block => {}
                     Rule::hbs_comment => {
                         let text = parser.slice_input(token.start + 3, token.end - 2);
                         let mut t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
-                    Rule::eoi => {
-                        return Ok(template_stack.pop_front().unwrap());
-                    }
                     _ => {}
                 }
+
+                if token.rule != Rule::template {
+                    prev_end = token.end;
+                }
             } else {
+                if prev_end < source.len() {
+                    let text = &source[prev_end..source.len()];
+                    let (line_no, col_no) = i2.line_col(prev_end);
+                    let mut t = template_stack.front_mut().unwrap();
+                    t.push_element(RawString(text.to_owned()), line_no, col_no);
+                }
                 return Ok(template_stack.pop_front().unwrap());
             }
         }
@@ -497,7 +521,7 @@ fn test_parse_template() {
 {{#unless true}}kitkat{{^}}lollipop{{/unless}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
 
-    assert_eq!(t.elements.len(), 9);
+    assert_eq!(t.elements.len(), 10);
 
     assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
     assert_eq!(*t.elements.get(1).unwrap(),
@@ -506,7 +530,7 @@ fn test_parse_template() {
     assert_eq!(*t.elements.get(3).unwrap(),
                HTMLExpression(Parameter::Name("content".to_string())));
 
-    match *t.elements.get(4).unwrap() {
+    match *t.elements.get(5).unwrap() {
         HelperBlock(ref h) => {
             assert_eq!(h.name, "if".to_string());
             assert_eq!(h.params.len(), 1);
@@ -517,7 +541,7 @@ fn test_parse_template() {
         }
     };
 
-    match *t.elements.get(6).unwrap() {
+    match *t.elements.get(7).unwrap() {
         HelperExpression(ref h) => {
             assert_eq!(h.name, "foo".to_string());
             assert_eq!(h.params.len(), 1);
@@ -528,7 +552,7 @@ fn test_parse_template() {
         }
     };
 
-    match *t.elements.get(8).unwrap() {
+    match *t.elements.get(9).unwrap() {
         HelperBlock(ref h) => {
             assert_eq!(h.name, "unless".to_string());
             assert_eq!(h.params.len(), 1);
@@ -724,11 +748,18 @@ fn test_template_mapping() {
                 assert_eq!(mapping.len(), t.elements.len());
                 assert_eq!(mapping[0], TemplateMapping(1, 1));
                 assert_eq!(mapping[1], TemplateMapping(2, 3));
-                assert_eq!(mapping[2], TemplateMapping(3, 1));
+                assert_eq!(mapping[3], TemplateMapping(3, 1));
             } else {
                 panic!("should contains mapping");
             }
         }
         Err(e) => panic!("{}", e),
     }
+}
+
+#[test]
+fn test_whitespace_elements() {
+    let c = Template::compile("  {{elem}}\n\t{{#if true}} \
+                               {{/if}}\n{{{{raw}}}} {{{{/raw}}}}\n{{{{raw}}}}{{{{/raw}}}}\n");
+    assert_eq!(c.ok().unwrap().elements.len(), 9);
 }

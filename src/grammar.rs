@@ -5,7 +5,7 @@ impl_rdp! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
 
         raw_text = @{ ( !["{{"] ~ any )+ }
-        raw_block_text = @{ ( !["{{{{"] ~ any )+ }
+        raw_block_text = @{ ( !["{{{{"] ~ any )* }
 
 // Note: this is not full and strict json literal definition, just for tokenize string,
 // array and object types which may contains whitespace. We will use a real json parser
@@ -55,7 +55,7 @@ impl_rdp! {
                                         pro_whitespace_omitter? ~ ["}}"] }
         helper_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                       pro_whitespace_omitter? ~ ["}}"] }
-        helper_block = { helper_block_start ~ template ~
+        helper_block = _{ helper_block_start ~ template ~
                          (invert_tag ~ template)? ~
                          helper_block_end }
 
@@ -63,7 +63,7 @@ impl_rdp! {
                                        pro_whitespace_omitter? ~ ["}}}}"] }
         raw_block_end = { ["{{{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                      pro_whitespace_omitter? ~ ["}}}}"] }
-        raw_block = { raw_block_start ~ raw_block_text ~ raw_block_end }
+        raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
         hbs_comment = { ["{{!"] ~ (!["}}"] ~ any)* ~ ["}}"] }
 
