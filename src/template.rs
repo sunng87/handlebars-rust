@@ -104,7 +104,7 @@ impl Parameter {
     pub fn parse(s: &str) -> Result<Parameter, TemplateError> {
         let mut parser = Rdp::new(StringInput::new(s));
         if !parser.parameter() {
-            return Err(TemplateError::Unknown);
+            return Err(TemplateError::InvalidParam(s.to_owned()));
         }
 
         let mut it = parser.queue().iter().peekable();
@@ -293,7 +293,9 @@ impl Template {
         let mut parser = Rdp::new(input);
 
         if !parser.handlebars() {
-            return Err(TemplateError::Unknown);
+            let (_, pos) = parser.expected();
+            let (line_no, col_no) = i2.line_col(pos);
+            return Err(TemplateError::InvalidSyntax(line_no, col_no));
         }
 
         let mut it = parser.queue().iter().peekable();
@@ -571,7 +573,7 @@ fn test_parse_error() {
 
     let t = Template::compile(source.to_string());
 
-    assert_eq!(t.unwrap_err(), TemplateError::Unknown);
+    assert_eq!(t.unwrap_err(), TemplateError::InvalidSyntax(4, 5));
 }
 
 #[test]
@@ -664,7 +666,7 @@ fn test_unclosed_expression() {
         let result = Template::compile(s.to_owned());
         if let Err(e) = result {
             match e {
-                TemplateError::Unknown => {}
+                TemplateError::InvalidSyntax(_, _) => {}
                 _ => {
                     panic!("Unexpected error type {}", e);
                 }
@@ -758,6 +760,7 @@ fn test_template_mapping() {
 }
 
 #[test]
+
 fn test_whitespace_elements() {
     let c = Template::compile("  {{elem}}\n\t{{#if true}} \
                                {{/if}}\n{{{{raw}}}} {{{{/raw}}}}\n{{{{raw}}}}{{{{/raw}}}}\n");
