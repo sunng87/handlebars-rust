@@ -289,12 +289,11 @@ impl Template {
         let mut omit_pro_ws = false;
 
         let input = StringInput::new(source);
-        let i2 = StringInput::new(source);
         let mut parser = Rdp::new(input);
 
         if !parser.handlebars() {
             let (_, pos) = parser.expected();
-            let (line_no, col_no) = i2.line_col(pos);
+            let (line_no, col_no) = parser.input().line_col(pos);
             return Err(TemplateError::InvalidSyntax(line_no, col_no));
         }
 
@@ -306,7 +305,7 @@ impl Template {
                 if token.rule != Rule::template {
                     if token.start != prev_end && !omit_pro_ws && token.rule != Rule::raw_text &&
                        token.rule != Rule::raw_block_text {
-                        let (line_no, col_no) = i2.line_col(prev_end);
+                        let (line_no, col_no) = parser.input().line_col(prev_end);
                         if token.rule == Rule::raw_block_end {
                             let text = &source[prev_end..token.start];
                             let mut t = Template::new(mapping);
@@ -320,7 +319,7 @@ impl Template {
                     }
                 }
 
-                let (line_no, col_no) = i2.line_col(token.start);
+                let (line_no, col_no) = parser.input().line_col(token.start);
                 match token.rule {
                     Rule::template => {
                         template_stack.push_front(Template::new(mapping));
@@ -474,7 +473,7 @@ impl Template {
                         t.push_element(el, line_no, col_no);
                     }
                     Rule::hbs_comment => {
-                        let text = parser.slice_input(token.start + 3, token.end - 2);
+                        let text = parser.input().slice(token.start + 3, token.end - 2);
                         let mut t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
@@ -487,7 +486,7 @@ impl Template {
             } else {
                 if prev_end < source.len() {
                     let text = &source[prev_end..source.len()];
-                    let (line_no, col_no) = i2.line_col(prev_end);
+                    let (line_no, col_no) = parser.input().line_col(prev_end);
                     let mut t = template_stack.front_mut().unwrap();
                     t.push_element(RawString(text.to_owned()), line_no, col_no);
                 }
