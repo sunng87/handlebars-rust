@@ -517,8 +517,8 @@ pub enum TemplateElement {
 
 #[test]
 fn test_parse_template() {
-    let source = "<h1>{{title}} nihao</h1> {{{content}}}
-{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}niheo
+    let source = "<h1>{{title}} 你好</h1> {{{content}}}
+{{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}中文你好
 {{#unless true}}kitkat{{^}}lollipop{{/unless}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
 
