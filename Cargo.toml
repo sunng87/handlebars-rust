@@ -39,3 +39,7 @@ env_logger = "^0.3.2"
 maplit = "^0.1.3"
 #tojson_macros = "*"
 #syntex = "*"
+
+[package.metadata.release]
+sign-commit = true
+upload-doc = true
