@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.18.0] - 2016-06-25
+
+* [Changed] Rewrite template parser with pest.
+
 ## [0.17.0] - 2016-06-05
 
 * [Added] JSON literals as helper param or hash, and subexpression
