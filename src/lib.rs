@@ -244,12 +244,17 @@
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //!
 
+
+#![recursion_limit = "200"]
+
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate quick_error;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate pest;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
@@ -257,7 +262,6 @@ extern crate maplit;
 #[cfg(feature = "rustc_ser_type")]
 extern crate rustc_serialize as serialize;
 extern crate regex;
-extern crate itertools;
 
 #[cfg(feature = "serde_type")]
 extern crate serde;
@@ -271,6 +275,7 @@ pub use self::render::{Renderable, RenderError, RenderContext, Helper, ContextJs
 pub use self::helpers::HelperDef;
 pub use self::context::{Context, JsonRender, JsonTruthy};
 
+mod grammar;
 mod template;
 mod error;
 mod registry;
