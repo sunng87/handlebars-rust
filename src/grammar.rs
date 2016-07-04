@@ -29,7 +29,7 @@ impl_rdp! {
         path_char = _{ ["/"] }
 
         identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
-        reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])* ~ reference* }
+        reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])* ~ ["-"]* ~ reference* }
         name = _{ subexpression | identifier }
 
         param = { literal | reference | subexpression }
@@ -105,7 +105,8 @@ fn test_reference() {
                  "@abc",
                  "a[\"abc\"]",
                  "aBc[\"abc\"]",
-                 "abc[0][\"nice\"]"];
+                 "abc[0][\"nice\"]",
+                 "some-name"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.reference());
