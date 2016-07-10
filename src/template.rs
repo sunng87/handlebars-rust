@@ -710,7 +710,7 @@ fn test_raw_helper() {
 }
 
 #[test]
-#[cfg(all(feature = "rust_ser_type", not(feature = "serde_type")))]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn test_literal_parameter_parser() {
     match Template::compile("{{hello 1 name=\"value\" valid=false ref=someref}}") {
         Ok(t) => {
