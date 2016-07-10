@@ -5,7 +5,7 @@ use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
 use pest::prelude::*;
 
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use serialize::json::Json;
 #[cfg(feature = "serde_type")]
 use serde_json::value::Value as Json;
@@ -332,7 +332,8 @@ impl Template {
                         let mut t = template_stack.front_mut().unwrap();
                         t.push_element(RawString(text.to_owned()), line_no, col_no);
                     }
-                    Rule::helper_block_start | Rule::raw_block_start => {
+                    Rule::helper_block_start |
+                    Rule::raw_block_start => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
                         let helper_template = HelperTemplate {
                             name: exp.name.as_name().unwrap(),
@@ -375,7 +376,8 @@ impl Template {
                         t.push_element(RawString(text.to_owned()), line_no, col_no);
                         template_stack.push_front(t);
                     }
-                    Rule::helper_block_end | Rule::raw_block_end => {
+                    Rule::helper_block_end |
+                    Rule::raw_block_end => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
 
                         if exp.omit_pre_ws {
@@ -708,7 +710,7 @@ fn test_raw_helper() {
 }
 
 #[test]
-#[cfg(rust_ser_type)]
+#[cfg(all(feature = "rust_ser_type", not(feature = "serde_type")))]
 fn test_literal_parameter_parser() {
     match Template::compile("{{hello 1 name=\"value\" valid=false ref=someref}}") {
         Ok(t) => {

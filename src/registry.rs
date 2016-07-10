@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
 
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use serialize::json::ToJson;
 #[cfg(feature = "serde_type")]
 use serde::ser::Serialize as ToJson;

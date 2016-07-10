@@ -4,7 +4,7 @@
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 extern crate rustc_serialize;
 
 #[cfg(feature = "serde_type")]
@@ -46,7 +46,7 @@ fn rank_helper(_: &Context,
     Ok(())
 }
 
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 mod rustc_example {
     use std::collections::BTreeMap;
     use rustc_serialize::json::{Json, ToJson};
@@ -165,15 +165,15 @@ mod serde_example {
     }
 }
 
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn main() {
     use rustc_example::*;
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
     handlebars.register_template_file("table", &Path::new("./examples/template.hbs"))
-              .ok()
-              .unwrap();
+        .ok()
+        .unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
     handlebars.register_helper("ranking_label", Box::new(rank_helper));
@@ -191,8 +191,8 @@ fn main() {
     let mut handlebars = Handlebars::new();
 
     handlebars.register_template_file("table", &Path::new("./examples/template.hbs"))
-              .ok()
-              .unwrap();
+        .ok()
+        .unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
     handlebars.register_helper("ranking_label", Box::new(rank_helper));
