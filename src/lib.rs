@@ -259,7 +259,7 @@ extern crate pest;
 #[macro_use]
 extern crate maplit;
 
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 extern crate rustc_serialize as serialize;
 extern crate regex;
 

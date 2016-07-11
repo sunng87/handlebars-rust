@@ -4,7 +4,7 @@ use std::fmt;
 use std::io::Write;
 use std::io::Error as IOError;
 
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use serialize::json::Json;
 #[cfg(feature = "serde_type")]
 use serde_json::value::Value as Json;
@@ -534,7 +534,7 @@ fn test_template() {
 }
 
 #[test]
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn test_render_context_promotion_and_demotion() {
     use serialize::json::ToJson;
     let mut sw = StringWriter::new();

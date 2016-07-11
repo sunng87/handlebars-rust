@@ -1,4 +1,4 @@
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use serialize::json::{Json, ToJson};
 
 #[cfg(feature = "serde_type")]
@@ -68,7 +68,7 @@ impl Context {
         Context { data: Json::Null }
     }
 
-    #[cfg(feature = "rustc_ser_type")]
+    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     /// Create a context with given data
     pub fn wraps<T: ToJson>(e: &T) -> Context {
         Context { data: e.to_json() }
@@ -159,7 +159,7 @@ impl JsonRender for Json {
             Json::I64(i) => i.to_string(),
             Json::U64(i) => i.to_string(),
             Json::F64(f) => f.to_string(),
-            #[cfg(feature = "rustc_ser_type")]
+            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::Boolean(i) => i.to_string(),
             #[cfg(feature = "serde_type")]
             Json::Bool(i) => i.to_string(),
@@ -185,7 +185,7 @@ impl JsonTruthy for Json {
             Json::I64(i) => i != 0,
             Json::U64(i) => i != 0,
             Json::F64(i) => i != 0.0 || !i.is_nan(),
-            #[cfg(feature = "rustc_ser_type")]
+            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::Boolean(ref i) => *i,
             #[cfg(feature = "serde_type")]
             Json::Bool(ref i) => *i,
@@ -328,7 +328,7 @@ mod test {
 }
 
 #[cfg(test)]
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 mod test {
     use context::{JsonRender, Context};
     use std::collections::BTreeMap;

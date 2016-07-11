@@ -1,7 +1,7 @@
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 extern crate rustc_serialize;
 
 use std::io::{Write, Read};
@@ -39,7 +39,7 @@ fn rank_helper(_: &Context,
 }
 
 
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 mod render_example {
     use std::collections::BTreeMap;
     use rustc_serialize::json::{Json, ToJson};
@@ -102,7 +102,7 @@ mod render_example {
     }
 }
 
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn main() {
     use render_example::*;
 

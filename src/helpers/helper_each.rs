@@ -1,4 +1,4 @@
-#[cfg(feature = "rustc_ser_type")]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use serialize::json::{Json, ToJson};
 #[cfg(feature = "serde_type")]
 use serde_json::value::{self, Value as Json};
@@ -13,7 +13,7 @@ use render::{Renderable, RenderContext, RenderError, Helper};
 pub struct EachHelper;
 
 impl HelperDef for EachHelper {
-    #[cfg(feature = "rustc_ser_type")]
+    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     fn call(&self,
             c: &Context,
             h: &Helper,
