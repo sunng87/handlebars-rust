@@ -12,7 +12,6 @@ extern crate serde;
 #[cfg(feature = "serde_type")]
 extern crate serde_json;
 
-use std::path::Path;
 use std::error::Error;
 
 use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender};
@@ -171,9 +170,9 @@ fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("table", &Path::new("./examples/template.hbs"))
-        .ok()
-        .unwrap();
+    handlebars.register_template_file("table", "./examples/template.hbs")
+              .ok()
+              .unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
     handlebars.register_helper("ranking_label", Box::new(rank_helper));
@@ -190,9 +189,9 @@ fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("table", &Path::new("./examples/template.hbs"))
-        .ok()
-        .unwrap();
+    handlebars.register_template_file("table", "./examples/template.hbs")
+              .ok()
+              .unwrap();
 
     handlebars.register_helper("format", Box::new(format_helper));
     handlebars.register_helper("ranking_label", Box::new(rank_helper));
