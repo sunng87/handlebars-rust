@@ -93,10 +93,10 @@ impl Registry {
     }
 
     /// Register a template from a path
-    pub fn register_template_file(&mut self,
-                                  name: &str,
-                                  tpl_path: &Path)
-                                  -> Result<(), TemplateFileError> {
+    pub fn register_template_file<P: AsRef<Path>>(&mut self,
+                                                  name: &str,
+                                                  tpl_path: P)
+                                                  -> Result<(), TemplateFileError> {
         let mut file = try!(File::open(tpl_path));
         self.register_template_source(name, &mut file)
     }
