@@ -161,6 +161,9 @@ mod test {
 
     use std::collections::BTreeMap;
 
+    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+    use serialize::json::Json;
+
     #[test]
     fn test_each() {
         let t0 = Template::compile("{{#each this}}{{@first}}|{{@last}}|{{@index}}:\
@@ -186,6 +189,29 @@ mod test {
         m.insert("http".to_string(), 80);
         let r1 = handlebars.render("t1", &m);
         assert_eq!(r1.ok().unwrap(), "true|ftp:21|false|http:80|".to_string());
+    }
+
+    #[test]
+    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+    fn test_each_with_parent() {
+
+        let json_str = r#"{"a":{"b":99,"c":[{"d":100},{"d":200}]}}"#;
+
+        let data = Json::from_str(json_str).unwrap();
+        println!("data: {}", data);
+
+        // previously, to access the parent in an each block,
+        // a user would need to specify ../../b, as the path
+        // that is computed includes the array index: ./a.c.[0]
+        let t0 = Template::compile("{{#each a.c}} d={{d}} b={{../a.b}} {{/each}}".to_string())
+                     .ok()
+                     .unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let r1 = handlebars.render("t0", &data);
+        assert_eq!(r1.ok().unwrap(), " d=100 b=99  d=200 b=99 ".to_string());
     }
 
     #[test]
