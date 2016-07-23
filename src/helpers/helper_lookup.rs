@@ -22,7 +22,7 @@ impl HelperDef for LookupHelper {
             RenderError::new("Param not found for helper \"lookup\"")
         }));
         let index = try!(h.param(1).ok_or_else(|| {
-            RenderError::new("Insuffitient params for helper \"lookup\"")
+            RenderError::new("Insufficient params for helper \"lookup\"")
         }));
 
         let null = Json::Null;
