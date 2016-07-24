@@ -30,6 +30,9 @@ impl HelperDef for EachHelper {
                 let path = rc.get_path().clone();
 
                 rc.promote_local_vars();
+                if let Some(path_root) = value.path_root() {
+                    rc.set_local_path_root(path_root.to_owned());
+                }
 
                 debug!("each value {:?}", value.value());
                 let rendered = match value.value() {
@@ -45,8 +48,6 @@ impl HelperDef for EachHelper {
                                 debug!("each value {:?}", new_path);
                                 rc.set_path(new_path);
                             }
-                            // FIXME: context for literal
-
                             try!(t.render(c, r, rc));
                         }
                         Ok(())
@@ -195,15 +196,15 @@ mod test {
     #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     fn test_each_with_parent() {
 
-        let json_str = r#"{"a":{"b":99,"c":[{"d":100},{"d":200}]}}"#;
+        let json_str = r#"{"a":{"a":99,"c":[{"d":100},{"d":200}]}}"#;
 
         let data = Json::from_str(json_str).unwrap();
-        println!("data: {}", data);
+        // println!("data: {}", data);
 
         // previously, to access the parent in an each block,
         // a user would need to specify ../../b, as the path
         // that is computed includes the array index: ./a.c.[0]
-        let t0 = Template::compile("{{#each a.c}} d={{d}} b={{../a.b}} {{/each}}".to_string())
+        let t0 = Template::compile("{{#each a.c}} d={{d}} b={{../a.a}} {{/each}}".to_string())
                      .ok()
                      .unwrap();
 

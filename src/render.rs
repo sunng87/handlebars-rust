@@ -72,6 +72,7 @@ impl RenderError {
 pub struct RenderContext<'a> {
     partials: HashMap<String, Template>,
     path: String,
+    local_path_root: Option<String>,
     local_variables: HashMap<String, Json>,
     default_var: Json,
     /// the `Write` where page is generated
@@ -89,6 +90,7 @@ impl<'a> RenderContext<'a> {
         RenderContext {
             partials: HashMap::new(),
             path: ".".to_string(),
+            local_path_root: None,
             local_variables: HashMap::new(),
             default_var: Json::Null,
             writer: w,
@@ -103,6 +105,7 @@ impl<'a> RenderContext<'a> {
         RenderContext {
             partials: self.partials.clone(),
             path: self.path.clone(),
+            local_path_root: self.local_path_root.clone(),
             local_variables: self.local_variables.clone(),
             default_var: self.default_var.clone(),
             writer: w,
@@ -128,7 +131,15 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn set_path(&mut self, path: String) {
-        self.path = path
+        self.path = path;
+    }
+
+    pub fn get_local_path_root(&self) -> &str {
+        self.local_path_root.as_ref().unwrap_or(self.get_path())
+    }
+
+    pub fn set_local_path_root(&mut self, path: String) {
+        self.local_path_root = Some(path)
     }
 
     pub fn set_local_var(&mut self, name: String, value: Json) {
@@ -206,6 +217,11 @@ impl ContextJson {
     /// If the value is from a literal, the path is `None`
     pub fn path(&self) -> Option<&String> {
         self.path.as_ref()
+    }
+
+    /// Return root level of this path if any
+    pub fn path_root(&self) -> Option<&str> {
+        self.path.as_ref().and_then(|p| p.split(|c| c == '.' || c == '/').nth(0))
     }
 
     /// Returns the value
@@ -322,9 +338,14 @@ impl Parameter {
                         value: rc.get_local_var(&name).clone(),
                     })
                 } else {
+                    let path = if name.starts_with("../") {
+                        rc.get_local_path_root()
+                    } else {
+                        rc.get_path()
+                    };
                     Ok(ContextJson {
                         path: Some(name.to_owned()),
-                        value: ctx.navigate(rc.get_path(), name).clone(),
+                        value: ctx.navigate(path, name).clone(),
                     })
                 }
             }
