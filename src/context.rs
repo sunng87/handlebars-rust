@@ -32,42 +32,11 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
                 continue;
             }
             ".." => {
-                let item = path_stack.pop_back();
-                if let Some(item) = item {
-                    if let (Some(a), Some(z)) = (item.chars().nth(0), item.chars().last()) {
-                        // if the item we just popped off is an array index,
-                        // pop off one more to make it behave more like the
-                        // Javascript implementation
-                        if a == '[' && z == ']' {
-                            path_stack.pop_back();
-                        }
-                    }
-                }
+                path_stack.pop_back();
             }
             _ => {
                 for dot_p in p.split('.') {
-                    let skip = match (path_stack.front(), path_stack.back()) {
-                        (Some(ref a), Some(ref z)) => {
-                            // if this path starts with "this", then we're not going
-                            // to skip anything
-                            if **a == "this" {
-                                false
-                            } else {
-                                // if the path doesn't start with "this" and
-                                // the last element on the deque is "p",
-                                // then don't push it
-                                **z == dot_p
-                            }
-
-                        }
-                        _ => false
-                    };
-
-                    if !skip {
-                        // if dot_p != "this" {
-                        path_stack.push_back(dot_p);
-                        // }
-                    }
+                    path_stack.push_back(dot_p);
                 }
             }
         }
@@ -319,9 +288,9 @@ mod test {
                    "programmer".to_string());
 
         assert_eq!(ctx.navigate(".", "titles[0]/../age").render(),
-                    "27".to_string());
+                   "27".to_string());
         assert_eq!(ctx.navigate(".", "this.titles[0]/../age").render(),
-                    "27".to_string());
+                   "27".to_string());
 
     }
 
@@ -450,9 +419,9 @@ mod test {
                    "programmer".to_string());
 
         assert_eq!(ctx.navigate(".", "titles[0]/../age").render(),
-                    "27".to_string());
+                   "27".to_string());
         assert_eq!(ctx.navigate(".", "this.titles[0]/../age").render(),
-                    "27".to_string());
+                   "27".to_string());
 
     }
 
