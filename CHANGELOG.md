@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.19.0] - 2016-07-24
+
+* [Changed] changed `&Path` to `AsRef<Path>`
+* [Changed] Fixed "../" path visitor in `#each` and `#if`.
+* [Added] `set_local_path_root` and `get_local_path_root` for
+  `RenderContext`.
+
 ## [0.18.2] - 2016-07-11
 
 * [Changed] Disable `rustc_type` when `serde_type` enabled.
