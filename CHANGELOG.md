@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.18.2] - 2016-07-11
+
+* [Changed] Disable `rustc_type` when `serde_type` enabled.
+
+## [0.18.1] - 2016-07-04
+
+* [Changed] Allow `-` char in reference.
+
 ## [0.18.0] - 2016-06-25
 
 * [Changed] Rewrite template parser with pest.
