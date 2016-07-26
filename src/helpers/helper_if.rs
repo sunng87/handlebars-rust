@@ -19,9 +19,6 @@ impl HelperDef for IfHelper {
                           .ok_or_else(|| RenderError::new("Param not found for helper \"if\"")));
 
         let mut value = param.value().is_truthy();
-        if let Some(root_path) = param.path_root() {
-            rc.set_local_path_root(root_path.to_owned());
-        }
 
         if !self.positive {
             value = !value;

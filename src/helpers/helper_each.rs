@@ -31,7 +31,8 @@ impl HelperDef for EachHelper {
 
                 rc.promote_local_vars();
                 if let Some(path_root) = value.path_root() {
-                    rc.set_local_path_root(path_root.to_owned());
+                    let local_path_root = format!("{}/{}", path, path_root);
+                    rc.set_local_path_root(local_path_root);
                 }
 
                 debug!("each value {:?}", value.value());
@@ -101,6 +102,10 @@ impl HelperDef for EachHelper {
                 let path = rc.get_path().clone();
 
                 rc.promote_local_vars();
+                if let Some(path_root) = value.path_root() {
+                    let local_path_root = format!("{}/{}", path, path_root);
+                    rc.set_local_path_root(local_path_root);
+                }
 
                 debug!("each value {:?}", value.value());
                 let rendered = match value.value() {
@@ -213,6 +218,25 @@ mod test {
 
         let r1 = handlebars.render("t0", &data);
         assert_eq!(r1.ok().unwrap(), " d=100 b=99  d=200 b=99 ".to_string());
+    }
+
+    #[test]
+    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+    fn test_nested_each_with_parent() {
+
+        let json_str = r#"{"a": [{"b": [{"d": 100}], "c": 200}]}"#;
+
+        let data = Json::from_str(json_str).unwrap();
+        let t0 = Template::compile("{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let r1 = handlebars.render("t0", &data);
+        assert_eq!(r1.ok().unwrap(), "100:200".to_string());
     }
 
     #[test]
