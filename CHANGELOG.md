@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.19.1](https://github.com/sunng87/handlebars-rust/compare/0.19.0...0.19.1) - 2016-07-26
+
+* [Changed] Fixed `../` path visitor bug in nested `#each`
+  [#93](https://github.com/sunng87/handlebars-rust/issues/93)
+* [Changed] Rollback 0.19.0 change for `#if`
+
 ## [0.19.0] - 2016-07-24
 
 * [Changed] changed `&Path` to `AsRef<Path>`
