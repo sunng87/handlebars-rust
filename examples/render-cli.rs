@@ -1,6 +1,14 @@
+#![cfg_attr(all(feature="serde_type"), feature(custom_derive, plugin))]
+#![cfg_attr(all(feature="serde_type"), plugin(serde_macros))]
 extern crate env_logger;
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 extern crate rustc_serialize;
 extern crate handlebars;
+
+#[cfg(feature = "serde_type")]
+extern crate serde;
+#[cfg(feature = "serde_type")]
+extern crate serde_json;
 
 use std::io::{self, Write};
 use std::process;
@@ -17,6 +25,21 @@ fn usage() -> ! {
     process::exit(1);
 }
 
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+fn parse_json(text: &str) -> Json {
+    match Json::from_str(text) {
+        Ok(json) => json,
+        Err(_) => usage(),
+    }
+}
+#[cfg(feature = "serde_type")]
+fn parse_json(text: &str) -> Value {
+    match serde_json::from_str(text) {
+        Ok(json) => json,
+        Err(_) => usage(),
+    }
+}
+
 fn main() {
     env_logger::init().unwrap();
 
@@ -26,10 +49,7 @@ fn main() {
         (Some(filename), Some(json)) => (filename, json),
         _ => usage(),
     };
-    let data = match Json::from_str(&json) {
-        Ok(json) => json,
-        Err(_) => usage(),
-    };
+    let data = parse_json(&json);
 
     let mut handlebars = Handlebars::new();
 
