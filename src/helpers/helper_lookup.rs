@@ -12,6 +12,7 @@ use render::{RenderContext, RenderError, Helper};
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
+    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     fn call(&self,
             _: &Context,
             h: &Helper,
@@ -37,6 +38,42 @@ impl HelperDef for LookupHelper {
             &Json::Object(ref m) => {
                 index.value()
                      .as_string()
+                     .and_then(|k| m.get(k))
+                     .unwrap_or(&null)
+            }
+            _ => &null,
+        };
+        let r = value.render();
+        try!(rc.writer.write(r.into_bytes().as_ref()));
+        Ok(())
+    }
+
+    #[cfg(feature = "serde_type")]
+    fn call(&self,
+            _: &Context,
+            h: &Helper,
+            _: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
+        let collection_value = try!(h.param(0).ok_or_else(|| {
+            RenderError::new("Param not found for helper \"lookup\"")
+        }));
+        let index = try!(h.param(1).ok_or_else(|| {
+            RenderError::new("Insufficient params for helper \"lookup\"")
+        }));
+
+        let null = Json::Null;
+        let value = match collection_value.value() {
+            &Json::Array(ref v) => {
+                index.value()
+                     .as_u64()
+                     .and_then(|u| Some(u as usize))
+                     .and_then(|u| v.get(u))
+                     .unwrap_or(&null)
+            }
+            &Json::Object(ref m) => {
+                index.value()
+                     .as_str()
                      .and_then(|k| m.get(k))
                      .unwrap_or(&null)
             }
