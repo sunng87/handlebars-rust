@@ -45,7 +45,6 @@ mod test {
     use registry::Registry;
     #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     use serialize::json::Json;
-    use helpers::WITH_HELPER;
 
     #[test]
     fn test_if() {
