@@ -1,7 +1,7 @@
 handlebars-rust
 ===============
 
-Rust templating with [Handlebars templating language](https://handlebarsjs.com). 
+Rust templating with [Handlebars templating language](https://handlebarsjs.com).
 
 [![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
 [![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
@@ -150,6 +150,11 @@ workaround for cases we don't support.
 I have started another project
 [handlebars-iron](https://github.com/sunng87/handlebars-iron) for
 the Iron web framework.
+
+## Using handlebars-rust?
+
+Add your project to our
+[adopters](https://github.com/sunng87/handlebars-rust/wiki/adopters).
 
 ## License
 
