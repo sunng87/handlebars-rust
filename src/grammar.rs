@@ -25,7 +25,7 @@ impl_rdp! {
         object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)? ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
 
 // FIXME: a[0], a["b]
-        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["<"]|[">"] }
+        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["<"]|[">"]|["-"] }
         path_char = _{ ["/"] }
 
         identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
@@ -210,6 +210,18 @@ fn test_helper_expression() {
         assert!(rdp.end());
     }
 }
+
+
+#[test]
+fn test_identifier_with_dash() {
+    let s = vec!["{{exp-foo}}"];
+    for i in s.iter() {
+        let mut rdp = Rdp::new(StringInput::new(i));
+        assert!(rdp.expression());
+        assert!(rdp.end());
+    }
+}
+
 
 #[test]
 fn test_html_expression() {
