@@ -291,6 +291,18 @@ mod test {
                    "27".to_string());
         assert_eq!(ctx.navigate(".", "this.titles[0]/../age").render(),
                    "27".to_string());
+        assert_eq!(ctx.navigate(".", "titles.[0]/../../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "this.titles.[0]/../../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "titles[1]/../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "this.titles[1]/../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "titles.[1]/../../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "this.titles.[1]/../../age").render(),
+                   "27".to_string());
 
     }
 
@@ -422,7 +434,18 @@ mod test {
                    "27".to_string());
         assert_eq!(ctx.navigate(".", "this.titles[0]/../age").render(),
                    "27".to_string());
-
+        assert_eq!(ctx.navigate(".", "titles.[0]/../../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "this.titles.[0]/../../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "titles[1]/../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "this.titles[1]/../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "titles.[1]/../../age").render(),
+                   "27".to_string());
+        assert_eq!(ctx.navigate(".", "this.titles.[1]/../../age").render(),
+                   "27".to_string());
     }
 
     #[test]

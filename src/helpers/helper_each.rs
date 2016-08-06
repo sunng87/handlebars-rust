@@ -49,7 +49,14 @@ impl HelperDef for EachHelper {
                                 debug!("each value {:?}", new_path);
                                 rc.set_path(new_path);
                             }
+
+                            let current_path = rc.get_path().clone();
+                            let local_path_root = rc.get_local_path_root().to_string().clone();
+                            let current_template = rc.current_template.clone();
                             try!(t.render(c, r, rc));
+                            rc.set_path(current_path);
+                            rc.set_local_path_root(local_path_root);
+                            rc.current_template = current_template;
                         }
                         Ok(())
                     }
@@ -67,8 +74,13 @@ impl HelperDef for EachHelper {
                                 let new_path = format!("{}/{}.[{}]", path, inner_path, k);
                                 rc.set_path(new_path);
                             }
-
+                            let current_path = rc.get_path().clone();
+                            let local_path_root = rc.get_local_path_root().to_string().clone();
+                            let current_template = rc.current_template.clone();
                             try!(t.render(c, r, rc));
+                            rc.set_path(current_path);
+                            rc.set_local_path_root(local_path_root);
+                            rc.current_template = current_template;
                         }
 
                         Ok(())
@@ -121,7 +133,13 @@ impl HelperDef for EachHelper {
                                 debug!("each value {:?}", new_path);
                                 rc.set_path(new_path);
                             }
+                            let current_path = rc.get_path().clone();
+                            let local_path_root = rc.get_local_path_root().to_string().clone();
+                            let current_template = rc.current_template.clone();
                             try!(t.render(c, r, rc));
+                            rc.set_path(current_path);
+                            rc.set_local_path_root(local_path_root);
+                            rc.current_template = current_template;
                         }
                         Ok(())
                     }
@@ -139,8 +157,13 @@ impl HelperDef for EachHelper {
                                 debug!("each value {:?}", new_path);
                                 rc.set_path(new_path);
                             }
-
+                            let current_path = rc.get_path().clone();
+                            let local_path_root = rc.get_local_path_root().to_string().clone();
+                            let current_template = rc.current_template.clone();
                             try!(t.render(c, r, rc));
+                            rc.set_path(current_path);
+                            rc.set_local_path_root(local_path_root);
+                            rc.current_template = current_template;
                         }
 
                         Ok(())
@@ -239,6 +262,23 @@ mod test {
         assert_eq!(r1.ok().unwrap(), "100:200".to_string());
     }
 
+    #[test]
+    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+    fn test_nested_each_with_parent_if() {
+        let json_str = r#"{"a": [{"b": true}], "b": [[1, 2, 3],[4, 5]]}"#;
+
+        let data = Json::from_str(json_str).unwrap();
+        let t0 = Template::compile("{{#each b}}{{#if ../../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}"
+                                   .to_string())
+            .ok()
+            .unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let r1 = handlebars.render("t0", &data);
+        assert_eq!(r1.ok().unwrap(), "12345".to_string());
+    }
     #[test]
     fn test_nested_array() {
         let t0 = Template::compile("{{#each this.[0]}}{{this}}{{/each}}".to_owned()).ok().unwrap();
