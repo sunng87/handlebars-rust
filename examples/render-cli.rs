@@ -1,27 +1,24 @@
-#![cfg_attr(all(feature="serde_type"), feature(custom_derive, plugin))]
-#![cfg_attr(all(feature="serde_type"), plugin(serde_macros))]
+#![allow(unused_imports, dead_code)]
 extern crate env_logger;
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 extern crate rustc_serialize;
 extern crate handlebars;
 
-#[cfg(feature = "serde_type")]
-extern crate serde;
-#[cfg(feature = "serde_type")]
-extern crate serde_json;
-
 use std::io::{self, Write};
 use std::process;
 use std::env;
 
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use rustc_serialize::json::Json;
 
 use handlebars::Handlebars;
 
 
 fn usage() -> ! {
-    writeln!(&mut io::stderr(), "{}",
-        r#"Usage: ./render-cli template.hbs '{"json": "data"}'"#).ok();
+    writeln!(&mut io::stderr(),
+             "{}",
+             r#"Usage: ./render-cli template.hbs '{"json": "data"}'"#)
+        .ok();
     process::exit(1);
 }
 
@@ -32,14 +29,8 @@ fn parse_json(text: &str) -> Json {
         Err(_) => usage(),
     }
 }
-#[cfg(feature = "serde_type")]
-fn parse_json(text: &str) -> Value {
-    match serde_json::from_str(text) {
-        Ok(json) => json,
-        Err(_) => usage(),
-    }
-}
 
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn main() {
     env_logger::init().unwrap();
 
@@ -66,3 +57,6 @@ fn main() {
         }
     }
 }
+
+#[cfg(feature = "serde_type")]
+fn main() {}
