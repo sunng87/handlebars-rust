@@ -1,5 +1,15 @@
 # Change Log
 
+## [0.20.2](https://github.com/sunng87/handlebars-rust/compare/0.20.0...0.20.2) - 2016-08-07
+
+* [Changed] Allowed dash character in reference
+  [#94](https://github.com/sunng87/handlebars-rust/pull/94)
+* [Changed] Fixed path error in nested each helpers [#95](https://github.com/sunng87/handlebars-rust/pull/95)
+
+## [0.20.0](https://github.com/sunng87/handlebars-rust/compare/0.19.1...0.20.0) - 2016-07-31
+
+* [Changed] Updated serde to 0.8
+
 ## [0.19.1](https://github.com/sunng87/handlebars-rust/compare/0.19.0...0.19.1) - 2016-07-26
 
 * [Changed] Fixed `../` path visitor bug in nested `#each`
