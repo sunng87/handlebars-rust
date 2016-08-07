@@ -27,11 +27,9 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => {
-                let path = rc.get_path().clone();
-
                 rc.promote_local_vars();
                 if let Some(path_root) = value.path_root() {
-                    let local_path_root = format!("{}/{}", path, path_root);
+                    let local_path_root = format!("{}/{}", rc.get_path(), path_root);
                     rc.set_local_path_root(local_path_root);
                 }
 
@@ -40,35 +38,43 @@ impl HelperDef for EachHelper {
                     &Json::Array(ref list) => {
                         let len = list.len();
                         for i in 0..len {
-                            rc.set_local_var("@first".to_string(), (i == 0usize).to_json());
-                            rc.set_local_var("@last".to_string(), (i == len - 1).to_json());
-                            rc.set_local_var("@index".to_string(), i.to_json());
+                            let mut local_rc = rc.derive();
+                            local_rc.set_local_var("@first".to_string(), (i == 0usize).to_json());
+                            local_rc.set_local_var("@last".to_string(), (i == len - 1).to_json());
+                            local_rc.set_local_var("@index".to_string(), i.to_json());
 
                             if let Some(inner_path) = value.path() {
-                                let new_path = format!("{}/{}.[{}]", path, inner_path, i);
-                                debug!("each value {:?}", new_path);
-                                rc.set_path(new_path);
+                                let new_path = format!("{}/{}.[{}]",
+                                                       local_rc.get_path(),
+                                                       inner_path,
+                                                       i);
+                                debug!("each path {:?}", new_path);
+                                local_rc.set_path(new_path);
                             }
-                            try!(t.render(c, r, rc));
+                            try!(t.render(c, r, &mut local_rc));
                         }
                         Ok(())
                     }
                     &Json::Object(ref obj) => {
                         let mut first: bool = true;
                         for k in obj.keys() {
-                            rc.set_local_var("@first".to_string(), first.to_json());
+                            let mut local_rc = rc.derive();
+                            local_rc.set_local_var("@first".to_string(), first.to_json());
                             if first {
                                 first = false;
                             }
 
-                            rc.set_local_var("@key".to_string(), k.to_json());
+                            local_rc.set_local_var("@key".to_string(), k.to_json());
 
                             if let Some(inner_path) = value.path() {
-                                let new_path = format!("{}/{}.[{}]", path, inner_path, k);
-                                rc.set_path(new_path);
+                                let new_path = format!("{}/{}.[{}]",
+                                                       local_rc.get_path(),
+                                                       inner_path,
+                                                       k);
+                                local_rc.set_path(new_path);
                             }
 
-                            try!(t.render(c, r, rc));
+                            try!(t.render(c, r, &mut local_rc));
                         }
 
                         Ok(())
@@ -77,7 +83,7 @@ impl HelperDef for EachHelper {
                         Err(RenderError::new(format!("Param type is not iterable: {:?}", template)))
                     }
                 };
-                rc.set_path(path);
+
                 rc.demote_local_vars();
                 rendered
             }
@@ -99,11 +105,9 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => {
-                let path = rc.get_path().clone();
-
                 rc.promote_local_vars();
                 if let Some(path_root) = value.path_root() {
-                    let local_path_root = format!("{}/{}", path, path_root);
+                    let local_path_root = format!("{}/{}", rc.get_path(), path_root);
                     rc.set_local_path_root(local_path_root);
                 }
 
@@ -112,35 +116,45 @@ impl HelperDef for EachHelper {
                     &Json::Array(ref list) => {
                         let len = list.len();
                         for i in 0..len {
-                            rc.set_local_var("@first".to_string(), value::to_value(&(i == 0usize)));
-                            rc.set_local_var("@last".to_string(), value::to_value(&(i == len - 1)));
-                            rc.set_local_var("@index".to_string(), value::to_value(&i));
+                            let mut local_rc = rc.derive();
+                            local_rc.set_local_var("@first".to_string(),
+                                                   value::to_value(&(i == 0usize)));
+                            local_rc.set_local_var("@last".to_string(),
+                                                   value::to_value(&(i == len - 1)));
+                            local_rc.set_local_var("@index".to_string(), value::to_value(&i));
 
                             if let Some(inner_path) = value.path() {
-                                let new_path = format!("{}/{}.[{}]", path, inner_path, i);
+                                let new_path = format!("{}/{}.[{}]",
+                                                       local_rc.get_path(),
+                                                       inner_path,
+                                                       i);
                                 debug!("each value {:?}", new_path);
-                                rc.set_path(new_path);
+                                local_rc.set_path(new_path);
                             }
-                            try!(t.render(c, r, rc));
+                            try!(t.render(c, r, &mut local_rc));
                         }
                         Ok(())
                     }
                     &Json::Object(ref obj) => {
                         let mut first: bool = true;
                         for k in obj.keys() {
-                            rc.set_local_var("@first".to_string(), value::to_value(&first));
+                            let mut local_rc = rc.derive();
+                            local_rc.set_local_var("@first".to_string(), value::to_value(&first));
                             if first {
                                 first = false;
                             }
 
-                            rc.set_local_var("@key".to_string(), value::to_value(&k));
+                            local_rc.set_local_var("@key".to_string(), value::to_value(&k));
                             if let Some(inner_path) = value.path() {
-                                let new_path = format!("{}/{}.[{}]", path, inner_path, k);
+                                let new_path = format!("{}/{}.[{}]",
+                                                       local_rc.get_path(),
+                                                       inner_path,
+                                                       k);
                                 debug!("each value {:?}", new_path);
-                                rc.set_path(new_path);
+                                local_rc.set_path(new_path);
                             }
 
-                            try!(t.render(c, r, rc));
+                            try!(t.render(c, r, &mut local_rc));
                         }
 
                         Ok(())
@@ -149,7 +163,7 @@ impl HelperDef for EachHelper {
                         Err(RenderError::new(format!("Param type is not iterable: {:?}", template)))
                     }
                 };
-                rc.set_path(path);
+                // rc.set_path(path);
                 rc.demote_local_vars();
                 rendered
             }
@@ -240,6 +254,25 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+    fn test_nested_each() {
+
+        let json_str = r#"{"a": [{"b": true}], "b": [[1, 2, 3],[4, 5]]}"#;
+
+        let data = Json::from_str(json_str).unwrap();
+        let t0 = Template::compile("{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}".to_string())
+            .ok()
+            .unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let r1 = handlebars.render("t0", &data);
+        assert_eq!(r1.ok().unwrap(), "12345".to_string());
+    }
+
+
+    #[test]
     fn test_nested_array() {
         let t0 = Template::compile("{{#each this.[0]}}{{this}}{{/each}}".to_owned()).ok().unwrap();
 
@@ -281,4 +314,5 @@ mod test {
 
         assert_eq!(r0_sp, vec!["", "-baz", "foo-bar"]);
     }
+
 }

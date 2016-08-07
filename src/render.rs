@@ -115,6 +115,20 @@ impl<'a> RenderContext<'a> {
         }
     }
 
+    pub fn derive(&mut self) -> RenderContext {
+        RenderContext {
+            partials: self.partials.clone(),
+            path: self.path.clone(),
+            local_path_root: self.local_path_root.clone(),
+            local_variables: self.local_variables.clone(),
+            default_var: self.default_var.clone(),
+            writer: self.writer,
+            current_template: self.current_template.clone(),
+            root_template: self.root_template.clone(),
+            disable_escape: self.disable_escape,
+        }
+    }
+
     pub fn get_partial(&self, name: &String) -> Option<Template> {
         match self.partials.get(name) {
             Some(t) => Some(t.clone()),

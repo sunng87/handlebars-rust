@@ -93,6 +93,7 @@ impl Context {
     ///
     /// If you want to navigate from top level, set the base path to `"."`
     pub fn navigate(&self, base_path: &str, relative_path: &str) -> &Json {
+        debug!("visiting path: {:?}/{:?}", base_path, relative_path);
         let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path);
         parse_json_visitor(&mut path_stack, relative_path);
