@@ -18,6 +18,10 @@ impl HelperDef for WithHelper {
 
         let path = rc.get_path().clone();
         rc.promote_local_vars();
+        if let Some(path_root) = param.path_root() {
+            let local_path_root = format!("{}/{}", rc.get_path(), path_root);
+            rc.set_local_path_root(local_path_root);
+        }
 
         let not_empty = param.value().is_truthy();
         let template = if not_empty {
@@ -122,5 +126,52 @@ mod test {
 
         let r2 = handlebars.render("t2", &person);
         assert_eq!(r2.ok().unwrap(), "China".to_string());
+    }
+
+    #[test]
+    fn test_with_in_each(){
+        let addr = Address {
+            city: "Beijing".to_string(),
+            country: "China".to_string(),
+        };
+
+        let person = Person {
+            name: "Ning Sun".to_string(),
+            age: 27,
+            addr: addr,
+            titles: vec!["programmer".to_string(), "cartographier".to_string()],
+        };
+
+        let addr2 = Address {
+            city: "Beijing".to_string(),
+            country: "China".to_string(),
+        };
+
+        let person2 = Person {
+            name: "Ning Sun".to_string(),
+            age: 27,
+            addr: addr2,
+            titles: vec!["programmer".to_string(), "cartographier".to_string()],
+        };
+
+        let people = vec![person, person2];
+
+        let t0 = Template::compile("{{#each this}}{{#with addr}}{{city}}{{/with}}{{/each}}".to_string()).ok().unwrap();
+        let t1 = Template::compile("{{#each this}}{{#with addr}}{{../age}}{{/with}}{{/each}}".to_string()).ok().unwrap();
+        let t2 = Template::compile("{{#each this}}{{#with addr}}{{@../index}}{{/with}}{{/each}}".to_string()).ok().unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
+        handlebars.register_template("t2", t2);
+
+        let r0 = handlebars.render("t0", &people);
+        assert_eq!(r0.ok().unwrap(), "BeijingBeijing".to_string());
+
+        let r1 = handlebars.render("t1", &people);
+        assert_eq!(r1.ok().unwrap(), "2727".to_string());
+
+        let r2 = handlebars.render("t2", &people);
+        assert_eq!(r2.ok().unwrap(), "01".to_string());
     }
 }
