@@ -31,8 +31,7 @@ impl HelperDef for IncludeHelper {
                         r.get_template(&include_path)
                     }
                 } else {
-                    return Err(RenderError::new("Do not use literal here, use template name \
-                                                 directly."));
+                    return Err(RenderError::new("Do not use literal here, use partial name directly."));
                 }
             }
             None => return Err(RenderError::new("Param not found for helper")),
