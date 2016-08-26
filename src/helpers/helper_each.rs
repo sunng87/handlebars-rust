@@ -6,7 +6,7 @@ use serde_json::value::{self, Value as Json};
 
 use helpers::HelperDef;
 use registry::Registry;
-use context::Context;
+use context::{Context, JsonTruthy};
 use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
@@ -34,8 +34,8 @@ impl HelperDef for EachHelper {
                 }
 
                 debug!("each value {:?}", value.value());
-                let rendered = match value.value() {
-                    &Json::Array(ref list) => {
+                let rendered = match (value.value().is_truthy(), value.value()) {
+                    (true, &Json::Array(ref list)) => {
                         let len = list.len();
                         for i in 0..len {
                             let mut local_rc = rc.derive();
@@ -55,7 +55,7 @@ impl HelperDef for EachHelper {
                         }
                         Ok(())
                     }
-                    &Json::Object(ref obj) => {
+                    (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
                         for k in obj.keys() {
                             let mut local_rc = rc.derive();
@@ -77,6 +77,12 @@ impl HelperDef for EachHelper {
                             try!(t.render(c, r, &mut local_rc));
                         }
 
+                        Ok(())
+                    }
+                    (false, _) => {
+                        if let Some(else_template) = h.inverse() {
+                            try!(else_template.render(c, r, rc));
+                        }
                         Ok(())
                     }
                     _ => {
@@ -112,8 +118,8 @@ impl HelperDef for EachHelper {
                 }
 
                 debug!("each value {:?}", value.value());
-                let rendered = match value.value() {
-                    &Json::Array(ref list) => {
+                let rendered = match (value.value().is_truthy(), value.value()) {
+                    (true, &Json::Array(ref list)) => {
                         let len = list.len();
                         for i in 0..len {
                             let mut local_rc = rc.derive();
@@ -135,7 +141,7 @@ impl HelperDef for EachHelper {
                         }
                         Ok(())
                     }
-                    &Json::Object(ref obj) => {
+                    (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
                         for k in obj.keys() {
                             let mut local_rc = rc.derive();
@@ -157,6 +163,12 @@ impl HelperDef for EachHelper {
                             try!(t.render(c, r, &mut local_rc));
                         }
 
+                        Ok(())
+                    }
+                    (false, _) => {
+                        if let Some(else_template) = h.inverse() {
+                            try!(else_template.render(c, r, rc));
+                        }
                         Ok(())
                     }
                     _ => {
@@ -313,6 +325,24 @@ mod test {
         r0_sp.sort();
 
         assert_eq!(r0_sp, vec!["", "-baz", "foo-bar"]);
+    }
+
+    #[test]
+    fn test_each_else() {
+        let t0 = Template::compile("{{#each a}}1{{else}}empty{{/each}}".to_owned()).unwrap();
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+        let m1 = btreemap! {
+            "a".to_string() => Vec::<String>::new(),
+        };
+        let r0 = handlebars.render("t0", &m1).unwrap();
+        assert_eq!(r0, "empty");
+
+        let m2 = btreemap!{
+            "b".to_string() => Vec::<String>::new()
+        };
+        let r1 = handlebars.render("t0", &m2).unwrap();
+        assert_eq!(r1, "empty");
     }
 
 }
