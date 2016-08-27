@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.20.4](https://github.com/sunng87/handlebars-rust/compare/0.20.3...0.20.4) - 2016-08-27
+
+* [Changed] Fixed error message for partials
+  [#98](https://github.com/sunng87/handlebars-rust/issue/98)
+* [Added] Added support for `else` in `each` block
+  [#99](https://github.com/sunng87/handlebars-rust/issue/99)
+
+## [0.20.3](https://github.com/sunng87/handlebars-rust/compare/0.20.2...0.20.3) - 2016-08-14
+
+* [Changed] Fixed `with` used inside `each` block [#97](https://github.com/sunng87/handlebars-rust/pull/97)
+
 ## [0.20.2](https://github.com/sunng87/handlebars-rust/compare/0.20.0...0.20.2) - 2016-08-07
 
 * [Changed] Allowed dash character in reference
