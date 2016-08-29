@@ -30,7 +30,7 @@ impl_rdp! {
 
         identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
         reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])* ~ ["-"]* ~ reference* }
-        name = _{ subexpression | identifier }
+        name = _{ subexpression | reference }
 
         param = { literal | reference | subexpression }
         hash = { identifier ~ ["="] ~ param }
@@ -106,7 +106,8 @@ fn test_reference() {
                  "a[\"abc\"]",
                  "aBc[\"abc\"]",
                  "abc[0][\"nice\"]",
-                 "some-name"];
+                 "some-name",
+                 "this.[0].ok"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.reference());
@@ -183,7 +184,7 @@ fn test_subexpression() {
 
 #[test]
 fn test_expression() {
-    let s = vec!["{{exp}}", "{{(exp)}}"];
+    let s = vec!["{{exp}}", "{{(exp)}}", "{{this.name}}", "{{this.[0].name}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.expression());

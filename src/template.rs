@@ -161,7 +161,7 @@ impl Template {
                       -> Result<Parameter, TemplateError> {
         let name_node = it.next().unwrap();
         match name_node.rule {
-            Rule::identifier => {
+            Rule::identifier | Rule::reference => {
                 Ok(Parameter::Name(source[name_node.start..name_node.end].to_owned()))
             }
             Rule::subexpression => {
