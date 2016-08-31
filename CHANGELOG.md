@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.20.5](https://github.com/sunng87/handlebars-rust/compare/0.20.4...0.20.5) - 2016-08-27
+
+* [Changed] Fixed issue for using [] in expression
+  [#100](https://github.com/sunng87/handlebars-rust/issue/100)
+
 ## [0.20.4](https://github.com/sunng87/handlebars-rust/compare/0.20.3...0.20.4) - 2016-08-27
 
 * [Changed] Fixed error message for partials
