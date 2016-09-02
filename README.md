@@ -8,6 +8,7 @@ Rust templating with [Handlebars templating language](https://handlebarsjs.com).
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Gitter](https://img.shields.io/gitter/room/sunng87/handlebars-rust.svg?maxAge=2592000)](https://gitter.im/sunng87/handlebars-rust)
+[![Docs](https://docs.rs/handlebars/badge.svg)](https://docs.rs/handlebars/)
 
 This library works on stable Rust 1.4.0 and above. In most time, it
 also works on beta and nightly channel.
