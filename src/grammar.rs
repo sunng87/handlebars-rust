@@ -32,9 +32,10 @@ impl_rdp! {
         reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])* ~ ["-"]* ~ reference* }
         name = _{ subexpression | reference }
 
-        param = { literal | reference | subexpression }
+        param = { !["as"] ~ (literal | reference | subexpression) }
         hash = { identifier ~ ["="] ~ param }
-        exp_line = _{ identifier ~ (hash|param)* }
+        block_params = { ["as"] ~ ["|"] ~ identifier+ ~ ["|"]}
+        exp_line = _{ identifier ~ (hash|param)* ~ block_params?}
 
         subexpression = { ["("] ~ name ~ (hash|param)* ~ [")"] }
 
@@ -243,7 +244,9 @@ fn test_helper_start() {
                  "{{#if []}}",
                  "{{#if {}}}",
                  "{{#if}}",
-                 "{{~#if hello~}}"];
+                 "{{~#if hello~}}",
+                 "{{#each people as |person|}}",
+                 "{{#each-obj obj as |key val|}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.helper_block_start());
@@ -284,6 +287,16 @@ fn test_raw_block() {
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.raw_block());
+        assert!(rdp.end());
+    }
+}
+
+#[test]
+fn test_block_params() {
+    let s = vec!["as |person|", "as |key val|"];
+    for i in s.iter() {
+        let mut rdp = Rdp::new(StringInput::new(i));
+        assert!(rdp.block_params());
         assert!(rdp.end());
     }
 }
