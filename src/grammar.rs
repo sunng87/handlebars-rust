@@ -34,7 +34,7 @@ impl_rdp! {
 
         param = { !["as"] ~ (literal | reference | subexpression) }
         hash = { identifier ~ ["="] ~ param }
-        block_params = { ["as"] ~ ["|"] ~ identifier+ ~ ["|"]}
+        block_params = { ["as"] ~ ["|"] ~ identifier ~ identifier? ~ ["|"]}
         exp_line = _{ identifier ~ (hash|param)* ~ block_params?}
 
         subexpression = { ["("] ~ name ~ (hash|param)* ~ [")"] }
