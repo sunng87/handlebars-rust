@@ -192,11 +192,8 @@ impl<'a> RenderContext<'a> {
         self.local_variables = new_map;
     }
 
-    pub fn get_local_var(&self, name: &String) -> &Json {
-        match self.local_variables.get(name) {
-            Some(j) => j,
-            None => &self.default_var,
-        }
+    pub fn get_local_var(&self, name: &String) -> Option<&Json> {
+        self.local_variables.get(name)
     }
 
     pub fn writer(&mut self) -> &mut Write {
@@ -361,22 +358,25 @@ impl Parameter {
               -> Result<ContextJson, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
-                if name.starts_with("@") {
-                    Ok(ContextJson {
-                        path: None,
-                        value: rc.get_local_var(&name).clone(),
-                    })
-                } else {
-                    let path = if name.starts_with("../") {
-                        rc.get_local_path_root()
-                    } else {
-                        rc.get_path()
-                    };
-                    Ok(ContextJson {
-                        path: Some(name.to_owned()),
-                        value: ctx.navigate(path, name).clone(),
-                    })
-                }
+                Ok(rc.get_local_var(&name).map_or_else(|| {
+                                                           let path = if name.starts_with("../") {
+                                                               rc.get_local_path_root()
+                                                           } else {
+                                                               rc.get_path()
+                                                           };
+                                                           ContextJson {
+                                                               path: Some(name.to_owned()),
+                                                               value: ctx.navigate(path, name)
+                                                                         .clone(),
+                                                           }
+
+                                                       },
+                                                       |v| {
+                                                           ContextJson {
+                                                               path: None,
+                                                               value: v.clone(),
+                                                           }
+                                                       }))
             }
             &Parameter::Literal(ref j) => {
                 Ok(ContextJson {
@@ -594,12 +594,12 @@ fn test_render_context_promotion_and_demotion() {
 
     render_context.promote_local_vars();
 
-    assert_eq!(render_context.get_local_var(&"@../index".to_string()),
+    assert_eq!(render_context.get_local_var(&"@../index".to_string()).unwrap(),
                &0usize.to_json());
 
     render_context.demote_local_vars();
 
-    assert_eq!(render_context.get_local_var(&"@index".to_string()),
+    assert_eq!(render_context.get_local_var(&"@index".to_string()).unwrap(),
                &0usize.to_json());
 }
 
