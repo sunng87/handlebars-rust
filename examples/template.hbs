@@ -5,10 +5,10 @@
   <body>
     <h1>CSL {{year}}</h1>
     <ul>
-    {{#each teams~}}
+    {{#each teams as |t| ~}}
       <li class="{{ranking_label @index ../teams}}">
       {{~log @index~}}
-      <b>{{name}}</b>: {{format pts ~}}
+      <b>{{t.name}}</b>: {{format t.pts ~}}
       </li>
     {{/each~}}
     </ul>
