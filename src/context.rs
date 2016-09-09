@@ -19,7 +19,7 @@ pub type Object = BTreeMap<String, Json>;
 
 /// The context wrap data you render on your templates.
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Context {
     data: Json,
 }

@@ -1,13 +1,15 @@
-use std::collections::{HashMap, BTreeMap};
+use std::collections::{HashMap, BTreeMap, VecDeque};
 use std::error;
 use std::fmt;
 use std::io::Write;
 use std::io::Error as IOError;
 
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use serialize::json::Json;
+use serialize::json::{ToJson, Json};
 #[cfg(feature = "serde_type")]
 use serde_json::value::Value as Json;
+#[cfg(feature = "serde_type")]
+use serde::ser::Serialize as ToJson;
 
 use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMapping, BlockParam};
 use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression,
@@ -75,6 +77,7 @@ pub struct RenderContext<'a> {
     local_path_root: Option<String>,
     local_variables: HashMap<String, Json>,
     default_var: Json,
+    block_context: VecDeque<Context>,
     /// the `Write` where page is generated
     pub writer: &'a mut Write,
     /// current template name
@@ -93,6 +96,7 @@ impl<'a> RenderContext<'a> {
             local_path_root: None,
             local_variables: HashMap::new(),
             default_var: Json::Null,
+            block_context: VecDeque::new(),
             writer: w,
             current_template: None,
             root_template: None,
@@ -108,6 +112,7 @@ impl<'a> RenderContext<'a> {
             local_path_root: self.local_path_root.clone(),
             local_variables: self.local_variables.clone(),
             default_var: self.default_var.clone(),
+            block_context: self.block_context.clone(),
             writer: w,
             current_template: self.current_template.clone(),
             root_template: self.root_template.clone(),
@@ -122,6 +127,7 @@ impl<'a> RenderContext<'a> {
             local_path_root: self.local_path_root.clone(),
             local_variables: self.local_variables.clone(),
             default_var: self.default_var.clone(),
+            block_context: self.block_context.clone(),
             writer: self.writer,
             current_template: self.current_template.clone(),
             root_template: self.root_template.clone(),
@@ -198,6 +204,27 @@ impl<'a> RenderContext<'a> {
 
     pub fn writer(&mut self) -> &mut Write {
         self.writer
+    }
+
+    pub fn push_block_context<T>(&mut self, ctx: &T)
+        where T: ToJson
+    {
+        self.block_context.push_front(Context::wraps(ctx));
+    }
+
+    pub fn pop_block_context(&mut self) {
+        self.block_context.pop_front();
+    }
+
+    pub fn evaluate_in_block_context(&self, local_path: &str) -> Option<&Json> {
+        for bc in self.block_context.iter() {
+            let v = bc.navigate(".", local_path);
+            if !v.is_null() {
+                return Some(v);
+            }
+        }
+
+        None
     }
 }
 
@@ -366,8 +393,7 @@ impl Parameter {
                                                            };
                                                            ContextJson {
                                                                path: Some(name.to_owned()),
-                                                               value: ctx.navigate(path, name)
-                                                                         .clone(),
+                                                               value: rc.evaluate_in_block_context(name).map_or_else(|| {ctx.navigate(path, name).clone()}, |v| v.clone()),
                                                            }
 
                                                        },
