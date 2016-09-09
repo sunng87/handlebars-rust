@@ -1,8 +1,9 @@
+use std::collections::BTreeMap;
+
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use serialize::json::{Json, ToJson};
 #[cfg(feature = "serde_type")]
 use serde_json::value::{self, Value as Json};
-
 
 use helpers::HelperDef;
 use registry::Registry;
@@ -49,9 +50,21 @@ impl HelperDef for EachHelper {
                                                        inner_path,
                                                        i);
                                 debug!("each path {:?}", new_path);
-                                local_rc.set_path(new_path);
+                                local_rc.set_path(new_path.clone());
                             }
+
+                            if let Some(block_param) = h.block_param() {
+                                // need better impl
+                                let mut map = BTreeMap::new();
+                                map.insert(block_param.to_string(), list[i].to_json());
+                                local_rc.push_block_context(&map);
+                            }
+
                             try!(t.render(c, r, &mut local_rc));
+
+                            if h.block_param().is_some() {
+                                local_rc.pop_block_context();
+                            }
                         }
                         Ok(())
                     }
@@ -343,6 +356,19 @@ mod test {
         };
         let r1 = handlebars.render("t0", &m2).unwrap();
         assert_eq!(r1, "empty");
+    }
+
+    #[test]
+    fn test_block_param() {
+        let t0 = Template::compile("{{#each a as |i|}}{{i}}{{/each}}".to_owned()).unwrap();
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+        let m1 = btreemap! {
+            "a".to_string() => vec![1,2,3,4,5]
+        };
+        let r0 = handlebars.render("t0", &m1).unwrap();
+        println!("render: {}", r0);
+        assert_eq!(r0, "12345");
     }
 
 }
