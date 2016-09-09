@@ -54,7 +54,6 @@ impl HelperDef for EachHelper {
                             }
 
                             if let Some(block_param) = h.block_param() {
-                                // need better impl
                                 let mut map = BTreeMap::new();
                                 map.insert(block_param.to_string(), list[i].to_json());
                                 local_rc.push_block_context(&map);
@@ -88,6 +87,18 @@ impl HelperDef for EachHelper {
                             }
 
                             try!(t.render(c, r, &mut local_rc));
+                            if let Some((bp_key, bp_val)) = h.block_param_pair() {
+                                let mut map = BTreeMap::new();
+                                map.insert(bp_key.to_string(), k.to_json());
+                                map.insert(bp_val.to_string(), obj.get(k).unwrap().to_json());
+                                local_rc.push_block_context(&map);
+                            }
+
+                            try!(t.render(c, r, &mut local_rc));
+
+                            if h.block_param().is_some() {
+                                local_rc.pop_block_context();
+                            }
                         }
 
                         Ok(())
@@ -150,7 +161,18 @@ impl HelperDef for EachHelper {
                                 debug!("each value {:?}", new_path);
                                 local_rc.set_path(new_path);
                             }
+
+                            if let Some(block_param) = h.block_param() {
+                                let mut map = BTreeMap::new();
+                                map.insert(block_param.to_string(), value::to_value(&list[i]));
+                                local_rc.push_block_context(&map);
+                            }
+
                             try!(t.render(c, r, &mut local_rc));
+
+                            if h.block_param().is_some() {
+                                local_rc.pop_block_context();
+                            }
                         }
                         Ok(())
                     }
@@ -173,7 +195,19 @@ impl HelperDef for EachHelper {
                                 local_rc.set_path(new_path);
                             }
 
+                            if let Some((bp_key, bp_val)) = h.block_param_pair() {
+                                let mut map = BTreeMap::new();
+                                map.insert(bp_key.to_string(), value::to_value(&k));
+                                map.insert(bp_val.to_string(),
+                                           value::to_value(&obj.get(k).unwrap()));
+                                local_rc.push_block_context(&map);
+                            }
+
                             try!(t.render(c, r, &mut local_rc));
+
+                            if h.block_param().is_some() {
+                                local_rc.pop_block_context();
+                            }
                         }
 
                         Ok(())
