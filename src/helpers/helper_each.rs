@@ -86,7 +86,6 @@ impl HelperDef for EachHelper {
                                 local_rc.set_path(new_path);
                             }
 
-                            try!(t.render(c, r, &mut local_rc));
                             if let Some((bp_key, bp_val)) = h.block_param_pair() {
                                 let mut map = BTreeMap::new();
                                 map.insert(bp_key.to_string(), k.to_json());
