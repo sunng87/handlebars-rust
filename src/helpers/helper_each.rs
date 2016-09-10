@@ -294,4 +294,20 @@ mod test {
         assert_eq!(r0, "12345");
     }
 
+    #[test]
+    fn test_each_object_block_param() {
+        let t0 = Template::compile("{{#each this as |k v|}}{{#with k as |inner_k|}}{{inner_k}}{{/with}}:{{v}}|{{/each}}".to_string())
+                     .ok()
+                     .unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let m = btreemap!{
+            "ftp".to_string() => 21,
+            "http".to_string() => 80
+        };
+        let r0 = handlebars.render("t0", &m);
+        assert_eq!(r0.ok().unwrap(), "ftp:21|http:80|".to_string());
+    }
 }
