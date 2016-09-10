@@ -140,6 +140,46 @@ mod test {
     }
 
     #[test]
+    fn test_with_block_param() {
+        let addr = Address {
+            city: "Beijing".to_string(),
+            country: "China".to_string(),
+        };
+
+        let person = Person {
+            name: "Ning Sun".to_string(),
+            age: 27,
+            addr: addr,
+            titles: vec!["programmer".to_string(), "cartographier".to_string()],
+        };
+
+        let t0 = Template::compile("{{#with addr as |a|}}{{a.city}}{{/with}}".to_string())
+                     .ok()
+                     .unwrap();
+        let t1 = Template::compile("{{#with notfound as |c|}}hello{{else}}world{{/with}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+        let t2 = Template::compile("{{#with addr/country as |t|}}{{t}}{{/with}}".to_string())
+                     .ok()
+                     .unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+        handlebars.register_template("t1", t1);
+        handlebars.register_template("t2", t2);
+
+        let r0 = handlebars.render("t0", &person);
+        assert_eq!(r0.ok().unwrap(), "Beijing".to_string());
+
+        let r1 = handlebars.render("t1", &person);
+        assert_eq!(r1.ok().unwrap(), "world".to_string());
+
+        let r2 = handlebars.render("t2", &person);
+        assert_eq!(r2.ok().unwrap(), "China".to_string());
+    }
+
+    #[test]
     fn test_with_in_each() {
         let addr = Address {
             city: "Beijing".to_string(),
