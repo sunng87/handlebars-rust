@@ -1,6 +1,8 @@
+use std::collections::BTreeMap;
+
 use helpers::HelperDef;
 use registry::Registry;
-use context::{Context, JsonTruthy};
+use context::{Context, JsonTruthy, to_json};
 use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
@@ -35,6 +37,12 @@ impl HelperDef for WithHelper {
                 let new_path = format!("{}/{}", path, inner_path);
                 rc.set_path(new_path);
             }
+
+            if let Some(block_param) = h.block_param() {
+                let mut map = BTreeMap::new();
+                map.insert(block_param.to_string(), to_json(param.value()));
+                rc.push_block_context(&map);
+            }
         }
 
         let rendered = match template {
@@ -44,6 +52,9 @@ impl HelperDef for WithHelper {
 
         rc.set_path(path);
         rc.demote_local_vars();
+        if not_empty {
+            rc.pop_block_context();
+        }
         rendered
     }
 }
@@ -129,7 +140,7 @@ mod test {
     }
 
     #[test]
-    fn test_with_in_each(){
+    fn test_with_in_each() {
         let addr = Address {
             city: "Beijing".to_string(),
             country: "China".to_string(),
@@ -156,9 +167,18 @@ mod test {
 
         let people = vec![person, person2];
 
-        let t0 = Template::compile("{{#each this}}{{#with addr}}{{city}}{{/with}}{{/each}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#each this}}{{#with addr}}{{../age}}{{/with}}{{/each}}".to_string()).ok().unwrap();
-        let t2 = Template::compile("{{#each this}}{{#with addr}}{{@../index}}{{/with}}{{/each}}".to_string()).ok().unwrap();
+        let t0 = Template::compile("{{#each this}}{{#with addr}}{{city}}{{/with}}{{/each}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+        let t1 = Template::compile("{{#each this}}{{#with addr}}{{../age}}{{/with}}{{/each}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+        let t2 = Template::compile("{{#each this}}{{#with addr}}{{@../index}}{{/with}}{{/each}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);

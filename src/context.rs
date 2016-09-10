@@ -178,6 +178,20 @@ impl JsonRender for Json {
     }
 }
 
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+pub fn to_json<T>(src: &T) -> Json
+    where T: ToJson
+{
+    src.to_json()
+}
+
+#[cfg(feature = "serde_type")]
+pub fn to_json<T>(src: &T) -> Json
+    where T: Serialize
+{
+    value::to_value(src)
+}
+
 impl JsonTruthy for Json {
     fn is_truthy(&self) -> bool {
         match *self {

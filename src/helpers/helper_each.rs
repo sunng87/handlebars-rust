@@ -1,20 +1,19 @@
 use std::collections::BTreeMap;
 
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use serialize::json::{Json, ToJson};
+use serialize::json::Json;
 #[cfg(feature = "serde_type")]
-use serde_json::value::{self, Value as Json};
+use serde_json::value::Value as Json;
 
 use helpers::HelperDef;
 use registry::Registry;
-use context::{Context, JsonTruthy};
+use context::{Context, JsonTruthy, to_json};
 use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;
 
 impl HelperDef for EachHelper {
-    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     fn call(&self,
             c: &Context,
             h: &Helper,
@@ -40,9 +39,9 @@ impl HelperDef for EachHelper {
                         let len = list.len();
                         for i in 0..len {
                             let mut local_rc = rc.derive();
-                            local_rc.set_local_var("@first".to_string(), (i == 0usize).to_json());
-                            local_rc.set_local_var("@last".to_string(), (i == len - 1).to_json());
-                            local_rc.set_local_var("@index".to_string(), i.to_json());
+                            local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize)));
+                            local_rc.set_local_var("@last".to_string(), to_json(&(i == len - 1)));
+                            local_rc.set_local_var("@index".to_string(), to_json(&i));
 
                             if let Some(inner_path) = value.path() {
                                 let new_path = format!("{}/{}.[{}]",
@@ -55,7 +54,7 @@ impl HelperDef for EachHelper {
 
                             if let Some(block_param) = h.block_param() {
                                 let mut map = BTreeMap::new();
-                                map.insert(block_param.to_string(), list[i].to_json());
+                                map.insert(block_param.to_string(), to_json(&list[i]));
                                 local_rc.push_block_context(&map);
                             }
 
@@ -71,12 +70,12 @@ impl HelperDef for EachHelper {
                         let mut first: bool = true;
                         for k in obj.keys() {
                             let mut local_rc = rc.derive();
-                            local_rc.set_local_var("@first".to_string(), first.to_json());
+                            local_rc.set_local_var("@first".to_string(), to_json(&first));
                             if first {
                                 first = false;
                             }
 
-                            local_rc.set_local_var("@key".to_string(), k.to_json());
+                            local_rc.set_local_var("@key".to_string(), to_json(k));
 
                             if let Some(inner_path) = value.path() {
                                 let new_path = format!("{}/{}.[{}]",
@@ -88,8 +87,8 @@ impl HelperDef for EachHelper {
 
                             if let Some((bp_key, bp_val)) = h.block_param_pair() {
                                 let mut map = BTreeMap::new();
-                                map.insert(bp_key.to_string(), k.to_json());
-                                map.insert(bp_val.to_string(), obj.get(k).unwrap().to_json());
+                                map.insert(bp_key.to_string(), to_json(k));
+                                map.insert(bp_val.to_string(), to_json(obj.get(k).unwrap()));
                                 local_rc.push_block_context(&map);
                             }
 
@@ -113,115 +112,6 @@ impl HelperDef for EachHelper {
                     }
                 };
 
-                rc.demote_local_vars();
-                rendered
-            }
-            None => Ok(()),
-        }
-    }
-
-    #[cfg(feature = "serde_type")]
-    fn call(&self,
-            c: &Context,
-            h: &Helper,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
-        let value = try!(h.param(0)
-                          .ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
-
-        let template = h.template();
-
-        match template {
-            Some(t) => {
-                rc.promote_local_vars();
-                if let Some(path_root) = value.path_root() {
-                    let local_path_root = format!("{}/{}", rc.get_path(), path_root);
-                    rc.set_local_path_root(local_path_root);
-                }
-
-                debug!("each value {:?}", value.value());
-                let rendered = match (value.value().is_truthy(), value.value()) {
-                    (true, &Json::Array(ref list)) => {
-                        let len = list.len();
-                        for i in 0..len {
-                            let mut local_rc = rc.derive();
-                            local_rc.set_local_var("@first".to_string(),
-                                                   value::to_value(&(i == 0usize)));
-                            local_rc.set_local_var("@last".to_string(),
-                                                   value::to_value(&(i == len - 1)));
-                            local_rc.set_local_var("@index".to_string(), value::to_value(&i));
-
-                            if let Some(inner_path) = value.path() {
-                                let new_path = format!("{}/{}.[{}]",
-                                                       local_rc.get_path(),
-                                                       inner_path,
-                                                       i);
-                                debug!("each value {:?}", new_path);
-                                local_rc.set_path(new_path);
-                            }
-
-                            if let Some(block_param) = h.block_param() {
-                                let mut map = BTreeMap::new();
-                                map.insert(block_param.to_string(), value::to_value(&list[i]));
-                                local_rc.push_block_context(&map);
-                            }
-
-                            try!(t.render(c, r, &mut local_rc));
-
-                            if h.block_param().is_some() {
-                                local_rc.pop_block_context();
-                            }
-                        }
-                        Ok(())
-                    }
-                    (true, &Json::Object(ref obj)) => {
-                        let mut first: bool = true;
-                        for k in obj.keys() {
-                            let mut local_rc = rc.derive();
-                            local_rc.set_local_var("@first".to_string(), value::to_value(&first));
-                            if first {
-                                first = false;
-                            }
-
-                            local_rc.set_local_var("@key".to_string(), value::to_value(&k));
-                            if let Some(inner_path) = value.path() {
-                                let new_path = format!("{}/{}.[{}]",
-                                                       local_rc.get_path(),
-                                                       inner_path,
-                                                       k);
-                                debug!("each value {:?}", new_path);
-                                local_rc.set_path(new_path);
-                            }
-
-                            if let Some((bp_key, bp_val)) = h.block_param_pair() {
-                                let mut map = BTreeMap::new();
-                                map.insert(bp_key.to_string(), value::to_value(&k));
-                                map.insert(bp_val.to_string(),
-                                           value::to_value(&obj.get(k).unwrap()));
-                                local_rc.push_block_context(&map);
-                            }
-
-                            try!(t.render(c, r, &mut local_rc));
-
-                            if h.block_param().is_some() {
-                                local_rc.pop_block_context();
-                            }
-                        }
-
-                        Ok(())
-                    }
-                    (false, _) => {
-                        if let Some(else_template) = h.inverse() {
-                            try!(else_template.render(c, r, rc));
-                        }
-                        Ok(())
-                    }
-                    _ => {
-                        Err(RenderError::new(format!("Param type is not iterable: {:?}", template)))
-                    }
-                };
-                // rc.set_path(path);
                 rc.demote_local_vars();
                 rendered
             }
