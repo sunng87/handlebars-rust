@@ -1,15 +1,17 @@
-use std::collections::{HashMap, BTreeMap};
+use std::collections::{HashMap, BTreeMap, VecDeque};
 use std::error;
 use std::fmt;
 use std::io::Write;
 use std::io::Error as IOError;
 
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use serialize::json::Json;
+use serialize::json::{ToJson, Json};
 #[cfg(feature = "serde_type")]
 use serde_json::value::Value as Json;
+#[cfg(feature = "serde_type")]
+use serde::ser::Serialize as ToJson;
 
-use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMapping};
+use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMapping, BlockParam};
 use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression,
                                 HelperExpression};
 use registry::Registry;
@@ -75,6 +77,7 @@ pub struct RenderContext<'a> {
     local_path_root: Option<String>,
     local_variables: HashMap<String, Json>,
     default_var: Json,
+    block_context: VecDeque<Context>,
     /// the `Write` where page is generated
     pub writer: &'a mut Write,
     /// current template name
@@ -93,6 +96,7 @@ impl<'a> RenderContext<'a> {
             local_path_root: None,
             local_variables: HashMap::new(),
             default_var: Json::Null,
+            block_context: VecDeque::new(),
             writer: w,
             current_template: None,
             root_template: None,
@@ -108,6 +112,7 @@ impl<'a> RenderContext<'a> {
             local_path_root: self.local_path_root.clone(),
             local_variables: self.local_variables.clone(),
             default_var: self.default_var.clone(),
+            block_context: self.block_context.clone(),
             writer: w,
             current_template: self.current_template.clone(),
             root_template: self.root_template.clone(),
@@ -122,6 +127,7 @@ impl<'a> RenderContext<'a> {
             local_path_root: self.local_path_root.clone(),
             local_variables: self.local_variables.clone(),
             default_var: self.default_var.clone(),
+            block_context: self.block_context.clone(),
             writer: self.writer,
             current_template: self.current_template.clone(),
             root_template: self.root_template.clone(),
@@ -192,15 +198,33 @@ impl<'a> RenderContext<'a> {
         self.local_variables = new_map;
     }
 
-    pub fn get_local_var(&self, name: &String) -> &Json {
-        match self.local_variables.get(name) {
-            Some(j) => j,
-            None => &self.default_var,
-        }
+    pub fn get_local_var(&self, name: &String) -> Option<&Json> {
+        self.local_variables.get(name)
     }
 
     pub fn writer(&mut self) -> &mut Write {
         self.writer
+    }
+
+    pub fn push_block_context<T>(&mut self, ctx: &T)
+        where T: ToJson
+    {
+        self.block_context.push_front(Context::wraps(ctx));
+    }
+
+    pub fn pop_block_context(&mut self) {
+        self.block_context.pop_front();
+    }
+
+    pub fn evaluate_in_block_context(&self, local_path: &str) -> Option<&Json> {
+        for bc in self.block_context.iter() {
+            let v = bc.navigate(".", local_path);
+            if !v.is_null() {
+                return Some(v);
+            }
+        }
+
+        None
     }
 }
 
@@ -249,6 +273,7 @@ pub struct Helper<'a> {
     name: &'a str,
     params: Vec<ContextJson>,
     hash: BTreeMap<String, ContextJson>,
+    block_param: &'a Option<BlockParam>,
     template: &'a Option<Template>,
     inverse: &'a Option<Template>,
     block: bool,
@@ -276,6 +301,7 @@ impl<'a, 'b> Helper<'a> {
             name: &ht.name,
             params: evaluated_params,
             hash: evaluated_hash,
+            block_param: &ht.block_param,
             template: &ht.template,
             inverse: &ht.inverse,
             block: ht.block,
@@ -309,23 +335,36 @@ impl<'a, 'b> Helper<'a> {
 
     /// Returns the default inner template if any
     pub fn template(&self) -> Option<&Template> {
-        match *self.template {
-            Some(ref t) => Some(t),
-            None => None,
-        }
+        (*self.template).as_ref().map(|t| t)
     }
 
     /// Returns the template of `else` branch if any
     pub fn inverse(&self) -> Option<&Template> {
-        match *self.inverse {
-            Some(ref t) => Some(t),
-            None => None,
-        }
+        (*self.inverse).as_ref().map(|t| t)
     }
 
     /// Returns if the helper is a block one `{{#helper}}{{/helper}}` or not `{{helper 123}}`
     pub fn is_block(&self) -> bool {
         self.block
+    }
+
+    /// Returns block param if any
+    pub fn block_param(&self) -> Option<&str> {
+        if let Some(BlockParam::Single(Parameter::Name(ref s))) = *self.block_param {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    /// Return block param pair (for example |key, val|) if any
+    pub fn block_param_pair(&self) -> Option<(&str, &str)> {
+        if let Some(BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
+               *self.block_param {
+            Some((s1, s2))
+        } else {
+            None
+        }
     }
 }
 
@@ -346,22 +385,24 @@ impl Parameter {
               -> Result<ContextJson, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
-                if name.starts_with("@") {
-                    Ok(ContextJson {
-                        path: None,
-                        value: rc.get_local_var(&name).clone(),
-                    })
-                } else {
-                    let path = if name.starts_with("../") {
-                        rc.get_local_path_root()
-                    } else {
-                        rc.get_path()
-                    };
-                    Ok(ContextJson {
-                        path: Some(name.to_owned()),
-                        value: ctx.navigate(path, name).clone(),
-                    })
-                }
+                Ok(rc.get_local_var(&name).map_or_else(|| {
+                                                           let path = if name.starts_with("../") {
+                                                               rc.get_local_path_root()
+                                                           } else {
+                                                               rc.get_path()
+                                                           };
+                                                           ContextJson {
+                                                               path: Some(name.to_owned()),
+                                                               value: rc.evaluate_in_block_context(name).map_or_else(|| {ctx.navigate(path, name).clone()}, |v| v.clone()),
+                                                           }
+
+                                                       },
+                                                       |v| {
+                                                           ContextJson {
+                                                               path: None,
+                                                               value: v.clone(),
+                                                           }
+                                                       }))
             }
             &Parameter::Literal(ref j) => {
                 Ok(ContextJson {
@@ -579,12 +620,12 @@ fn test_render_context_promotion_and_demotion() {
 
     render_context.promote_local_vars();
 
-    assert_eq!(render_context.get_local_var(&"@../index".to_string()),
+    assert_eq!(render_context.get_local_var(&"@../index".to_string()).unwrap(),
                &0usize.to_json());
 
     render_context.demote_local_vars();
 
-    assert_eq!(render_context.get_local_var(&"@index".to_string()),
+    assert_eq!(render_context.get_local_var(&"@index".to_string()).unwrap(),
                &0usize.to_json());
 }
 

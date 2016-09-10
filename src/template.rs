@@ -54,10 +54,17 @@ impl Subexpression {
 }
 
 #[derive(PartialEq, Clone, Debug)]
+pub enum BlockParam {
+    Single(Parameter),
+    Pair((Parameter, Parameter)),
+}
+
+#[derive(PartialEq, Clone, Debug)]
 pub struct ExpressionSpec {
     pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: BTreeMap<String, Parameter>,
+    pub block_param: Option<BlockParam>,
     pub omit_pre_ws: bool,
     pub omit_pro_ws: bool,
 }
@@ -74,6 +81,7 @@ pub struct HelperTemplate {
     pub name: String,
     pub params: Vec<Parameter>,
     pub hash: BTreeMap<String, Parameter>,
+    pub block_param: Option<BlockParam>,
     pub template: Option<Template>,
     pub inverse: Option<Template>,
     pub block: bool,
@@ -85,6 +93,7 @@ impl<'a> From<&'a Subexpression> for HelperTemplate {
             name: s.name.clone(),
             params: s.params.clone(),
             hash: s.hash.clone(),
+            block_param: None,
             template: None,
             inverse: None,
             block: false,
@@ -225,6 +234,31 @@ impl Template {
     }
 
     #[inline]
+    fn parse_block_param<'a>(source: &'a str,
+                             it: &mut Peekable<Iter<Token<Rule>>>,
+                             limit: usize)
+                             -> Result<BlockParam, TemplateError> {
+        let p1_name = it.next().unwrap();
+        // identifier
+        let p1 = source[p1_name.start..p1_name.end].to_owned();
+
+        let p2 = it.peek().and_then(|p2_name| {
+            if p2_name.end <= limit {
+                Some(source[p2_name.start..p2_name.end].to_owned())
+            } else {
+                None
+            }
+        });
+
+        if p2.is_some() {
+            it.next();
+            Ok(BlockParam::Pair((Parameter::Name(p1), Parameter::Name(p2.unwrap()))))
+        } else {
+            Ok(BlockParam::Single(Parameter::Name(p1)))
+        }
+    }
+
+    #[inline]
     fn parse_expression<'a>(source: &'a str,
                             it: &mut Peekable<Iter<Token<Rule>>>,
                             limit: usize)
@@ -233,6 +267,7 @@ impl Template {
         let mut hashes: BTreeMap<String, Parameter> = BTreeMap::new();
         let mut omit_pre_ws = false;
         let mut omit_pro_ws = false;
+        let mut block_param = None;
 
         if it.peek().unwrap().rule == Rule::pre_whitespace_omitter {
             omit_pre_ws = true;
@@ -265,6 +300,9 @@ impl Template {
                     let (key, value) = try!(Template::parse_hash(source, it.by_ref(), end));
                     hashes.insert(key, value);
                 }
+                Rule::block_param => {
+                    block_param = Some(try!(Template::parse_block_param(source, it.by_ref(), end)));
+                }
                 Rule::pro_whitespace_omitter => {
                     omit_pro_ws = true;
                 }
@@ -275,6 +313,7 @@ impl Template {
             name: name,
             params: params,
             hash: hashes,
+            block_param: block_param,
             omit_pre_ws: omit_pre_ws,
             omit_pro_ws: omit_pro_ws,
         })
@@ -339,6 +378,7 @@ impl Template {
                             name: exp.name.as_name().unwrap(),
                             params: exp.params,
                             hash: exp.hash,
+                            block_param: exp.block_param,
                             block: true,
                             template: None,
                             inverse: None,
@@ -467,6 +507,7 @@ impl Template {
                             name: exp.name.as_name().unwrap(),
                             params: exp.params,
                             hash: exp.hash,
+                            block_param: exp.block_param,
                             block: false,
                             template: None,
                             inverse: None,
@@ -761,9 +802,43 @@ fn test_template_mapping() {
 }
 
 #[test]
-
 fn test_whitespace_elements() {
     let c = Template::compile("  {{elem}}\n\t{{#if true}} \
                                {{/if}}\n{{{{raw}}}} {{{{/raw}}}}\n{{{{raw}}}}{{{{/raw}}}}\n");
     assert_eq!(c.ok().unwrap().elements.len(), 9);
+}
+
+#[test]
+fn test_block_param() {
+    match Template::compile("{{#each people as |person|}}{{person}}{{/each}}") {
+        Ok(t) => {
+            if let HelperBlock(ref ht) = t.elements[0] {
+                if let Some(BlockParam::Single(Parameter::Name(ref n))) = ht.block_param {
+                    assert_eq!(n, "person");
+                } else {
+                    panic!("block param expected.")
+                }
+            } else {
+                panic!("Helper block expected");
+            }
+        }
+        Err(e) => panic!("{}", e),
+    }
+
+    match Template::compile("{{#each people as |key val|}}{{person}}{{/each}}") {
+        Ok(t) => {
+            if let HelperBlock(ref ht) = t.elements[0] {
+                if let Some(BlockParam::Pair((Parameter::Name(ref n1), Parameter::Name(ref n2)))) =
+                       ht.block_param {
+                    assert_eq!(n1, "key");
+                    assert_eq!(n2, "val");
+                } else {
+                    panic!("helper block param expected.");
+                }
+            } else {
+                panic!("Helper block expected");
+            }
+        }
+        Err(e) => panic!("{}", e),
+    }
 }

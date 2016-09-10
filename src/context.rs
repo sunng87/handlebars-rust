@@ -19,7 +19,7 @@ pub type Object = BTreeMap<String, Json>;
 
 /// The context wrap data you render on your templates.
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Context {
     data: Json,
 }
@@ -176,6 +176,20 @@ impl JsonRender for Json {
             Json::Object(_) => "[object]".to_owned(),
         }
     }
+}
+
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+pub fn to_json<T>(src: &T) -> Json
+    where T: ToJson
+{
+    src.to_json()
+}
+
+#[cfg(feature = "serde_type")]
+pub fn to_json<T>(src: &T) -> Json
+    where T: Serialize
+{
+    value::to_value(src)
 }
 
 impl JsonTruthy for Json {
