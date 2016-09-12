@@ -51,6 +51,9 @@ impl_rdp! {
         helper_expression = { !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ exp_line ~
                                pro_whitespace_omitter? ~ ["}}"] }
 
+        directive_expression = { ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
+                               pro_whitespace_omitter? ~ ["}}"] }
+
         invert_tag = { ["{{else}}"]|["{{^}}"] }
         helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
                                         pro_whitespace_omitter? ~ ["}}"] }
@@ -58,7 +61,14 @@ impl_rdp! {
                                       pro_whitespace_omitter? ~ ["}}"] }
         helper_block = _{ helper_block_start ~ template ~
                          (invert_tag ~ template)? ~
-                         helper_block_end }
+                          helper_block_end }
+
+        directive_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ ["*"] ~ exp_line ~
+                                           pro_whitespace_omitter? ~ ["}}"] }
+        directive_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                                         pro_whitespace_omitter? ~ ["}}"] }
+        directive_block = _{ directive_block_start ~ template ~
+                             directive_block_end }
 
         raw_block_start = { ["{{{{"] ~ pre_whitespace_omitter? ~ exp_line ~
                                        pro_whitespace_omitter? ~ ["}}}}"] }
@@ -75,7 +85,9 @@ impl_rdp! {
             helper_expression |
             helper_block |
             raw_block |
-            hbs_comment )*
+            hbs_comment |
+            directive_expression |
+            directive_block )*
         }
 
         parameter = _{ param ~ eoi }
@@ -328,6 +340,28 @@ fn test_path() {
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.path());
+        assert!(rdp.end());
+    }
+}
+
+#[test]
+fn test_directive_expression() {
+    let s = vec!["{{* ssh}}", "{{~* ssh}}"];
+    for i in s.iter() {
+        let mut rdp = Rdp::new(StringInput::new(i));
+        assert!(rdp.directive_expression());
+        assert!(rdp.end());
+    }
+}
+
+#[test]
+fn test_directive_block() {
+    let s = vec!["{{#* inline}}something{{/inline}}",
+                 "{{~#* inline}}hello{{/inline}}",
+                 "{{#* inline \"partialname\"}}something{{/inline}}"];
+    for i in s.iter() {
+        let mut rdp = Rdp::new(StringInput::new(i));
+        assert!(rdp.directive_block());
         assert!(rdp.end());
     }
 }
