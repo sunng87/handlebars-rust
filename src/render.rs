@@ -12,8 +12,7 @@ use serde_json::value::Value as Json;
 use serde::ser::Serialize as ToJson;
 
 use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMapping, BlockParam};
-use template::TemplateElement::{RawString, Expression, Comment, HelperBlock, HTMLExpression,
-                                HelperExpression};
+use template::TemplateElement::*;
 use registry::Registry;
 use context::{Context, JsonRender};
 use support::str::StringWriter;
@@ -516,7 +515,7 @@ impl Renderable for TemplateElement {
                     }
                 }
             }
-            Comment(_) => Ok(()),
+            _ => Ok(()),
         }
     }
 }
