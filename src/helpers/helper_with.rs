@@ -43,6 +43,7 @@ impl HelperDef for WithHelper {
         };
 
         rc.set_path(path);
+        rc.reset_local_path_root();
         rc.demote_local_vars();
         rendered
     }
@@ -129,7 +130,7 @@ mod test {
     }
 
     #[test]
-    fn test_with_in_each(){
+    fn test_with_in_each() {
         let addr = Address {
             city: "Beijing".to_string(),
             country: "China".to_string(),
@@ -156,9 +157,18 @@ mod test {
 
         let people = vec![person, person2];
 
-        let t0 = Template::compile("{{#each this}}{{#with addr}}{{city}}{{/with}}{{/each}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#each this}}{{#with addr}}{{../age}}{{/with}}{{/each}}".to_string()).ok().unwrap();
-        let t2 = Template::compile("{{#each this}}{{#with addr}}{{@../index}}{{/with}}{{/each}}".to_string()).ok().unwrap();
+        let t0 = Template::compile("{{#each this}}{{#with addr}}{{city}}{{/with}}{{/each}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+        let t1 = Template::compile("{{#each this}}{{#with addr}}{{../age}}{{/with}}{{/each}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+        let t2 = Template::compile("{{#each this}}{{#with addr}}{{@../index}}{{/with}}{{/each}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
