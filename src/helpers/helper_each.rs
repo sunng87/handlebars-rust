@@ -28,10 +28,8 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => {
                 rc.promote_local_vars();
-                if let Some(path_root) = value.path_root() {
-                    let local_path_root = format!("{}/{}", rc.get_path(), path_root);
-                    rc.set_local_path_root(local_path_root);
-                }
+                let local_path_root = value.path_root()
+                                           .map(|p| format!("{}/{}", rc.get_path(), p));
 
                 debug!("each value {:?}", value.value());
                 let rendered = match (value.value().is_truthy(), value.value()) {
@@ -39,6 +37,10 @@ impl HelperDef for EachHelper {
                         let len = list.len();
                         for i in 0..len {
                             let mut local_rc = rc.derive();
+                            if let Some(ref p) = local_path_root {
+                                local_rc.set_local_path_root(p.clone());
+                            }
+
                             local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize)));
                             local_rc.set_local_var("@last".to_string(), to_json(&(i == len - 1)));
                             local_rc.set_local_var("@index".to_string(), to_json(&i));
@@ -70,6 +72,9 @@ impl HelperDef for EachHelper {
                         let mut first: bool = true;
                         for k in obj.keys() {
                             let mut local_rc = rc.derive();
+                            if let Some(ref p) = local_path_root {
+                                local_rc.set_local_path_root(p.clone());
+                            }
                             local_rc.set_local_var("@first".to_string(), to_json(&first));
                             if first {
                                 first = false;

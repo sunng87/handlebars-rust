@@ -162,6 +162,10 @@ impl<'a> RenderContext<'a> {
         self.local_path_root = Some(path)
     }
 
+    pub fn reset_local_path_root(&mut self) {
+        self.local_path_root = None
+    }
+
     pub fn set_local_var(&mut self, name: String, value: Json) {
         self.local_variables.insert(name, value);
     }
@@ -232,13 +236,14 @@ impl<'a> fmt::Debug for RenderContext<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f,
                "partials: {:?}, path: {:?}, local_variables: {:?}, current_template: {:?}, \
-                root_template: {:?}, disable_escape: {:?}",
+                root_template: {:?}, disable_escape: {:?}, local_path_root: {:?}",
                self.partials,
                self.path,
                self.local_variables,
                self.current_template,
                self.root_template,
-               self.disable_escape)
+               self.disable_escape,
+               self.local_path_root)
     }
 }
 
@@ -472,6 +477,7 @@ impl Renderable for TemplateElement {
               registry: &Registry,
               rc: &mut RenderContext)
               -> Result<(), RenderError> {
+        debug!("rendering {:?}, {:?}", self, rc);
         match *self {
             RawString(ref v) => {
                 try!(rc.writer.write(v.clone().into_bytes().as_ref()));

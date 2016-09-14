@@ -51,6 +51,7 @@ impl HelperDef for WithHelper {
         };
 
         rc.set_path(path);
+        rc.reset_local_path_root();
         rc.demote_local_vars();
         if not_empty {
             rc.pop_block_context();
