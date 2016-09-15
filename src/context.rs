@@ -6,12 +6,12 @@ use serde::ser::Serialize;
 #[cfg(feature = "serde_type")]
 use serde_json::value::{self, Value as Json};
 
-use regex::Regex;
+use pest::prelude::*;
 use std::collections::{VecDeque, BTreeMap};
 
+use grammar::{Rdp, Rule};
+
 lazy_static! {
-    static ref KEY_MATCHER: Regex = Regex::new(r"\[.*\]$").unwrap();
-    static ref QUOT_MATCHER: Regex = Regex::new("['\"](.*?)['\"]").unwrap();
     static ref DEFAULT_VALUE: Json = Json::Null;
 }
 
@@ -26,21 +26,26 @@ pub struct Context {
 
 #[inline]
 fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
-    for p in (*path).split('/') {
-        match p {
-            "." | "" => {
-                continue;
-            }
-            ".." => {
-                path_stack.pop_back();
-            }
-            _ => {
-                for dot_p in p.split('.') {
-                    path_stack.push_back(dot_p);
+    let path_in = StringInput::new(path);
+    let mut parser = Rdp::new(path_in);
+
+    if parser.path() {
+        for seg in parser.queue().iter() {
+            println!("{:?}", seg);
+            match seg.rule {
+                Rule::path_var | Rule::path_idx | Rule::path_key => {}
+                Rule::path_up => {
+                    path_stack.pop_back();
                 }
+                Rule::path_id | Rule::path_raw_id | Rule::path_num_id | Rule::path_this => {
+                    let id = &path[seg.start..seg.end];
+                    path_stack.push_back(id);
+                }
+                _ => {}
             }
         }
     }
+    // TODO: report invalid path
 }
 
 fn merge_json(base: &Json, addition: &Object) -> Json {
@@ -93,50 +98,26 @@ impl Context {
     ///
     /// If you want to navigate from top level, set the base path to `"."`
     pub fn navigate(&self, base_path: &str, relative_path: &str) -> &Json {
-        debug!("visiting path: {:?}/{:?}", base_path, relative_path);
+        println!("visiting path: {}/{}", base_path, relative_path);
         let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path);
         parse_json_visitor(&mut path_stack, relative_path);
 
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
+        println!("{:?}, {:?}", paths, data);
         for p in paths.iter() {
-            match KEY_MATCHER.find(*p) {
-                Some((s, _)) => {
-                    let arr = &p[..s];
-                    let mut idx = &p[s + 1..p.len() - 1];
-                    idx = QUOT_MATCHER.captures(idx).and_then(|c| c.at(1)).unwrap_or(idx);
-
-                    let root = match arr {
-                        "this" | "" => Some(data),
-                        _ => data.find(arr),
-                    };
-
-                    data = match root {
-                        Some(d) => {
-                            match *d {
-                                Json::Array(ref l) => {
-                                    idx.parse::<usize>()
-                                       .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
-                                       .unwrap_or(&DEFAULT_VALUE)
-                                }
-                                Json::Object(ref m) => m.get(idx).unwrap_or(&DEFAULT_VALUE),
-                                _ => &DEFAULT_VALUE,
-                            }
-                        }
-                        None => &DEFAULT_VALUE,
-                    };
+            if *p == "this" && (!data.is_object() || data.find("this").is_none()) {
+                continue;
+            }
+            data = match *data {
+                Json::Array(ref l) => {
+                    p.parse::<usize>()
+                     .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
+                     .unwrap_or(&DEFAULT_VALUE)
                 }
-                None => {
-                    data = data.find(*p)
-                               .unwrap_or_else(|| {
-                                   if *p == "this" {
-                                       data
-                                   } else {
-                                       &DEFAULT_VALUE
-                                   }
-                               });
-                }
+                Json::Object(ref m) => m.get(*p).unwrap_or(&DEFAULT_VALUE),
+                _ => &DEFAULT_VALUE,
             }
         }
         data
@@ -302,9 +283,9 @@ mod test {
         assert_eq!(ctx.navigate(".", "titles.[0]").render(),
                    "programmer".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]/../age").render(),
+        assert_eq!(ctx.navigate(".", "titles[0]/../../age").render(),
                    "27".to_string());
-        assert_eq!(ctx.navigate(".", "this.titles[0]/../age").render(),
+        assert_eq!(ctx.navigate(".", "this.titles[0]/../../age").render(),
                    "27".to_string());
 
     }
@@ -433,9 +414,9 @@ mod test {
         assert_eq!(ctx.navigate(".", "titles.[0]").render(),
                    "programmer".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]/../age").render(),
+        assert_eq!(ctx.navigate(".", "titles[0]/../../age").render(),
                    "27".to_string());
-        assert_eq!(ctx.navigate(".", "this.titles[0]/../age").render(),
+        assert_eq!(ctx.navigate(".", "this.titles[0]/../../age").render(),
                    "27".to_string());
 
     }
