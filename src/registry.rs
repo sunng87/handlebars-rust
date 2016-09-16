@@ -10,9 +10,9 @@ use serde::ser::Serialize as ToJson;
 
 use template::Template;
 use render::{Renderable, RenderError, RenderContext};
-use helpers::HelperDef;
 use context::Context;
-use helpers;
+use helpers::{self, HelperDef};
+use directives::{self, DirectiveDef};
 use support::str::StringWriter;
 use error::{TemplateError, TemplateFileError, TemplateRenderError};
 
@@ -44,6 +44,7 @@ pub fn no_escape(data: &str) -> String {
 pub struct Registry {
     templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<HelperDef + 'static>>,
+    directives: HashMap<String, Box<DirectiveDef + 'static>>,
     escape_fn: EscapeFn,
     source_map: bool,
 }
@@ -53,6 +54,7 @@ impl Registry {
         let mut r = Registry {
             templates: HashMap::new(),
             helpers: HashMap::new(),
+            directives: HashMap::new(),
             escape_fn: Box::new(html_escape),
             source_map: true,
         };
@@ -67,6 +69,8 @@ impl Registry {
         r.register_helper("block", Box::new(helpers::BLOCK_HELPER));
         r.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
         r.register_helper("log", Box::new(helpers::LOG_HELPER));
+
+        r.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
 
         r
     }
@@ -125,6 +129,14 @@ impl Registry {
         self.helpers.insert(name.to_string(), def)
     }
 
+    /// register a directive
+    pub fn register_decorator(&mut self,
+                              name: &str,
+                              def: Box<DirectiveDef + 'static>)
+                              -> Option<Box<DirectiveDef + 'static>> {
+        self.directives.insert(name.to_string(), def)
+    }
+
     /// Register a new *escape fn* to be used from now on by this registry.
     pub fn register_escape_fn<F: 'static + Fn(&str) -> String + Send + Sync>(&mut self,
                                                                              escape_fn: F) {
@@ -149,6 +161,11 @@ impl Registry {
     /// Return a registered helper
     pub fn get_helper(&self, name: &str) -> Option<&Box<HelperDef + 'static>> {
         self.helpers.get(name)
+    }
+
+    /// Return a registered directive, aka decorator
+    pub fn get_decorator(&self, name: &str) -> Option<&Box<DirectiveDef + 'static>> {
+        self.directives.get(name)
     }
 
     /// Return all templates registered

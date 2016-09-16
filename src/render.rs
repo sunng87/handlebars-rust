@@ -11,7 +11,8 @@ use serde_json::value::Value as Json;
 #[cfg(feature = "serde_type")]
 use serde::ser::Serialize as ToJson;
 
-use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMapping, BlockParam};
+use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMapping, BlockParam,
+               Directive as DirectiveTemplate};
 use template::TemplateElement::*;
 use registry::Registry;
 use context::{Context, JsonRender};
@@ -372,6 +373,70 @@ impl<'a, 'b> Helper<'a> {
     }
 }
 
+pub struct Directive<'a> {
+    name: &'a str,
+    params: Vec<ContextJson>,
+    hash: BTreeMap<String, ContextJson>,
+    template: &'a Option<Template>,
+}
+
+impl<'a, 'b> Directive<'a> {
+    pub fn from_template(dt: &'a DirectiveTemplate,
+                         ctx: &Context,
+                         registry: &Registry,
+                         rc: &'b mut RenderContext)
+                         -> Result<Directive<'a>, RenderError> {
+        let mut evaluated_params = Vec::new();
+        for p in dt.params.iter() {
+            let r = try!(p.expand(ctx, registry, rc));
+            evaluated_params.push(r);
+        }
+
+        let mut evaluated_hash = BTreeMap::new();
+        for (k, p) in dt.hash.iter() {
+            let r = try!(p.expand(ctx, registry, rc));
+            evaluated_hash.insert(k.clone(), r);
+        }
+
+        Ok(Directive {
+            name: &dt.name,
+            params: evaluated_params,
+            hash: evaluated_hash,
+            template: &dt.template,
+        })
+    }
+
+    /// Returns helper name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Returns all helper params, resolved within the context
+    pub fn params(&self) -> &Vec<ContextJson> {
+        &self.params
+    }
+
+    /// Returns nth helper param, resolved within the context
+    pub fn param(&self, idx: usize) -> Option<&ContextJson> {
+        self.params.get(idx)
+    }
+
+    /// Returns hash, resolved within the context
+    pub fn hash(&self) -> &BTreeMap<String, ContextJson> {
+        &self.hash
+    }
+
+    /// Return hash value of a given key, resolved within the context
+    pub fn hash_get(&self, key: &str) -> Option<&ContextJson> {
+        self.hash.get(key)
+    }
+
+    /// Returns the default inner template if any
+    pub fn template(&self) -> Option<&Template> {
+        (*self.template).as_ref().map(|t| t)
+    }
+}
+
 pub trait Renderable {
     fn render(&self,
               ctx: &Context,
@@ -380,13 +445,21 @@ pub trait Renderable {
               -> Result<(), RenderError>;
 }
 
+pub trait Evalable {
+    fn eval(&self,
+            ctx: &Context,
+            registry: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError>;
+}
+
 
 impl Parameter {
-    fn expand(&self,
-              ctx: &Context,
-              registry: &Registry,
-              rc: &mut RenderContext)
-              -> Result<ContextJson, RenderError> {
+    pub fn expand(&self,
+                  ctx: &Context,
+                  registry: &Registry,
+                  rc: &mut RenderContext)
+                  -> Result<ContextJson, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
                 Ok(rc.get_local_var(&name).map_or_else(|| {
@@ -445,7 +518,7 @@ impl Renderable for Template {
         let mut idx = 0;
         for t in iter {
             let c = ctx;
-            if let Err(mut e) = t.render(c, registry, rc) {
+            try!(t.render(c, registry, rc).map_err(|mut e| {
                 if e.line_no.is_none() {
                     if let Some(ref mapping) = self.mapping {
                         if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
@@ -457,8 +530,38 @@ impl Renderable for Template {
                 }
 
                 e.template_name = self.name.clone();
-                return Err(e);
-            }
+                e
+            }));
+            idx = idx + 1;
+        }
+        Ok(())
+    }
+}
+
+impl Evalable for Template {
+    fn eval(&self,
+            ctx: &Context,
+            registry: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
+        let iter = self.elements.iter();
+        let mut idx = 0;
+        for t in iter {
+            let c = ctx;
+            try!(t.eval(c, registry, rc).map_err(|mut e| {
+                if e.line_no.is_none() {
+                    if let Some(ref mapping) = self.mapping {
+                        if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
+                            e.line_no = Some(line);
+                            e.column_no = Some(col);
+
+                        }
+                    }
+                }
+
+                e.template_name = self.name.clone();
+                e
+            }));
             idx = idx + 1;
         }
         Ok(())
@@ -514,6 +617,29 @@ impl Renderable for TemplateElement {
                         }
                     }
                 }
+            }
+            DirectiveExpression(_) | DirectiveBlock(_) => self.eval(ctx, registry, rc),
+            _ => Ok(()),
+        }
+    }
+}
+
+impl Evalable for TemplateElement {
+    fn eval(&self,
+            ctx: &Context,
+            registry: &Registry,
+            rc: &mut RenderContext)
+            -> Result<(), RenderError> {
+        match *self {
+            DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
+                Directive::from_template(dt, ctx, registry, rc).and_then(|di| {
+                    match registry.get_decorator(&dt.name) {
+                        Some(d) => (**d).call(ctx, &di, registry, rc),
+                        None => {
+                            Err(RenderError::new(format!("Directive not defined: {:?}", dt.name)))
+                        }
+                    }
+                })
             }
             _ => Ok(()),
         }
