@@ -136,10 +136,7 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn get_partial(&self, name: &String) -> Option<Template> {
-        match self.partials.get(name) {
-            Some(t) => Some(t.clone()),
-            None => None,
-        }
+        self.partials.get(name).map(|t| t.clone())
     }
 
     pub fn set_partial(&mut self, name: String, result: Template) {
@@ -229,6 +226,10 @@ impl<'a> RenderContext<'a> {
         }
 
         None
+    }
+
+    pub fn is_current_template(&self, p: &str) -> bool {
+        self.current_template.as_ref().map(|s| s == p).unwrap_or(false)
     }
 }
 

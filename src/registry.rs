@@ -51,7 +51,7 @@ pub struct Registry {
 
 impl Registry {
     pub fn new() -> Registry {
-        let mut r = Registry {
+        let r = Registry {
             templates: HashMap::new(),
             helpers: HashMap::new(),
             directives: HashMap::new(),
@@ -59,20 +59,39 @@ impl Registry {
             source_map: true,
         };
 
-        r.register_helper("if", Box::new(helpers::IF_HELPER));
-        r.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
-        r.register_helper("each", Box::new(helpers::EACH_HELPER));
-        r.register_helper("with", Box::new(helpers::WITH_HELPER));
-        r.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
-        r.register_helper("raw", Box::new(helpers::RAW_HELPER));
-        r.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
-        r.register_helper("block", Box::new(helpers::BLOCK_HELPER));
-        r.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
-        r.register_helper("log", Box::new(helpers::LOG_HELPER));
+        r.setup_builtins()
+    }
 
-        r.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
+    #[cfg(not(feature = "partial4"))]
+    fn setup_builtins(mut self) -> Registry {
+        self.register_helper("if", Box::new(helpers::IF_HELPER));
+        self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
+        self.register_helper("each", Box::new(helpers::EACH_HELPER));
+        self.register_helper("with", Box::new(helpers::WITH_HELPER));
+        self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
+        self.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        self.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
+        self.register_helper("block", Box::new(helpers::BLOCK_HELPER));
+        self.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
+        self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
-        r
+        self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
+        self
+    }
+
+    #[cfg(feature = "partial4")]
+    fn setup_builtins(mut self) -> Registry {
+        self.register_helper("if", Box::new(helpers::IF_HELPER));
+        self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
+        self.register_helper("each", Box::new(helpers::EACH_HELPER));
+        self.register_helper("with", Box::new(helpers::WITH_HELPER));
+        self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
+        self.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        self.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
+        self.register_helper("log", Box::new(helpers::LOG_HELPER));
+
+        self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
+        self
     }
 
     /// Enable handlebars template source map
@@ -272,9 +291,11 @@ mod test {
         }
     }
 
+    #[cfg(not(feature = "partial4"))]
     static DUMMY_HELPER: DummyHelper = DummyHelper;
 
     #[test]
+    #[cfg(not(feature = "partial4"))]
     fn test_registry_operations() {
         let mut r = Registry::new();
 
@@ -337,6 +358,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(not(feature = "partial4"))]
     fn test_template_render() {
         let mut r = Registry::new();
 
