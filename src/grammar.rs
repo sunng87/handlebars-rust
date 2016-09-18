@@ -52,7 +52,9 @@ impl_rdp! {
                                pro_whitespace_omitter? ~ ["}}"] }
 
         directive_expression = { ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
-                               pro_whitespace_omitter? ~ ["}}"] }
+                                          pro_whitespace_omitter? ~ ["}}"] }
+        partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ exp_line ~
+                                        pro_whitespace_omitter? ~ ["}}"] }
 
         invert_tag = { ["{{else}}"]|["{{^}}"] }
         helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
@@ -69,6 +71,12 @@ impl_rdp! {
                                          pro_whitespace_omitter? ~ ["}}"] }
         directive_block = _{ directive_block_start ~ template ~
                              directive_block_end }
+
+        partial_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ exp_line ~
+                                         pro_whitespace_omitter? ~ ["}}"] }
+        partial_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                                       pro_whitespace_omitter? ~ ["}}"] }
+        partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
         raw_block_start = { ["{{{{"] ~ pre_whitespace_omitter? ~ exp_line ~
                                        pro_whitespace_omitter? ~ ["}}}}"] }
@@ -87,7 +95,9 @@ impl_rdp! {
             raw_block |
             hbs_comment |
             directive_expression |
-            directive_block )*
+            directive_block |
+            partial_expression |
+            partial_block )*
         }
 
         parameter = _{ param ~ eoi }
@@ -362,6 +372,26 @@ fn test_directive_block() {
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.directive_block());
+        assert!(rdp.end());
+    }
+}
+
+#[test]
+fn test_partial_expression() {
+    let s = vec!["{{> hello}}"];
+    for i in s.iter() {
+        let mut rdp = Rdp::new(StringInput::new(i));
+        assert!(rdp.partial_expression());
+        assert!(rdp.end());
+    }
+}
+
+#[test]
+fn test_partial_block() {
+    let s = vec!["{{#> hello}}nice{{/hello}}"];
+    for i in s.iter() {
+        let mut rdp = Rdp::new(StringInput::new(i));
+        assert!(rdp.partial_block());
         assert!(rdp.end());
     }
 }
