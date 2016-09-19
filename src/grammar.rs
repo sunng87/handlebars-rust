@@ -1,5 +1,6 @@
 use pest::prelude::*;
 
+#[cfg(not(feature="partial4"))]
 impl_rdp! {
     grammar! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
@@ -25,7 +26,111 @@ impl_rdp! {
         object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)? ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
 
 // FIXME: a[0], a["b]
-        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["<"]|[">"]|["-"] }
+        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["-"]|["<"]|[">"] }
+        path_char = _{ ["/"] }
+
+        identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
+        reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])* ~ ["-"]* ~ reference* }
+        name = _{ subexpression | reference }
+
+        param = { !["as"] ~ (literal | reference | subexpression) }
+        hash = { identifier ~ ["="] ~ param }
+        block_param = { ["as"] ~ ["|"] ~ identifier ~ identifier? ~ ["|"]}
+        exp_line = _{ identifier ~ (hash|param)* ~ block_param?}
+
+        subexpression = { ["("] ~ name ~ (hash|param)* ~ [")"] }
+
+        pre_whitespace_omitter = { ["~"] }
+        pro_whitespace_omitter = { ["~"] }
+
+        expression = { !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ name ~
+                        pro_whitespace_omitter? ~ ["}}"] }
+
+        html_expression = { ["{{{"] ~ pre_whitespace_omitter? ~ name ~
+                                      pro_whitespace_omitter? ~ ["}}}"] }
+
+        helper_expression = { !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ exp_line ~
+                               pro_whitespace_omitter? ~ ["}}"] }
+
+        directive_expression = { ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
+                                          pro_whitespace_omitter? ~ ["}}"] }
+        partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ exp_line ~
+                                        pro_whitespace_omitter? ~ ["}}"] }
+
+        invert_tag = { ["{{else}}"]|["{{^}}"] }
+        helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
+                                        pro_whitespace_omitter? ~ ["}}"] }
+        helper_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                                      pro_whitespace_omitter? ~ ["}}"] }
+        helper_block = _{ helper_block_start ~ template ~
+                         (invert_tag ~ template)? ~
+                          helper_block_end }
+
+        directive_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ ["*"] ~ exp_line ~
+                                           pro_whitespace_omitter? ~ ["}}"] }
+        directive_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                                         pro_whitespace_omitter? ~ ["}}"] }
+        directive_block = _{ directive_block_start ~ template ~
+                             directive_block_end }
+
+        partial_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ exp_line ~
+                                         pro_whitespace_omitter? ~ ["}}"] }
+        partial_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                                       pro_whitespace_omitter? ~ ["}}"] }
+        partial_block = _{ partial_block_start ~ template ~ partial_block_end }
+
+        raw_block_start = { ["{{{{"] ~ pre_whitespace_omitter? ~ exp_line ~
+                                       pro_whitespace_omitter? ~ ["}}}}"] }
+        raw_block_end = { ["{{{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                                     pro_whitespace_omitter? ~ ["}}}}"] }
+        raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
+
+        hbs_comment = { ["{{!"] ~ (!["}}"] ~ any)* ~ ["}}"] }
+
+        template = { (
+            raw_text |
+            expression |
+            html_expression |
+            helper_expression |
+            helper_block |
+            raw_block |
+            hbs_comment |
+            directive_expression |
+            directive_block )*
+        }
+
+        parameter = _{ param ~ eoi }
+        handlebars = _{ template ~ eoi }
+    }
+}
+
+#[cfg(feature="partial4")]
+impl_rdp! {
+    grammar! {
+        whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
+
+        raw_text = @{ ( !["{{"] ~ any )+ }
+        raw_block_text = @{ ( !["{{{{"] ~ any )* }
+
+// Note: this is not full and strict json literal definition, just for tokenize string,
+// array and object types which may contains whitespace. We will use a real json parser
+// for real json processing
+        literal = { string_literal |
+                    array_literal |
+                    object_literal |
+                    number_literal |
+                    null_literal |
+                    boolean_literal }
+
+        null_literal = { ["null"] }
+        boolean_literal = { ["true"]|["false"] }
+        number_literal = @{ ["-"]? ~ ['0'..'9']+ ~ ["."]? ~ ['0'..'9']* ~ (["E"] ~ ["-"]? ~ ['0'..'9']+)? }
+        string_literal = @{ ["\""] ~ (!["\""] ~ (["\\\""] | any))* ~ ["\""] }
+        array_literal = { ["["] ~ literal? ~ ([","] ~ literal)* ~ ["]"] }
+        object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)? ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
+
+// FIXME: a[0], a["b]
+        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["-"] }
         path_char = _{ ["/"] }
 
         identifier = @{ symbol_char ~ ( symbol_char | path_char )* }

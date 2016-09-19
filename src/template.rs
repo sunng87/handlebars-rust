@@ -380,7 +380,8 @@ impl Template {
                     }
                     Rule::helper_block_start |
                     Rule::raw_block_start |
-                    Rule::directive_block_start => {
+                    Rule::directive_block_start |
+                    Rule::partial_block_start => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
 
                         match token.rule {
@@ -397,7 +398,8 @@ impl Template {
                                 };
                                 helper_stack.push_front(helper_template);
                             }
-                            Rule::directive_block_start => {
+                            Rule::directive_block_start |
+                            Rule::partial_block_start => {
                                 let directive = Directive {
                                     name: exp.name.as_name().unwrap(),
                                     params: exp.params,
@@ -444,9 +446,11 @@ impl Template {
                     Rule::html_expression |
                     Rule::helper_expression |
                     Rule::directive_expression |
+                    Rule::partial_expression |
                     Rule::helper_block_end |
                     Rule::raw_block_end |
-                    Rule::directive_block_end => {
+                    Rule::directive_block_end |
+                    Rule::partial_block_end => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
                         if exp.omit_pre_ws {
                             let mut t = template_stack.front_mut().unwrap();
@@ -486,14 +490,19 @@ impl Template {
                                 let mut t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
-                            Rule::directive_expression => {
+                            Rule::directive_expression |
+                            Rule::partial_expression => {
                                 let directive = Directive {
                                     name: exp.name.as_name().unwrap(),
                                     params: exp.params,
                                     hash: exp.hash,
                                     template: None,
                                 };
-                                let el = DirectiveExpression(directive);
+                                let el = if token.rule == Rule::directive_expression {
+                                    DirectiveExpression(directive)
+                                } else {
+                                    PartialExpression(directive)
+                                };
                                 let mut t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
@@ -517,14 +526,19 @@ impl Template {
                                                                                       close_tag_name));
                                 }
                             }
-                            Rule::directive_block_end => {
+                            Rule::directive_block_end |
+                            Rule::partial_block_end => {
                                 let mut d = directive_stack.pop_front().unwrap();
                                 let close_tag_name = exp.name.as_name().unwrap();
                                 if d.name == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     d.template = Some(prev_t);
                                     let t = template_stack.front_mut().unwrap();
-                                    t.elements.push(DirectiveBlock(d));
+                                    if token.rule == Rule::directive_block_end {
+                                        t.elements.push(DirectiveBlock(d));
+                                    } else {
+                                        t.elements.push(PartialBlock(d));
+                                    }
                                 } else {
                                     return Err(TemplateError::MismatchingClosedDirective(line_no, col_no, d.name, close_tag_name));
                                 }
@@ -574,6 +588,8 @@ pub enum TemplateElement {
     HelperBlock(HelperTemplate),
     DirectiveExpression(Directive),
     DirectiveBlock(Directive),
+    PartialExpression(Directive),
+    PartialBlock(Directive),
     Comment(String),
 }
 
@@ -863,6 +879,7 @@ fn test_block_param() {
 }
 
 #[test]
+#[cfg(feature="partial4")]
 fn test_directive() {
     match Template::compile("hello {{* ssh}} world") {
         Err(e) => panic!("{}", e),
@@ -874,11 +891,34 @@ fn test_directive() {
         }
     }
 
+    match Template::compile("hello {{> ssh}} world") {
+        Err(e) => panic!("{}", e),
+        Ok(t) => {
+            if let PartialExpression(ref de) = t.elements[1] {
+                assert_eq!(de.name, "ssh");
+                assert_eq!(de.template, None);
+            }
+        }
+    }
+
     match Template::compile("{{#*inline \"hello\"}}expand to hello{{/inline}}{{> hello}}") {
         Err(e) => panic!("{}", e),
         Ok(t) => {
             if let DirectiveBlock(ref db) = t.elements[0] {
                 assert_eq!(db.name, "inline");
+                assert_eq!(db.params[0],
+                           Parameter::Literal(Json::String("hello".to_owned())));
+                assert_eq!(db.template.as_ref().unwrap().elements[0],
+                           TemplateElement::RawString("expand to hello".to_owned()));
+            }
+        }
+    }
+
+    match Template::compile("{{#> layout \"hello\"}}expand to hello{{/layout}}{{> hello}}") {
+        Err(e) => panic!("{}", e),
+        Ok(t) => {
+            if let PartialBlock(ref db) = t.elements[0] {
+                assert_eq!(db.name, "layout");
                 assert_eq!(db.params[0],
                            Parameter::Literal(Json::String("hello".to_owned())));
                 assert_eq!(db.template.as_ref().unwrap().elements[0],

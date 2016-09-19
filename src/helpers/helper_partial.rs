@@ -189,13 +189,13 @@ pub static BLOCK_HELPER: BlockHelper = BlockHelper;
 pub static PARTIAL_HELPER: PartialHelper = PartialHelper;
 
 #[cfg(test)]
+#[cfg(not(feature = "partial4"))]
 mod test {
     use template::Template;
     use registry::Registry;
     use std::collections::BTreeMap;
 
     #[test]
-    #[cfg(not(feature = "partial4"))]
     fn test() {
         let t0 = Template::compile("<h1>{{#block title}}default{{/block}}</h1>".to_string())
                      .ok()
@@ -252,7 +252,6 @@ mod test {
     }
 
     #[test]
-    #[cfg(not(feature = "partial4"))]
     fn test_inline_partial() {
         let t0 = Template::compile("{{#partial title}}hello {{name}}{{/partial}}<h1>include \
                                     partial: {{#block title}}{{/block}}</h1>"
@@ -277,6 +276,33 @@ mod test {
 
         let r1 = handlebars.render("t1", &map);
         assert_eq!(r1.ok().unwrap(), "Partial not found".to_string());
+    }
+
+    #[test]
+    #[cfg(feature = "partial4")]
+    fn test_inline_partial4() {
+        let t0 = Template::compile("{{*inline \"title\"}}hello {{name}}{{/inline}}<h1>include \
+                                    partial: {{> title}}</h1>"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+        // let t1 = Template::compile("{{#> none_partial}}Partial not found{{/block}}".to_string())
+        //              .ok()
+        //              .unwrap();
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+        // handlebars.register_template("t1", t1);
+
+        let mut map: BTreeMap<String, String> = BTreeMap::new();
+        map.insert("name".into(), "world".into());
+
+        let r0 = handlebars.render("t0", &map);
+        assert_eq!(r0.ok().unwrap(),
+                   "<h1>include partial: hello world</h1>".to_string());
+
+        // let r1 = handlebars.render("t1", &map);
+        // assert_eq!(r1.ok().unwrap(), "Partial not found".to_string());
     }
 
     #[test]
