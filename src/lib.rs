@@ -244,7 +244,7 @@
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //!
 
-
+#![allow(dead_code)]
 #![recursion_limit = "200"]
 
 #[macro_use]
@@ -283,3 +283,5 @@ mod helpers;
 mod context;
 mod support;
 mod directives;
+#[cfg(feature="partial4")]
+mod partial;

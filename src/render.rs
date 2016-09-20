@@ -17,6 +17,8 @@ use template::TemplateElement::*;
 use registry::Registry;
 use context::{Context, JsonRender};
 use support::str::StringWriter;
+#[cfg(feature="partial4")]
+use partial;
 
 #[derive(Debug, Clone)]
 pub struct RenderError {
@@ -135,7 +137,7 @@ impl<'a> RenderContext<'a> {
         }
     }
 
-    pub fn get_partial(&self, name: &String) -> Option<Template> {
+    pub fn get_partial(&self, name: &str) -> Option<Template> {
         self.partials.get(name).map(|t| t.clone())
     }
 
@@ -619,7 +621,9 @@ impl Renderable for TemplateElement {
                     }
                 }
             }
-            DirectiveExpression(_) | DirectiveBlock(_) => self.eval(ctx, registry, rc),
+            DirectiveExpression(_) | DirectiveBlock(_) | PartialExpression(_) | PartialBlock(_) => {
+                self.eval(ctx, registry, rc)
+            }
             _ => Ok(()),
         }
     }
@@ -641,6 +645,11 @@ impl Evalable for TemplateElement {
                         }
                     }
                 })
+            }
+            #[cfg(feature="partial4")]
+            PartialExpression(ref dt) | PartialBlock(ref dt) => {
+                Directive::from_template(dt, ctx, registry, rc)
+                    .and_then(|di| partial::expand_partial(ctx, &di, registry, rc))
             }
             _ => Ok(()),
         }
