@@ -74,7 +74,7 @@ impl RenderError {
 pub struct RenderContext<'a> {
     partials: HashMap<String, Template>,
     path: String,
-    local_path_root: Option<String>,
+    local_path_root: VecDeque<String>,
     local_variables: HashMap<String, Json>,
     default_var: Json,
     block_context: VecDeque<Context>,
@@ -93,7 +93,7 @@ impl<'a> RenderContext<'a> {
         RenderContext {
             partials: HashMap::new(),
             path: ".".to_string(),
-            local_path_root: None,
+            local_path_root: VecDeque::new(),
             local_variables: HashMap::new(),
             default_var: Json::Null,
             block_context: VecDeque::new(),
@@ -154,16 +154,16 @@ impl<'a> RenderContext<'a> {
         self.path = path;
     }
 
-    pub fn get_local_path_root(&self) -> &str {
-        self.local_path_root.as_ref().unwrap_or(self.get_path())
+    pub fn get_local_path_root(&self) -> &VecDeque<String> {
+        &self.local_path_root
     }
 
-    pub fn set_local_path_root(&mut self, path: String) {
-        self.local_path_root = Some(path)
+    pub fn push_local_path_root(&mut self, path: String) {
+        self.local_path_root.push_front(path)
     }
 
-    pub fn reset_local_path_root(&mut self) {
-        self.local_path_root = None
+    pub fn pop_local_path_root(&mut self) {
+        self.local_path_root.pop_front();
     }
 
     pub fn set_local_var(&mut self, name: String, value: Json) {
@@ -222,7 +222,7 @@ impl<'a> RenderContext<'a> {
 
     pub fn evaluate_in_block_context(&self, local_path: &str) -> Option<&Json> {
         for bc in self.block_context.iter() {
-            let v = bc.navigate(".", local_path);
+            let v = bc.navigate(".", &self.local_path_root, local_path);
             if !v.is_null() {
                 return Some(v);
             }
@@ -391,14 +391,9 @@ impl Parameter {
         match self {
             &Parameter::Name(ref name) => {
                 Ok(rc.get_local_var(&name).map_or_else(|| {
-                                                           let path = if name.starts_with("../") {
-                                                               rc.get_local_path_root()
-                                                           } else {
-                                                               rc.get_path()
-                                                           };
                                                            ContextJson {
                                                                path: Some(name.to_owned()),
-                                                               value: rc.evaluate_in_block_context(name).map_or_else(|| {ctx.navigate(path, name).clone()}, |v| v.clone()),
+                                                               value: rc.evaluate_in_block_context(name).map_or_else(|| {ctx.navigate(rc.get_path(), rc.get_local_path_root(), name).clone()}, |v| v.clone()),
                                                            }
 
                                                        },

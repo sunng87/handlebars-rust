@@ -6,12 +6,12 @@ use serde::ser::Serialize;
 #[cfg(feature = "serde_type")]
 use serde_json::value::{self, Value as Json};
 
-use regex::Regex;
+use pest::prelude::*;
 use std::collections::{VecDeque, BTreeMap};
 
+use grammar::{Rdp, Rule};
+
 lazy_static! {
-    static ref KEY_MATCHER: Regex = Regex::new(r"\[.*\]$").unwrap();
-    static ref QUOT_MATCHER: Regex = Regex::new("['\"](.*?)['\"]").unwrap();
     static ref DEFAULT_VALUE: Json = Json::Null;
 }
 
@@ -25,22 +25,65 @@ pub struct Context {
 }
 
 #[inline]
-fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
-    for p in (*path).split('/') {
-        match p {
-            "." | "" => {
-                continue;
-            }
-            ".." => {
-                path_stack.pop_back();
-            }
-            _ => {
-                for dot_p in p.split('.') {
-                    path_stack.push_back(dot_p);
+fn parse_json_visitor_inner<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a str) {
+    let path_in = StringInput::new(path);
+    let mut parser = Rdp::new(path_in);
+
+    if parser.path() {
+        for seg in parser.queue().iter() {
+            match seg.rule {
+                Rule::path_var | Rule::path_idx | Rule::path_key => {}
+                Rule::path_up => {
+                    path_stack.pop_back();
                 }
+                Rule::path_id | Rule::path_raw_id | Rule::path_num_id | Rule::path_this => {
+                    let id = &path[seg.start..seg.end];
+                    path_stack.push_back(id);
+                }
+                _ => {}
             }
         }
     }
+}
+
+#[inline]
+fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>,
+                          base_path: &'a str,
+                          path_context: &'a VecDeque<String>,
+                          relative_path: &'a str) {
+    let path_in = StringInput::new(relative_path);
+    let mut parser = Rdp::new(path_in);
+
+    if parser.path() {
+        let mut path_context_depth: i64 = -1;
+
+        let mut iter = parser.queue().iter();
+        loop {
+            if let Some(sg) = iter.next() {
+
+                if sg.rule == Rule::path_up {
+                    path_context_depth += 1;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
+        if path_context_depth >= 0 {
+            if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
+                parse_json_visitor_inner(path_stack, context_base_path);
+            } else {
+                parse_json_visitor_inner(path_stack, base_path);
+            }
+        } else {
+            parse_json_visitor_inner(path_stack, base_path);
+        }
+
+        parse_json_visitor_inner(path_stack, relative_path);
+    }
+    // TODO: report invalid path
 }
 
 fn merge_json(base: &Json, addition: &Object) -> Json {
@@ -92,51 +135,28 @@ impl Context {
     /// and set relative path to helper argument or so.
     ///
     /// If you want to navigate from top level, set the base path to `"."`
-    pub fn navigate(&self, base_path: &str, relative_path: &str) -> &Json {
-        debug!("visiting path: {:?}/{:?}", base_path, relative_path);
+    pub fn navigate(&self,
+                    base_path: &str,
+                    path_context: &VecDeque<String>,
+                    relative_path: &str)
+                    -> &Json {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
-        parse_json_visitor(&mut path_stack, base_path);
-        parse_json_visitor(&mut path_stack, relative_path);
+        parse_json_visitor(&mut path_stack, base_path, path_context, relative_path);
 
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
-            match KEY_MATCHER.find(*p) {
-                Some((s, _)) => {
-                    let arr = &p[..s];
-                    let mut idx = &p[s + 1..p.len() - 1];
-                    idx = QUOT_MATCHER.captures(idx).and_then(|c| c.at(1)).unwrap_or(idx);
-
-                    let root = match arr {
-                        "this" | "" => Some(data),
-                        _ => data.find(arr),
-                    };
-
-                    data = match root {
-                        Some(d) => {
-                            match *d {
-                                Json::Array(ref l) => {
-                                    idx.parse::<usize>()
-                                       .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
-                                       .unwrap_or(&DEFAULT_VALUE)
-                                }
-                                Json::Object(ref m) => m.get(idx).unwrap_or(&DEFAULT_VALUE),
-                                _ => &DEFAULT_VALUE,
-                            }
-                        }
-                        None => &DEFAULT_VALUE,
-                    };
+            if *p == "this" && (!data.is_object() || data.find("this").is_none()) {
+                continue;
+            }
+            data = match *data {
+                Json::Array(ref l) => {
+                    p.parse::<usize>()
+                     .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
+                     .unwrap_or(&DEFAULT_VALUE)
                 }
-                None => {
-                    data = data.find(*p)
-                               .unwrap_or_else(|| {
-                                   if *p == "this" {
-                                       data
-                                   } else {
-                                       &DEFAULT_VALUE
-                                   }
-                               });
-                }
+                Json::Object(ref m) => m.get(*p).unwrap_or(&DEFAULT_VALUE),
+                _ => &DEFAULT_VALUE,
             }
         }
         data
@@ -214,7 +234,7 @@ impl JsonTruthy for Json {
 #[cfg(feature = "serde_type")]
 mod test {
     use context::{JsonRender, Context};
-    use std::collections::BTreeMap;
+    use std::collections::{VecDeque, BTreeMap};
     use serde_json::value::{self, Value as Json};
     use serde::ser::{Serialize, Serializer};
 
@@ -266,7 +286,8 @@ mod test {
     fn test_render() {
         let v = "hello";
         let ctx = Context::wraps(&v.to_string());
-        assert_eq!(ctx.navigate(".", "this").render(), v.to_string());
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this").render(),
+                   v.to_string());
     }
 
     #[test]
@@ -284,27 +305,28 @@ mod test {
         };
 
         let ctx = Context::wraps(&person);
-        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "./name/../addr/country").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[country]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.[country]").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.[\"country\"]").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.['country']").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.['country']").render(),
                    "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
-        assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
+        assert_eq!(ctx2.navigate(".", &VecDeque::new(), "this").render(),
+                   "true".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles[0]").render(),
                    "programmer".to_string());
-        assert_eq!(ctx.navigate(".", "titles.[0]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles.[0]").render(),
                    "programmer".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]/../age").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles[0]/../../age").render(),
                    "27".to_string());
-        assert_eq!(ctx.navigate(".", "this.titles[0]/../age").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this.titles[0]/../../age").render(),
                    "27".to_string());
 
     }
@@ -320,8 +342,10 @@ mod test {
         map_without_this.insert("age".to_string(), value::to_value(&4usize));
         let ctx2 = Context::wraps(&map_without_this);
 
-        assert_eq!(ctx1.navigate(".", "this").render(), "hello".to_owned());
-        assert_eq!(ctx2.navigate(".", "age").render(), "4".to_owned());
+        assert_eq!(ctx1.navigate(".", &VecDeque::new(), "this").render(),
+                   "hello".to_owned());
+        assert_eq!(ctx2.navigate(".", &VecDeque::new(), "age").render(),
+                   "4".to_owned());
     }
 
     #[test]
@@ -337,12 +361,16 @@ mod test {
         hash.insert("tag".to_owned(), value::to_value(&"h1"));
 
         let ctx_a1 = ctx1.extend(&hash);
-        assert_eq!(ctx_a1.navigate(".", "age").render(), "4".to_owned());
-        assert_eq!(ctx_a1.navigate(".", "tag").render(), "h1".to_owned());
+        assert_eq!(ctx_a1.navigate(".", &VecDeque::new(), "age").render(),
+                   "4".to_owned());
+        assert_eq!(ctx_a1.navigate(".", &VecDeque::new(), "tag").render(),
+                   "h1".to_owned());
 
         let ctx_a2 = ctx2.extend(&hash);
-        assert_eq!(ctx_a2.navigate(".", "this").render(), "hello".to_owned());
-        assert_eq!(ctx_a2.navigate(".", "tag").render(), "h1".to_owned());
+        assert_eq!(ctx_a2.navigate(".", &VecDeque::new(), "this").render(),
+                   "hello".to_owned());
+        assert_eq!(ctx_a2.navigate(".", &VecDeque::new(), "tag").render(),
+                   "h1".to_owned());
     }
 }
 
@@ -350,7 +378,7 @@ mod test {
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 mod test {
     use context::{JsonRender, Context};
-    use std::collections::BTreeMap;
+    use std::collections::{VecDeque, BTreeMap};
     use serialize::json::{Json, ToJson};
 
     #[test]
@@ -397,7 +425,8 @@ mod test {
     fn test_render() {
         let v = "hello";
         let ctx = Context::wraps(&v.to_string());
-        assert_eq!(ctx.navigate(".", "this").render(), v.to_string());
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this").render(),
+                   v.to_string());
     }
 
     #[test]
@@ -415,27 +444,28 @@ mod test {
         };
 
         let ctx = Context::wraps(&person);
-        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "./name/../addr/country").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[country]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.[country]").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.[\"country\"]").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.['country']").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.['country']").render(),
                    "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
-        assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
+        assert_eq!(ctx2.navigate(".", &VecDeque::new(), "this").render(),
+                   "true".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles[0]").render(),
                    "programmer".to_string());
-        assert_eq!(ctx.navigate(".", "titles.[0]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles.[0]").render(),
                    "programmer".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]/../age").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles[0]/../../age").render(),
                    "27".to_string());
-        assert_eq!(ctx.navigate(".", "this.titles[0]/../age").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this.titles[0]/../../age").render(),
                    "27".to_string());
 
     }
@@ -451,8 +481,10 @@ mod test {
         map_without_this.insert("age".to_string(), 4usize.to_json());
         let ctx2 = Context::wraps(&map_without_this);
 
-        assert_eq!(ctx1.navigate(".", "this").render(), "hello".to_owned());
-        assert_eq!(ctx2.navigate(".", "age").render(), "4".to_owned());
+        assert_eq!(ctx1.navigate(".", &VecDeque::new(), "this").render(),
+                   "hello".to_owned());
+        assert_eq!(ctx2.navigate(".", &VecDeque::new(), "age").render(),
+                   "4".to_owned());
     }
 
     #[test]
@@ -468,11 +500,15 @@ mod test {
         hash.insert("tag".to_owned(), "h1".to_json());
 
         let ctx_a1 = ctx1.extend(&hash);
-        assert_eq!(ctx_a1.navigate(".", "age").render(), "4".to_owned());
-        assert_eq!(ctx_a1.navigate(".", "tag").render(), "h1".to_owned());
+        assert_eq!(ctx_a1.navigate(".", &VecDeque::new(), "age").render(),
+                   "4".to_owned());
+        assert_eq!(ctx_a1.navigate(".", &VecDeque::new(), "tag").render(),
+                   "h1".to_owned());
 
         let ctx_a2 = ctx2.extend(&hash);
-        assert_eq!(ctx_a2.navigate(".", "this").render(), "hello".to_owned());
-        assert_eq!(ctx_a2.navigate(".", "tag").render(), "h1".to_owned());
+        assert_eq!(ctx_a2.navigate(".", &VecDeque::new(), "this").render(),
+                   "hello".to_owned());
+        assert_eq!(ctx_a2.navigate(".", &VecDeque::new(), "tag").render(),
+                   "h1".to_owned());
     }
 }

@@ -18,45 +18,53 @@ impl HelperDef for WithHelper {
         let param = try!(h.param(0)
                           .ok_or_else(|| RenderError::new("Param not found for helper \"with\"")));
 
-        let path = rc.get_path().clone();
         rc.promote_local_vars();
-        if let Some(path_root) = param.path_root() {
-            let local_path_root = format!("{}/{}", rc.get_path(), path_root);
-            rc.set_local_path_root(local_path_root);
-        }
 
-        let not_empty = param.value().is_truthy();
-        let template = if not_empty {
-            h.template()
-        } else {
-            h.inverse()
-        };
+        let result = {
+            let mut local_rc = rc.derive();
 
-        if not_empty {
-            if let Some(inner_path) = param.path() {
-                let new_path = format!("{}/{}", path, inner_path);
-                rc.set_path(new_path);
+            let not_empty = param.value().is_truthy();
+            let template = if not_empty {
+                h.template()
+            } else {
+                h.inverse()
+            };
+
+            if let Some(path_root) = param.path_root() {
+                let local_path_root = format!("{}/{}", local_rc.get_path(), path_root);
+                local_rc.push_local_path_root(local_path_root);
+            }
+            if not_empty {
+                if let Some(inner_path) = param.path() {
+                    let new_path = format!("{}/{}", local_rc.get_path(), inner_path);
+                    local_rc.set_path(new_path);
+                }
+
+                if let Some(block_param) = h.block_param() {
+                    let mut map = BTreeMap::new();
+                    map.insert(block_param.to_string(), to_json(param.value()));
+                    local_rc.push_block_context(&map);
+                }
             }
 
-            if let Some(block_param) = h.block_param() {
-                let mut map = BTreeMap::new();
-                map.insert(block_param.to_string(), to_json(param.value()));
-                rc.push_block_context(&map);
-            }
-        }
+            let result = match template {
+                Some(t) => t.render(c, r, &mut local_rc),
+                None => Ok(()),
+            };
 
-        let rendered = match template {
-            Some(t) => t.render(c, r, rc),
-            None => Ok(()),
+            if h.block_param().is_some() {
+                local_rc.pop_block_context();
+            }
+
+            if param.path_root().is_some() {
+                local_rc.pop_local_path_root();
+            }
+
+            result
         };
 
-        rc.set_path(path);
-        rc.reset_local_path_root();
         rc.demote_local_vars();
-        if not_empty {
-            rc.pop_block_context();
-        }
-        rendered
+        result
     }
 }
 
