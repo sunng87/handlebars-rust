@@ -139,6 +139,7 @@ pub static EACH_HELPER: EachHelper = EachHelper;
 mod test {
     use template::Template;
     use registry::Registry;
+    use context::to_json;
 
     use std::collections::BTreeMap;
 
@@ -321,5 +322,25 @@ mod test {
         };
         let r0 = handlebars.render("t0", &m);
         assert_eq!(r0.ok().unwrap(), "ftp:21|http:80|".to_string());
+    }
+
+    #[test]
+    fn test_nested_each_with_path_ups() {
+        let t0 = Template::compile("{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let data = btreemap! {
+            "a".to_string() => to_json(&btreemap! {
+                "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
+            }),
+            "d".to_string() => to_json(&1)
+        };
+
+        let r0 = handlebars.render("t0", &data);
+        assert_eq!(r0.ok().unwrap(), "1".to_string());
     }
 }
