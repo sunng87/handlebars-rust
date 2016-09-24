@@ -6,6 +6,28 @@ use render::{RenderError, RenderContext, Directive};
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
 
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
+    d.param(0)
+     .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
+     .and_then(|v| {
+         v.value()
+          .as_string()
+          .ok_or_else(|| RenderError::new("inline name must be string"))
+     })
+}
+
+#[cfg(feature = "serde_type")]
+fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
+    d.param(0)
+     .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
+     .and_then(|v| {
+         v.value()
+          .as_str()
+          .ok_or_else(|| RenderError::new("inline name must be string"))
+     })
+}
+
 impl DirectiveDef for InlineDirective {
     fn call(&self,
             _: &Context,
@@ -13,13 +35,7 @@ impl DirectiveDef for InlineDirective {
             _: &Registry,
             rc: &mut RenderContext)
             -> Result<(), RenderError> {
-        let name = try!(d.param(0)
-                         .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
-                         .and_then(|v| {
-                             v.value()
-                              .as_string()
-                              .ok_or_else(|| RenderError::new("inline name must be string"))
-                         }));
+        let name = try!(get_name(d));
 
         let template = try!(d.template()
                              .ok_or_else(|| RenderError::new("inline should have a block")));
@@ -43,7 +59,7 @@ mod test {
     #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     use serialize::json::Json;
     #[cfg(feature = "serde_type")]
-    use serde::json::Value as Json;
+    use serde_json::value::Value as Json;
 
     #[test]
     fn test_inline() {
