@@ -101,6 +101,20 @@ impl_rdp! {
 
         parameter = _{ param ~ eoi }
         handlebars = _{ template ~ eoi }
+
+// json path visitor
+        path_ident = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["@"]|["$"]|["<"]|[">"]|["-"]}
+        path_id = { path_ident+ }
+        path_num_id = { ['0'..'9']+ }
+        path_raw_id = { path_ident* }
+        path_this = { ["this"] }
+        path_sep = _{ ["/"] | ["."] }
+        path_up = { [".."] }
+        path_var = { path_id }
+        path_key = { ["["] ~ (["\""]|["'"])? ~ path_raw_id ~ (["\""]|["'"])? ~ ["]"] }
+        path_idx = { ["["] ~ path_num_id ~ ["]"]}
+        path_item = _{ path_this|path_up|path_var }
+        path = _{ ["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi }
     }
 }
 
