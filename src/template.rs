@@ -1,7 +1,6 @@
 use std::slice::Iter;
 use std::iter::Peekable;
 use std::convert::From;
-// use std::fmt;
 use std::collections::{BTreeMap, VecDeque};
 use pest::prelude::*;
 
@@ -16,8 +15,7 @@ use grammar::{Rdp, Rule};
 
 use TemplateError;
 
-use self::TemplateElement::{RawString, Expression, HelperExpression, HTMLExpression, HelperBlock,
-                            Comment};
+use self::TemplateElement::*;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct TemplateMapping(pub usize, pub usize);
@@ -99,6 +97,14 @@ impl<'a> From<&'a Subexpression> for HelperTemplate {
             block: false,
         }
     }
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct Directive {
+    pub name: String,
+    pub params: Vec<Parameter>,
+    pub hash: BTreeMap<String, Parameter>,
+    pub template: Option<Template>,
 }
 
 impl Parameter {
@@ -322,6 +328,7 @@ impl Template {
     pub fn compile2<S: AsRef<str>>(source: S, mapping: bool) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
+        let mut directive_stack: VecDeque<Directive> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
 
         // let mut omit_pre_ws = false;
@@ -372,18 +379,37 @@ impl Template {
                         t.push_element(RawString(text.to_owned()), line_no, col_no);
                     }
                     Rule::helper_block_start |
-                    Rule::raw_block_start => {
+                    Rule::raw_block_start |
+                    Rule::directive_block_start |
+                    Rule::partial_block_start => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
-                        let helper_template = HelperTemplate {
-                            name: exp.name.as_name().unwrap(),
-                            params: exp.params,
-                            hash: exp.hash,
-                            block_param: exp.block_param,
-                            block: true,
-                            template: None,
-                            inverse: None,
-                        };
-                        helper_stack.push_front(helper_template);
+
+                        match token.rule {
+                            Rule::helper_block_start |
+                            Rule::raw_block_start => {
+                                let helper_template = HelperTemplate {
+                                    name: exp.name.as_name().unwrap(),
+                                    params: exp.params,
+                                    hash: exp.hash,
+                                    block_param: exp.block_param,
+                                    block: true,
+                                    template: None,
+                                    inverse: None,
+                                };
+                                helper_stack.push_front(helper_template);
+                            }
+                            Rule::directive_block_start |
+                            Rule::partial_block_start => {
+                                let directive = Directive {
+                                    name: exp.name.as_name().unwrap(),
+                                    params: exp.params,
+                                    hash: exp.hash,
+                                    template: None,
+                                };
+                                directive_stack.push_front(directive);
+                            }
+                            _ => unreachable!(),
+                        }
 
                         let mut t = template_stack.front_mut().unwrap();
                         if exp.omit_pre_ws {
@@ -416,10 +442,16 @@ impl Template {
                         t.push_element(RawString(text.to_owned()), line_no, col_no);
                         template_stack.push_front(t);
                     }
+                    Rule::expression |
+                    Rule::html_expression |
+                    Rule::helper_expression |
+                    Rule::directive_expression |
+                    Rule::partial_expression |
                     Rule::helper_block_end |
-                    Rule::raw_block_end => {
+                    Rule::raw_block_end |
+                    Rule::directive_block_end |
+                    Rule::partial_block_end => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
-
                         if exp.omit_pre_ws {
                             let mut t = template_stack.front_mut().unwrap();
                             if let Some(el) = t.elements.pop() {
@@ -430,90 +462,89 @@ impl Template {
                                 }
                             }
                         }
+
                         omit_pro_ws = exp.omit_pro_ws;
 
-                        let mut h = helper_stack.pop_front().unwrap();
-                        let close_tag_name = exp.name.as_name().unwrap();
-                        if h.name == close_tag_name {
-                            let prev_t = template_stack.pop_front().unwrap();
-                            if h.template.is_some() {
-                                h.inverse = Some(prev_t);
-                            } else {
-                                h.template = Some(prev_t);
+                        match token.rule {
+                            Rule::expression => {
+                                let el = Expression(exp.name);
+                                let mut t = template_stack.front_mut().unwrap();
+                                t.push_element(el, line_no, col_no);
                             }
-                            let t = template_stack.front_mut().unwrap();
-                            t.elements.push(HelperBlock(h));
-                        } else {
-                            return Err(TemplateError::MismatchingClosedHelper(line_no,
-                                                                              col_no,
-                                                                              h.name,
-                                                                              close_tag_name));
-                        }
-                    }
-                    Rule::expression => {
-                        // expression or helper expression
-                        // ( identifier | subexpression )
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
-                        let mut t = template_stack.front_mut().unwrap();
-                        if exp.omit_pre_ws {
-                            if let Some(el) = t.elements.pop() {
-                                if let RawString(ref text) = el {
-                                    t.elements.push(RawString(text.trim_right().to_owned()));
+                            Rule::html_expression => {
+                                let el = HTMLExpression(exp.name);
+                                let mut t = template_stack.front_mut().unwrap();
+                                t.push_element(el, line_no, col_no);
+                            }
+                            Rule::helper_expression => {
+                                let helper_template = HelperTemplate {
+                                    name: exp.name.as_name().unwrap(),
+                                    params: exp.params,
+                                    hash: exp.hash,
+                                    block_param: exp.block_param,
+                                    block: false,
+                                    template: None,
+                                    inverse: None,
+                                };
+                                let el = HelperExpression(helper_template);
+                                let mut t = template_stack.front_mut().unwrap();
+                                t.push_element(el, line_no, col_no);
+                            }
+                            Rule::directive_expression |
+                            Rule::partial_expression => {
+                                let directive = Directive {
+                                    name: exp.name.as_name().unwrap(),
+                                    params: exp.params,
+                                    hash: exp.hash,
+                                    template: None,
+                                };
+                                let el = if token.rule == Rule::directive_expression {
+                                    DirectiveExpression(directive)
                                 } else {
-                                    t.elements.push(el);
+                                    PartialExpression(directive)
+                                };
+                                let mut t = template_stack.front_mut().unwrap();
+                                t.push_element(el, line_no, col_no);
+                            }
+                            Rule::helper_block_end |
+                            Rule::raw_block_end => {
+                                let mut h = helper_stack.pop_front().unwrap();
+                                let close_tag_name = exp.name.as_name().unwrap();
+                                if h.name == close_tag_name {
+                                    let prev_t = template_stack.pop_front().unwrap();
+                                    if h.template.is_some() {
+                                        h.inverse = Some(prev_t);
+                                    } else {
+                                        h.template = Some(prev_t);
+                                    }
+                                    let t = template_stack.front_mut().unwrap();
+                                    t.elements.push(HelperBlock(h));
+                                } else {
+                                    return Err(TemplateError::MismatchingClosedHelper(line_no,
+                                                                                      col_no,
+                                                                                      h.name,
+                                                                                      close_tag_name));
                                 }
                             }
-                        }
-
-                        omit_pro_ws = exp.omit_pro_ws;
-
-                        let el = Expression(exp.name);
-                        t.push_element(el, line_no, col_no);
-                    }
-                    Rule::html_expression => {
-                        // expression or helper expression
-                        // ( identifier | subexpression )
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
-                        let mut t = template_stack.front_mut().unwrap();
-                        if exp.omit_pre_ws {
-                            if let Some(el) = t.elements.pop() {
-                                if let RawString(ref text) = el {
-                                    t.elements.push(RawString(text.trim_right().to_owned()));
+                            Rule::directive_block_end |
+                            Rule::partial_block_end => {
+                                let mut d = directive_stack.pop_front().unwrap();
+                                let close_tag_name = exp.name.as_name().unwrap();
+                                if d.name == close_tag_name {
+                                    let prev_t = template_stack.pop_front().unwrap();
+                                    d.template = Some(prev_t);
+                                    let t = template_stack.front_mut().unwrap();
+                                    if token.rule == Rule::directive_block_end {
+                                        t.elements.push(DirectiveBlock(d));
+                                    } else {
+                                        t.elements.push(PartialBlock(d));
+                                    }
                                 } else {
-                                    t.elements.push(el);
+                                    return Err(TemplateError::MismatchingClosedDirective(line_no, col_no, d.name, close_tag_name));
                                 }
                             }
+                            _ => unreachable!(),
                         }
-                        omit_pro_ws = exp.omit_pro_ws;
-
-                        let el = HTMLExpression(exp.name);
-                        t.push_element(el, line_no, col_no);
-                    }
-                    Rule::helper_expression => {
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
-                        let mut t = template_stack.front_mut().unwrap();
-                        if exp.omit_pre_ws {
-                            if let Some(el) = t.elements.pop() {
-                                if let RawString(ref text) = el {
-                                    t.elements.push(RawString(text.trim_right().to_owned()));
-                                } else {
-                                    t.elements.push(el);
-                                }
-                            }
-                        }
-                        omit_pro_ws = exp.omit_pro_ws;
-
-                        let helper_template = HelperTemplate {
-                            name: exp.name.as_name().unwrap(),
-                            params: exp.params,
-                            hash: exp.hash,
-                            block_param: exp.block_param,
-                            block: false,
-                            template: None,
-                            inverse: None,
-                        };
-                        let el = HelperExpression(helper_template);
-                        t.push_element(el, line_no, col_no);
                     }
                     Rule::hbs_comment => {
                         let text = parser.input().slice(token.start + 3, token.end - 2);
@@ -555,6 +586,10 @@ pub enum TemplateElement {
     HTMLExpression(Parameter),
     HelperExpression(HelperTemplate),
     HelperBlock(HelperTemplate),
+    DirectiveExpression(Directive),
+    DirectiveBlock(Directive),
+    PartialExpression(Directive),
+    PartialBlock(Directive),
     Comment(String),
 }
 
@@ -840,5 +875,55 @@ fn test_block_param() {
             }
         }
         Err(e) => panic!("{}", e),
+    }
+}
+
+#[test]
+#[cfg(feature="partial4")]
+fn test_directive() {
+    match Template::compile("hello {{* ssh}} world") {
+        Err(e) => panic!("{}", e),
+        Ok(t) => {
+            if let DirectiveExpression(ref de) = t.elements[1] {
+                assert_eq!(de.name, "ssh");
+                assert_eq!(de.template, None);
+            }
+        }
+    }
+
+    match Template::compile("hello {{> ssh}} world") {
+        Err(e) => panic!("{}", e),
+        Ok(t) => {
+            if let PartialExpression(ref de) = t.elements[1] {
+                assert_eq!(de.name, "ssh");
+                assert_eq!(de.template, None);
+            }
+        }
+    }
+
+    match Template::compile("{{#*inline \"hello\"}}expand to hello{{/inline}}{{> hello}}") {
+        Err(e) => panic!("{}", e),
+        Ok(t) => {
+            if let DirectiveBlock(ref db) = t.elements[0] {
+                assert_eq!(db.name, "inline");
+                assert_eq!(db.params[0],
+                           Parameter::Literal(Json::String("hello".to_owned())));
+                assert_eq!(db.template.as_ref().unwrap().elements[0],
+                           TemplateElement::RawString("expand to hello".to_owned()));
+            }
+        }
+    }
+
+    match Template::compile("{{#> layout \"hello\"}}expand to hello{{/layout}}{{> hello}}") {
+        Err(e) => panic!("{}", e),
+        Ok(t) => {
+            if let PartialBlock(ref db) = t.elements[0] {
+                assert_eq!(db.name, "layout");
+                assert_eq!(db.params[0],
+                           Parameter::Literal(Json::String("hello".to_owned())));
+                assert_eq!(db.template.as_ref().unwrap().elements[0],
+                           TemplateElement::RawString("expand to hello".to_owned()));
+            }
+        }
     }
 }

@@ -10,9 +10,9 @@ use serde::ser::Serialize as ToJson;
 
 use template::Template;
 use render::{Renderable, RenderError, RenderContext};
-use helpers::HelperDef;
 use context::Context;
-use helpers;
+use helpers::{self, HelperDef};
+use directives::{self, DirectiveDef};
 use support::str::StringWriter;
 use error::{TemplateError, TemplateFileError, TemplateRenderError};
 
@@ -44,31 +44,54 @@ pub fn no_escape(data: &str) -> String {
 pub struct Registry {
     templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<HelperDef + 'static>>,
+    directives: HashMap<String, Box<DirectiveDef + 'static>>,
     escape_fn: EscapeFn,
     source_map: bool,
 }
 
 impl Registry {
     pub fn new() -> Registry {
-        let mut r = Registry {
+        let r = Registry {
             templates: HashMap::new(),
             helpers: HashMap::new(),
+            directives: HashMap::new(),
             escape_fn: Box::new(html_escape),
             source_map: true,
         };
 
-        r.register_helper("if", Box::new(helpers::IF_HELPER));
-        r.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
-        r.register_helper("each", Box::new(helpers::EACH_HELPER));
-        r.register_helper("with", Box::new(helpers::WITH_HELPER));
-        r.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
-        r.register_helper("raw", Box::new(helpers::RAW_HELPER));
-        r.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
-        r.register_helper("block", Box::new(helpers::BLOCK_HELPER));
-        r.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
-        r.register_helper("log", Box::new(helpers::LOG_HELPER));
+        r.setup_builtins()
+    }
 
-        r
+    #[cfg(not(feature = "partial4"))]
+    fn setup_builtins(mut self) -> Registry {
+        self.register_helper("if", Box::new(helpers::IF_HELPER));
+        self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
+        self.register_helper("each", Box::new(helpers::EACH_HELPER));
+        self.register_helper("with", Box::new(helpers::WITH_HELPER));
+        self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
+        self.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        self.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
+        self.register_helper("block", Box::new(helpers::BLOCK_HELPER));
+        self.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
+        self.register_helper("log", Box::new(helpers::LOG_HELPER));
+
+        self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
+        self
+    }
+
+    #[cfg(feature = "partial4")]
+    fn setup_builtins(mut self) -> Registry {
+        self.register_helper("if", Box::new(helpers::IF_HELPER));
+        self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
+        self.register_helper("each", Box::new(helpers::EACH_HELPER));
+        self.register_helper("with", Box::new(helpers::WITH_HELPER));
+        self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
+        self.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        self.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
+        self.register_helper("log", Box::new(helpers::LOG_HELPER));
+
+        self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
+        self
     }
 
     /// Enable handlebars template source map
@@ -125,6 +148,14 @@ impl Registry {
         self.helpers.insert(name.to_string(), def)
     }
 
+    /// register a directive
+    pub fn register_decorator(&mut self,
+                              name: &str,
+                              def: Box<DirectiveDef + 'static>)
+                              -> Option<Box<DirectiveDef + 'static>> {
+        self.directives.insert(name.to_string(), def)
+    }
+
     /// Register a new *escape fn* to be used from now on by this registry.
     pub fn register_escape_fn<F: 'static + Fn(&str) -> String + Send + Sync>(&mut self,
                                                                              escape_fn: F) {
@@ -149,6 +180,11 @@ impl Registry {
     /// Return a registered helper
     pub fn get_helper(&self, name: &str) -> Option<&Box<HelperDef + 'static>> {
         self.helpers.get(name)
+    }
+
+    /// Return a registered directive, aka decorator
+    pub fn get_decorator(&self, name: &str) -> Option<&Box<DirectiveDef + 'static>> {
+        self.directives.get(name)
     }
 
     /// Return all templates registered
@@ -238,6 +274,7 @@ mod test {
     use helpers::HelperDef;
     use context::Context;
     use support::str::StringWriter;
+    #[cfg(not(feature = "partial4"))]
     use error::TemplateRenderError;
 
     #[derive(Clone, Copy)]
@@ -255,9 +292,11 @@ mod test {
         }
     }
 
+    #[cfg(not(feature = "partial4"))]
     static DUMMY_HELPER: DummyHelper = DummyHelper;
 
     #[test]
+    #[cfg(not(feature = "partial4"))]
     fn test_registry_operations() {
         let mut r = Registry::new();
 
@@ -320,6 +359,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(not(feature = "partial4"))]
     fn test_template_render() {
         let mut r = Registry::new();
 

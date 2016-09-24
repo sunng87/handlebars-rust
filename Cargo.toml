@@ -32,6 +32,7 @@ default = ["rustc_ser_type"]
 rustc_ser_type = ["rustc-serialize"]
 serde_type = ["serde", "serde_json"]
 unstable = ["serde_type", "serde_macros"]
+partial4 = []
 
 [dev-dependencies]
 env_logger = "^0.3.2"

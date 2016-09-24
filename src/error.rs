@@ -11,6 +11,11 @@ quick_error! {
                 open, closed, line_no, col_no)
             description("wrong name of closing helper")
         }
+        MismatchingClosedDirective(line_no: usize, col_no: usize, open: String, closed: String) {
+            display("directive {:?} was opened, but {:?} is closing at line {:?}, column {:?}",
+                open, closed, line_no, col_no)
+            description("wrong name of closing directive")
+        }
         InvalidSyntax (line_no: usize, col_no: usize) {
             display("invalid handlebars syntax at line {:?}, column {:?}", line_no, col_no)
             description("invalid handlebars syntax")
