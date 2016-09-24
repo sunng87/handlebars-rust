@@ -234,7 +234,7 @@ impl JsonTruthy for Json {
 #[cfg(feature = "serde_type")]
 mod test {
     use context::{JsonRender, Context};
-    use std::collections::BTreeMap;
+    use std::collections::{VecDeque, BTreeMap};
     use serde_json::value::{self, Value as Json};
     use serde::ser::{Serialize, Serializer};
 
@@ -286,7 +286,8 @@ mod test {
     fn test_render() {
         let v = "hello";
         let ctx = Context::wraps(&v.to_string());
-        assert_eq!(ctx.navigate(".", "this").render(), v.to_string());
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this").render(),
+                   v.to_string());
     }
 
     #[test]
@@ -304,27 +305,28 @@ mod test {
         };
 
         let ctx = Context::wraps(&person);
-        assert_eq!(ctx.navigate(".", "./name/../addr/country").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "./name/../addr/country").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[country]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.[country]").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.[\"country\"]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.[\"country\"]").render(),
                    "China".to_string());
-        assert_eq!(ctx.navigate(".", "addr.['country']").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.['country']").render(),
                    "China".to_string());
 
         let v = true;
         let ctx2 = Context::wraps(&v);
-        assert_eq!(ctx2.navigate(".", "this").render(), "true".to_string());
+        assert_eq!(ctx2.navigate(".", &VecDeque::new(), "this").render(),
+                   "true".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles[0]").render(),
                    "programmer".to_string());
-        assert_eq!(ctx.navigate(".", "titles.[0]").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles.[0]").render(),
                    "programmer".to_string());
 
-        assert_eq!(ctx.navigate(".", "titles[0]/../../age").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles[0]/../../age").render(),
                    "27".to_string());
-        assert_eq!(ctx.navigate(".", "this.titles[0]/../../age").render(),
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this.titles[0]/../../age").render(),
                    "27".to_string());
 
     }
@@ -340,8 +342,10 @@ mod test {
         map_without_this.insert("age".to_string(), value::to_value(&4usize));
         let ctx2 = Context::wraps(&map_without_this);
 
-        assert_eq!(ctx1.navigate(".", "this").render(), "hello".to_owned());
-        assert_eq!(ctx2.navigate(".", "age").render(), "4".to_owned());
+        assert_eq!(ctx1.navigate(".", &VecDeque::new(), "this").render(),
+                   "hello".to_owned());
+        assert_eq!(ctx2.navigate(".", &VecDeque::new(), "age").render(),
+                   "4".to_owned());
     }
 
     #[test]
@@ -357,12 +361,16 @@ mod test {
         hash.insert("tag".to_owned(), value::to_value(&"h1"));
 
         let ctx_a1 = ctx1.extend(&hash);
-        assert_eq!(ctx_a1.navigate(".", "age").render(), "4".to_owned());
-        assert_eq!(ctx_a1.navigate(".", "tag").render(), "h1".to_owned());
+        assert_eq!(ctx_a1.navigate(".", &VecDeque::new(), "age").render(),
+                   "4".to_owned());
+        assert_eq!(ctx_a1.navigate(".", &VecDeque::new(), "tag").render(),
+                   "h1".to_owned());
 
         let ctx_a2 = ctx2.extend(&hash);
-        assert_eq!(ctx_a2.navigate(".", "this").render(), "hello".to_owned());
-        assert_eq!(ctx_a2.navigate(".", "tag").render(), "h1".to_owned());
+        assert_eq!(ctx_a2.navigate(".", &VecDeque::new(), "this").render(),
+                   "hello".to_owned());
+        assert_eq!(ctx_a2.navigate(".", &VecDeque::new(), "tag").render(),
+                   "h1".to_owned());
     }
 }
 
