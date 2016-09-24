@@ -274,6 +274,7 @@ mod test {
     use helpers::HelperDef;
     use context::Context;
     use support::str::StringWriter;
+    #[cfg(not(feature = "partial4"))]
     use error::TemplateRenderError;
 
     #[derive(Clone, Copy)]
