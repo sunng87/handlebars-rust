@@ -32,7 +32,7 @@ impl HelperDef for WithHelper {
 
             if let Some(path_root) = param.path_root() {
                 let local_path_root = format!("{}/{}", local_rc.get_path(), path_root);
-                local_rc.set_local_path_root(local_path_root);
+                local_rc.push_local_path_root(local_path_root);
             }
             if not_empty {
                 if let Some(inner_path) = param.path() {
@@ -47,10 +47,20 @@ impl HelperDef for WithHelper {
                 }
             }
 
-            match template {
+            let result = match template {
                 Some(t) => t.render(c, r, &mut local_rc),
                 None => Ok(()),
+            };
+
+            if h.block_param().is_some() {
+                local_rc.pop_block_context();
             }
+
+            if param.path_root().is_some() {
+                local_rc.pop_local_path_root();
+            }
+
+            result
         };
 
         rc.demote_local_vars();

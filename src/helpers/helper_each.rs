@@ -38,7 +38,7 @@ impl HelperDef for EachHelper {
                         for i in 0..len {
                             let mut local_rc = rc.derive();
                             if let Some(ref p) = local_path_root {
-                                local_rc.set_local_path_root(p.clone());
+                                local_rc.push_local_path_root(p.clone());
                             }
 
                             local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize)));
@@ -65,6 +65,10 @@ impl HelperDef for EachHelper {
                             if h.block_param().is_some() {
                                 local_rc.pop_block_context();
                             }
+
+                            if local_path_root.is_some() {
+                                local_rc.pop_local_path_root();
+                            }
                         }
                         Ok(())
                     }
@@ -73,7 +77,7 @@ impl HelperDef for EachHelper {
                         for k in obj.keys() {
                             let mut local_rc = rc.derive();
                             if let Some(ref p) = local_path_root {
-                                local_rc.set_local_path_root(p.clone());
+                                local_rc.push_local_path_root(p.clone());
                             }
                             local_rc.set_local_var("@first".to_string(), to_json(&first));
                             if first {
@@ -101,6 +105,10 @@ impl HelperDef for EachHelper {
 
                             if h.block_param().is_some() {
                                 local_rc.pop_block_context();
+                            }
+
+                            if local_path_root.is_some() {
+                                local_rc.pop_local_path_root();
                             }
                         }
 
@@ -295,7 +303,6 @@ mod test {
             "a".to_string() => vec![1,2,3,4,5]
         };
         let r0 = handlebars.render("t0", &m1).unwrap();
-        println!("render: {}", r0);
         assert_eq!(r0, "12345");
     }
 
