@@ -101,6 +101,13 @@ embed you page into this parent.
 You can find a real example for template inheritance in
 `examples/partials.rs`, and templates used by this file.
 
+From 0.21 we support Handlebars 4.0 partial syntax with crate feature
+`partial4`. Original partial syntax via `block`, `partial` helpers are
+still support at the moment. But no doubt `partial4` will become
+default in future releases. There is no rust code difference between
+the syntax, just template change. Examples can be find in
+`examples/partials.rs`.
+
 ### Limitations
 
 * This implementation is **not fully compatible** with the original
@@ -128,8 +135,8 @@ You can find a real example for template inheritance in
   * include `>`
   * log
 * Custom helper
-* Parameter and hashes for helper
-* Partials, include
+* Parameter and hashes for helper, block params
+* Partials, include (new partial syntax via crate feature `partial4`)
 * Omitting whitespace with `~`
 * Subexpression `{{(foo bar)}}`
 * Json expression `a.b.[0]` and `a.b.[c]`
@@ -138,7 +145,6 @@ You can find a real example for template inheritance in
 ### JavaScript implementation features we don't have
 
 * Mustache block (use `if`/`each` instead)
-* Block params (Perhaps using `this`)
 * Chained else
 * ...
 
