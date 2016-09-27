@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.21.0](https://github.com/sunng87/handlebars-rust/compare/0.21.0...0.20.5) - 2016-09-27
+
+* [Added] Block params support
+  [#101](https://github.com/sunng87/handlebars-rust/pull/101)
+* [Added] New partial syntax [#103](https://github.com/sunng87/handlebars-rust/pull/103)
+* [Changed] Rewrite path parser, better support for `../`
+  [#105](https://github.com/sunng87/handlebars-rust/pull/105)
+
 ## [0.20.5](https://github.com/sunng87/handlebars-rust/compare/0.20.4...0.20.5) - 2016-08-27
 
 * [Changed] Fixed issue for using [] in expression
