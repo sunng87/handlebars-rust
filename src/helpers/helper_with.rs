@@ -75,6 +75,7 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 mod test {
     use template::Template;
     use registry::Registry;
+    use context::to_json;
 
     use std::collections::BTreeMap;
     use serialize::json::{Json, ToJson};
@@ -242,5 +243,26 @@ mod test {
 
         let r2 = handlebars.render("t2", &people);
         assert_eq!(r2.ok().unwrap(), "01".to_string());
+    }
+
+    #[test]
+    fn test_path_up() {
+        let t0 = Template::compile("{{#with a}}{{#with b}}{{../../d}}{{/with}}{{/with}}"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
+        let mut handlebars = Registry::new();
+        handlebars.register_template("t0", t0);
+
+        let data = btreemap! {
+            "a".to_string() => to_json(&btreemap! {
+                "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
+            }),
+            "d".to_string() => to_json(&1)
+        };
+
+        let r0 = handlebars.render("t0", &data);
+        assert_eq!(r0.ok().unwrap(), "1".to_string());
+
     }
 }
