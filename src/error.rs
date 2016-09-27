@@ -1,5 +1,6 @@
 use std::io::Error as IOError;
 
+use template::Parameter;
 use render::RenderError;
 
 quick_error! {
@@ -11,7 +12,7 @@ quick_error! {
                 open, closed, line_no, col_no)
             description("wrong name of closing helper")
         }
-        MismatchingClosedDirective(line_no: usize, col_no: usize, open: String, closed: String) {
+        MismatchingClosedDirective(line_no: usize, col_no: usize, open: Parameter, closed: Parameter) {
             display("directive {:?} was opened, but {:?} is closing at line {:?}, column {:?}",
                 open, closed, line_no, col_no)
             description("wrong name of closing directive")

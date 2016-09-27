@@ -101,7 +101,7 @@ impl<'a> From<&'a Subexpression> for HelperTemplate {
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Directive {
-    pub name: String,
+    pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: BTreeMap<String, Parameter>,
     pub template: Option<Template>,
@@ -401,7 +401,7 @@ impl Template {
                             Rule::directive_block_start |
                             Rule::partial_block_start => {
                                 let directive = Directive {
-                                    name: exp.name.as_name().unwrap(),
+                                    name: exp.name,
                                     params: exp.params,
                                     hash: exp.hash,
                                     template: None,
@@ -493,7 +493,7 @@ impl Template {
                             Rule::directive_expression |
                             Rule::partial_expression => {
                                 let directive = Directive {
-                                    name: exp.name.as_name().unwrap(),
+                                    name: exp.name,
                                     params: exp.params,
                                     hash: exp.hash,
                                     template: None,
@@ -529,7 +529,7 @@ impl Template {
                             Rule::directive_block_end |
                             Rule::partial_block_end => {
                                 let mut d = directive_stack.pop_front().unwrap();
-                                let close_tag_name = exp.name.as_name().unwrap();
+                                let close_tag_name = exp.name;
                                 if d.name == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     d.template = Some(prev_t);
@@ -885,7 +885,7 @@ fn test_directive() {
         Err(e) => panic!("{}", e),
         Ok(t) => {
             if let DirectiveExpression(ref de) = t.elements[1] {
-                assert_eq!(de.name, "ssh");
+                assert_eq!(de.name, Parameter::Name("ssh".to_owned()));
                 assert_eq!(de.template, None);
             }
         }
@@ -895,7 +895,7 @@ fn test_directive() {
         Err(e) => panic!("{}", e),
         Ok(t) => {
             if let PartialExpression(ref de) = t.elements[1] {
-                assert_eq!(de.name, "ssh");
+                assert_eq!(de.name, Parameter::Name("ssh".to_owned()));
                 assert_eq!(de.template, None);
             }
         }
@@ -905,7 +905,7 @@ fn test_directive() {
         Err(e) => panic!("{}", e),
         Ok(t) => {
             if let DirectiveBlock(ref db) = t.elements[0] {
-                assert_eq!(db.name, "inline");
+                assert_eq!(db.name, Parameter::Name("inline".to_owned()));
                 assert_eq!(db.params[0],
                            Parameter::Literal(Json::String("hello".to_owned())));
                 assert_eq!(db.template.as_ref().unwrap().elements[0],
@@ -918,7 +918,7 @@ fn test_directive() {
         Err(e) => panic!("{}", e),
         Ok(t) => {
             if let PartialBlock(ref db) = t.elements[0] {
-                assert_eq!(db.name, "layout");
+                assert_eq!(db.name, Parameter::Name("layout".to_owned()));
                 assert_eq!(db.params[0],
                            Parameter::Literal(Json::String("hello".to_owned())));
                 assert_eq!(db.template.as_ref().unwrap().elements[0],

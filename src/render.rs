@@ -377,7 +377,7 @@ impl<'a, 'b> Helper<'a> {
 }
 
 pub struct Directive<'a> {
-    name: &'a str,
+    name: String,
     params: Vec<ContextJson>,
     hash: BTreeMap<String, ContextJson>,
     template: &'a Option<Template>,
@@ -389,6 +389,8 @@ impl<'a, 'b> Directive<'a> {
                          registry: &Registry,
                          rc: &'b mut RenderContext)
                          -> Result<Directive<'a>, RenderError> {
+        let name = try!(dt.name.expand_as_name(ctx, registry, rc));
+
         let mut evaluated_params = Vec::new();
         for p in dt.params.iter() {
             let r = try!(p.expand(ctx, registry, rc));
@@ -402,7 +404,7 @@ impl<'a, 'b> Directive<'a> {
         }
 
         Ok(Directive {
-            name: &dt.name,
+            name: name,
             params: evaluated_params,
             hash: evaluated_hash,
             template: &dt.template,
@@ -458,6 +460,29 @@ pub trait Evalable {
 
 
 impl Parameter {
+    pub fn expand_as_name(&self,
+                          ctx: &Context,
+                          registry: &Registry,
+                          rc: &mut RenderContext)
+                          -> Result<String, RenderError> {
+        match self {
+            &Parameter::Name(ref name) => Ok(name.to_owned()),
+            &Parameter::Subexpression(ref t) => {
+                let mut local_writer = StringWriter::new();
+                {
+                    let mut local_rc = rc.with_writer(&mut local_writer);
+                    // disable html escape for subexpression
+                    local_rc.disable_escape = true;
+
+                    try!(t.as_template().render(ctx, registry, &mut local_rc));
+                }
+
+                Ok(local_writer.to_string())
+            }
+            &Parameter::Literal(ref j) => Ok(j.render()),
+        }
+    }
+
     pub fn expand(&self,
                   ctx: &Context,
                   registry: &Registry,
@@ -638,7 +663,7 @@ impl Evalable for TemplateElement {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
                 Directive::from_template(dt, ctx, registry, rc).and_then(|di| {
-                    match registry.get_decorator(&dt.name) {
+                    match registry.get_decorator(&di.name) {
                         Some(d) => (**d).call(ctx, &di, registry, rc),
                         None => {
                             Err(RenderError::new(format!("Directive not defined: {:?}", dt.name)))

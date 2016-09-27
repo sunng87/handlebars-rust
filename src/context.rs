@@ -212,6 +212,16 @@ pub fn to_json<T>(src: &T) -> Json
     value::to_value(src)
 }
 
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+pub fn as_string(src: &Json) -> Option<&str> {
+    src.as_string()
+}
+
+#[cfg(feature = "serde_type")]
+pub fn as_string(src: &Json) -> Option<&str> {
+    src.as_str()
+}
+
 impl JsonTruthy for Json {
     fn is_truthy(&self) -> bool {
         match *self {

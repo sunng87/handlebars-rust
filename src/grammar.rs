@@ -37,6 +37,7 @@ impl_rdp! {
         hash = { identifier ~ ["="] ~ param }
         block_param = { ["as"] ~ ["|"] ~ identifier ~ identifier? ~ ["|"]}
         exp_line = _{ identifier ~ (hash|param)* ~ block_param?}
+        partial_exp_line = _{ name ~ (hash|param)* }
 
         subexpression = { ["("] ~ name ~ (hash|param)* ~ [")"] }
 
@@ -54,8 +55,9 @@ impl_rdp! {
 
         directive_expression = { ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
                                           pro_whitespace_omitter? ~ ["}}"] }
-        partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ exp_line ~
+        partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line ~
                                         pro_whitespace_omitter? ~ ["}}"] }
+
 
         invert_tag = { ["{{else}}"]|["{{^}}"] }
         helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
@@ -73,7 +75,7 @@ impl_rdp! {
         directive_block = _{ directive_block_start ~ template ~
                              directive_block_end }
 
-        partial_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ exp_line ~
+        partial_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ partial_exp_line ~
                                          pro_whitespace_omitter? ~ ["}}"] }
         partial_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                        pro_whitespace_omitter? ~ ["}}"] }
@@ -155,6 +157,7 @@ impl_rdp! {
         hash = { identifier ~ ["="] ~ param }
         block_param = { ["as"] ~ ["|"] ~ identifier ~ identifier? ~ ["|"]}
         exp_line = _{ identifier ~ (hash|param)* ~ block_param?}
+        partial_exp_line = _{ name ~ (hash|param)* }
 
         subexpression = { ["("] ~ name ~ (hash|param)* ~ [")"] }
 
@@ -172,7 +175,7 @@ impl_rdp! {
 
         directive_expression = { ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
                                           pro_whitespace_omitter? ~ ["}}"] }
-        partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ exp_line ~
+        partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line ~
                                         pro_whitespace_omitter? ~ ["}}"] }
 
         invert_tag = { ["{{else}}"]|["{{^}}"] }
@@ -191,7 +194,7 @@ impl_rdp! {
         directive_block = _{ directive_block_start ~ template ~
                              directive_block_end }
 
-        partial_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ exp_line ~
+        partial_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ partial_exp_line ~
                                          pro_whitespace_omitter? ~ ["}}"] }
         partial_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                        pro_whitespace_omitter? ~ ["}}"] }
@@ -497,7 +500,7 @@ fn test_directive_block() {
 
 #[test]
 fn test_partial_expression() {
-    let s = vec!["{{> hello}}"];
+    let s = vec!["{{> hello}}", "{{> (hello)}}", "{{~> hello a}}", "{{> hello a=1}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.partial_expression());
