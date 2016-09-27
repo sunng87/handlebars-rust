@@ -11,9 +11,7 @@ use std::collections::{VecDeque, BTreeMap};
 
 use grammar::{Rdp, Rule};
 
-lazy_static! {
-    static ref DEFAULT_VALUE: Json = Json::Null;
-}
+static DEFAULT_VALUE: Json = Json::Null;
 
 pub type Object = BTreeMap<String, Json>;
 
