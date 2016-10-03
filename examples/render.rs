@@ -1,6 +1,4 @@
-
-#![cfg_attr(all(feature="serde_type"), feature(custom_derive, plugin))]
-#![cfg_attr(all(feature="serde_type"), plugin(serde_macros))]
+#![cfg_attr(all(feature="serde_type"), feature(rustc_macro))]
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
@@ -11,6 +9,10 @@ extern crate rustc_serialize;
 extern crate serde;
 #[cfg(feature = "serde_type")]
 extern crate serde_json;
+#[cfg(feature = "serde_type")]
+#[macro_use]
+extern crate serde_derive;
+
 
 use std::error::Error;
 
