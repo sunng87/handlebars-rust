@@ -34,7 +34,7 @@ fn parse_json_visitor_inner<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a st
                 Rule::path_up => {
                     path_stack.pop_back();
                 }
-                Rule::path_id | Rule::path_raw_id | Rule::path_num_id | Rule::path_this => {
+                Rule::path_id | Rule::path_raw_id | Rule::path_num_id => {
                     let id = &path[seg.start..seg.end];
                     path_stack.push_back(id);
                 }
@@ -58,7 +58,6 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>,
         let mut iter = parser.queue().iter();
         loop {
             if let Some(sg) = iter.next() {
-
                 if sg.rule == Rule::path_up {
                     path_context_depth += 1;
                 } else {
@@ -435,6 +434,16 @@ mod test {
         let ctx = Context::wraps(&v.to_string());
         assert_eq!(ctx.navigate(".", &VecDeque::new(), "this").render(),
                    v.to_string());
+    }
+
+    #[test]
+    fn test_key_name_with_this() {
+        let m = btreemap!{
+            "this_name".to_string() => "the_value".to_string()
+        };
+        let ctx = Context::wraps(&m);
+        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this_name").render(),
+                   "the_value".to_string());
     }
 
     #[test]

@@ -109,13 +109,12 @@ impl_rdp! {
         path_id = { path_ident+ }
         path_num_id = { ['0'..'9']+ }
         path_raw_id = { path_ident* }
-        path_this = { ["this"] }
         path_sep = _{ ["/"] | ["."] }
         path_up = { [".."] }
         path_var = { path_id }
         path_key = { ["["] ~ (["\""]|["'"])? ~ path_raw_id ~ (["\""]|["'"])? ~ ["]"] }
         path_idx = { ["["] ~ path_num_id ~ ["]"]}
-        path_item = _{ path_this|path_up|path_var }
+        path_item = _{ path_up|path_var }
         path = _{ ["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi }
     }
 }
@@ -230,13 +229,12 @@ impl_rdp! {
         path_id = { path_ident+ }
         path_num_id = { ['0'..'9']+ }
         path_raw_id = { path_ident* }
-        path_this = { ["this"] }
         path_sep = _{ ["/"] | ["."] }
         path_up = { [".."] }
         path_var = { path_id }
         path_key = { ["["] ~ (["\""]|["'"])? ~ path_raw_id ~ (["\""]|["'"])? ~ ["]"] }
         path_idx = { ["["] ~ path_num_id ~ ["]"]}
-        path_item = _{ path_this|path_up|path_var }
+        path_item = _{ path_up|path_var }
         path = _{ ["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi }
     }
 }
@@ -461,14 +459,16 @@ fn test_block_param() {
 
 #[test]
 fn test_path() {
-    let s = vec!["a.b.c.d",
+    let s = vec!["a",
+                 "a.b.c.d",
                  "a[0][1][2]",
                  "a[\"abc\"]",
                  "a/v/c.d.s",
                  "a[0]/b/c/../d",
                  "a[\"bbc\"]/b/c/../d",
                  "../a/b[0][1]",
-                 "./this[0][1]/this/../a"];
+                 "./this[0][1]/this/../a",
+                 "./this_name"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.path());
