@@ -84,6 +84,8 @@ mod test {
         let t7 = Template::compile("{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}")
                      .ok()
                      .unwrap();
+        let t8 = Template::compile("{{a}}".to_string()).ok().unwrap();
+        let t9 = Template::compile("{{> t8 a=2}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
@@ -94,6 +96,8 @@ mod test {
         handlebars.register_template("t5", t5);
         handlebars.register_template("t6", t6);
         handlebars.register_template("t7", t7);
+        handlebars.register_template("t8", t8);
+        handlebars.register_template("t9", t9);
 
         assert_eq!(handlebars.render("t0", &1).ok().unwrap(), "1".to_string());
         assert_eq!(handlebars.render("t2", &1).ok().unwrap(),
@@ -107,5 +111,6 @@ mod test {
                    "2".to_string());
         assert_eq!(handlebars.render("t7", &1).ok().unwrap(),
                    "world".to_string());
+        assert_eq!(handlebars.render("t9", &1).ok().unwrap(), "2".to_string());
     }
 }
