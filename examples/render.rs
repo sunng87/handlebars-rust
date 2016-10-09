@@ -1,4 +1,4 @@
-#![cfg_attr(all(feature="serde_type"), feature(rustc_macro))]
+#![cfg_attr(all(feature="serde_type"), feature(proc_macro))]
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
