@@ -266,6 +266,10 @@ extern crate serde;
 #[cfg(feature = "serde_type")]
 extern crate serde_json;
 
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
+
 pub use self::template::Template;
 pub use self::error::{TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::registry::{EscapeFn, no_escape, html_escape, Registry as Handlebars};

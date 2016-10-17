@@ -8,6 +8,8 @@ use serialize::json::ToJson;
 #[cfg(feature = "serde_type")]
 use serde::ser::Serialize as ToJson;
 
+use regex::Regex;
+
 use template::Template;
 use render::{Renderable, RenderError, RenderContext};
 use context::Context;
@@ -25,11 +27,31 @@ pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
 
 /// The default *escape fn* replaces the characters `&"<>`
 /// with the equivalent html / xml entities.
-pub fn html_escape(data: &str) -> String {
-    data.replace("&", "&amp;")
-        .replace("\"", "&quot;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
+pub fn html_escape(input: &str) -> String {
+    lazy_static! {
+        static ref REGEX: Regex = Regex::new("[<>&\"]").unwrap();
+    }
+    let mut last_match = 0;
+
+    if REGEX.is_match(&input) {
+        let matches = REGEX.find_iter(&input);
+        let mut output = String::with_capacity(input.len());
+        for (begin, end) in matches {
+            output.push_str(&input[last_match..begin]);
+            match &input[begin..end] {
+                "<" => output.push_str("&lt;"),
+                ">" => output.push_str("&gt;"),
+                "&" => output.push_str("&amp;"),
+                "\"" => output.push_str("&quot;"),
+                _ => unreachable!(),
+            }
+            last_match = end;
+        }
+        output.push_str(&input[last_match..]);
+        output
+    } else {
+        input.to_owned()
+    }
 }
 
 /// `EscapeFn` that donot change any thing. Useful when using in a non-html
@@ -111,7 +133,7 @@ impl Registry {
                                     tpl_str: String)
                                     -> Result<(), TemplateError> {
         try!(Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)
-                 .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
+            .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
         Ok(())
     }
 
