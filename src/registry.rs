@@ -6,7 +6,7 @@ use std::path::Path;
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use serialize::json::ToJson;
 #[cfg(feature = "serde_type")]
-use serde::ser::Serialize as ToJson;
+use serde_json::value::ToJson;
 
 use template::Template;
 use render::{Renderable, RenderError, RenderContext};

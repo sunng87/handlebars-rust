@@ -7,9 +7,7 @@ use std::io::Error as IOError;
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 use serialize::json::{ToJson, Json};
 #[cfg(feature = "serde_type")]
-use serde_json::value::Value as Json;
-#[cfg(feature = "serde_type")]
-use serde::ser::Serialize as ToJson;
+use serde_json::value::{Value as Json, ToJson};
 
 use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMapping, BlockParam,
                Directive as DirectiveTemplate};

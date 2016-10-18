@@ -2,9 +2,7 @@
 use serialize::json::{Json, ToJson};
 
 #[cfg(feature = "serde_type")]
-use serde::ser::Serialize;
-#[cfg(feature = "serde_type")]
-use serde_json::value::{self, Value as Json};
+use serde_json::value::{Value as Json, ToJson};
 
 use pest::prelude::*;
 use std::collections::{VecDeque, BTreeMap};
@@ -106,16 +104,9 @@ impl Context {
         Context { data: Json::Null }
     }
 
-    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     /// Create a context with given data
     pub fn wraps<T: ToJson>(e: &T) -> Context {
         Context { data: e.to_json() }
-    }
-
-    #[cfg(feature = "serde_type")]
-    /// Create a context with given data
-    pub fn wraps<T: Serialize>(e: &T) -> Context {
-        Context { data: value::to_value(e) }
     }
 
     /// Extend current context with another JSON object
@@ -195,18 +186,10 @@ impl JsonRender for Json {
     }
 }
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 pub fn to_json<T>(src: &T) -> Json
     where T: ToJson
 {
     src.to_json()
-}
-
-#[cfg(feature = "serde_type")]
-pub fn to_json<T>(src: &T) -> Json
-    where T: Serialize
-{
-    value::to_value(src)
 }
 
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
@@ -242,8 +225,7 @@ impl JsonTruthy for Json {
 mod test {
     use context::{JsonRender, Context};
     use std::collections::{VecDeque, BTreeMap};
-    use serde_json::value::{self, Value as Json};
-    use serde::ser::{Serialize, Serializer};
+    use serde_json::value::{self, Value as Json, ToJson};
 
     #[test]
     fn test_json_render() {
@@ -258,14 +240,12 @@ mod test {
         country: String,
     }
 
-    impl Serialize for Address {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-            where S: Serializer
-        {
+    impl ToJson for Address {
+        fn to_json(&self) -> Json {
             let mut m = BTreeMap::new();
-            m.insert("city".to_string(), value::to_value(&self.city));
-            m.insert("country".to_string(), value::to_value(&self.country));
-            m.serialize(serializer)
+            m.insert("city".to_string(), self.city.to_json());
+            m.insert("country".to_string(), self.country.to_json());
+            m.to_json()
         }
     }
 
@@ -276,16 +256,14 @@ mod test {
         titles: Vec<String>,
     }
 
-    impl Serialize for Person {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-            where S: Serializer
-        {
+    impl ToJson for Person {
+        fn to_json(&self) -> Json {
             let mut m = BTreeMap::new();
-            m.insert("name".to_string(), value::to_value(&self.name));
-            m.insert("age".to_string(), value::to_value(&self.age));
-            m.insert("addr".to_string(), value::to_value(&self.addr));
-            m.insert("titles".to_string(), value::to_value(&self.titles));
-            m.serialize(serializer)
+            m.insert("name".to_string(), self.name.to_json());
+            m.insert("age".to_string(), self.age.to_json());
+            m.insert("addr".to_string(), self.addr.to_json());
+            m.insert("titles".to_string(), self.titles.to_json());
+            m.to_json()
         }
     }
 

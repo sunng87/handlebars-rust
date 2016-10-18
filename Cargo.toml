@@ -19,18 +19,19 @@ path = "src/lib.rs"
 [dependencies]
 
 log = "^0.3.1"
-rustc-serialize = { version = "^0.3.15", optional = true }
 quick-error = "^1.0.0"
-serde = { version = "^0.8.0", optional = true }
-serde_json = { version = "^0.8.0", optional = true }
-serde_derive = { version = "^0.8.10", optional = true }
 pest = "^0.3.0"
+serde_json = { version = "^0.8.0", optional = true }
+rustc-serialize = { version = "^0.3.15", optional = true }
+
+serde = { version = "^0.8.0", optional = true }
+serde_derive = { version = "^0.8.10", optional = true }
 
 [features]
 default = ["rustc_ser_type"]
 rustc_ser_type = ["rustc-serialize"]
-serde_type = ["serde", "serde_json"]
-unstable = ["serde_type", "serde_derive"]
+serde_type = ["serde_json"]
+unstable = ["serde_type", "serde", "serde_derive"]
 partial4 = []
 
 [dev-dependencies]
