@@ -23,7 +23,7 @@ fn format_helper(_: &Context,
                  _: &Handlebars,
                  rc: &mut RenderContext)
                  -> Result<(), RenderError> {
-    let param = h.param(0).unwrap();
+    let param = try!(h.param(0).ok_or(RenderError::new("Param 0 is required for format helper.")));
     let rendered = format!("{} pts", param.value().render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
     Ok(())
@@ -34,8 +34,12 @@ fn rank_helper(_: &Context,
                _: &Handlebars,
                rc: &mut RenderContext)
                -> Result<(), RenderError> {
-    let rank = h.param(0).unwrap().value().as_u64().unwrap() as usize;
-    let teams = h.param(1).unwrap().value().as_array().unwrap();
+    let rank = try!(h.param(0)
+                    .and_then(|v| v.value().as_u64())
+                    .ok_or(RenderError::new("Param 0 with u64 type is required for rank helper."))) as usize;
+    let teams = try!(h.param(1)
+              .and_then(|v| v.value().as_array())
+              .ok_or(RenderError::new("Param 1 with array type is required for rank helper")));
     let total = teams.len();
     if rank == 0 {
         try!(rc.writer.write("champion".as_bytes()));
