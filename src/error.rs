@@ -38,10 +38,14 @@ quick_error! {
         TemplateError(err: TemplateError) {
             from()
             cause(err)
+            description(err.description())
+            display("{}", err)
         }
         IOError(err: IOError) {
             from()
             cause(err)
+            description(err.description())
+            display("{}", err)
         }
     }
 }
@@ -52,14 +56,20 @@ quick_error! {
         TemplateError(err: TemplateError) {
             from()
             cause(err)
+            description(err.description())
+            display("{}", err)
         }
         RenderError(err: RenderError) {
             from()
             cause(err)
+            description(err.description())
+            display("{}", err)
         }
         IOError(err: IOError) {
             from()
             cause(err)
+            description(err.description())
+            display("{}", err)
         }
     }
 }
