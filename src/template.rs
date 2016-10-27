@@ -13,7 +13,7 @@ use std::str::FromStr;
 
 use grammar::{Rdp, Rule};
 
-use TemplateError;
+use error::{TemplateError, TemplateErrorReason};
 
 use self::TemplateElement::*;
 
@@ -119,7 +119,7 @@ impl Parameter {
     pub fn parse(s: &str) -> Result<Parameter, TemplateError> {
         let mut parser = Rdp::new(StringInput::new(s));
         if !parser.parameter() {
-            return Err(TemplateError::InvalidParam(s.to_owned()));
+            return Err(TemplateError::of(TemplateErrorReason::InvalidParam(s.to_owned())));
         }
 
         let mut it = parser.queue().iter().peekable();
@@ -165,7 +165,7 @@ impl Template {
             }))
         } else {
             // line/col no
-            Err(TemplateError::NestedSubexpression(0, 0))
+            Err(TemplateError::of(TemplateErrorReason::NestedSubexpression))
         }
     }
 
@@ -340,7 +340,7 @@ impl Template {
         if !parser.handlebars() {
             let (_, pos) = parser.expected();
             let (line_no, col_no) = parser.input().line_col(pos);
-            return Err(TemplateError::InvalidSyntax(line_no, col_no));
+            return Err(TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no));
         }
 
         let mut it = parser.queue().iter().peekable();
@@ -520,10 +520,9 @@ impl Template {
                                     let t = template_stack.front_mut().unwrap();
                                     t.elements.push(HelperBlock(h));
                                 } else {
-                                    return Err(TemplateError::MismatchingClosedHelper(line_no,
-                                                                                      col_no,
-                                                                                      h.name,
-                                                                                      close_tag_name));
+                                    return Err(TemplateError::of(
+                                        TemplateErrorReason::MismatchingClosedHelper(
+                                            h.name, close_tag_name)).at(line_no, col_no));
                                 }
                             }
                             Rule::directive_block_end |
@@ -540,7 +539,9 @@ impl Template {
                                         t.elements.push(PartialBlock(d));
                                     }
                                 } else {
-                                    return Err(TemplateError::MismatchingClosedDirective(line_no, col_no, d.name, close_tag_name));
+                                    return Err(TemplateError::of(
+                                        TemplateErrorReason::MismatchingClosedDirective(
+                                            d.name, close_tag_name)).at(line_no, col_no));
                                 }
                             }
                             _ => unreachable!(),
@@ -573,9 +574,13 @@ impl Template {
                                             name: String,
                                             mapping: bool)
                                             -> Result<Template, TemplateError> {
-        let mut t = try!(Template::compile2(source, mapping));
-        t.name = Some(name);
-        Ok(t)
+        match Template::compile2(source, mapping) {
+            Ok(mut t) => {
+                t.name = Some(name);
+                Ok(t)
+            }
+            Err(e) => Err(e.in_template(name)),
+        }
     }
 }
 
@@ -650,7 +655,8 @@ fn test_parse_error() {
 
     let t = Template::compile(source.to_string());
 
-    assert_eq!(t.unwrap_err(), TemplateError::InvalidSyntax(4, 5));
+    assert_eq!(t.unwrap_err(),
+               TemplateError::of(TemplateErrorReason::InvalidSyntax).at(4, 5));
 }
 
 #[test]
@@ -742,8 +748,8 @@ fn test_unclosed_expression() {
     for s in sources.iter() {
         let result = Template::compile(s.to_owned());
         if let Err(e) = result {
-            match e {
-                TemplateError::InvalidSyntax(_, _) => {}
+            match e.reason {
+                TemplateErrorReason::InvalidSyntax => {}
                 _ => {
                     panic!("Unexpected error type {}", e);
                 }
