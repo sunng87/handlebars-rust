@@ -186,7 +186,7 @@ fn main() {
 
     let data = make_data();
     println!("{}",
-             handlebars.render("table", &data).unwrap_or_else(|e| e.description().to_owned()));
+             handlebars.render("table", &data).unwrap_or_else(|e| format!("{}", e)));
 }
 
 #[cfg(feature = "serde_type")]
@@ -205,6 +205,6 @@ fn main() {
 
     let data = make_data();
     println!("{}",
-             handlebars.render("table", &data).unwrap_or_else(|e| e.description().to_owned()));
+             handlebars.render("table", &data).unwrap_or_else(|e| format!("{}", e)));
 
 }

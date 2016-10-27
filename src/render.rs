@@ -31,11 +31,11 @@ impl fmt::Display for RenderError {
         match (self.line_no, self.column_no) {
             (Some(line), Some(col)) => {
                 write!(f,
-                       "{} at {} line {}, col {}",
-                       self.desc,
+                       "Error rendering \"{}\" line {}, col {}: {}",
                        self.template_name.as_ref().unwrap_or(&"Unnamed template".to_owned()),
                        line,
-                       col)
+                       col,
+                       self.desc)
             }
             _ => write!(f, "{}", self.desc),
         }
