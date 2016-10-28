@@ -176,7 +176,7 @@ impl Template {
                       -> Result<Parameter, TemplateError> {
         let name_node = it.next().unwrap();
         match name_node.rule {
-            Rule::identifier | Rule::reference => {
+            Rule::identifier | Rule::reference | Rule::invert_tag_item => {
                 Ok(Parameter::Name(source[name_node.start..name_node.end].to_owned()))
             }
             Rule::subexpression => {
@@ -429,6 +429,24 @@ impl Template {
                         }
                     }
                     Rule::invert_tag => {
+                        // hack: invert_tag structure is similar to ExpressionSpec, so I
+                        // use it here to represent the data
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
+                        {
+                            let mut t = template_stack.front_mut().unwrap();
+                            if exp.omit_pre_ws {
+                                if let Some(el) = t.elements.pop() {
+                                    if let RawString(ref text) = el {
+                                        t.elements.push(RawString(text.trim_right().to_owned()));
+                                    } else {
+                                        t.elements.push(el);
+                                    }
+                                }
+                            }
+                        }
+
+                        omit_pro_ws = exp.omit_pro_ws;
+
                         let t = template_stack.pop_front().unwrap();
                         let mut h = helper_stack.front_mut().unwrap();
                         h.template = Some(t);
@@ -740,6 +758,18 @@ fn test_white_space_omitter() {
     assert_eq!(t.elements[0], RawString("hello~".to_string()));
     assert_eq!(t.elements[1], Expression(Parameter::Name("world".into())));
     assert_eq!(t.elements[2], RawString("!".to_string()));
+
+    let t2 = Template::compile("{{#if true}}1  {{~ else ~}} 2 {{~/if}}".to_string()).ok().unwrap();
+    assert_eq!(t2.elements.len(), 1);
+    match t2.elements[0] {
+        HelperBlock(ref h) => {
+            assert_eq!(h.template.as_ref().unwrap().elements[0],
+                       RawString("1".to_string()));
+            assert_eq!(h.inverse.as_ref().unwrap().elements[0],
+                       RawString("2".to_string()));
+        }
+        _ => unreachable!(),
+    }
 }
 
 #[test]

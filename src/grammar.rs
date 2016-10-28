@@ -58,8 +58,10 @@ impl_rdp! {
         partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line ~
                                         pro_whitespace_omitter? ~ ["}}"] }
 
+        invert_tag_item = { ["else"]|["^"] }
+        invert_tag = { ["{{"] ~ pre_whitespace_omitter? ~ invert_tag_item
+                                ~ pro_whitespace_omitter? ~ ["}}"]}
 
-        invert_tag = { ["{{else}}"]|["{{^}}"] }
         helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
                                         pro_whitespace_omitter? ~ ["}}"] }
         helper_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
@@ -176,8 +178,9 @@ impl_rdp! {
                                           pro_whitespace_omitter? ~ ["}}"] }
         partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line ~
                                         pro_whitespace_omitter? ~ ["}}"] }
-
-        invert_tag = { ["{{else}}"]|["{{^}}"] }
+        invert_tag_item = { ["else"]|["^"] }
+        invert_tag = { ["{{"] ~ pre_whitespace_omitter? ~ invert_tag_item
+                                ~ pro_whitespace_omitter? ~ ["}}"]}
         helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
                                         pro_whitespace_omitter? ~ ["}}"] }
         helper_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
@@ -428,6 +431,9 @@ fn test_helper_block() {
                  "{{#if}}hello{{else}}world{{/if}}",
                  "{{#if}}hello{{^}}world{{/if}}",
                  "{{#if}}{{#if}}hello{{/if}}{{/if}}",
+                 "{{#if}}hello{{~else}}world{{/if}}",
+                 "{{#if}}hello{{else~}}world{{/if}}",
+                 "{{#if}}hello{{~^~}}world{{/if}}",
                  "{{#if}}{{/if}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
