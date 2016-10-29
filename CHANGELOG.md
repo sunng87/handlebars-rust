@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.22.0](https://github.com/sunng87/handlebars-rust/compare/0.22.0...0.21.1) - 2016-10-29
+
+* [Changed] Improved error reporting. Fixed display for several error
+  types.
+* [Changed] Dropped regex and lazystatic as dependency.
+* [Changed] Examples refined.
+
+## [0.21.1](https://github.com/sunng87/handlebars-rust/compare/0.21.1...0.21.0) - 2016-10-09
+
+* [Changed] Fixed
+  [#106](https://github.com/sunng87/handlebars-rust/issue/106), when
+  property name contains `this`, it doesn't work
+
 ## [0.21.0](https://github.com/sunng87/handlebars-rust/compare/0.21.0...0.20.5) - 2016-09-27
 
 * [Added] Block params support
