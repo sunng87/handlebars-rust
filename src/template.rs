@@ -325,13 +325,24 @@ impl Template {
         })
     }
 
+    #[inline]
+    fn remove_previous_whitespace(template_stack: &mut VecDeque<Template>) {
+        let mut t = template_stack.front_mut().unwrap();
+        if let Some(el) = t.elements.pop() {
+            if let RawString(ref text) = el {
+                t.elements.push(RawString(text.trim_right().to_owned()));
+            } else {
+                t.elements.push(el);
+            }
+        }
+    }
+
     pub fn compile2<S: AsRef<str>>(source: S, mapping: bool) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut directive_stack: VecDeque<Directive> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
 
-        // let mut omit_pre_ws = false;
         let mut omit_pro_ws = false;
 
         let input = StringInput::new(source);
@@ -411,19 +422,12 @@ impl Template {
                             _ => unreachable!(),
                         }
 
-                        let mut t = template_stack.front_mut().unwrap();
                         if exp.omit_pre_ws {
-                            if let Some(el) = t.elements.pop() {
-                                if let RawString(ref text) = el {
-                                    t.elements.push(RawString(text.trim_right().to_owned()));
-                                } else {
-                                    t.elements.push(el);
-                                }
-                            }
+                            Template::remove_previous_whitespace(&mut template_stack);
                         }
-
                         omit_pro_ws = exp.omit_pro_ws;
 
+                        let mut t = template_stack.front_mut().unwrap();
                         if let Some(ref mut maps) = t.mapping {
                             maps.push(TemplateMapping(line_no, col_no));
                         }
@@ -432,19 +436,10 @@ impl Template {
                         // hack: invert_tag structure is similar to ExpressionSpec, so I
                         // use it here to represent the data
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
-                        {
-                            let mut t = template_stack.front_mut().unwrap();
-                            if exp.omit_pre_ws {
-                                if let Some(el) = t.elements.pop() {
-                                    if let RawString(ref text) = el {
-                                        t.elements.push(RawString(text.trim_right().to_owned()));
-                                    } else {
-                                        t.elements.push(el);
-                                    }
-                                }
-                            }
-                        }
 
+                        if exp.omit_pre_ws {
+                            Template::remove_previous_whitespace(&mut template_stack);
+                        }
                         omit_pro_ws = exp.omit_pro_ws;
 
                         let t = template_stack.pop_front().unwrap();
@@ -471,14 +466,7 @@ impl Template {
                     Rule::partial_block_end => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
                         if exp.omit_pre_ws {
-                            let mut t = template_stack.front_mut().unwrap();
-                            if let Some(el) = t.elements.pop() {
-                                if let RawString(ref text) = el {
-                                    t.elements.push(RawString(text.trim_right().to_owned()));
-                                } else {
-                                    t.elements.push(el);
-                                }
-                            }
+                            Template::remove_previous_whitespace(&mut template_stack);
                         }
 
                         omit_pro_ws = exp.omit_pro_ws;
