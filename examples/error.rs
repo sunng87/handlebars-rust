@@ -1,18 +1,18 @@
-#![cfg_attr(all(feature="serde_type"), feature(proc_macro))]
+#![cfg_attr(all(feature="unstable"), feature(proc_macro))]
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 extern crate rustc_serialize;
-
-#[cfg(feature = "serde_type")]
+#[cfg(feature = "unstable")]
 extern crate serde;
 #[cfg(feature = "serde_type")]
 extern crate serde_json;
-#[cfg(feature = "serde_type")]
+#[cfg(feature = "unstable")]
 #[macro_use]
 extern crate serde_derive;
 
+use std::collections::BTreeMap;
 
 use std::error::Error;
 
@@ -51,72 +51,81 @@ fn rank_helper(_: &Context,
     Ok(())
 }
 
+
+// default feature, using rustc_serialize `Json` as data type
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-mod rustc_example {
-    use std::collections::BTreeMap;
-    use rustc_serialize::json::{Json, ToJson};
+use rustc_serialize::json::{Json, ToJson};
+// serde_type feature, using serde_json as data type
+#[cfg(feature = "serde_type")]
+use serde_json::value::{self, Value as Json, ToJson};
 
-    pub struct Team {
-        name: String,
-        pts: u16,
-    }
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+static TYPES: &'static str = "rustc_serialize";
+#[cfg(feature = "serde_type")]
+static TYPES: &'static str = "serde_json";
 
-    impl ToJson for Team {
-        fn to_json(&self) -> Json {
-            let mut m: BTreeMap<String, Json> = BTreeMap::new();
-            m.insert("name".to_string(), self.name.to_json());
-            m.insert("pts".to_string(), self.pts.to_json());
-            m.to_json()
-        }
-    }
-
-    pub fn make_data() -> BTreeMap<String, Json> {
-        let mut data = BTreeMap::new();
-
-        data.insert("year".to_string(), "2015".to_json());
-
-        let teams = vec![Team {
-                             name: "Jiangsu Suning".to_string(),
-                             pts: 43u16,
-                         },
-                         Team {
-                             name: "Shanghai SIPG".to_string(),
-                             pts: 39u16,
-                         },
-                         Team {
-                             name: "Hebei CFFC".to_string(),
-                             pts: 27u16,
-                         },
-                         Team {
-                             name: "Guangzhou Evergrand".to_string(),
-                             pts: 22u16,
-                         },
-                         Team {
-                             name: "Shandong Luneng".to_string(),
-                             pts: 12u16,
-                         },
-                         Team {
-                             name: "Beijing Guoan".to_string(),
-                             pts: 7u16,
-                         },
-                         Team {
-                             name: "Hangzhou Greentown".to_string(),
-                             pts: 7u16,
-                         },
-                         Team {
-                             name: "Shanghai Shenhua".to_string(),
-                             pts: 4u16,
-                         }];
-
-        data.insert("teams".to_string(), teams.to_json());
-        data.insert("engine".to_string(), "rustc_serialize".to_json());
-        data
-    }
+// define some data
+#[cfg_attr(all(feature = "serde_type"), derive(Serialize))]
+pub struct Team {
+    name: String,
+    pts: u16,
 }
 
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+impl ToJson for Team {
+    fn to_json(&self) -> Json {
+        let mut m: BTreeMap<String, Json> = BTreeMap::new();
+        m.insert("name".to_string(), self.name.to_json());
+        m.insert("pts".to_string(), self.pts.to_json());
+        m.to_json()
+    }
+}
+
+// produce some data
+pub fn make_data() -> BTreeMap<String, Json> {
+    let mut data = BTreeMap::new();
+
+    data.insert("year".to_string(), "2015".to_json());
+
+    let teams = vec![Team {
+                         name: "Jiangsu Suning".to_string(),
+                         pts: 43u16,
+                     },
+                     Team {
+                         name: "Shanghai SIPG".to_string(),
+                         pts: 39u16,
+                     },
+                     Team {
+                         name: "Hebei CFFC".to_string(),
+                         pts: 27u16,
+                     },
+                     Team {
+                         name: "Guangzhou Evergrand".to_string(),
+                         pts: 22u16,
+                     },
+                     Team {
+                         name: "Shandong Luneng".to_string(),
+                         pts: 12u16,
+                     },
+                     Team {
+                         name: "Beijing Guoan".to_string(),
+                         pts: 7u16,
+                     },
+                     Team {
+                         name: "Hangzhou Greentown".to_string(),
+                         pts: 7u16,
+                     },
+                     Team {
+                         name: "Shanghai Shenhua".to_string(),
+                         pts: 4u16,
+                     }];
+
+    data.insert("teams".to_string(), teams.to_json());
+    data.insert("engine".to_string(), TYPES.to_json());
+    data
+}
+
 fn main() {
-    use rustc_example::*;
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
@@ -142,6 +151,3 @@ fn main() {
     println!("{}",
              handlebars.render("table", &data).unwrap_or_else(|e| format!("{}", e)));
 }
-
-#[cfg(feature = "serde_type")]
-fn main() {}
