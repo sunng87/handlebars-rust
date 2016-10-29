@@ -15,12 +15,14 @@ also works on beta and nightly channel.
 
 ## Getting Started
 
-Check examples in the source. The example shows you how to:
+Check `render` example in the source tree. The example shows you how
+to:
 
-* Create a `Handlebars` and register the template from files
+* Create a `Handlebars` registry and register the template from files;
 * Create a custom Helper with closure or struct implementing
- `HelperDef`, and register it
-* Render something
+ `HelperDef`, and register it;
+* Define and prepare some data;
+* Render it;
 
 Run `cargo run --example render` to see results.
 (or `RUST_LOG=handlebars=info cargo run --example render` for logging
