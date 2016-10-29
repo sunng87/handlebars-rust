@@ -95,11 +95,10 @@ quick_error! {
             description(err.description())
             display("{}", err)
         }
-        IOError(err: IOError) {
-            from()
+        IOError(err: IOError, name: String) {
             cause(err)
             description(err.description())
-            display("{}", err)
+            display("Template \"{}\": {}", name, err)
         }
     }
 }
@@ -119,11 +118,10 @@ quick_error! {
             description(err.description())
             display("{}", err)
         }
-        IOError(err: IOError) {
-            from()
+        IOError(err: IOError, name: String) {
             cause(err)
             description(err.description())
-            display("{}", err)
+            display("Template \"{}\": {}", name, err)
         }
     }
 }

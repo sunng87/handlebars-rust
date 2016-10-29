@@ -120,7 +120,8 @@ impl Registry {
                                                   name: &str,
                                                   tpl_path: P)
                                                   -> Result<(), TemplateFileError> {
-        let mut file = try!(File::open(tpl_path));
+        let mut file = try!(File::open(tpl_path)
+                                .map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         self.register_template_source(name, &mut file)
     }
 
@@ -130,7 +131,8 @@ impl Registry {
                                     tpl_source: &mut Read)
                                     -> Result<(), TemplateFileError> {
         let mut buf = String::new();
-        try!(tpl_source.read_to_string(&mut buf));
+        try!(tpl_source.read_to_string(&mut buf)
+                       .map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         try!(self.register_template_string(name, buf));
         Ok(())
     }
@@ -249,7 +251,7 @@ impl Registry {
                             context: &Context,
                             writer: &mut Write)
                             -> Result<(), TemplateRenderError> {
-        let tpl = try!(Template::compile(template_string).map_err(TemplateRenderError::from));
+        let tpl = try!(Template::compile(template_string));
         let mut render_context = RenderContext::new(writer);
         tpl.render(context, self, &mut render_context).map_err(TemplateRenderError::from)
     }
@@ -261,7 +263,9 @@ impl Registry {
                              writer: &mut Write)
                              -> Result<(), TemplateRenderError> {
         let mut tpl_str = String::new();
-        try!(template_source.read_to_string(&mut tpl_str));
+        try!(template_source.read_to_string(&mut tpl_str).map_err(|e| {
+            TemplateRenderError::IOError(e, "Unamed template source".to_owned())
+        }));
         self.template_renderw(&tpl_str, context, writer)
     }
 }
