@@ -114,69 +114,23 @@ mod rustc_example {
     }
 }
 
-#[cfg(feature = "serde_type")]
-mod serde_example {
-    use std::collections::BTreeMap;
-    use serde_json::value::{self, Value};
-
-    #[derive(Serialize, Debug)]
-    pub struct Team {
-        name: String,
-        pts: u16,
-    }
-
-    pub fn make_data() -> BTreeMap<String, Value> {
-        let mut data = BTreeMap::new();
-
-        data.insert("year".to_string(), value::to_value(&"2015"));
-
-        let teams = vec![Team {
-                             name: "Jiangsu Suning".to_string(),
-                             pts: 43u16,
-                         },
-                         Team {
-                             name: "Shanghai SIPG".to_string(),
-                             pts: 39u16,
-                         },
-                         Team {
-                             name: "Hebei CFFC".to_string(),
-                             pts: 27u16,
-                         },
-                         Team {
-                             name: "Guangzhou Evergrand".to_string(),
-                             pts: 22u16,
-                         },
-                         Team {
-                             name: "Shandong Luneng".to_string(),
-                             pts: 12u16,
-                         },
-                         Team {
-                             name: "Beijing Guoan".to_string(),
-                             pts: 7u16,
-                         },
-                         Team {
-                             name: "Hangzhou Greentown".to_string(),
-                             pts: 7u16,
-                         },
-                         Team {
-                             name: "Shanghai Shenhua".to_string(),
-                             pts: 4u16,
-                         }];
-
-        data.insert("teams".to_string(), value::to_value(&teams));
-        data.insert("engine".to_string(), value::to_value(&"serde_json"));
-        data
-
-    }
-}
-
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn main() {
     use rustc_example::*;
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("table", "./examples/render/template.hbs")
+    // template not found
+    if let Err(e) = handlebars.register_template_file("notfound", "./examples/error/notfound.hbs") {
+        println!("{}", e);
+    }
+
+    // an invalid template
+    if let Err(e) = handlebars.register_template_file("error", "./examples/error/error.hbs") {
+        println!("{}", e);
+    }
+
+    handlebars.register_template_file("table", "./examples/error/template.hbs")
               .ok()
               .unwrap();
 
@@ -190,21 +144,4 @@ fn main() {
 }
 
 #[cfg(feature = "serde_type")]
-fn main() {
-    use serde_example::*;
-    env_logger::init().unwrap();
-    let mut handlebars = Handlebars::new();
-
-    handlebars.register_template_file("table", "./examples/render/template.hbs")
-              .ok()
-              .unwrap();
-
-    handlebars.register_helper("format", Box::new(format_helper));
-    handlebars.register_helper("ranking_label", Box::new(rank_helper));
-    // handlebars.register_helper("format", Box::new(FORMAT_HELPER));
-
-    let data = make_data();
-    println!("{}",
-             handlebars.render("table", &data).unwrap_or_else(|e| format!("{}", e)));
-
-}
+fn main() {}

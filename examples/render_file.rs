@@ -124,7 +124,7 @@ fn main() {
 
     // I'm using unwrap directly here to demostration.
     // Never use this style in your real-world projects.
-    let mut source_template = File::open(&"./examples/template.hbs").unwrap();
+    let mut source_template = File::open(&"./examples/render_file/template.hbs").unwrap();
     let mut output_file = File::create("target/table.html").unwrap();
     if let Ok(_) = handlebars.template_renderw2(&mut source_template, &data, &mut output_file) {
         println!("target/table.html generated");

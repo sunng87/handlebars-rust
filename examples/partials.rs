@@ -14,11 +14,15 @@ fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("template", &Path::new("./examples/template2.hbs"))
+    handlebars.register_template_file("template", &Path::new("./examples/partials/template2.hbs"))
               .ok()
               .unwrap();
-    handlebars.register_template_file("base0", &Path::new("./examples/base0.hbs")).ok().unwrap();
-    handlebars.register_template_file("base1", &Path::new("./examples/base1.hbs")).ok().unwrap();
+    handlebars.register_template_file("base0", &Path::new("./examples/partials/base0.hbs"))
+              .ok()
+              .unwrap();
+    handlebars.register_template_file("base1", &Path::new("./examples/partials/base1.hbs"))
+              .ok()
+              .unwrap();
 
     let data0 = btreemap! {
         "title".to_string() => "example 0".to_string(),
