@@ -8,6 +8,8 @@ use serialize::json::ToJson;
 #[cfg(feature = "serde_type")]
 use serde_json::value::ToJson;
 
+use regex::{Regex, Captures};
+
 use template::Template;
 use render::{Renderable, RenderError, RenderContext};
 use context::Context;
@@ -15,6 +17,11 @@ use helpers::{self, HelperDef};
 use directives::{self, DirectiveDef};
 use support::str::StringWriter;
 use error::{TemplateError, TemplateFileError, TemplateRenderError};
+
+
+lazy_static!{
+    static ref DEFAULT_REPLACE: Regex = Regex::new(">|<|\"|&").unwrap();
+}
 
 /// This type represents an *escape fn*, that is a function who's purpose it is
 /// to escape potentially problematic characters in a string.
@@ -26,10 +33,15 @@ pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
 /// The default *escape fn* replaces the characters `&"<>`
 /// with the equivalent html / xml entities.
 pub fn html_escape(data: &str) -> String {
-    data.replace("&", "&amp;")
-        .replace("\"", "&quot;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
+    DEFAULT_REPLACE.replace_all(data, |cap: &Captures| {
+        match cap.at(0) {
+            Some("<") => "&lt;".to_owned(),
+            Some(">") => "&gt;".to_owned(),
+            Some("\"") => "&quot;".to_owned(),
+            Some("&") => "&amp;".to_owned(),
+            _ => unreachable!(),
+        }
+    })
 }
 
 /// `EscapeFn` that donot change any thing. Useful when using in a non-html

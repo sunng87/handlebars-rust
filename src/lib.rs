@@ -253,6 +253,10 @@ extern crate log;
 extern crate quick_error;
 #[macro_use]
 extern crate pest;
+#[macro_use]
+extern crate lazy_static;
+
+extern crate regex;
 
 #[cfg(test)]
 #[macro_use]
