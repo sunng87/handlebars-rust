@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use helpers::HelperDef;
 use registry::Registry;
-use context::Context;
+use context::{Context, JsonRender};
 use render::{Renderable, RenderContext, RenderError, Helper};
 #[cfg(feature = "partial4")]
 use render::Evalable;
@@ -25,17 +25,21 @@ impl HelperDef for IncludeHelper {
             r: &Registry,
             rc: &mut RenderContext)
             -> Result<(), RenderError> {
-        let template = try!(h.params().get(0)
-                            .ok_or(RenderError::new("Param not found for helper"))
-                            .and_then(|ref t|{
-                                t.path()
-                                    .ok_or(RenderError::new("Do not use literal here, use partial name directly."))
-                                    .and_then(|p| {
-                                        if rc.is_current_template(p){
-                                            Err(RenderError::new("Cannot include self in >"))
-                                        } else {
-                                            Ok(r.get_template(&p))
-                                        }})}));
+        let template = try!(h.params()
+                             .get(0)
+                             .ok_or(RenderError::new("Param not found for helper"))
+                             .and_then(|ref t| {
+                                 t.path()
+                                  .or(Some(&t.value().render()))
+                                  .ok_or(RenderError::new("Invalid template name to include"))
+                                  .and_then(|p| {
+                                      if rc.is_current_template(p) {
+                                          Err(RenderError::new("Cannot include self in >"))
+                                      } else {
+                                          Ok(r.get_template(&p))
+                                      }
+                                  })
+                             }));
 
         let context_param = h.params().get(1).and_then(|p| p.path());
         let old_path = match context_param {
@@ -89,57 +93,63 @@ impl HelperDef for IncludeHelper {
             try!(t.eval(c, r, rc));
         }
 
-        let tname = try!(h.params().get(0)
-                            .ok_or(RenderError::new("Param not found for helper"))
-                            .and_then(|ref t|{
-                                t.path()
-                                    .ok_or(RenderError::new("Do not use literal here, use partial name directly."))
-                                    .and_then(|p| {
-                                        if rc.is_current_template(p) {
-                                            Err(RenderError::new("Cannot include self in >"))
-                                        } else {
-                                            Ok(p)
-                                        }
-                                    })
-                            }));
+        // let partial = rc.get_partial(&tname);
+        // let render_template = partial.as_ref().or(r.get_template(&tname)).or(h.template());
+        try!(h.params()
+              .get(0)
+              .ok_or(RenderError::new("Param not found for helper"))
+              .and_then(|ref t| {
+                  t.path()
+                   .or(Some(&t.value().render()))
+                   .ok_or(RenderError::new("Invalid template name to include"))
+                   .and_then(|p| {
+                       if rc.is_current_template(p) {
+                           Err(RenderError::new("Cannot include self in >"))
+                       } else {
+                           Ok(p)
+                       }
+                   })
+                   .map(|t| {
+                       rc.get_partial(t)
+                         .as_ref()
+                         .or(r.get_template(t))
+                         .or(h.template())
+                         .map(|t| {
+                             let context_param = h.params()
+                                                  .get(1)
+                                                  .and_then(|p| p.path());
+                             let old_path = context_param.map(|p| {
+                                 let old_path = rc.get_path().clone();
+                                 rc.promote_local_vars();
+                                 let new_path = format!("{}/{}", old_path, p);
+                                 rc.set_path(new_path);
+                                 old_path
+                             });
 
-        let partial = rc.get_partial(tname);
-        let render_template = partial.as_ref().or(r.get_template(tname)).or(h.template());
-        match render_template {
-            Some(t) => {
-                let context_param = h.params().get(1).and_then(|p| p.path());
-                let old_path = match context_param {
-                    Some(p) => {
-                        let old_path = rc.get_path().clone();
-                        rc.promote_local_vars();
-                        let new_path = format!("{}/{}", old_path, p);
-                        rc.set_path(new_path);
-                        Some(old_path)
-                    }
-                    None => None,
-                };
+                             let result = if h.hash().is_empty() {
+                                 t.render(c, r, rc)
+                             } else {
+                                 let hash_ctx = BTreeMap::from_iter(h.hash()
+                                                                     .iter()
+                                                                     .map(|(k, v)| {
+                                                                         (k.clone(),
+                                                                          v.value()
+                                                                           .clone())
+                                                                     }));
+                                 let new_ctx = c.extend(&hash_ctx);
+                                 t.render(&new_ctx, r, rc)
+                             };
 
-                let r = if h.hash().is_empty() {
-                    t.render(c, r, rc)
-                } else {
-                    let hash_ctx = BTreeMap::from_iter(h.hash()
-                                                        .iter()
-                                                        .map(|(k, v)| {
-                                                            (k.clone(), v.value().clone())
-                                                        }));
-                    let new_ctx = c.extend(&hash_ctx);
-                    t.render(&new_ctx, r, rc)
-                };
+                             if let Some(path) = old_path {
+                                 rc.set_path(path);
+                                 rc.demote_local_vars();
+                             }
 
-                if let Some(path) = old_path {
-                    rc.set_path(path);
-                    rc.demote_local_vars();
-                }
-
-                r
-            }
-            None => Ok(()),
-        }
+                             result
+                         })
+                         .unwrap_or(Ok(()))
+                   })
+              }))
     }
 }
 
@@ -286,13 +296,15 @@ mod test {
                                        .to_string())
                      .ok()
                      .unwrap();
-        // let t1 = Template::compile("{{#> none_partial}}Partial not found{{/block}}".to_string())
-        //              .ok()
-        //              .unwrap();
+        let t1 = Template::compile("{{*inline \"title\"}}hello {{name}}{{/inline}}<h1>include \
+                                    partial: {{> \"title\"}}</h1>"
+                                       .to_string())
+                     .ok()
+                     .unwrap();
 
         let mut handlebars = Registry::new();
         handlebars.register_template("t0", t0);
-        // handlebars.register_template("t1", t1);
+        handlebars.register_template("t1", t1);
 
         let mut map: BTreeMap<String, String> = BTreeMap::new();
         map.insert("name".into(), "world".into());
@@ -301,8 +313,9 @@ mod test {
         assert_eq!(r0.ok().unwrap(),
                    "<h1>include partial: hello world</h1>".to_string());
 
-        // let r1 = handlebars.render("t1", &map);
-        // assert_eq!(r1.ok().unwrap(), "Partial not found".to_string());
+        let r1 = handlebars.render("t0", &map);
+        assert_eq!(r1.ok().unwrap(),
+                   "<h1>include partial: hello world</h1>".to_string());
     }
 
     #[test]
