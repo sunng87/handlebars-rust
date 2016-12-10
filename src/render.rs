@@ -508,26 +508,12 @@ impl Parameter {
                     value: j.clone(),
                 })
             }
-            &Parameter::Subexpression(ref t) => {
-                let mut local_writer = StringWriter::new();
-                let result = {
-                    let mut local_rc = rc.with_writer(&mut local_writer);
-                    // disable html escape for subexpression
-                    local_rc.disable_escape = true;
-
-                    t.as_template().render(ctx, registry, &mut local_rc)
-                };
-
-                match result {
-                    Ok(_) => {
-                        let n = local_writer.to_string();
-                        try!(Parameter::parse(&n).map_err(|_| {
-                            RenderError::new("subexpression generates invalid value")
-                        }))
-                            .expand(ctx, registry, rc)
-                    }
-                    Err(e) => Err(e),
-                }
+            &Parameter::Subexpression(_) => {
+                let text_value = try!(self.expand_as_name(ctx, registry, rc));
+                Ok(ContextJson {
+                    path: None,
+                    value: Json::String(text_value),
+                })
             }
         }
     }
@@ -799,7 +785,7 @@ fn test_render_subexpression() {
         let mut m: HashMap<String, String> = HashMap::new();
         m.insert("hello".to_string(), "world".to_string());
         m.insert("world".to_string(), "nice".to_string());
-        m.insert("const".to_string(), "\"truthy\"".to_string());
+        m.insert("const".to_string(), "truthy".to_string());
 
         let ctx = Context::wraps(&m);
         if let Err(e) = template.render(&ctx, &r, &mut rc) {
@@ -807,7 +793,7 @@ fn test_render_subexpression() {
         }
     }
 
-    assert_eq!(sw.to_string(), "<h1>nice</h1>".to_string());
+    assert_eq!(sw.to_string(), "<h1>world</h1>".to_string());
 }
 
 #[test]
