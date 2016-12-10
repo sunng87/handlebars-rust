@@ -797,6 +797,40 @@ fn test_render_subexpression() {
 }
 
 #[test]
+fn test_render_subexpression_issue_115() {
+    let mut r = Registry::new();
+    r.register_helper("format",
+                      Box::new(|_: &Context,
+                                h: &Helper,
+                                _: &Registry,
+                                rc: &mut RenderContext|
+                                -> Result<(), RenderError> {
+                          rc.writer
+                            .write(format!("{}", h.param(0).unwrap().value().render())
+                                       .into_bytes()
+                                       .as_ref())
+                            .map(|_| ())
+                            .map_err(RenderError::from)
+                      }));
+
+    let mut sw = StringWriter::new();
+    {
+        let mut rc = RenderContext::new(&mut sw);
+        let template = Template::compile("{{format (format a)}}").unwrap();
+
+        let mut m: HashMap<String, String> = HashMap::new();
+        m.insert("a".to_string(), "123".to_string());
+
+        let ctx = Context::wraps(&m);
+        if let Err(e) = template.render(&ctx, &r, &mut rc) {
+            panic!("{}", e);
+        }
+    }
+
+    assert_eq!(sw.to_string(), "123".to_string());
+}
+
+#[test]
 fn test_render_error_line_no() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
