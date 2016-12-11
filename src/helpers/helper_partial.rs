@@ -17,7 +17,7 @@ pub struct BlockHelper;
 #[derive(Clone, Copy)]
 pub struct PartialHelper;
 
-#[cfg(not(feature = "partial4"))]
+#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 impl HelperDef for IncludeHelper {
     fn call(&self,
             c: &Context,
@@ -183,13 +183,13 @@ impl HelperDef for PartialHelper {
 }
 
 pub static INCLUDE_HELPER: IncludeHelper = IncludeHelper;
-#[cfg(not(feature = "partial4"))]
+#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 pub static BLOCK_HELPER: BlockHelper = BlockHelper;
-#[cfg(not(feature = "partial4"))]
+#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 pub static PARTIAL_HELPER: PartialHelper = PartialHelper;
 
 #[cfg(test)]
-#[cfg(not(feature = "partial4"))]
+#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 mod test {
     use template::Template;
     use registry::Registry;

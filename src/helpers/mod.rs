@@ -7,7 +7,7 @@ pub use self::helper_each::EACH_HELPER;
 pub use self::helper_with::WITH_HELPER;
 pub use self::helper_lookup::LOOKUP_HELPER;
 pub use self::helper_raw::RAW_HELPER;
-#[cfg(not(feature = "partial4"))]
+#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 pub use self::helper_partial::{INCLUDE_HELPER, BLOCK_HELPER, PARTIAL_HELPER};
 #[cfg(feature = "partial4")]
 pub use self::helper_partial::INCLUDE_HELPER;

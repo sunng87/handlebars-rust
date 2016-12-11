@@ -103,12 +103,10 @@ embed you page into this parent.
 You can find a real example for template inheritance in
 `examples/partials.rs`, and templates used by this file.
 
-From 0.21 we support Handlebars 4.0 partial syntax with crate feature
-`partial4`. Original partial syntax via `block`, `partial` helpers are
-still support at the moment. But no doubt `partial4` will become
-default in future releases. There is no rust code difference between
-the syntax, just template change. Examples can be find in
-`examples/partials.rs`.
+From 0.23 we support Handlebars 4.0 partial syntax by
+default. Original partial syntax via `block`, `partial` helpers are
+still supported via feature flag `partial_legacy`. Examples can be
+find in `examples/partials.rs`.
 
 ### Limitations
 

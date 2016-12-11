@@ -1,6 +1,6 @@
 use pest::prelude::*;
 
-#[cfg(not(feature="partial4"))]
+#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 impl_rdp! {
     grammar! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
