@@ -45,7 +45,7 @@ fn main() {
 #[cfg(feature = "serde_type")]
 fn main() {}
 
-#[cfg(all(feature = "partial4", feature = "rustc_ser_type"))]
+#[cfg(all(feature = "partial4", feature = "rustc_ser_type", not(feature="serde_type")))]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
