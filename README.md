@@ -15,6 +15,10 @@ also works on beta and nightly channel.
 
 ## Getting Started
 
+If you are not familiar with [handlebars language
+syntax](https://handlebarsjs.com), it is recommended to walk through
+their introduction first.
+
 Check `render` example in the source tree. The example shows you how
 to:
 
