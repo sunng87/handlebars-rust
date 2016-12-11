@@ -130,13 +130,10 @@ find in `examples/partials.rs`.
   * if
   * with
   * lookup
-  * partial
-  * block
-  * include `>`
   * log
 * Custom helper
 * Parameter and hashes for helper, block params
-* Partials, include (new partial syntax via crate feature `partial4`)
+* Partials, include, template inheritance
 * Omitting whitespace with `~`
 * Subexpression `{{(foo bar)}}`
 * Json expression `a.b.[0]` and `a.b.[c]`
@@ -146,7 +143,7 @@ find in `examples/partials.rs`.
 
 * Mustache block (use `if`/`each` instead)
 * Chained else
-* ...
+* Decorators
 
 Feel free to report an issue if you find something broken. We aren't
 going to implement all features of handlebars-js, but we should have a
