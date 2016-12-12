@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.23.0](https://github.com/sunng87/handlebars-rust/compare/0.22.0...0.21.1) - 2016-12-12
+
+* [Changed] `partial4` is now default. Use `partial_legacy` for previous version of template inheritance.
+* [Changed] Corrected subexpression behavior. Subexpression result is treated as string.
+* [Changed] Improved performance for render: better escape function and string writer buffer.
+
 ## [0.22.0](https://github.com/sunng87/handlebars-rust/compare/0.22.0...0.21.1) - 2016-10-29
 
 * [Changed] Improved error reporting. Fixed display for several error
