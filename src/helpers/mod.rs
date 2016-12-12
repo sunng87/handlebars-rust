@@ -112,17 +112,9 @@ mod test {
 
     #[test]
     fn test_helper_for_subexpression() {
-        let t0 = Template::compile("{{#if (bar 0)}}hello{{^}}world{{/if}}".to_string())
-                     .ok()
-                     .unwrap();
-        let t1 = Template::compile("{{#if (bar 1)}}hello{{^}}world{{/if}}".to_string())
-                     .ok()
-                     .unwrap();
         let t2 = Template::compile("{{foo value=(bar 0)}}".to_string()).ok().unwrap();
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
         handlebars.register_template("t2", t2);
 
         handlebars.register_helper("helperMissing",
@@ -146,20 +138,19 @@ mod test {
                                        let output = format!("{}",
                                                             h.hash_get("value")
                                                              .unwrap()
-                                                             .value());
+                                                             .value()
+                                                             .render());
                                        try!(rc.writer.write(output.into_bytes().as_ref()));
                                        Ok(())
                                    }));
 
         let mut data = BTreeMap::new();
+        // handlebars should never try to lookup this value because
+        // subexpressions are now resolved as string literal
         data.insert("bar0".to_string(), true);
 
-        let r0 = handlebars.render("t0", &data);
-        let r1 = handlebars.render("t1", &data);
         let r2 = handlebars.render("t2", &data);
 
-        assert_eq!(r0.ok().unwrap(), "hello".to_string());
-        assert_eq!(r1.ok().unwrap(), "world".to_string());
-        assert_eq!(r2.ok().unwrap(), "true".to_string());
+        assert_eq!(r2.ok().unwrap(), "bar0".to_string());
     }
 }
