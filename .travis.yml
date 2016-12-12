@@ -10,5 +10,5 @@ before_script:
 script:
   - |
       cargo test &&
-      cargo test --features partial4 &&
-      travis-cargo --only nightly test -- --no-default-features
+      cargo test --features partial_legacy &&
+      travis-cargo --only nightly test

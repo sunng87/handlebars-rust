@@ -9,18 +9,19 @@ extern crate maplit;
 use std::path::Path;
 use handlebars::Handlebars;
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type"), not(feature = "partial4")))]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type"), feature = "partial_legacy", not(feature = "partial4")))]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("template", &Path::new("./examples/partials/template2.hbs"))
+    handlebars.register_template_file("template",
+                                      &Path::new("./examples/partials_legacy/template2.hbs"))
               .ok()
               .unwrap();
-    handlebars.register_template_file("base0", &Path::new("./examples/partials/base0.hbs"))
+    handlebars.register_template_file("base0", &Path::new("./examples/partials_legacy/base0.hbs"))
               .ok()
               .unwrap();
-    handlebars.register_template_file("base1", &Path::new("./examples/partials/base1.hbs"))
+    handlebars.register_template_file("base1", &Path::new("./examples/partials_legacy/base1.hbs"))
               .ok()
               .unwrap();
 
@@ -44,19 +45,19 @@ fn main() {
 #[cfg(feature = "serde_type")]
 fn main() {}
 
-#[cfg(all(feature = "partial4", feature = "rustc_ser_type"))]
+#[cfg(all(feature = "partial4", feature = "rustc_ser_type", not(feature="serde_type")))]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("template", &Path::new("./examples/partial4/template2.hbs"))
+    handlebars.register_template_file("template", &Path::new("./examples/partials/template2.hbs"))
               .ok()
               .unwrap();
 
-    handlebars.register_template_file("base0", &Path::new("./examples/partial4/base0.hbs"))
+    handlebars.register_template_file("base0", &Path::new("./examples/partials/base0.hbs"))
               .ok()
               .unwrap();
-    handlebars.register_template_file("base1", &Path::new("./examples/partial4/base1.hbs"))
+    handlebars.register_template_file("base1", &Path::new("./examples/partials/base1.hbs"))
               .ok()
               .unwrap();
 

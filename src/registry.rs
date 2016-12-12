@@ -74,7 +74,7 @@ impl Registry {
         r.setup_builtins()
     }
 
-    #[cfg(not(feature = "partial4"))]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn setup_builtins(mut self) -> Registry {
         self.register_helper("if", Box::new(helpers::IF_HELPER));
         self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
@@ -290,7 +290,7 @@ mod test {
     use helpers::HelperDef;
     use context::Context;
     use support::str::StringWriter;
-    #[cfg(not(feature = "partial4"))]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     use error::TemplateRenderError;
 
     #[derive(Clone, Copy)]
@@ -308,11 +308,11 @@ mod test {
         }
     }
 
-    #[cfg(not(feature = "partial4"))]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     static DUMMY_HELPER: DummyHelper = DummyHelper;
 
     #[test]
-    #[cfg(not(feature = "partial4"))]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_registry_operations() {
         let mut r = Registry::new();
 
@@ -375,7 +375,7 @@ mod test {
     }
 
     #[test]
-    #[cfg(not(feature = "partial4"))]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_template_render() {
         let mut r = Registry::new();
 
