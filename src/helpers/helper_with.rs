@@ -2,19 +2,14 @@ use std::collections::BTreeMap;
 
 use helpers::HelperDef;
 use registry::Registry;
-use context::{Context, JsonTruthy, to_json};
+use context::{JsonTruthy, to_json};
 use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(&self,
-            c: &Context,
-            h: &Helper,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = try!(h.param(0)
                           .ok_or_else(|| RenderError::new("Param not found for helper \"with\"")));
 
@@ -48,7 +43,7 @@ impl HelperDef for WithHelper {
             }
 
             let result = match template {
-                Some(t) => t.render(c, r, &mut local_rc),
+                Some(t) => t.render(r, &mut local_rc),
                 None => Ok(()),
             };
 

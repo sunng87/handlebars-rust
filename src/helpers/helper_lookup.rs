@@ -5,19 +5,14 @@ use serde_json::value::Value as Json;
 
 use helpers::HelperDef;
 use registry::Registry;
-use context::{Context, JsonRender};
+use context::JsonRender;
 use render::{RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call(&self,
-            _: &Context,
-            h: &Helper,
-            _: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let collection_value = try!(h.param(0).ok_or_else(|| {
             RenderError::new("Param not found for helper \"lookup\"")
         }));

@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use helpers::HelperDef;
 use registry::Registry;
-use context::{Context, JsonRender};
+use context::JsonRender;
 use render::{Renderable, RenderContext, RenderError, Helper};
 #[cfg(feature = "partial4")]
 use render::Evalable;
@@ -19,12 +19,7 @@ pub struct PartialHelper;
 
 #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 impl HelperDef for IncludeHelper {
-    fn call(&self,
-            c: &Context,
-            h: &Helper,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let template = try!(h.params()
                              .get(0)
                              .ok_or(RenderError::new("Param not found for helper"))
@@ -56,15 +51,23 @@ impl HelperDef for IncludeHelper {
         let result = match template {
             Some(t) => {
                 if h.hash().is_empty() {
-                    t.render(c, r, rc)
+                    t.render(r, rc)
                 } else {
                     let hash_ctx = BTreeMap::from_iter(h.hash()
                                                         .iter()
                                                         .map(|(k, v)| {
                                                             (k.clone(), v.value().clone())
                                                         }));
-                    let new_ctx = c.extend(&hash_ctx);
-                    t.render(&new_ctx, r, rc)
+                    // keep a copy
+                    let c = *rc.context();
+
+                    let mut ctx_ref = rc.context_mut();
+                    let r = {
+                        *ctx_ref = c.extend(&hash_ctx);
+                        t.render(r, rc)
+                    };
+                    *ctx_ref = c;
+                    r
                 }
             }
             None => Err(RenderError::new("Template not found.")),
@@ -81,16 +84,11 @@ impl HelperDef for IncludeHelper {
 
 #[cfg(feature = "partial4")]
 impl HelperDef for IncludeHelper {
-    fn call(&self,
-            c: &Context,
-            h: &Helper,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
 
         // try eval inline partials first
         if let Some(t) = h.template() {
-            try!(t.eval(c, r, rc));
+            try!(t.eval(r, rc));
         }
 
         // let partial = rc.get_partial(&tname);
@@ -127,7 +125,7 @@ impl HelperDef for IncludeHelper {
                              });
 
                              let result = if h.hash().is_empty() {
-                                 t.render(c, r, rc)
+                                 t.render(r, rc)
                              } else {
                                  let hash_ctx = BTreeMap::from_iter(h.hash()
                                                                      .iter()
@@ -136,8 +134,12 @@ impl HelperDef for IncludeHelper {
                                                                           v.value()
                                                                            .clone())
                                                                      }));
-                                 let new_ctx = c.extend(&hash_ctx);
-                                 t.render(&new_ctx, r, rc)
+                                 let mut local_rc = rc.derive();
+                                 {
+                                     let mut ctx_ref = local_rc.context_mut();
+                                     *ctx_ref = ctx_ref.extend(&hash_ctx);
+                                 }
+                                 t.render(r, &mut local_rc)
                              };
 
                              if let Some(path) = old_path {
@@ -154,20 +156,15 @@ impl HelperDef for IncludeHelper {
 }
 
 impl HelperDef for BlockHelper {
-    fn call(&self,
-            c: &Context,
-            h: &Helper,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper")));
 
         if let Some(partial_path) = param.path() {
             let partial_template = rc.get_partial(partial_path);
 
             match partial_template {
-                Some(partial_template) => partial_template.render(c, r, rc),
-                None => h.template().unwrap().render(c, r, rc),
+                Some(partial_template) => partial_template.render(r, rc),
+                None => h.template().unwrap().render(r, rc),
             }
         } else {
             Err(RenderError::new("Do not use literal here, use template name directly."))
@@ -176,12 +173,7 @@ impl HelperDef for BlockHelper {
 }
 
 impl HelperDef for PartialHelper {
-    fn call(&self,
-            _: &Context,
-            h: &Helper,
-            _: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper")));
 
         if let Some(partial_path) = param.path() {

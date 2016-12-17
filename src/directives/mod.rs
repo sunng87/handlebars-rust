@@ -1,6 +1,5 @@
 use render::{RenderContext, RenderError, Directive};
 use registry::Registry;
-use context::Context;
 
 pub use self::inline::INLINE_DIRECTIVE;
 
@@ -8,18 +7,13 @@ pub use self::inline::INLINE_DIRECTIVE;
 ///
 /// Implement this trait to define your own decorators or directives
 pub trait DirectiveDef: Send + Sync {
-    fn call(&self,
-            ctx: &Context,
-            d: &Directive,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError>;
+    fn call(&self, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
 
 /// implement DirectiveDef for bare function so we can use function as directive
-impl<F: Send + Sync + for<'a, 'b, 'c, 'd, 'e> Fn(&'a Context, &'b Directive, &'c Registry, &'d mut RenderContext) -> Result<(), RenderError>> DirectiveDef for F {
-    fn call(&self, ctx: &Context, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>{
-        (*self)(ctx, d, r, rc)
+impl<F: Send + Sync + for<'b, 'c, 'd, 'e> Fn(&'b Directive, &'c Registry, &'d mut RenderContext) -> Result<(), RenderError>> DirectiveDef for F {
+    fn call(&self, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>{
+        (*self)(d, r, rc)
     }
 }
 

@@ -30,7 +30,7 @@
 //! A helper can be as a simple as a Rust function like:
 //!
 //! ```ignore
-//! fn hex_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+//! fn hex_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
 //!     let param = h.param(0).unwrap();
 //!     let rendered = format!("{:x}", param.value().render());
 //!     try!(rc.writer.write(rendered.into_bytes().as_ref()));
@@ -184,7 +184,7 @@
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call(&self, c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+//!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
 //!     let param = h.param(0).unwrap();
 //!
 //!     try!(rc.writer.write("Ny helper dumps: ".as_bytes()));
@@ -194,7 +194,7 @@
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (c: &Context, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+//! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
 //!     let param = h.param(0).unwrap();
 //!
 //!     try!(rc.writer.write("My second helper dumps: ".as_bytes()));
@@ -209,7 +209,7 @@
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
-//!       Box::new(|c: &Context, h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> Result<(), RenderError>{
+//!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> Result<(), RenderError>{
 //!         try!(rc.writer.write("...".as_bytes()));
 //!         Ok(())
 //!       }));

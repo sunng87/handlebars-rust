@@ -2,18 +2,16 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use registry::Registry;
-use context::Context;
 use render::{RenderError, RenderContext, Directive, Evalable, Renderable};
 
-pub fn expand_partial(c: &Context,
-                      d: &Directive,
+pub fn expand_partial(d: &Directive,
                       r: &Registry,
                       rc: &mut RenderContext)
                       -> Result<(), RenderError> {
 
     // try eval inline partials first
     if let Some(t) = d.template() {
-        try!(t.eval(c, r, rc));
+        try!(t.eval(r, rc));
     }
 
     if rc.is_current_template(d.name()) {
@@ -40,14 +38,18 @@ pub fn expand_partial(c: &Context,
 
             let hash = d.hash();
             let r = if hash.is_empty() {
-                t.render(c, r, rc)
+                t.render(r, rc)
             } else {
                 let hash_ctx = BTreeMap::from_iter(hash.iter()
                                                        .map(|(k, v)| {
                                                            (k.clone(), v.value().clone())
                                                        }));
-                let new_ctx = c.extend(&hash_ctx);
-                t.render(&new_ctx, r, rc)
+                let mut local_rc = rc.derive();
+                {
+                    let mut ctx_ref = local_rc.context_mut();
+                    *ctx_ref = ctx_ref.extend(&hash_ctx);
+                }
+                t.render(r, &mut local_rc)
             };
 
             if let Some(path) = old_path {

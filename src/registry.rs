@@ -227,7 +227,7 @@ impl Registry {
         let mut writer = StringWriter::new();
         let context = Context::wraps(ctx);
         {
-            try!(self.renderw(name, &context, &mut writer));
+            try!(self.renderw(name, context, &mut writer));
         }
         Ok(writer.to_string())
     }
@@ -236,15 +236,15 @@ impl Registry {
     /// Render a registered template with some data to the `std::io::Write`
     pub fn renderw(&self,
                    name: &str,
-                   context: &Context,
+                   context: Context,
                    writer: &mut Write)
                    -> Result<(), RenderError> {
         let template = self.get_template(&name.to_string());
 
         if let Some(t) = template {
-            let mut render_context = RenderContext::new(writer);
+            let mut render_context = RenderContext::new(context, writer);
             render_context.root_template = t.name.clone();
-            (*t).render(context, self, &mut render_context)
+            (*t).render(self, &mut render_context)
         } else {
             Err(RenderError::new(format!("Template not found: {}", name)))
         }
@@ -260,7 +260,7 @@ impl Registry {
         let mut writer = StringWriter::new();
         let context = Context::wraps(ctx);
         {
-            try!(self.template_renderw(template_string, &context, &mut writer));
+            try!(self.template_renderw(template_string, context, &mut writer));
         }
         Ok(writer.to_string())
     }
@@ -268,18 +268,18 @@ impl Registry {
     /// render a template string using current registry without register it
     pub fn template_renderw(&self,
                             template_string: &str,
-                            context: &Context,
+                            context: Context,
                             writer: &mut Write)
                             -> Result<(), TemplateRenderError> {
         let tpl = try!(Template::compile(template_string));
-        let mut render_context = RenderContext::new(writer);
-        tpl.render(context, self, &mut render_context).map_err(TemplateRenderError::from)
+        let mut render_context = RenderContext::new(context, writer);
+        tpl.render(self, &mut render_context).map_err(TemplateRenderError::from)
     }
 
     /// render a template source using current registry without register it
     pub fn template_renderw2(&self,
                              template_source: &mut Read,
-                             context: &Context,
+                             context: Context,
                              writer: &mut Write)
                              -> Result<(), TemplateRenderError> {
         let mut tpl_str = String::new();
@@ -306,12 +306,11 @@ mod test {
 
     impl HelperDef for DummyHelper {
         fn call(&self,
-                c: &Context,
                 h: &Helper,
                 r: &Registry,
                 rc: &mut RenderContext)
                 -> Result<(), RenderError> {
-            try!(h.template().unwrap().render(c, r, rc));
+            try!(h.template().unwrap().render(r, rc));
             Ok(())
         }
     }
@@ -356,7 +355,7 @@ mod test {
         let context = Context::null();
 
         {
-            r.renderw("index", &context, &mut sw).ok().unwrap();
+            r.renderw("index", context, &mut sw).ok().unwrap();
         }
 
         assert_eq!("<h1></h1>".to_string(), sw.to_string());
