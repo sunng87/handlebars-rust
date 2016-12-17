@@ -127,6 +127,14 @@ impl Registry {
         Ok(())
     }
 
+    /// Register a partial string
+    pub fn register_partial(&mut self,
+                            name: &str,
+                            partial_str: String)
+                            -> Result<(), TemplateError> {
+        self.register_template_string(name, partial_str)
+    }
+
     /// Register a template from a path
     pub fn register_template_file<P: AsRef<Path>>(&mut self,
                                                   name: &str,
