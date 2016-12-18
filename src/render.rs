@@ -1,6 +1,7 @@
 use std::collections::{HashMap, BTreeMap, VecDeque};
 use std::error;
 use std::fmt;
+use std::rc::Rc;
 use std::io::Write;
 use std::io::Error as IOError;
 
@@ -14,6 +15,7 @@ use template::{Template, TemplateElement, Parameter, HelperTemplate, TemplateMap
 use template::TemplateElement::*;
 use registry::Registry;
 use context::{Context, JsonRender};
+use helpers::HelperDef;
 use support::str::StringWriter;
 #[cfg(feature="partial4")]
 use partial;
@@ -76,6 +78,7 @@ pub struct RenderContext<'a> {
     path: String,
     local_path_root: VecDeque<String>,
     local_variables: HashMap<String, Json>,
+    local_helpers: HashMap<String, Rc<Box<HelperDef + 'static>>>,
     default_var: Json,
     block_context: VecDeque<Context>,
     /// the context
@@ -97,6 +100,7 @@ impl<'a> RenderContext<'a> {
             path: ".".to_string(),
             local_path_root: VecDeque::new(),
             local_variables: HashMap::new(),
+            local_helpers: HashMap::new(),
             default_var: Json::Null,
             block_context: VecDeque::new(),
             context: ctx,
@@ -114,6 +118,7 @@ impl<'a> RenderContext<'a> {
             path: self.path.clone(),
             local_path_root: self.local_path_root.clone(),
             local_variables: self.local_variables.clone(),
+            local_helpers: self.local_helpers.clone(),
             default_var: self.default_var.clone(),
             block_context: self.block_context.clone(),
             context: self.context.clone(),
@@ -130,6 +135,7 @@ impl<'a> RenderContext<'a> {
             path: self.path.clone(),
             local_path_root: self.local_path_root.clone(),
             local_variables: self.local_variables.clone(),
+            local_helpers: self.local_helpers.clone(),
             default_var: self.default_var.clone(),
             block_context: self.block_context.clone(),
             context: self.context.clone(),
@@ -243,6 +249,21 @@ impl<'a> RenderContext<'a> {
 
     pub fn context_mut(&mut self) -> &mut Context {
         &mut self.context
+    }
+
+    pub fn register_local_helper(&mut self,
+                                 name: &str,
+                                 def: Box<HelperDef + 'static>)
+                                 -> Option<Rc<Box<HelperDef + 'static>>> {
+        self.local_helpers.insert(name.to_string(), Rc::new(def))
+    }
+
+    pub fn unregister_local_helper(&mut self, name: &str) {
+        self.local_helpers.remove(name);
+    }
+
+    pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<HelperDef + 'static>>> {
+        self.local_helpers.get(name).map(|r| r.clone())
     }
 }
 
@@ -599,23 +620,17 @@ impl Renderable for TemplateElement {
             }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
                 let helper = try!(Helper::from_template(ht, registry, rc));
-                // call user code with updated context
-                match registry.get_helper(&ht.name) {
-                    Some(d) => (**d).call(&helper, registry, rc),
-                    None => {
-                        let meta_helper_name = if ht.block {
-                                                   "blockHelperMissing"
-                                               } else {
-                                                   "helperMissing"
-                                               }
-                                               .to_string();
-                        match registry.get_helper(&meta_helper_name) {
-                            Some(md) => (**md).call(&helper, registry, rc),
-                            None => {
-                                Err(RenderError::new(format!("Helper not defined: {:?}", ht.name)))
-                            }
-                        }
-                    }
+                if let Some(ref d) = rc.get_local_helper(&ht.name) {
+                    d.call(&helper, registry, rc)
+                } else {
+                    registry.get_helper(&ht.name)
+                            .or(registry.get_helper(if ht.block {
+                                "blockHelperMissing"
+                            } else {
+                                "helperMissing"
+                            }))
+                            .ok_or(RenderError::new(format!("Helper not defined: {:?}", ht.name)))
+                            .and_then(|d| d.call(&helper, registry, rc))
                 }
             }
             DirectiveExpression(_) | DirectiveBlock(_) | PartialExpression(_) | PartialBlock(_) => {
