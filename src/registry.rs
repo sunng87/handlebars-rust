@@ -118,28 +118,31 @@ impl Registry {
     }
 
     /// Register a template string
-    pub fn register_template_string(&mut self,
-                                    name: &str,
-                                    tpl_str: String)
-                                    -> Result<(), TemplateError> {
+    pub fn register_template_string<S>(&mut self,
+                                       name: &str,
+                                       tpl_str: S)
+                                       -> Result<(), TemplateError>
+        where S: AsRef<str>
+    {
         try!(Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)
                  .and_then(|t| Ok(self.templates.insert(name.to_string(), t))));
         Ok(())
     }
 
     /// Register a partial string
-    pub fn register_partial(&mut self,
-                            name: &str,
-                            partial_str: String)
-                            -> Result<(), TemplateError> {
+    pub fn register_partial<S>(&mut self, name: &str, partial_str: S) -> Result<(), TemplateError>
+        where S: AsRef<str>
+    {
         self.register_template_string(name, partial_str)
     }
 
     /// Register a template from a path
-    pub fn register_template_file<P: AsRef<Path>>(&mut self,
-                                                  name: &str,
-                                                  tpl_path: P)
-                                                  -> Result<(), TemplateFileError> {
+    pub fn register_template_file<P>(&mut self,
+                                     name: &str,
+                                     tpl_path: P)
+                                     -> Result<(), TemplateFileError>
+        where P: AsRef<Path>
+    {
         let mut file = try!(File::open(tpl_path)
                                 .map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         self.register_template_source(name, &mut file)
@@ -324,10 +327,10 @@ mod test {
     fn test_registry_operations() {
         let mut r = Registry::new();
 
-        let t = Template::compile("<h1></h1>".to_string()).ok().unwrap();
+        let t = Template::compile("<h1></h1>").ok().unwrap();
         r.register_template("index", t.clone());
 
-        let t2 = Template::compile("<h2></h2>".to_string()).ok().unwrap();
+        let t2 = Template::compile("<h2></h2>").ok().unwrap();
         r.register_template("index2", t2.clone());
 
         assert_eq!(r.get_template("index").unwrap().elements, t.elements);
@@ -349,7 +352,7 @@ mod test {
     fn test_renderw() {
         let mut r = Registry::new();
 
-        let t = Template::compile("<h1></h1>".to_string()).ok().unwrap();
+        let t = Template::compile("<h1></h1>").ok().unwrap();
         r.register_template("index", t.clone());
 
         let mut sw = StringWriter::new();
@@ -387,7 +390,7 @@ mod test {
     fn test_template_render() {
         let mut r = Registry::new();
 
-        let t = Template::compile("<h1></h1>".to_string()).ok().unwrap();
+        let t = Template::compile("<h1></h1>").ok().unwrap();
         r.register_template("index", t.clone());
 
         assert_eq!("<h1></h1>".to_string(),

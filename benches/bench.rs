@@ -49,13 +49,13 @@ fn make_data() -> BTreeMap<String, Json> {
 
 #[bench]
 fn parse_template(b: &mut test::Bencher) {
-    b.iter(|| Template::compile(SOURCE.clone()).ok().unwrap());
+    b.iter(|| Template::compile(SOURCE).ok().unwrap());
 }
 
 #[bench]
 fn render_template(b: &mut test::Bencher) {
     let mut handlebars = Handlebars::new();
-    handlebars.register_template_string("table", SOURCE.to_string())
+    handlebars.register_template_string("table", SOURCE)
               .ok()
               .expect("Invalid template format");
 
