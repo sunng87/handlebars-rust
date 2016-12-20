@@ -1,6 +1,5 @@
 use directives::DirectiveDef;
 use registry::Registry;
-use context::Context;
 use render::{RenderError, RenderContext, Directive};
 
 #[derive(Clone, Copy)]
@@ -29,12 +28,7 @@ fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
 }
 
 impl DirectiveDef for InlineDirective {
-    fn call(&self,
-            _: &Context,
-            d: &Directive,
-            _: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, d: &Directive, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let name = try!(get_name(d));
 
         let template = try!(d.template()
@@ -56,11 +50,6 @@ mod test {
     use render::{RenderContext, Evalable};
     use support::str::StringWriter;
 
-    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-    use serialize::json::Json;
-    #[cfg(feature = "serde_type")]
-    use serde_json::value::Value as Json;
-
     #[test]
     fn test_inline() {
         let t0 =
@@ -72,8 +61,8 @@ mod test {
         let hbs = Registry::new();
 
         let mut sw = StringWriter::new();
-        let mut rc = RenderContext::new(&mut sw);
-        t0.elements[0].eval(&Context::wraps(&Json::Null), &hbs, &mut rc).unwrap();
+        let mut rc = RenderContext::new(Context::null(), &mut sw);
+        t0.elements[0].eval(&hbs, &mut rc).unwrap();
 
         assert!(rc.get_partial(&"hello".to_owned()).is_some());
     }

@@ -7,19 +7,14 @@ use serde_json::value::Value as Json;
 
 use helpers::HelperDef;
 use registry::Registry;
-use context::{Context, JsonTruthy, to_json};
+use context::{JsonTruthy, to_json};
 use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;
 
 impl HelperDef for EachHelper {
-    fn call(&self,
-            c: &Context,
-            h: &Helper,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let value = try!(h.param(0)
                           .ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
 
@@ -60,7 +55,7 @@ impl HelperDef for EachHelper {
                                 local_rc.push_block_context(&map);
                             }
 
-                            try!(t.render(c, r, &mut local_rc));
+                            try!(t.render(r, &mut local_rc));
 
                             if h.block_param().is_some() {
                                 local_rc.pop_block_context();
@@ -101,7 +96,7 @@ impl HelperDef for EachHelper {
                                 local_rc.push_block_context(&map);
                             }
 
-                            try!(t.render(c, r, &mut local_rc));
+                            try!(t.render(r, &mut local_rc));
 
                             if h.block_param().is_some() {
                                 local_rc.pop_block_context();
@@ -116,7 +111,7 @@ impl HelperDef for EachHelper {
                     }
                     (false, _) => {
                         if let Some(else_template) = h.inverse() {
-                            try!(else_template.render(c, r, rc));
+                            try!(else_template.render(r, rc));
                         }
                         Ok(())
                     }

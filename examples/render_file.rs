@@ -19,11 +19,7 @@ use std::fs::File;
 use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender};
 
 // define a custom helper
-fn format_helper(_: &Context,
-                 h: &Helper,
-                 _: &Handlebars,
-                 rc: &mut RenderContext)
-                 -> Result<(), RenderError> {
+fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
     let param = try!(h.param(0).ok_or(RenderError::new("Param 0 is required for format helper.")));
     let rendered = format!("{} pts", param.value().render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
@@ -31,11 +27,7 @@ fn format_helper(_: &Context,
 }
 
 // another custom helper
-fn rank_helper(_: &Context,
-               h: &Helper,
-               _: &Handlebars,
-               rc: &mut RenderContext)
-               -> Result<(), RenderError> {
+fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
     let rank = try!(h.param(0)
                     .and_then(|v| v.value().as_u64())
                     .ok_or(RenderError::new("Param 0 with u64 type is required for rank helper."))) as usize;
@@ -144,7 +136,7 @@ fn main() {
     // Never use this style in your real-world projects.
     let mut source_template = File::open(&"./examples/render_file/template.hbs").unwrap();
     let mut output_file = File::create("target/table.html").unwrap();
-    if let Ok(_) = handlebars.template_renderw2(&mut source_template, &data, &mut output_file) {
+    if let Ok(_) = handlebars.template_renderw2(&mut source_template, data, &mut output_file) {
         println!("target/table.html generated");
     } else {
         println!("Failed to geneate target/table.html");

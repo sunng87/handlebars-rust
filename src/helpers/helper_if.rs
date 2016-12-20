@@ -1,6 +1,6 @@
 use helpers::HelperDef;
 use registry::Registry;
-use context::{Context, JsonTruthy};
+use context::JsonTruthy;
 use render::{Renderable, RenderContext, RenderError, Helper};
 
 #[derive(Clone, Copy)]
@@ -9,12 +9,7 @@ pub struct IfHelper {
 }
 
 impl HelperDef for IfHelper {
-    fn call(&self,
-            c: &Context,
-            h: &Helper,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param = try!(h.param(0)
                           .ok_or_else(|| RenderError::new("Param not found for helper \"if\"")));
 
@@ -30,7 +25,7 @@ impl HelperDef for IfHelper {
             h.inverse()
         };
         match tmpl {
-            Some(ref t) => t.render(c, r, rc),
+            Some(ref t) => t.render(r, rc),
             None => Ok(()),
         }
     }

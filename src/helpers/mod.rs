@@ -1,6 +1,5 @@
 use render::{RenderContext, RenderError, Helper};
 use registry::Registry;
-use context::Context;
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::EACH_HELPER;
@@ -25,18 +24,13 @@ pub use self::helper_log::LOG_HELPER;
 /// By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
 ///
 pub trait HelperDef: Send + Sync {
-    fn call(&self,
-            ctx: &Context,
-            h: &Helper,
-            r: &Registry,
-            rc: &mut RenderContext)
-            -> Result<(), RenderError>;
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
 
 /// implement HelperDef for bare function so we can use function as helper
-impl<F: Send + Sync + for<'a, 'b, 'c, 'd, 'e> Fn(&'a Context, &'b Helper, &'c Registry, &'d mut RenderContext) -> Result<(), RenderError>> HelperDef for F {
-    fn call(&self, ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>{
-        (*self)(ctx, h, r, rc)
+impl<F: Send + Sync + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext) -> Result<(), RenderError>> HelperDef for F {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>{
+        (*self)(h, r, rc)
     }
 }
 
@@ -59,7 +53,7 @@ mod helper_log;
 mod test {
     use std::collections::BTreeMap;
 
-    use context::{JsonRender, Context};
+    use context::JsonRender;
     use helpers::HelperDef;
     use template::Template;
     use registry::Registry;
@@ -70,7 +64,6 @@ mod test {
 
     impl HelperDef for MetaHelper {
         fn call(&self,
-                c: &Context,
                 h: &Helper,
                 r: &Registry,
                 rc: &mut RenderContext)
@@ -84,7 +77,7 @@ mod test {
                 let output = format!("{}:{}", h.name(), v.value().render());
                 try!(rc.writer.write(output.into_bytes().as_ref()));
                 try!(rc.writer.write("->".as_bytes()));
-                try!(h.template().unwrap().render(c, r, rc));
+                try!(h.template().unwrap().render(r, rc));
             };
             Ok(())
         }
@@ -118,8 +111,7 @@ mod test {
         handlebars.register_template("t2", t2);
 
         handlebars.register_helper("helperMissing",
-                                   Box::new(|_: &Context,
-                                             h: &Helper,
+                                   Box::new(|h: &Helper,
                                              _: &Registry,
                                              rc: &mut RenderContext|
                                              -> Result<(), RenderError> {
@@ -130,8 +122,7 @@ mod test {
                                        Ok(())
                                    }));
         handlebars.register_helper("foo",
-                                   Box::new(|_: &Context,
-                                             h: &Helper,
+                                   Box::new(|h: &Helper,
                                              _: &Registry,
                                              rc: &mut RenderContext|
                                              -> Result<(), RenderError> {
