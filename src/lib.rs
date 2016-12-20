@@ -1,9 +1,43 @@
 //! # Handlebars
-//! Handlebars is a modern and extensible templating solution originally created in the JavaScript world. It's used by many popular frameworks like [Ember.js](http://emberjs.com) and Chaplin. It's also ported to some other platforms such as [Java](https://github.com/jknack/handlebars.java).
 //!
-//! And this is handlebars Rust implementation, designed for server-side page generation. It's a general-purpose library so you use it for any kind of text generation.
+//! [Handlebars](http://handlebarsjs.com/) is a modern and extensible templating solution originally created in the JavaScript world. It's used by many popular frameworks like [Ember.js](http://emberjs.com) and Chaplin. It's also ported to some other platforms such as [Java](https://github.com/jknack/handlebars.java).
 //!
-//! ## Why (this) Handlebars?
+//! And this is handlebars Rust implementation, designed for general purpose text generation.
+//!
+//! ## Quick Start
+//!
+//! ```
+//! extern crate handlebars;
+//!
+//! use std::collections::BTreeMap;
+//! use handlebars::Handlebars;
+//!
+//! fn main() {
+//!   // create the handlebars registry
+//!   let mut handlebars = Handlebars::new();
+//!
+//!   // register the template. The template string will be verified and compiled.
+//!   let source = "hello {{world}}";
+//!   assert!(handlebars.register_template_string("t1", source).is_ok());
+//!
+//!   // Prepare some data.
+//!   //
+//!   // The data type should implements `rustc_serialize::json::ToJson` or
+//!   // `serde::Serialize`
+//!   let mut data = BTreeMap::new();
+//!   data.insert("world".to_string(), "世界!".to_string());
+//!   assert_eq!(handlebars.render("t1", &data).unwrap(), "hello 世界!");
+//! }
+//! ```
+//!
+//! In this example, we created a template registry and registered a template named `t1`.
+//! Then we rendered a `BTreeMap` with an entry of key `world`, the result is just what
+//! we expected.
+//!
+//! I recommend you to walk through handlebars.js' [intro page](http://handlebarsjs.com)
+//! if you are not quite familiar with the template language itself.
+//!
+//! ## Rational: Why (this) Handlebars?
 //!
 //! Handlebars is a real-world templating system that you can use to build
 //! your application without pain.
@@ -13,8 +47,8 @@
 //! #### Isolation of Rust and HTML
 //!
 //! This library doesn't attempt to use some macro magic to allow you to
-//! write your template within your rust code. I admit that it's fun to do
-//! that but it doesn't fit real-world use case.
+//! write your template within your rust code. I admit that it's fun (and feel cool) to do
+//! that but it doesn't fit real-world use case in my opinion.
 //!
 //! #### Limited but essential control structure built-in
 //!
@@ -26,20 +60,6 @@
 //! You can write your own helper with Rust! It can be a block helper or
 //! inline helper. Put you logic into the helper and don't repeat
 //! yourself.
-//!
-//! A helper can be as a simple as a Rust function like:
-//!
-//! ```ignore
-//! fn hex_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-//!     let param = h.param(0).unwrap();
-//!     let rendered = format!("{:x}", param.value().render());
-//!     try!(rc.writer.write(rendered.into_bytes().as_ref()));
-//!     Ok(())
-//! }
-//!
-//! /// register the helper
-//! handlebars.register_helper("hex", Box::new(hex_helper));
-//! ```
 //!
 //! #### Template inheritance
 //!
@@ -57,16 +77,29 @@
 //!
 //! ### Limitations
 //!
-//! * This implementation is **not fully compatible** with the original
-//!   javascript version
-//! * As a static typed language, it's a little verbose to use handlebars
-//! * You will have to make your data `ToJson`-able, so we can render
-//!   it. If you are on nightly channel, we have [a syntax
-//!   extension](https://github.com/sunng87/tojson_macros) to generate
-//!   default `ToJson` implementation for you. If you use
-//!   [serde](https://github.com/serde-rs/serde), you can enable
-//!   `serde_type` feature of handlebars-rust and add `#[Serialize]` for
-//!   your types.
+//! #### Compatibility with JavaScript version
+//!
+//! This implementation is **not fully compatible** with the original javascript version.
+//!
+//! First of all, mustache block is not supported. I suggest you to use `#if` and `#each` for
+//! same functionality.
+//!
+//! There are some other minor features missing:
+//!
+//! * Chained else [#12](https://github.com/sunng87/handlebars-rust/issues/12)
+//!
+//! Feel free to fire an issue on [github](https://github.com/sunng87/handlebars-rust/issues) if
+//! you find missing features.
+//!
+//! #### Static typed
+//!
+//! As a static typed language, it's a little verbose to use handlebars.
+//! You will have to make your data `ToJson`-able, so we can render
+//! it. If you are on nightly channel, we have [a syntax
+//! extension](https://github.com/sunng87/tojson_macros) to generate
+//! default `ToJson` implementation for you. If you prefer
+//! [serde](https://github.com/serde-rs/serde), you can enable `serde_type` feature
+//! of handlebars-rust and add `#[Serialize]` for your types.
 //!
 //! ## Usage
 //!
@@ -84,29 +117,41 @@
 //!   let mut handlebars = Handlebars::new();
 //!   let source = "hello {{world}}";
 //!
-//!   //compile returns an Option, we use unwrap() to deref it directly here
-//!   handlebars.register_template_string("helloworld", source.to_string())
-//!           .ok().unwrap();
+//!   assert!(handlebars.register_template_string("t1", source).is_ok())
 //! }
 //! ```
 //!
-//! On registeration, the template is parsed and cached in the registry. So further
+//! On registeration, the template is parsed, compiled and cached in the registry. So further
 //! usage will benifite from the one-time work. Also features like include, inheritance
-//! that involves template reference requires you to register those template first so
-//! the registry can find it.
+//! that involves template reference requires you to register those template first with
+//! a name so the registry can find it.
 //!
-//! If you template is small or just to expirement, you can use `template_render` APIs
-//! without registeration.
+//! If you template is small or just to expirement, you can use `template_render` API
+//! without registration.
+//!
+//! ```
+//! extern crate handlebars;
+//!
+//! use handlebars::Handlebars;
+//! use std::collections::BTreeMap;
+//!
+//! fn main() {
+//!   let mut handlebars = Handlebars::new();
+//!   let source = "hello {{world}}";
+//!
+//!   let mut data = BTreeMap::new();
+//!   data.insert("world".to_string(), "世界!".to_string());
+//!   assert_eq!(handlebars.template_render(source, &data).unwrap(),"hello 世界!".to_owned());
+//! }
+//! ```
 //!
 //! ### Rendering Something
 //!
-//! I should say that rendering is a little tricky. Since handlebars is originally a JavaScript templating framework. It supports dynamic features like duck-typing, truthy/falsey values. But for a static language like Rust, this is a little difficult. As a solution, I'm using the `serialize::json::Json` internally for data rendering, which seems good by far.
+//! Since handlebars is originally based on JavaScript type system. It supports dynamic features like duck-typing, truthy/falsey values. But for a static language like Rust, this is a little difficult. As a solution, we are using the `serialize::json::Json` internally for data rendering.
 //!
-//! That means, if you want to render something, you have to ensure that it implements the `rustc_serialize::json::ToJson` trait. Luckily, most built-in types already have trait. However, if you want to render your custom struct, you need to implement this trait manually, or use [tojson_macros](https://github.com/sunng87/tojson_macros) to generate default `ToJson` implementation.
+//! That means, if you want to render something, you have to ensure the data type implements the `rustc_serialize::json::ToJson` trait (or serde's `Serialize`). Luckily, most rust internal types already have that trait. However, if you want to render your custom struct, you need to implement it manually, or use [tojson_macros](https://github.com/sunng87/tojson_macros) to generate default `ToJson` implementation.
 //!
 //! You can use default `render` function to render a template into `String`. From 0.9, there's `renderw` to render text into anything of `std::io::Write`.
-//!
-//! From 0.13, we also support serde types by a feature flag `serde_type`.
 //!
 //! ```ignore
 //! extern crate rustc_serialize;
@@ -135,14 +180,14 @@
 //!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();
-//!   handlebars.register_template_string("hello", source.to_string())
-//!           .ok().unwrap();
+//!   assert!(handlebars.register_template_string("hello", source).is_ok());
+//!
 //!
 //!   let data = Person {
 //!       name: "Ning Sun".to_string(),
 //!       age: 27
 //!   };
-//!   let result = handlebars.render("hello", &data);
+//!   assert_eq!(handlebars.render("hello", &data).unwrap(), "Hello, Ning Sun".to_owned());
 //! }
 //! ```
 //!
@@ -159,10 +204,10 @@
 //!       name: "Ning Sun".to_string(),
 //!       age: 27
 //!   };
-//!   let result = handlebars.template_render("Hello, {{name}}", &data);
+//!   assert_eq!(handlebars.template_render("Hello, {{name}}", &data).unwrap(),
+//!       "Hello, Ning Sun".to_owned());
 //! }
 //! ```
-//!
 //!
 //! #### Escaping
 //!
@@ -187,7 +232,7 @@
 //!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
 //!     let param = h.param(0).unwrap();
 //!
-//!     try!(rc.writer.write("Ny helper dumps: ".as_bytes()));
+//!     try!(rc.writer.write("1st helper: ".as_bytes()));
 //!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
 //!     Ok(())
 //!   }
@@ -197,7 +242,7 @@
 //! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
 //!     let param = h.param(0).unwrap();
 //!
-//!     try!(rc.writer.write("My second helper dumps: ".as_bytes()));
+//!     try!(rc.writer.write("2nd helper: ".as_bytes()));
 //!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
 //!     Ok(())
 //! }
@@ -210,11 +255,16 @@
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
 //!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> Result<(), RenderError>{
-//!         try!(rc.writer.write("...".as_bytes()));
-//!         Ok(())
+//!           let param = h.param(0).unwrap();
+//!
+//!           try!(rc.writer.write("3rd helper: ".as_bytes()));
+//!           try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
+//!           Ok(())
 //!       }));
 //!
-//!   //...
+//!   let tpl = "{{simple-helper 1}}\n{{another-simple-helper 2}}\n{{closure-helper 3}}";
+//!   assert_eq!(handlebars.template_render(tpl, &()).unwrap(),
+//!       "1st helper: 1\n2nd helper: 2\n3rd helper: 3".to_owned());
 //! }
 //! ```
 //!
@@ -223,8 +273,10 @@
 //! You can get data from the `Helper` argument about the template information:
 //!
 //! * `name()` for the helper name. This is known to you for most situation but if you are defining `helperMissing` or `blockHelperMissing`, this is important.
-//! * `params()` is a vector of String as params in helper, like `{{#somehelper param1 param2 param3}}`.
+//! * `params()` is a vector of parameter value in helper, like `{{#somehelper param1 param2 param3}}`.
+//! * `param(n)` returns value of the index
 //! * `hash()` is a map of String key and Json value, defined in helper as `{{@somehelper a=1 b="2" c=true}}`.
+//! * `hash_get(key)` returns value of the key
 //! * `template()` gives you the nested template of block helper.
 //! * `inverse()` gives you the inversed template of it, inversed template is the template behind `{{else}}`.
 //!
@@ -238,10 +290,14 @@
 //! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebar-rust doesn't support mustach iteration syntax so use this instead.
 //! * `{{#with ...}} ... {{/with}}` change current context. Similar to {{#each}}, used for replace corresponding mustach syntax.
 //! * `{{lookup ... ...}}` get value from array by `@index` or `@key`
-//! * `{{#partial ...}} ... {{/partial}}` template reuse, used to replace block with same name
-//! * `{{#block ...}} ... {{/block}}` template reuse, used to be replaced by partial with same name, with default content if partial not found.
 //! * `{{> ...}}` include template with name
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
+//!
+//! ### Template inheritance
+//!
+//! Handlebarsjs partial system is fully supported in this implementation.
+//! Check [example](https://github.com/sunng87/handlebars-rust/blob/master/examples/partials.rs#L49) for detail.
+//!
 //!
 
 #![allow(dead_code)]
