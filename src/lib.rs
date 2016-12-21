@@ -7,8 +7,6 @@
 //! ## Quick Start
 //!
 //! ```
-//! extern crate handlebars;
-//!
 //! use std::collections::BTreeMap;
 //! use handlebars::Handlebars;
 //!
@@ -130,8 +128,6 @@
 //! without registration.
 //!
 //! ```
-//! extern crate handlebars;
-//!
 //! use handlebars::Handlebars;
 //! use std::collections::BTreeMap;
 //!
@@ -154,9 +150,6 @@
 //! You can use default `render` function to render a template into `String`. From 0.9, there's `renderw` to render text into anything of `std::io::Write`.
 //!
 //! ```ignore
-//! extern crate rustc_serialize;
-//! extern crate handlebars;
-//!
 //! use rustc_serialize::json::{Json, ToJson};
 //! use std::collections::BTreeMap;
 //!
@@ -218,9 +211,6 @@
 //! Handlebars is nothing without helpers. You can also create your own helpers with rust. Helpers in handlebars-rust are custom struct implements the `HelperDef` trait, concretely, the `call` function. For your convenience, most of stateless helpers can be implemented as bare functions.
 //!
 //! ```
-//!
-//! extern crate handlebars;
-//!
 //! use std::io::Write;
 //! use handlebars::{Handlebars, HelperDef, RenderError, RenderContext, Helper, Context, JsonRender};
 //!

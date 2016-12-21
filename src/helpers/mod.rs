@@ -16,12 +16,37 @@ pub use self::helper_log::LOG_HELPER;
 ///
 /// Implement `HelperDef` to create custom helper. You can retrieve useful information from these arguments.
 ///
-/// * &Context: the context you are rendering
-/// * &Helper: current helper template information, contains name, params, hashes and nested template
-/// * &Registry: the global registry, you can find templates by name from registry
-/// * &mut RenderContext: you can store variables (starts with @) in render context, for example, @index of #each.
+/// * `&Helper`: current helper template information, contains name, params, hashes and nested template
+/// * `&Registry`: the global registry, you can find templates by name from registry
+/// * `&mut RenderContext`: you can access data or modify variables (starts with @)/patials in render context, for example, @index of #each. See its document for detail.
 ///
 /// By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
+///
+/// ## Define an inline helper
+///
+/// ```
+/// use handlebars::*;
+///
+/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+///    // get parameter from helper or throw an error
+///    let param = h.param(0).and_then(|v| v.value().as_string()).unwrap_or("");
+///    try!(rc.writer.write(param.to_uppercase().into_bytes().as_ref()));
+///    Ok(())
+/// }
+/// ```
+///
+/// ## Define block helper
+///
+/// Block helper is like `#if` or `#each` which has a inner template and an optional *inverse* template (the template in else branch). You can access the inner template by `helper.template()` and `helper.inverse()`. In most case you will just call `render` on it.
+///
+/// ```
+/// use handlebars::*;
+///
+/// fn dummy_block(h: &Helper, r: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+///     h.template().map(|t| t.render(r, rc)).unwrap_or(Ok(()))
+/// }
+/// ```
+///
 ///
 pub trait HelperDef: Send + Sync {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;

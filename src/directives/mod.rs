@@ -3,9 +3,48 @@ use registry::Registry;
 
 pub use self::inline::INLINE_DIRECTIVE;
 
-/// Directive Definition
+/// Decorator Definition
 ///
-/// Implement this trait to define your own decorators or directives
+/// Implement this trait to define your own decorators or directives. Currently
+/// decorator shares same definition with helper.
+///
+/// In handlebars, it is recommanded to use decorator to change context data and update helper definition.
+/// ## Updating context data
+///
+/// In decorator, you can change some context data your are about to render.
+///
+/// ```ignore
+/// use handlebars::*;
+/// use rustc_serialize::json::ToJson;
+///
+/// fn update_data(_: &Decorator, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+///     // modify json object
+///     let mut ctx_ref = rc.context_mut();
+///     if let Some(ref mut m) = ctx_ref.data_mut().as_object_mut() {
+///         m.insert("hello".to_string(), "world".to_owned().to_json());
+///     }
+///     Ok(())
+/// }
+///
+/// ```
+///
+/// ## Define local helper
+///
+/// You can override behavior of a helper from position of decorator to the end of template.
+///
+/// ```
+/// use handlebars::*;
+///
+/// fn override_helper(_: &Decorator, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+///     let new_helper = |h: &Helper, _: &Handlebars, rc: &mut RenderContext| -> Result<(), RenderError> {
+///         // your helper logic
+///         Ok(())
+///     };
+///     rc.register_local_helper("distance", Box::new(new_helper));
+///     Ok(())
+/// }
+/// ```
+///
 pub trait DirectiveDef: Send + Sync {
     fn call(&self, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
