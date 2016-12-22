@@ -24,7 +24,7 @@ pub use self::helper_log::LOG_HELPER;
 ///
 /// ## Define an inline helper
 ///
-/// ```
+/// ```ignore
 /// use handlebars::*;
 ///
 /// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
