@@ -34,6 +34,7 @@ quick_error! {
     }
 }
 
+/// Error on parsing template.
 #[derive(Debug, PartialEq)]
 pub struct TemplateError {
     pub reason: TemplateErrorReason,

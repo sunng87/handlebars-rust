@@ -20,6 +20,7 @@ use support::str::StringWriter;
 #[cfg(feature="partial4")]
 use partial;
 
+/// Error when rendering data on template.
 #[derive(Debug, Clone)]
 pub struct RenderError {
     pub desc: String,
@@ -343,7 +344,23 @@ impl<'a, 'b> Helper<'a> {
         &self.params
     }
 
-    /// Returns nth helper param, resolved within the context
+    /// Returns nth helper param, resolved within the context.
+    ///
+    /// ## Example
+    ///
+    /// To get the first param in `{{my_helper abc}}` or `{{my_helper 2}}`,
+    /// use `h.param(0)` in helper definition.
+    /// Variable `abc` is auto resolved in current context.
+    ///
+    /// ```
+    /// use handlebars::*;
+    ///
+    /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
+    ///     let v = h.param(0).map(|v| v.value()).unwrap();
+    ///     // ..
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn param(&self, idx: usize) -> Option<&ContextJson> {
         self.params.get(idx)
     }
@@ -354,11 +371,30 @@ impl<'a, 'b> Helper<'a> {
     }
 
     /// Return hash value of a given key, resolved within the context
+    ///
+    /// ## Example
+    ///
+    /// To get the first param in `{{my_helper v=abc}}` or `{{my_helper v=2}}`,
+    /// use `h.hash_get("v")` in helper definition.
+    /// Variable `abc` is auto resolved in current context.
+    ///
+    /// ```
+    /// use handlebars::*;
+    ///
+    /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
+    ///     let v = h.hash_get("v").map(|v| v.value()).unwrap();
+    ///     // ..
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn hash_get(&self, key: &str) -> Option<&ContextJson> {
         self.hash.get(key)
     }
 
-    /// Returns the default inner template if any
+    /// Returns the default inner template if the helper is a block helper.
+    ///
+    /// Typically you will render the template via: `template.render(registry, render_context)`
+    ///
     pub fn template(&self) -> Option<&Template> {
         (*self.template).as_ref().map(|t| t)
     }
@@ -393,6 +429,7 @@ impl<'a, 'b> Helper<'a> {
     }
 }
 
+/// Render-time Decorator data when using in a decorator definition
 pub struct Directive<'a> {
     name: String,
     params: Vec<ContextJson>,
@@ -401,10 +438,10 @@ pub struct Directive<'a> {
 }
 
 impl<'a, 'b> Directive<'a> {
-    pub fn from_template(dt: &'a DirectiveTemplate,
-                         registry: &Registry,
-                         rc: &'b mut RenderContext)
-                         -> Result<Directive<'a>, RenderError> {
+    fn from_template(dt: &'a DirectiveTemplate,
+                     registry: &Registry,
+                     rc: &'b mut RenderContext)
+                     -> Result<Directive<'a>, RenderError> {
         let name = try!(dt.name.expand_as_name(registry, rc));
 
         let mut evaluated_params = Vec::new();
@@ -458,9 +495,12 @@ impl<'a, 'b> Directive<'a> {
     }
 }
 
+/// Render trait
 pub trait Renderable {
+    /// render into RenderContext's `writer`
     fn render(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 
+    /// render into string
     fn renders(&self, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let mut sw = StringWriter::new();
         {
@@ -474,6 +514,7 @@ pub trait Renderable {
     }
 }
 
+/// Evaluate directive or decorator
 pub trait Evalable {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }

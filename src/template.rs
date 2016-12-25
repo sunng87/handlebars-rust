@@ -20,6 +20,7 @@ use self::TemplateElement::*;
 #[derive(PartialEq, Clone, Debug)]
 pub struct TemplateMapping(pub usize, pub usize);
 
+/// A handlebars template
 #[derive(PartialEq, Clone, Debug)]
 pub struct Template {
     pub name: Option<String>,

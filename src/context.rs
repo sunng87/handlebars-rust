@@ -159,6 +159,7 @@ impl Context {
     }
 }
 
+/// Render Json data with default format
 pub trait JsonRender {
     fn render(&self) -> String;
 }
