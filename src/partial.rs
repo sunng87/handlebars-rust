@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use registry::Registry;
-use render::{RenderError, RenderContext, Directive, Evalable, Renderable};
+use render::{RenderError, RenderContext, Directive, Evaluable, Renderable};
 
 pub fn expand_partial(d: &Directive,
                       r: &Registry,

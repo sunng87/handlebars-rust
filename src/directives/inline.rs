@@ -47,7 +47,7 @@ mod test {
     use template::Template;
     use registry::Registry;
     use context::Context;
-    use render::{RenderContext, Evalable};
+    use render::{RenderContext, Evaluable};
     use support::str::StringWriter;
     use std::collections::HashMap;
 

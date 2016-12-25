@@ -6,7 +6,7 @@ use registry::Registry;
 use context::JsonRender;
 use render::{Renderable, RenderContext, RenderError, Helper};
 #[cfg(feature = "partial4")]
-use render::Evalable;
+use render::Evaluable;
 
 #[derive(Clone, Copy)]
 pub struct IncludeHelper;

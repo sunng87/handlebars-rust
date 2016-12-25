@@ -515,7 +515,7 @@ pub trait Renderable {
 }
 
 /// Evaluate directive or decorator
-pub trait Evalable {
+pub trait Evaluable {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
 
@@ -607,7 +607,7 @@ impl Renderable for Template {
     }
 }
 
-impl Evalable for Template {
+impl Evaluable for Template {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let iter = self.elements.iter();
         let mut idx = 0;
@@ -681,7 +681,7 @@ impl Renderable for TemplateElement {
     }
 }
 
-impl Evalable for TemplateElement {
+impl Evaluable for TemplateElement {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
