@@ -78,11 +78,11 @@ pub struct RenderContext<'a> {
     path: String,
     local_path_root: VecDeque<String>,
     local_variables: HashMap<String, Json>,
-    local_helpers: HashMap<String, Rc<Box<HelperDef + 'static>>>,
+    local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
     default_var: Json,
     block_context: VecDeque<Context>,
     /// the context
-    context: Context,
+    context: &'a mut Context,
     /// the `Write` where page is generated
     pub writer: &'a mut Write,
     /// current template name
@@ -94,13 +94,16 @@ pub struct RenderContext<'a> {
 
 impl<'a> RenderContext<'a> {
     /// Create a render context from a `Write`
-    pub fn new(ctx: Context, w: &'a mut Write) -> RenderContext<'a> {
+    pub fn new(ctx: &'a mut Context,
+               local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+               w: &'a mut Write)
+               -> RenderContext<'a> {
         RenderContext {
             partials: HashMap::new(),
             path: ".".to_string(),
             local_path_root: VecDeque::new(),
             local_variables: HashMap::new(),
-            local_helpers: HashMap::new(),
+            local_helpers: local_helpers,
             default_var: Json::Null,
             block_context: VecDeque::new(),
             context: ctx,
@@ -111,38 +114,21 @@ impl<'a> RenderContext<'a> {
         }
     }
 
-    /// Create a new `RenderContext` with a different `Write`
-    pub fn with_writer<'b>(&self, w: &'b mut Write) -> RenderContext<'b> {
-        RenderContext {
-            partials: self.partials.clone(),
-            path: self.path.clone(),
-            local_path_root: self.local_path_root.clone(),
-            local_variables: self.local_variables.clone(),
-            local_helpers: self.local_helpers.clone(),
-            default_var: self.default_var.clone(),
-            block_context: self.block_context.clone(),
-            context: self.context.clone(),
-            writer: w,
-            current_template: self.current_template.clone(),
-            root_template: self.root_template.clone(),
-            disable_escape: self.disable_escape,
-        }
-    }
-
     pub fn derive(&mut self) -> RenderContext {
         RenderContext {
             partials: self.partials.clone(),
             path: self.path.clone(),
             local_path_root: self.local_path_root.clone(),
             local_variables: self.local_variables.clone(),
-            local_helpers: self.local_helpers.clone(),
-            default_var: self.default_var.clone(),
-            block_context: self.block_context.clone(),
-            context: self.context.clone(),
-            writer: self.writer,
             current_template: self.current_template.clone(),
             root_template: self.root_template.clone(),
+            default_var: self.default_var.clone(),
+            block_context: self.block_context.clone(),
+
             disable_escape: self.disable_escape,
+            local_helpers: self.local_helpers,
+            context: self.context,
+            writer: self.writer,
         }
     }
 
@@ -244,11 +230,11 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn context(&self) -> &Context {
-        &self.context
+        self.context
     }
 
     pub fn context_mut(&mut self) -> &mut Context {
-        &mut self.context
+        self.context
     }
 
     pub fn register_local_helper(&mut self,
@@ -474,6 +460,18 @@ impl<'a, 'b> Directive<'a> {
 
 pub trait Renderable {
     fn render(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
+
+    fn renders(&self, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
+        let mut sw = StringWriter::new();
+        {
+            let mut local_rc = rc.derive();
+            local_rc.writer = &mut sw;
+            try!(self.render(registry, &mut local_rc));
+        }
+
+        let s = sw.to_string();
+        Ok(s)
+    }
 }
 
 pub trait Evalable {
@@ -491,7 +489,8 @@ impl Parameter {
             &Parameter::Subexpression(ref t) => {
                 let mut local_writer = StringWriter::new();
                 {
-                    let mut local_rc = rc.with_writer(&mut local_writer);
+                    let mut local_rc = rc.derive();
+                    local_rc.writer = &mut local_writer;
                     // disable html escape for subexpression
                     local_rc.disable_escape = true;
 
@@ -668,8 +667,10 @@ impl Evalable for TemplateElement {
 fn test_raw_string() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
+    let mut ctx = Context::null();
+    let mut hlps = HashMap::new();
     {
-        let mut rc = RenderContext::new(Context::null(), &mut sw);
+        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
         let raw_string = RawString("<h1>hello world</h1>".to_string());
 
         raw_string.render(&r, &mut rc).ok().unwrap();
@@ -681,13 +682,14 @@ fn test_raw_string() {
 fn test_expression() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
+    let mut hlps = HashMap::new();
+    let mut m: HashMap<String, String> = HashMap::new();
+    let value = "<p></p>".to_string();
+    m.insert("hello".to_string(), value);
+    let mut ctx = Context::wraps(&m);
     {
-        let mut m: HashMap<String, String> = HashMap::new();
-        let value = "<p></p>".to_string();
-        m.insert("hello".to_string(), value);
-        let ctx = Context::wraps(&m);
 
-        let mut rc = RenderContext::new(ctx, &mut sw);
+        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
         let element = Expression(Parameter::Name("hello".into()));
 
         element.render(&r, &mut rc).ok().unwrap();
@@ -700,13 +702,14 @@ fn test_expression() {
 fn test_html_expression() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
+    let mut hlps = HashMap::new();
+    let mut m: HashMap<String, String> = HashMap::new();
     let value = "world";
+    m.insert("hello".to_string(), value.to_string());
+    let mut ctx = Context::wraps(&m);
     {
-        let mut m: HashMap<String, String> = HashMap::new();
-        m.insert("hello".to_string(), value.to_string());
-        let ctx = Context::wraps(&m);
 
-        let mut rc = RenderContext::new(ctx, &mut sw);
+        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
         let element = HTMLExpression(Parameter::Name("hello".into()));
         element.render(&r, &mut rc).ok().unwrap();
     }
@@ -718,14 +721,16 @@ fn test_html_expression() {
 fn test_template() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
+    let mut hlps = HashMap::new();
+    let mut m: HashMap<String, String> = HashMap::new();
+    let value = "world".to_string();
+    m.insert("hello".to_string(), value);
+    let mut ctx = Context::wraps(&m);
+
     {
 
-        let mut m: HashMap<String, String> = HashMap::new();
-        let value = "world".to_string();
-        m.insert("hello".to_string(), value);
-        let ctx = Context::wraps(&m);
 
-        let mut rc = RenderContext::new(ctx, &mut sw);
+        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
         let mut elements: Vec<TemplateElement> = Vec::new();
 
         let e1 = RawString("<h1>".to_string());
@@ -756,7 +761,10 @@ fn test_template() {
 fn test_render_context_promotion_and_demotion() {
     use serialize::json::ToJson;
     let mut sw = StringWriter::new();
-    let mut render_context = RenderContext::new(Context::null(), &mut sw);
+    let mut ctx = Context::null();
+    let mut hlps = HashMap::new();
+
+    let mut render_context = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
 
     render_context.set_local_var("@index".to_string(), 0usize.to_json());
 
@@ -775,16 +783,16 @@ fn test_render_context_promotion_and_demotion() {
 fn test_render_subexpression() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
-    {
-        let mut m: HashMap<String, String> = HashMap::new();
-        m.insert("hello".to_string(), "world".to_string());
-        m.insert("world".to_string(), "nice".to_string());
-        m.insert("const".to_string(), "truthy".to_string());
-        let ctx = Context::wraps(&m);
 
-        let mut rc = RenderContext::new(ctx, &mut sw);
-        let template = Template::compile("<h1>{{#if (const)}}{{(hello)}}{{/if}}</h1>").unwrap();
-        if let Err(e) = template.render(&r, &mut rc) {
+    let mut m: HashMap<String, String> = HashMap::new();
+    m.insert("hello".to_string(), "world".to_string());
+    m.insert("world".to_string(), "nice".to_string());
+    m.insert("const".to_string(), "truthy".to_string());
+
+    {
+        if let Err(e) = r.template_renderw("<h1>{{#if (const)}}{{(hello)}}{{/if}}</h1>",
+                                           Context::wraps(&m),
+                                           &mut sw) {
             panic!("{}", e);
         }
     }
@@ -809,15 +817,11 @@ fn test_render_subexpression_issue_115() {
                       }));
 
     let mut sw = StringWriter::new();
+    let mut m: HashMap<String, String> = HashMap::new();
+    m.insert("a".to_string(), "123".to_string());
+
     {
-        let mut m: HashMap<String, String> = HashMap::new();
-        m.insert("a".to_string(), "123".to_string());
-        let ctx = Context::wraps(&m);
-
-        let mut rc = RenderContext::new(ctx, &mut sw);
-        let template = Template::compile("{{format (format a)}}").unwrap();
-
-        if let Err(e) = template.render(&r, &mut rc) {
+        if let Err(e) = r.template_renderw("{{format (format a)}}", Context::wraps(&m), &mut sw) {
             panic!("{}", e);
         }
     }
@@ -827,19 +831,14 @@ fn test_render_subexpression_issue_115() {
 
 #[test]
 fn test_render_error_line_no() {
-    let r = Registry::new();
-    let mut sw = StringWriter::new();
+    let mut r = Registry::new();
     let m: HashMap<String, String> = HashMap::new();
-    let ctx = Context::wraps(&m);
 
-    let mut rc = RenderContext::new(ctx, &mut sw);
     let name = "invalid_template";
-    let mut template = Template::compile2("<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}",
-                                          true)
-                           .unwrap();
-    template.name = Some(name.to_owned());
+    assert!(r.register_template_string(name, "<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}")
+             .is_ok());
 
-    if let Err(e) = template.render(&r, &mut rc) {
+    if let Err(e) = r.render(name, &m) {
         assert_eq!(e.line_no.unwrap(), 3);
         assert_eq!(e.column_no.unwrap(), 3);
         assert_eq!(e.template_name, Some(name.to_owned()));

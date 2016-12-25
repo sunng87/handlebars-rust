@@ -49,6 +49,7 @@ mod test {
     use context::Context;
     use render::{RenderContext, Evalable};
     use support::str::StringWriter;
+    use std::collections::HashMap;
 
     #[test]
     fn test_inline() {
@@ -61,7 +62,10 @@ mod test {
         let hbs = Registry::new();
 
         let mut sw = StringWriter::new();
-        let mut rc = RenderContext::new(Context::null(), &mut sw);
+        let mut ctx = Context::null();
+        let mut hlps = HashMap::new();
+
+        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
         t0.elements[0].eval(&hbs, &mut rc).unwrap();
 
         assert!(rc.get_partial(&"hello".to_owned()).is_some());

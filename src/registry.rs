@@ -245,7 +245,9 @@ impl Registry {
         let template = self.get_template(&name.to_string());
 
         if let Some(t) = template {
-            let mut render_context = RenderContext::new(context, writer);
+            let mut ctx = context;
+            let mut local_helpers = HashMap::new();
+            let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
             render_context.root_template = t.name.clone();
             (*t).render(self, &mut render_context)
         } else {
@@ -275,7 +277,9 @@ impl Registry {
                             writer: &mut Write)
                             -> Result<(), TemplateRenderError> {
         let tpl = try!(Template::compile(template_string));
-        let mut render_context = RenderContext::new(context, writer);
+        let mut ctx = context;
+        let mut local_helpers = HashMap::new();
+        let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
         tpl.render(self, &mut render_context).map_err(TemplateRenderError::from)
     }
 
