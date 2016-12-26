@@ -107,17 +107,24 @@ impl Registry {
     }
 
     /// Enable handlebars template source map
+    ///
+    /// Source map provides line/col reporting on error. It uses slightly
+    /// more memory to maintain the data.
+    ///
+    /// Default is true.
     pub fn source_map_enable(&mut self, enable: bool) {
         self.source_map = enable;
     }
 
     /// Register a template
-    pub fn register_template(&mut self, name: &str, mut template: Template) {
+    pub fn register_template(&mut self, name: &str, template: Template) {
         template.name = Some(name.to_owned());
         self.templates.insert(name.to_string(), template);
     }
 
     /// Register a template string
+    ///
+    /// Returns `TemplateError` if there is syntax error on parsing template.
     pub fn register_template_string<S>(&mut self,
                                        name: &str,
                                        tpl_str: S)
@@ -130,6 +137,9 @@ impl Registry {
     }
 
     /// Register a partial string
+    ///
+    /// A named partial will be added to the registry. It will overwrite template with
+    /// same name. Currently registered partial is just identical to template.
     pub fn register_partial<S>(&mut self, name: &str, partial_str: S) -> Result<(), TemplateError>
         where S: AsRef<str>
     {
@@ -173,7 +183,7 @@ impl Registry {
         self.helpers.insert(name.to_string(), def)
     }
 
-    /// register a directive
+    /// register a decorator
     pub fn register_decorator(&mut self,
                               name: &str,
                               def: Box<DirectiveDef + 'static>)
@@ -224,6 +234,11 @@ impl Registry {
 
 
     /// Render a registered template with some data into a string
+    ///
+    /// * `name` is the template name you registred previously
+    /// * `ctx` is the data that implements `ToJson` of either rustc_serialize or serde_json
+    ///
+    /// Returns rendered string or an struct with error information
     pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError>
         where T: ToJson
     {
@@ -236,7 +251,7 @@ impl Registry {
     }
 
 
-    /// Render a registered template with some data to the `std::io::Write`
+    /// Render a registered template and write some data to the `std::io::Write`
     pub fn renderw(&self,
                    name: &str,
                    context: Context,

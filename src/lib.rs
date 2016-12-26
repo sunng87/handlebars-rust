@@ -257,18 +257,8 @@
 //!       "1st helper: 1\n2nd helper: 2\n3rd helper: 3".to_owned());
 //! }
 //! ```
-//!
-//! #### Arguments of HelpDef
-//!
-//! You can get data from the `Helper` argument about the template information:
-//!
-//! * `name()` for the helper name. This is known to you for most situation but if you are defining `helperMissing` or `blockHelperMissing`, this is important.
-//! * `params()` is a vector of parameter value in helper, like `{{#somehelper param1 param2 param3}}`.
-//! * `param(n)` returns value of the index
-//! * `hash()` is a map of String key and Json value, defined in helper as `{{@somehelper a=1 b="2" c=true}}`.
-//! * `hash_get(key)` returns value of the key
-//! * `template()` gives you the nested template of block helper.
-//! * `inverse()` gives you the inversed template of it, inversed template is the template behind `{{else}}`.
+//! Data available to helper can be found in [Helper](struct.Helper.html). And there are more
+//! examples in [HelperDef](trait.HelperDef.html) page.
 //!
 //! You can learn more about helpers by looking into source code of built-in helpers.
 //!
