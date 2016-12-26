@@ -80,7 +80,6 @@ mod test {
 
     use context::JsonRender;
     use helpers::HelperDef;
-    use template::Template;
     use registry::Registry;
     use render::{RenderContext, RenderError, Renderable, Helper};
 
@@ -110,12 +109,9 @@ mod test {
 
     #[test]
     fn test_meta_helper() {
-        let t0 = Template::compile("{{foo this}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#bar this}}nice{{/bar}}".to_string()).ok().unwrap();
-
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
+        assert!(handlebars.register_template_string("t0", "{{foo this}}").is_ok());
+        assert!(handlebars.register_template_string("t1", "{{#bar this}}nice{{/bar}}").is_ok());
 
         let meta_helper = MetaHelper;
         handlebars.register_helper("helperMissing", Box::new(meta_helper));
@@ -130,10 +126,8 @@ mod test {
 
     #[test]
     fn test_helper_for_subexpression() {
-        let t2 = Template::compile("{{foo value=(bar 0)}}".to_string()).ok().unwrap();
-
         let mut handlebars = Registry::new();
-        handlebars.register_template("t2", t2);
+        assert!(handlebars.register_template_string("t2", "{{foo value=(bar 0)}}").is_ok());
 
         handlebars.register_helper("helperMissing",
                                    Box::new(|h: &Helper,

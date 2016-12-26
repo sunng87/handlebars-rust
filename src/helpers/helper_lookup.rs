@@ -55,25 +55,18 @@ pub static LOOKUP_HELPER: LookupHelper = LookupHelper;
 
 #[cfg(test)]
 mod test {
-    use template::Template;
     use registry::Registry;
 
     use std::collections::BTreeMap;
 
     #[test]
     fn test_lookup() {
-        let t0 = Template::compile("{{#each v1}}{{lookup ../../v2 @index}}{{/each}}".to_string())
-                     .ok()
-                     .unwrap();
-        let t1 = Template::compile("{{#each v1}}{{lookup ../../v2 1}}{{/each}}".to_string())
-                     .ok()
-                     .unwrap();
-        let t2 = Template::compile("{{lookup kk \"a\"}}".to_string()).ok().unwrap();
-
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
-        handlebars.register_template("t2", t2);
+        assert!(handlebars.register_template_string("t0", "{{#each v1}}{{lookup ../../v2 @index}}{{/each}}").is_ok());
+        assert!(handlebars.register_template_string("t1",
+                                                    "{{#each v1}}{{lookup ../../v2 1}}{{/each}}")
+                          .is_ok());
+        assert!(handlebars.register_template_string("t2", "{{lookup kk \"a\"}}").is_ok());
 
         let mut m: BTreeMap<String, Vec<u16>> = BTreeMap::new();
         m.insert("v1".to_string(), vec![1u16, 2u16, 3u16]);

@@ -127,16 +127,13 @@ fn main() {
     handlebars.register_helper("ranking_label", Box::new(rank_helper));
     // handlebars.register_helper("format", Box::new(FORMAT_HELPER));
 
-    let data = {
-        let data = make_data();
-        Context::wraps(&data)
-    };
+    let data = make_data();
 
     // I'm using unwrap directly here to demostration.
     // Never use this style in your real-world projects.
     let mut source_template = File::open(&"./examples/render_file/template.hbs").unwrap();
     let mut output_file = File::create("target/table.html").unwrap();
-    if let Ok(_) = handlebars.template_renderw2(&mut source_template, data, &mut output_file) {
+    if let Ok(_) = handlebars.template_renderw2(&mut source_template, &data, &mut output_file) {
         println!("target/table.html generated");
     } else {
         println!("Failed to geneate target/table.html");

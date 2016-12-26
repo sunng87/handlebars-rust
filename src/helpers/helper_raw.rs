@@ -20,17 +20,12 @@ pub static RAW_HELPER: RawHelper = RawHelper;
 
 #[cfg(test)]
 mod test {
-    use template::Template;
     use registry::Registry;
 
     #[test]
     fn test_raw_helper() {
-        let t = Template::compile("a{{{{raw}}}}{{content}}{{else}}hello{{{{/raw}}}}".to_string())
-                    .ok()
-                    .unwrap();
-
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t);
+        assert!(handlebars.register_template_string("t0", "a{{{{raw}}}}{{content}}{{else}}hello{{{{/raw}}}}").is_ok());
 
         let r = handlebars.render("t0", &());
         assert_eq!(r.ok().unwrap(), "a{{content}}{{else}}hello");

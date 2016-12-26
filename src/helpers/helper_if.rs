@@ -36,7 +36,6 @@ pub static UNLESS_HELPER: IfHelper = IfHelper { positive: false };
 
 #[cfg(test)]
 mod test {
-    use template::Template;
     use registry::Registry;
     #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     use serialize::json::Json;
@@ -45,14 +44,11 @@ mod test {
 
     #[test]
     fn test_if() {
-        let t0 = Template::compile("{{#if this}}hello{{/if}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{#unless this}}hello{{else}}world{{/unless}}".to_string())
-                     .ok()
-                     .unwrap();
-
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
+        assert!(handlebars.register_template_string("t0", "{{#if this}}hello{{/if}}").is_ok());
+        assert!(handlebars.register_template_string("t1",
+                                                    "{{#unless this}}hello{{else}}world{{/unless}}")
+                          .is_ok());
 
         let r0 = handlebars.render("t0", &true);
         assert_eq!(r0.ok().unwrap(), "hello".to_string());
@@ -70,18 +66,11 @@ mod test {
         let json_str = r#"{"a":{"b":99,"c":{"d": true}}}"#;
         let data = Json::from_str(json_str).unwrap();
 
-        let t0 = Template::compile("{{#if a.c.d}}hello {{a.b}}{{/if}}".to_string())
-                     .ok()
-                     .unwrap();
-        let t1 = Template::compile("{{#with a}}{{#if c.d}}hello {{../a.b}}{{/if}}{{/with}}"
-                                       .to_string())
-                     .ok()
-                     .unwrap();
-
         let mut handlebars = Registry::new();
         handlebars.register_helper("with", Box::new(WITH_HELPER));
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
+        assert!(handlebars.register_template_string("t0", "{{#if a.c.d}}hello {{a.b}}{{/if}}")
+                          .is_ok());
+        assert!(handlebars.register_template_string("t1", "{{#with a}}{{#if c.d}}hello {{../a.b}}{{/if}}{{/with}}").is_ok());
 
         let r0 = handlebars.render("t0", &data);
         assert_eq!(r0.ok().unwrap(), "hello 99".to_string());

@@ -66,40 +66,21 @@ pub fn expand_partial(d: &Directive,
 
 #[cfg(test)]
 mod test {
-    use template::Template;
     use registry::Registry;
 
     #[test]
     fn test() {
-        let t0 = Template::compile("{{> t1}}".to_string()).ok().unwrap();
-        let t1 = Template::compile("{{this}}".to_string()).ok().unwrap();
-        let t2 = Template::compile("{{#> t99}}not there{{/t99}}".to_string()).ok().unwrap();
-        let t3 = Template::compile("{{#*inline \"t31\"}}{{this}}{{/inline}}{{> t31}}".to_string())
-                     .ok()
-                     .unwrap();
-        let t4 = Template::compile("{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}"
-                                       .to_string())
-                     .ok()
-                     .unwrap();
-        let t5 = Template::compile("include {{> nav}}".to_string()).ok().unwrap();
-        let t6 = Template::compile("{{> t1 a}}".to_string()).ok().unwrap();
-        let t7 = Template::compile("{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}")
-                     .ok()
-                     .unwrap();
-        let t8 = Template::compile("{{a}}".to_string()).ok().unwrap();
-        let t9 = Template::compile("{{> t8 a=2}}".to_string()).ok().unwrap();
-
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
-        handlebars.register_template("t2", t2);
-        handlebars.register_template("t3", t3);
-        handlebars.register_template("t4", t4);
-        handlebars.register_template("t5", t5);
-        handlebars.register_template("t6", t6);
-        handlebars.register_template("t7", t7);
-        handlebars.register_template("t8", t8);
-        handlebars.register_template("t9", t9);
+        assert!(handlebars.register_template_string("t0", "{{> t1}}").is_ok());
+        assert!(handlebars.register_template_string("t1", "{{this}}").is_ok());
+        assert!(handlebars.register_template_string("t2", "{{#> t99}}not there{{/t99}}").is_ok());
+        assert!(handlebars.register_template_string("t3", "{{#*inline \"t31\"}}{{this}}{{/inline}}{{> t31}}").is_ok());
+        assert!(handlebars.register_template_string("t4", "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}").is_ok());
+        assert!(handlebars.register_template_string("t5", "include {{> nav}}").is_ok());
+        assert!(handlebars.register_template_string("t6", "{{> t1 a}}").is_ok());
+        assert!(handlebars.register_template_string("t7", "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}").is_ok());
+        assert!(handlebars.register_template_string("t8", "{{a}}").is_ok());
+        assert!(handlebars.register_template_string("t9", "{{> t8 a=2}}").is_ok());
 
         assert_eq!(handlebars.render("t0", &1).ok().unwrap(), "1".to_string());
         assert_eq!(handlebars.render("t2", &1).ok().unwrap(),

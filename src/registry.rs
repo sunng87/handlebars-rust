@@ -116,12 +116,6 @@ impl Registry {
         self.source_map = enable;
     }
 
-    /// Register a template
-    pub fn register_template(&mut self, name: &str, template: Template) {
-        template.name = Some(name.to_owned());
-        self.templates.insert(name.to_string(), template);
-    }
-
     /// Register a template string
     ///
     /// Returns `TemplateError` if there is syntax error on parsing template.
@@ -239,28 +233,25 @@ impl Registry {
     /// * `ctx` is the data that implements `ToJson` of either rustc_serialize or serde_json
     ///
     /// Returns rendered string or an struct with error information
-    pub fn render<T>(&self, name: &str, ctx: &T) -> Result<String, RenderError>
+    pub fn render<T>(&self, name: &str, data: &T) -> Result<String, RenderError>
         where T: ToJson
     {
         let mut writer = StringWriter::new();
-        let context = Context::wraps(ctx);
         {
-            try!(self.renderw(name, context, &mut writer));
+            try!(self.renderw(name, data, &mut writer));
         }
         Ok(writer.to_string())
     }
 
 
     /// Render a registered template and write some data to the `std::io::Write`
-    pub fn renderw(&self,
-                   name: &str,
-                   context: Context,
-                   writer: &mut Write)
-                   -> Result<(), RenderError> {
+    pub fn renderw<T>(&self, name: &str, data: &T, writer: &mut Write) -> Result<(), RenderError>
+        where T: ToJson
+    {
         let template = self.get_template(&name.to_string());
 
         if let Some(t) = template {
-            let mut ctx = context;
+            let mut ctx = Context::wraps(data);
             let mut local_helpers = HashMap::new();
             let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
             render_context.root_template = t.name.clone();
@@ -273,52 +264,53 @@ impl Registry {
     /// render a template string using current registry without register it
     pub fn template_render<T>(&self,
                               template_string: &str,
-                              ctx: &T)
+                              data: &T)
                               -> Result<String, TemplateRenderError>
         where T: ToJson
     {
         let mut writer = StringWriter::new();
-        let context = Context::wraps(ctx);
         {
-            try!(self.template_renderw(template_string, context, &mut writer));
+            try!(self.template_renderw(template_string, data, &mut writer));
         }
         Ok(writer.to_string())
     }
 
     /// render a template string using current registry without register it
-    pub fn template_renderw(&self,
-                            template_string: &str,
-                            context: Context,
-                            writer: &mut Write)
-                            -> Result<(), TemplateRenderError> {
+    pub fn template_renderw<T>(&self,
+                               template_string: &str,
+                               data: &T,
+                               writer: &mut Write)
+                               -> Result<(), TemplateRenderError>
+        where T: ToJson
+    {
         let tpl = try!(Template::compile(template_string));
-        let mut ctx = context;
+        let mut ctx = Context::wraps(data);
         let mut local_helpers = HashMap::new();
         let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
         tpl.render(self, &mut render_context).map_err(TemplateRenderError::from)
     }
 
     /// render a template source using current registry without register it
-    pub fn template_renderw2(&self,
-                             template_source: &mut Read,
-                             context: Context,
-                             writer: &mut Write)
-                             -> Result<(), TemplateRenderError> {
+    pub fn template_renderw2<T>(&self,
+                                template_source: &mut Read,
+                                data: &T,
+                                writer: &mut Write)
+                                -> Result<(), TemplateRenderError>
+        where T: ToJson
+    {
         let mut tpl_str = String::new();
         try!(template_source.read_to_string(&mut tpl_str).map_err(|e| {
             TemplateRenderError::IOError(e, "Unamed template source".to_owned())
         }));
-        self.template_renderw(&tpl_str, context, writer)
+        self.template_renderw(&tpl_str, data, writer)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use template::Template;
     use registry::Registry;
     use render::{RenderContext, Renderable, RenderError, Helper};
     use helpers::HelperDef;
-    use context::Context;
     use support::str::StringWriter;
     #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     use error::TemplateRenderError;
@@ -370,14 +362,11 @@ mod test {
     fn test_renderw() {
         let mut r = Registry::new();
 
-        let t = Template::compile("<h1></h1>").ok().unwrap();
-        r.register_template("index", t.clone());
+        assert!(r.register_template_string("index", "<h1></h1>").is_ok());
 
         let mut sw = StringWriter::new();
-        let context = Context::null();
-
         {
-            r.renderw("index", context, &mut sw).ok().unwrap();
+            r.renderw("index", &(), &mut sw).ok().unwrap();
         }
 
         assert_eq!("<h1></h1>".to_string(), sw.to_string());
