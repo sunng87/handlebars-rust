@@ -248,17 +248,15 @@ impl Registry {
     pub fn renderw<T>(&self, name: &str, data: &T, writer: &mut Write) -> Result<(), RenderError>
         where T: ToJson
     {
-        let template = self.get_template(&name.to_string());
-
-        if let Some(t) = template {
-            let mut ctx = Context::wraps(data);
-            let mut local_helpers = HashMap::new();
-            let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
-            render_context.root_template = t.name.clone();
-            (*t).render(self, &mut render_context)
-        } else {
-            Err(RenderError::new(format!("Template not found: {}", name)))
-        }
+        self.get_template(&name.to_string())
+            .ok_or(RenderError::new(format!("Template not found: {}", name)))
+            .and_then(|t| {
+                let mut ctx = Context::wraps(data);
+                let mut local_helpers = HashMap::new();
+                let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
+                render_context.root_template = t.name.clone();
+                t.render(self, &mut render_context)
+            })
     }
 
     /// render a template string using current registry without register it
