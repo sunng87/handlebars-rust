@@ -1,25 +1,25 @@
 # Change Log
 
-## [0.23.0](https://github.com/sunng87/handlebars-rust/compare/0.22.0...0.21.1) - 2016-12-12
+## [0.23.0](https://github.com/sunng87/handlebars-rust/compare/0.22.0...0.23.0) - 2016-12-12
 
 * [Changed] `partial4` is now default. Use `partial_legacy` for previous version of template inheritance.
 * [Changed] Corrected subexpression behavior. Subexpression result is treated as string.
 * [Changed] Improved performance for render: better escape function and string writer buffer.
 
-## [0.22.0](https://github.com/sunng87/handlebars-rust/compare/0.22.0...0.21.1) - 2016-10-29
+## [0.22.0](https://github.com/sunng87/handlebars-rust/compare/0.21.1...0.22.0) - 2016-10-29
 
 * [Changed] Improved error reporting. Fixed display for several error
   types.
 * [Changed] Dropped regex and lazystatic as dependency.
 * [Changed] Examples refined.
 
-## [0.21.1](https://github.com/sunng87/handlebars-rust/compare/0.21.1...0.21.0) - 2016-10-09
+## [0.21.1](https://github.com/sunng87/handlebars-rust/compare/0.21.0...0.21.1) - 2016-10-09
 
 * [Changed] Fixed
   [#106](https://github.com/sunng87/handlebars-rust/issue/106), when
   property name contains `this`, it doesn't work
 
-## [0.21.0](https://github.com/sunng87/handlebars-rust/compare/0.21.0...0.20.5) - 2016-09-27
+## [0.21.0](https://github.com/sunng87/handlebars-rust/compare/0.20.5...0.21.0) - 2016-09-27
 
 * [Added] Block params support
   [#101](https://github.com/sunng87/handlebars-rust/pull/101)
@@ -27,33 +27,33 @@
 * [Changed] Rewrite path parser, better support for `../`
   [#105](https://github.com/sunng87/handlebars-rust/pull/105)
 
-## [0.20.5](https://github.com/sunng87/handlebars-rust/compare/0.20.4...0.20.5) - 2016-08-27
+## [0.20.5](https://github.com/sunng87/handlebars-rust/compare/0.20.5...0.20.4) - 2016-08-27
 
 * [Changed] Fixed issue for using [] in expression
   [#100](https://github.com/sunng87/handlebars-rust/issue/100)
 
-## [0.20.4](https://github.com/sunng87/handlebars-rust/compare/0.20.3...0.20.4) - 2016-08-27
+## [0.20.4](https://github.com/sunng87/handlebars-rust/compare/0.20.4...0.20.3) - 2016-08-27
 
 * [Changed] Fixed error message for partials
   [#98](https://github.com/sunng87/handlebars-rust/issue/98)
 * [Added] Added support for `else` in `each` block
   [#99](https://github.com/sunng87/handlebars-rust/issue/99)
 
-## [0.20.3](https://github.com/sunng87/handlebars-rust/compare/0.20.2...0.20.3) - 2016-08-14
+## [0.20.3](https://github.com/sunng87/handlebars-rust/compare/0.20.3...0.20.2) - 2016-08-14
 
 * [Changed] Fixed `with` used inside `each` block [#97](https://github.com/sunng87/handlebars-rust/pull/97)
 
-## [0.20.2](https://github.com/sunng87/handlebars-rust/compare/0.20.0...0.20.2) - 2016-08-07
+## [0.20.2](https://github.com/sunng87/handlebars-rust/compare/0.20.2...0.20.0) - 2016-08-07
 
 * [Changed] Allowed dash character in reference
   [#94](https://github.com/sunng87/handlebars-rust/pull/94)
 * [Changed] Fixed path error in nested each helpers [#95](https://github.com/sunng87/handlebars-rust/pull/95)
 
-## [0.20.0](https://github.com/sunng87/handlebars-rust/compare/0.19.1...0.20.0) - 2016-07-31
+## [0.20.0](https://github.com/sunng87/handlebars-rust/compare/0.20.0...0.19.1) - 2016-07-31
 
 * [Changed] Updated serde to 0.8
 
-## [0.19.1](https://github.com/sunng87/handlebars-rust/compare/0.19.0...0.19.1) - 2016-07-26
+## [0.19.1](https://github.com/sunng87/handlebars-rust/compare/0.19.1...0.19.0) - 2016-07-26
 
 * [Changed] Fixed `../` path visitor bug in nested `#each`
   [#93](https://github.com/sunng87/handlebars-rust/issues/93)
