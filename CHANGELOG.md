@@ -1,5 +1,14 @@
 # Change Log
 
+## [0.24.0](https://github.com/sunng87/handlebars-rust/compare/0.23.0...0.24.0) - 2016-12-30
+
+* [Added] Decorator support: change context data and helpers during rendering
+* [Changed] (**Breaking**) Helper trait changed, `Context` parameter no longer
+  available, use `render_context.context()` instead.
+* [Changed] (**Breaking**) Refactored Handlebars APIs, `Template` and
+  `Context` are no longer exposed in public API.
+* [Changed] Docs updated.
+
 ## [0.23.0](https://github.com/sunng87/handlebars-rust/compare/0.22.0...0.23.0) - 2016-12-12
 
 * [Changed] `partial4` is now default. Use `partial_legacy` for previous version of template inheritance.
