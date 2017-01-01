@@ -588,6 +588,7 @@ impl Renderable for Template {
         let mut idx = 0;
         for t in iter {
             try!(t.render(registry, rc).map_err(|mut e| {
+                // add line/col number if the template has mapping data
                 if e.line_no.is_none() {
                     if let Some(ref mapping) = self.mapping {
                         if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
@@ -598,7 +599,10 @@ impl Renderable for Template {
                     }
                 }
 
-                e.template_name = self.name.clone();
+                if e.template_name.is_none() {
+                    e.template_name = self.name.clone();
+                }
+
                 e
             }));
             idx = idx + 1;
