@@ -34,14 +34,16 @@ pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
 /// with the equivalent html / xml entities.
 pub fn html_escape(data: &str) -> String {
     DEFAULT_REPLACE.replace_all(data, |cap: &Captures| {
-        match cap.at(0) {
-            Some("<") => "&lt;".to_owned(),
-            Some(">") => "&gt;".to_owned(),
-            Some("\"") => "&quot;".to_owned(),
-            Some("&") => "&amp;".to_owned(),
-            _ => unreachable!(),
-        }
-    })
+                       match cap.get(0).map(|m| m.as_str()) {
+                           Some("<") => "&lt;",
+                           Some(">") => "&gt;",
+                           Some("\"") => "&quot;",
+                           Some("&") => "&amp;",
+                           _ => unreachable!(),
+                       }
+                       .to_owned()
+                   })
+                   .into_owned()
 }
 
 /// `EscapeFn` that donot change any thing. Useful when using in a non-html

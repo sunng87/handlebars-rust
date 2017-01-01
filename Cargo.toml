@@ -23,7 +23,7 @@ quick-error = "^1.0.0"
 pest = "^0.3.0"
 serde_json = { version = "^0.8.0", optional = true }
 rustc-serialize = { version = "^0.3.15", optional = true }
-regex = "^0.1.80"
+regex = "^0.2.0"
 lazy_static = "^0.2.2"
 
 serde = { version = "^0.8.0", optional = true }
