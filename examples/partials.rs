@@ -35,11 +35,13 @@ fn main() {
     };
 
     println!("Page 0");
-    println!("{}", handlebars.render("template", &data0).ok().unwrap());
+    println!("{}",
+             handlebars.render("template", &data0).unwrap_or_else(|e| format!("{}", e)));
     println!("=======================================================");
 
     println!("Page 1");
-    println!("{}", handlebars.render("template", &data1).ok().unwrap());
+    println!("{}",
+             handlebars.render("template", &data1).unwrap_or_else(|e| format!("{}", e)));
 }
 
 #[cfg(feature = "serde_type")]
@@ -71,9 +73,11 @@ fn main() {
     };
 
     println!("Page 0");
-    println!("{}", handlebars.render("template", &data0).ok().unwrap());
+    println!("{}",
+             handlebars.render("template", &data0).unwrap_or_else(|e| format!("{}", e)));
     println!("=======================================================");
 
     println!("Page 1");
-    println!("{}", handlebars.render("template", &data1).ok().unwrap());
+    println!("{}",
+             handlebars.render("template", &data1).unwrap_or_else(|e| format!("{}", e)));
 }
