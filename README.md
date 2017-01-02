@@ -10,9 +10,6 @@ Rust templating with [Handlebars templating language](https://handlebarsjs.com).
 [![Gitter](https://img.shields.io/gitter/room/sunng87/handlebars-rust.svg?maxAge=2592000)](https://gitter.im/sunng87/handlebars-rust)
 [![Docs](https://docs.rs/handlebars/badge.svg)](https://docs.rs/handlebars/)
 
-This library works on stable Rust 1.4.0 and above. In most time, it
-also works on beta and nightly channel.
-
 ## Getting Started
 
 If you are not familiar with [handlebars language
@@ -112,6 +109,12 @@ default. Original partial syntax via `block`, `partial` helpers are
 still supported via feature flag `partial_legacy`. Examples can be
 find in `examples/partials.rs`.
 
+#### WebAssembly compatible
+
+You can use this handlebars implementation in your rust project that
+compiles to WebAssembly. Checkout my fork of
+[todomvc](https://github.com/sunng87/rust-todomvc) demo.
+
 ### Limitations
 
 * This implementation is **not fully compatible** with the original
@@ -142,12 +145,12 @@ find in `examples/partials.rs`.
 * Subexpression `{{(foo bar)}}`
 * Json expression `a.b.[0]` and `a.b.[c]`
 * RawHelper syntax `{{{{raw-helper}}}}...{{{{/raw-helper}}}}`
+* Decorator, implemented in Rust way
 
 ### JavaScript implementation features we don't have
 
 * Mustache block (use `if`/`each` instead)
 * Chained else
-* Decorators
 
 Feel free to report an issue if you find something broken. We aren't
 going to implement all features of handlebars-js, but we should have a
