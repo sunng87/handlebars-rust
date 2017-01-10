@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.24.1](https://github.com/sunng87/handlebars-rust/compare/0.24.0...0.24.1) - 2016-12-30
+
+* [Changed] Updated `regex` crate to 0.2, fixed WebAssembly support
+* [Changed] Fixed error reporting in partial.
+
 ## [0.24.0](https://github.com/sunng87/handlebars-rust/compare/0.23.0...0.24.0) - 2016-12-30
 
 * [Added] Decorator support: change context data and helpers during rendering
