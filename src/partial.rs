@@ -25,16 +25,18 @@ pub fn expand_partial(d: &Directive,
     match render_template {
         Some(t) => {
             let context_param = d.params().get(0).and_then(|p| p.path());
-            let old_path = match context_param {
-                Some(p) => {
-                    let old_path = rc.get_path().clone();
-                    rc.promote_local_vars();
-                    let new_path = format!("{}/{}", old_path, p);
-                    rc.set_path(new_path);
-                    Some(old_path)
-                }
-                None => None,
-            };
+            let old_path = context_param.map(|p| {
+                let old_path = rc.get_path().clone();
+                rc.promote_local_vars();
+                let new_path = format!("{}/{}", old_path, p);
+                rc.set_path(new_path);
+                old_path
+            });
+
+            // @partial-block
+            if let Some(t) = d.template() {
+                rc.set_partial("@partial-block".to_string(), t.clone());
+            }
 
             let hash = d.hash();
             let r = if hash.is_empty() {
@@ -95,5 +97,18 @@ mod test {
         assert_eq!(handlebars.render("t7", &1).ok().unwrap(),
                    "world".to_string());
         assert_eq!(handlebars.render("t9", &1).ok().unwrap(), "2".to_string());
+    }
+
+    #[test]
+    fn test_include_partial_block() {
+        let t0 = "hello {{> @partial-block}}";
+        let t1 = "{{#> t0}}inner {{this}}{{/t0}}";
+
+        let mut handlebars = Registry::new();
+        assert!(handlebars.register_template_string("t0", t0).is_ok());
+        assert!(handlebars.register_template_string("t1", t1).is_ok());
+
+        let r0 = handlebars.render("t1", &true);
+        assert_eq!(r0.ok().unwrap(), "hello inner true".to_string());
     }
 }
