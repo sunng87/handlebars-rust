@@ -101,7 +101,6 @@ impl Registry {
         self.register_helper("with", Box::new(helpers::WITH_HELPER));
         self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
         self.register_helper("raw", Box::new(helpers::RAW_HELPER));
-        self.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
         self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
         self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));

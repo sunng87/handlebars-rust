@@ -5,8 +5,6 @@ use helpers::HelperDef;
 use registry::Registry;
 use context::JsonRender;
 use render::{Renderable, RenderContext, RenderError, Helper};
-#[cfg(feature = "partial4")]
-use render::Evaluable;
 
 #[derive(Clone, Copy)]
 pub struct IncludeHelper;
@@ -17,7 +15,6 @@ pub struct BlockHelper;
 #[derive(Clone, Copy)]
 pub struct PartialHelper;
 
-#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 impl HelperDef for IncludeHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let template = try!(h.params()
@@ -58,16 +55,13 @@ impl HelperDef for IncludeHelper {
                                                         .map(|(k, v)| {
                                                             (k.clone(), v.value().clone())
                                                         }));
-                    // keep a copy
-                    let c = *rc.context();
+                    let mut local_rc = rc.derive();
 
-                    let mut ctx_ref = rc.context_mut();
-                    let r = {
-                        *ctx_ref = c.extend(&hash_ctx);
-                        t.render(r, rc)
-                    };
-                    *ctx_ref = c;
-                    r
+                    {
+                        let mut ctx_ref = local_rc.context_mut();
+                        *ctx_ref = ctx_ref.extend(&hash_ctx);
+                    }
+                    t.render(r, &mut local_rc)
                 }
             }
             None => Err(RenderError::new("Template not found.")),
@@ -79,79 +73,6 @@ impl HelperDef for IncludeHelper {
         }
 
         result
-    }
-}
-
-#[cfg(feature = "partial4")]
-impl HelperDef for IncludeHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-
-        // try eval inline partials first
-        if let Some(t) = h.template() {
-            try!(t.eval(r, rc));
-        }
-
-        // let partial = rc.get_partial(&tname);
-        // let render_template = partial.as_ref().or(r.get_template(&tname)).or(h.template());
-        try!(h.params()
-              .get(0)
-              .ok_or(RenderError::new("Param not found for helper"))
-              .and_then(|ref t| {
-                  t.path()
-                   .or(Some(&t.value().render()))
-                   .ok_or(RenderError::new("Invalid template name to include"))
-                   .and_then(|p| {
-                       if rc.is_current_template(p) {
-                           Err(RenderError::new("Cannot include self in >"))
-                       } else {
-                           Ok(p)
-                       }
-                   })
-                   .map(|t| {
-                       rc.get_partial(t)
-                         .as_ref()
-                         .or(r.get_template(t))
-                         .or(h.template())
-                         .map(|t| {
-                             let context_param = h.params()
-                                                  .get(1)
-                                                  .and_then(|p| p.path());
-                             let old_path = context_param.map(|p| {
-                                 let old_path = rc.get_path().clone();
-                                 rc.promote_local_vars();
-                                 let new_path = format!("{}/{}", old_path, p);
-                                 rc.set_path(new_path);
-                                 old_path
-                             });
-
-                             let result = if h.hash().is_empty() {
-                                 t.render(r, rc)
-                             } else {
-                                 let hash_ctx = BTreeMap::from_iter(h.hash()
-                                                                     .iter()
-                                                                     .map(|(k, v)| {
-                                                                         (k.clone(),
-                                                                          v.value()
-                                                                           .clone())
-                                                                     }));
-                                 let mut local_rc = rc.derive();
-                                 {
-                                     let mut ctx_ref = local_rc.context_mut();
-                                     *ctx_ref = ctx_ref.extend(&hash_ctx);
-                                 }
-                                 t.render(r, &mut local_rc)
-                             };
-
-                             if let Some(path) = old_path {
-                                 rc.set_path(path);
-                                 rc.demote_local_vars();
-                             }
-
-                             result
-                         })
-                         .unwrap_or(Ok(()))
-                   })
-              }))
     }
 }
 
@@ -185,32 +106,27 @@ impl HelperDef for PartialHelper {
 }
 
 pub static INCLUDE_HELPER: IncludeHelper = IncludeHelper;
-#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 pub static BLOCK_HELPER: BlockHelper = BlockHelper;
-#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 pub static PARTIAL_HELPER: PartialHelper = PartialHelper;
 
 #[cfg(test)]
-#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
 mod test {
-    use template::Template;
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     use registry::Registry;
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     use std::collections::BTreeMap;
 
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     #[test]
     fn test() {
-        let t0 = Template::compile("<h1>{{#block title}}default{{/block}}</h1>".to_string())
-                     .ok()
-                     .unwrap();
-        let t1 = Template::compile("{{#partial title}}{{this}}{{/partial}}{{> t0}}".to_string())
-                     .ok()
-                     .unwrap();
-        let t2 = Template::compile("{{> t0}}<p>{{this}}</p>".to_string()).ok().unwrap();
+        let t0 = "<h1>{{#block title}}default{{/block}}</h1>";
+        let t1 = "{{#partial title}}{{this}}{{/partial}}{{> t0}}";
+        let t2 = "{{> t0}}<p>{{this}}</p>";
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
-        handlebars.register_template("t2", t2);
+        assert!(handlebars.register_template_string("t0", t0).is_ok());
+        assert!(handlebars.register_template_string("t1", t1).is_ok());
+        assert!(handlebars.register_template_string("t2", t2).is_ok());
 
         let r0 = handlebars.render("t1", &true);
         assert_eq!(r0.ok().unwrap(), "<h1>true</h1>".to_string());
@@ -220,13 +136,14 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_context() {
-        let t0 = Template::compile("<h1>{{> (body) data}}</h1>".to_string()).ok().unwrap();
-        let t1 = Template::compile("<p>{{this}}</p>".to_string()).ok().unwrap();
+        let t0 = "<h1>{{> (body) data}}</h1>";
+        let t1 = "<p>{{this}}</p>";
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
+        assert!(handlebars.register_template_string("t0", t0).is_ok());
+        assert!(handlebars.register_template_string("t1", t1).is_ok());
 
         let mut map: BTreeMap<String, String> = BTreeMap::new();
         map.insert("body".into(), "t1".into());
@@ -237,13 +154,14 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_partial_hash_context() {
-        let t0 = Template::compile("<h1>{{> t1 hello=\"world\"}}</h1>".to_string()).ok().unwrap();
-        let t1 = Template::compile("<p>{{data}}</p><p>{{hello}}</p>".to_string()).ok().unwrap();
+        let t0 = "<h1>{{> t1 hello=\"world\"}}</h1>";
+        let t1 = "<p>{{data}}</p><p>{{hello}}</p>";
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
+        assert!(handlebars.register_template_string("t0", t0).is_ok());
+        assert!(handlebars.register_template_string("t1", t1).is_ok());
 
         let mut map: BTreeMap<String, String> = BTreeMap::new();
         map.insert("data".into(), "hello".into());
@@ -254,20 +172,14 @@ mod test {
     }
 
     #[test]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_inline_partial() {
-        let t0 = Template::compile("{{#partial title}}hello {{name}}{{/partial}}<h1>include \
-                                    partial: {{#block title}}{{/block}}</h1>"
-                                       .to_string())
-                     .ok()
-                     .unwrap();
-        let t1 = Template::compile("{{#block none_partial}}Partial not found{{/block}}"
-                                       .to_string())
-                     .ok()
-                     .unwrap();
+        let t0 = "{{#partial title}}hello {{name}}{{/partial}}<h1>include partial: {{#block title}}{{/block}}</h1>";
+        let t1 = "{{#block none_partial}}Partial not found{{/block}}";
 
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
+        assert!(handlebars.register_template_string("t0", t0).is_ok());
+        assert!(handlebars.register_template_string("t1", t1).is_ok());
 
         let mut map: BTreeMap<String, String> = BTreeMap::new();
         map.insert("name".into(), "world".into());
@@ -281,40 +193,11 @@ mod test {
     }
 
     #[test]
-    #[cfg(feature = "partial4")]
-    fn test_inline_partial4() {
-        let t0 = Template::compile("{{*inline \"title\"}}hello {{name}}{{/inline}}<h1>include \
-                                    partial: {{> title}}</h1>"
-                                       .to_string())
-                     .ok()
-                     .unwrap();
-        let t1 = Template::compile("{{*inline \"title\"}}hello {{name}}{{/inline}}<h1>include \
-                                    partial: {{> \"title\"}}</h1>"
-                                       .to_string())
-                     .ok()
-                     .unwrap();
-
-        let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
-        handlebars.register_template("t1", t1);
-
-        let mut map: BTreeMap<String, String> = BTreeMap::new();
-        map.insert("name".into(), "world".into());
-
-        let r0 = handlebars.render("t0", &map);
-        assert_eq!(r0.ok().unwrap(),
-                   "<h1>include partial: hello world</h1>".to_string());
-
-        let r1 = handlebars.render("t0", &map);
-        assert_eq!(r1.ok().unwrap(),
-                   "<h1>include partial: hello world</h1>".to_string());
-    }
-
-    #[test]
+    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_include_self() {
-        let t0 = Template::compile("<h1>{{> t0}}</h1>".to_string()).ok().unwrap();
+        let t0 = "<h1>{{> t0}}</h1>";
         let mut handlebars = Registry::new();
-        handlebars.register_template("t0", t0);
+        assert!(handlebars.register_template_string("t0", t0).is_ok());
 
         let map: BTreeMap<String, String> = BTreeMap::new();
 
