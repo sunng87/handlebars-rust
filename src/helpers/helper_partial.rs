@@ -111,12 +111,9 @@ pub static PARTIAL_HELPER: PartialHelper = PartialHelper;
 
 #[cfg(test)]
 mod test {
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     use registry::Registry;
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     use std::collections::BTreeMap;
 
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     #[test]
     fn test() {
         let t0 = "<h1>{{#block title}}default{{/block}}</h1>";
@@ -136,7 +133,6 @@ mod test {
     }
 
     #[test]
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_context() {
         let t0 = "<h1>{{> (body) data}}</h1>";
         let t1 = "<p>{{this}}</p>";
@@ -154,7 +150,6 @@ mod test {
     }
 
     #[test]
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_partial_hash_context() {
         let t0 = "<h1>{{> t1 hello=\"world\"}}</h1>";
         let t1 = "<p>{{data}}</p><p>{{hello}}</p>";
@@ -172,7 +167,6 @@ mod test {
     }
 
     #[test]
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_inline_partial() {
         let t0 = "{{#partial title}}hello {{name}}{{/partial}}<h1>include partial: {{#block title}}{{/block}}</h1>";
         let t1 = "{{#block none_partial}}Partial not found{{/block}}";
@@ -193,7 +187,6 @@ mod test {
     }
 
     #[test]
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_include_self() {
         let t0 = "<h1>{{> t0}}</h1>";
         let mut handlebars = Registry::new();
@@ -204,4 +197,5 @@ mod test {
         let r0 = handlebars.render("t0", &map);
         assert!(r0.is_err());
     }
+
 }

@@ -9,7 +9,7 @@ extern crate maplit;
 use std::path::Path;
 use handlebars::Handlebars;
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type"), feature = "partial_legacy", not(feature = "partial4")))]
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type"), feature = "partial_legacy"))]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
@@ -47,7 +47,7 @@ fn main() {
 #[cfg(feature = "serde_type")]
 fn main() {}
 
-#[cfg(all(feature = "partial4", feature = "rustc_ser_type", not(feature="serde_type")))]
+#[cfg(all(not(feature = "partial_legacy"), feature = "rustc_ser_type", not(feature="serde_type")))]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();

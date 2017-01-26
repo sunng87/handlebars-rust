@@ -6,7 +6,7 @@ pub use self::helper_each::EACH_HELPER;
 pub use self::helper_with::WITH_HELPER;
 pub use self::helper_lookup::LOOKUP_HELPER;
 pub use self::helper_raw::RAW_HELPER;
-#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
+#[cfg(feature="partial_legacy")]
 pub use self::helper_partial::{INCLUDE_HELPER, BLOCK_HELPER, PARTIAL_HELPER};
 pub use self::helper_log::LOG_HELPER;
 
@@ -62,6 +62,7 @@ mod helper_each;
 mod helper_with;
 mod helper_lookup;
 mod helper_raw;
+#[cfg(feature="partial_legacy")]
 mod helper_partial;
 mod helper_log;
 

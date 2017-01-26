@@ -76,7 +76,7 @@ impl Registry {
         r.setup_builtins()
     }
 
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
+    #[cfg(feature="partial_legacy")]
     fn setup_builtins(mut self) -> Registry {
         self.register_helper("if", Box::new(helpers::IF_HELPER));
         self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
@@ -93,7 +93,7 @@ impl Registry {
         self
     }
 
-    #[cfg(feature = "partial4")]
+    #[cfg(not(feature = "partial_legacy"))]
     fn setup_builtins(mut self) -> Registry {
         self.register_helper("if", Box::new(helpers::IF_HELPER));
         self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
@@ -311,7 +311,7 @@ mod test {
     use render::{RenderContext, Renderable, RenderError, Helper};
     use helpers::HelperDef;
     use support::str::StringWriter;
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
+    #[cfg(feature = "partial_legacy")]
     use error::TemplateRenderError;
 
     #[derive(Clone, Copy)]
@@ -328,21 +328,15 @@ mod test {
         }
     }
 
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     static DUMMY_HELPER: DummyHelper = DummyHelper;
 
     #[test]
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
     fn test_registry_operations() {
         let mut r = Registry::new();
 
-        let t = Template::compile("<h1></h1>").ok().unwrap();
-        r.register_template("index", t.clone());
+        assert!(r.register_template_string("index", "<h1></h1>").is_ok());
+        assert!(r.register_template_string("index2", "<h2></h2>").is_ok());
 
-        let t2 = Template::compile("<h2></h2>").ok().unwrap();
-        r.register_template("index2", t2.clone());
-
-        assert_eq!(r.get_template("index").unwrap().elements, t.elements);
         assert_eq!(r.templates.len(), 2);
 
         r.unregister_template("index");
@@ -354,7 +348,11 @@ mod test {
         r.register_helper("dummy", Box::new(DUMMY_HELPER));
 
         // built-in helpers plus 1
+        #[cfg(feature = "partial_legacy")]
         assert_eq!(r.helpers.len(), 10 + 1);
+
+        #[cfg(not(feature = "partial_legacy"))]
+        assert_eq!(r.helpers.len(), 7 + 1);
     }
 
     #[test]
@@ -392,12 +390,11 @@ mod test {
     }
 
     #[test]
-    #[cfg(all(feature="partial_legacy", not(feature="partial4")))]
+    #[cfg(feature="partial_legacy")]
     fn test_template_render() {
         let mut r = Registry::new();
 
-        let t = Template::compile("<h1></h1>").ok().unwrap();
-        r.register_template("index", t.clone());
+        assert!(r.register_template_string("index", "<h1></h1>").is_ok());
 
         assert_eq!("<h1></h1>".to_string(),
                    r.template_render("{{> index}}", &{}).unwrap());
@@ -406,10 +403,9 @@ mod test {
                    r.template_render("hello {{this}}", &"world".to_string()).unwrap());
 
         let mut sw = StringWriter::new();
-        let context = Context::null();
 
         {
-            r.template_renderw("{{> index}}", &context, &mut sw).unwrap();
+            r.template_renderw("{{> index}}", &{}, &mut sw).unwrap();
         }
 
         assert_eq!("<h1></h1>".to_string(), sw.to_string());

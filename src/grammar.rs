@@ -1,6 +1,6 @@
 use pest::prelude::*;
 
-#[cfg(all(feature="partial_legacy", not(feature="partial4")))]
+#[cfg(feature="partial_legacy")]
 impl_rdp! {
     grammar! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
@@ -121,7 +121,7 @@ impl_rdp! {
     }
 }
 
-#[cfg(feature="partial4")]
+#[cfg(not(feature="partial_legacy"))]
 impl_rdp! {
     grammar! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
