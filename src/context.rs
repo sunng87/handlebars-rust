@@ -2,7 +2,7 @@
 use serialize::json::{Json, ToJson};
 
 #[cfg(feature = "serde_type")]
-use serde_json::value::{Value as Json, ToJson};
+use serde_json::value::{Value as Json, ToJson, Map};
 
 use pest::prelude::*;
 use std::collections::{VecDeque, BTreeMap};
@@ -81,11 +81,30 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>,
     // TODO: report invalid path
 }
 
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn merge_json(base: &Json, addition: &Object) -> Json {
     let mut base_map = match base {
         &Json::Object(ref m) => m.clone(),
         _ => {
             let mut map: BTreeMap<String, Json> = BTreeMap::new();
+            map.insert("this".to_owned(), base.clone());
+            map
+        }
+    };
+
+    for (k, v) in addition.iter() {
+        base_map.insert(k.clone(), v.clone());
+    }
+
+    Json::Object(base_map)
+}
+
+#[cfg(feature="serde_type")]
+fn merge_json(base: &Json, addition: &Object) -> Json {
+    let mut base_map = match base {
+        &Json::Object(ref m) => m.clone(),
+        _ => {
+            let mut map = Map::new();
             map.insert("this".to_owned(), base.clone());
             map
         }
@@ -106,7 +125,7 @@ impl Context {
 
     /// Create a context with given data
     pub fn wraps<T: ToJson>(e: &T) -> Context {
-        Context { data: e.to_json() }
+        Context { data: to_json(e) }
     }
 
     /// Extend current context with another JSON object
@@ -134,7 +153,7 @@ impl Context {
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
-            if *p == "this" && (!data.is_object() || data.find("this").is_none()) {
+            if *p == "this" && data.as_object().and_then(|m| m.get("this")).is_none() {
                 continue;
             }
             data = match *data {
@@ -172,13 +191,18 @@ impl JsonRender for Json {
     fn render(&self) -> String {
         match *self {
             Json::String(ref s) => s.to_string(),
+            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::I64(i) => i.to_string(),
+            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::U64(i) => i.to_string(),
+            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::F64(f) => f.to_string(),
             #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::Boolean(i) => i.to_string(),
             #[cfg(feature = "serde_type")]
             Json::Bool(i) => i.to_string(),
+            #[cfg(feature = "serde_type")]
+            Json::Number(ref n) => n.to_string(),
             Json::Null => "".to_owned(),
             Json::Array(ref a) => {
                 let mut buf = String::new();
@@ -195,10 +219,20 @@ impl JsonRender for Json {
     }
 }
 
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 pub fn to_json<T>(src: &T) -> Json
     where T: ToJson
 {
+
     src.to_json()
+}
+
+
+#[cfg(feature = "serde_type")]
+pub fn to_json<T>(src: &T) -> Json
+    where T: ToJson
+{
+    src.to_json().unwrap_or(Json::Null)
 }
 
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
@@ -214,13 +248,18 @@ pub fn as_string(src: &Json) -> Option<&str> {
 impl JsonTruthy for Json {
     fn is_truthy(&self) -> bool {
         match *self {
+            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::I64(i) => i != 0,
+            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::U64(i) => i != 0,
-            Json::F64(i) => i != 0.0 || !i.is_nan(),
+            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+            Json::F64(i) => i != 0.0 && !i.is_nan(),
             #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             Json::Boolean(ref i) => *i,
             #[cfg(feature = "serde_type")]
             Json::Bool(ref i) => *i,
+            #[cfg(feature = "serde_type")]
+            Json::Number(ref n) => n.as_f64().map(|f| f.is_normal()).unwrap_or(false),
             Json::Null => false,
             Json::String(ref i) => i.len() > 0,
             Json::Array(ref i) => i.len() > 0,
@@ -232,9 +271,10 @@ impl JsonTruthy for Json {
 #[cfg(test)]
 #[cfg(feature = "serde_type")]
 mod test {
-    use context::{JsonRender, Context};
+    use context::{self, JsonRender, Context};
     use std::collections::{VecDeque, BTreeMap};
-    use serde_json::value::{self, Value as Json, ToJson};
+    use serde_json::error::Error;
+    use serde_json::value::{self, Value as Json, ToJson, Map};
 
     #[test]
     fn test_json_render() {
@@ -250,10 +290,10 @@ mod test {
     }
 
     impl ToJson for Address {
-        fn to_json(&self) -> Json {
-            let mut m = BTreeMap::new();
-            m.insert("city".to_string(), self.city.to_json());
-            m.insert("country".to_string(), self.country.to_json());
+        fn to_json(&self) -> Result<Json, Error> {
+            let mut m = Map::new();
+            m.insert("city".to_string(), context::to_json(&self.city));
+            m.insert("country".to_string(), context::to_json(&self.country));
             m.to_json()
         }
     }
@@ -266,12 +306,12 @@ mod test {
     }
 
     impl ToJson for Person {
-        fn to_json(&self) -> Json {
-            let mut m = BTreeMap::new();
-            m.insert("name".to_string(), self.name.to_json());
-            m.insert("age".to_string(), self.age.to_json());
-            m.insert("addr".to_string(), self.addr.to_json());
-            m.insert("titles".to_string(), self.titles.to_json());
+        fn to_json(&self) -> Result<Json, Error> {
+            let mut m = Map::new();
+            m.insert("name".to_string(), context::to_json(&self.name));
+            m.insert("age".to_string(), context::to_json(&self.age));
+            m.insert("addr".to_string(), context::to_json(&self.addr));
+            m.insert("titles".to_string(), context::to_json(&self.titles));
             m.to_json()
         }
     }
@@ -327,13 +367,13 @@ mod test {
 
     #[test]
     fn test_this() {
-        let mut map_with_this = BTreeMap::new();
-        map_with_this.insert("this".to_string(), value::to_value(&"hello"));
-        map_with_this.insert("age".to_string(), value::to_value(&5usize));
+        let mut map_with_this = Map::new();
+        map_with_this.insert("this".to_string(), context::to_json(&"hello"));
+        map_with_this.insert("age".to_string(), context::to_json(&5usize));
         let ctx1 = Context::wraps(&map_with_this);
 
-        let mut map_without_this = BTreeMap::new();
-        map_without_this.insert("age".to_string(), value::to_value(&4usize));
+        let mut map_without_this = Map::new();
+        map_without_this.insert("age".to_string(), context::to_json(&4usize));
         let ctx2 = Context::wraps(&map_without_this);
 
         assert_eq!(ctx1.navigate(".", &VecDeque::new(), "this").render(),
@@ -344,15 +384,15 @@ mod test {
 
     #[test]
     fn test_extend() {
-        let mut map = BTreeMap::new();
-        map.insert("age".to_string(), value::to_value(&4usize));
+        let mut map = Map::new();
+        map.insert("age".to_string(), context::to_json(&4usize));
         let ctx1 = Context::wraps(&map);
 
         let s = "hello".to_owned();
         let ctx2 = Context::wraps(&s);
 
         let mut hash = BTreeMap::new();
-        hash.insert("tag".to_owned(), value::to_value(&"h1"));
+        hash.insert("tag".to_owned(), context::to_json(&"h1"));
 
         let ctx_a1 = ctx1.extend(&hash);
         assert_eq!(ctx_a1.navigate(".", &VecDeque::new(), "age").render(),
