@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.25.0](https://github.com/sunng87/handlebars-rust/compare/0.24.2...0.25.0) - 2017-01-28
+
+* [Changed] Updated serde family to 0.9.x
+* [Added] Added `to_json` function to convert data to `Json` or `Value`
+
 ## [0.24.2](https://github.com/sunng87/handlebars-rust/compare/0.24.1...0.24.2) - 2017-01-28
 
 * [Added] Added support for `{{> @partial-block}}`
