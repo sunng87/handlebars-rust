@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.24.2](https://github.com/sunng87/handlebars-rust/compare/0.24.1...0.24.2) - 2017-01-28
+
+* [Added] Added support for `{{> @partial-block}}`
+
 ## [0.24.1](https://github.com/sunng87/handlebars-rust/compare/0.24.0...0.24.1) - 2016-12-30
 
 * [Changed] Updated `regex` crate to 0.2, fixed WebAssembly support
