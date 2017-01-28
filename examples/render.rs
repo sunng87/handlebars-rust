@@ -1,4 +1,3 @@
-#![cfg_attr(all(feature="unstable"), feature(proc_macro))]
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
@@ -12,11 +11,21 @@ extern crate serde_json;
 #[cfg(feature = "unstable")]
 #[macro_use]
 extern crate serde_derive;
-use std::collections::BTreeMap;
+
+// default feature, using rustc_serialize `Json` as data type
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+use rustc_serialize::json::{Json, ToJson};
+// serde_type feature, using serde_json as data type
+#[cfg(feature = "serde_type")]
+use serde_json::value::{self, Value as Json, ToJson, Map};
+
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+use std::collections::BTreeMap as Map;
+
 
 use std::error::Error;
 
-use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender};
+use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender, to_json};
 
 // define a custom helper
 fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
@@ -46,15 +55,6 @@ fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(),
     Ok(())
 }
 
-
-
-// default feature, using rustc_serialize `Json` as data type
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use rustc_serialize::json::{Json, ToJson};
-// serde_type feature, using serde_json as data type
-#[cfg(feature = "serde_type")]
-use serde_json::value::{self, Value as Json, ToJson};
-
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 static TYPES: &'static str = "rustc_serialize";
 #[cfg(feature = "serde_type")]
@@ -70,7 +70,7 @@ pub struct Team {
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 impl ToJson for Team {
     fn to_json(&self) -> Json {
-        let mut m: BTreeMap<String, Json> = BTreeMap::new();
+        let mut m: Map<String, Json> = Map::new();
         m.insert("name".to_string(), self.name.to_json());
         m.insert("pts".to_string(), self.pts.to_json());
         m.to_json()
@@ -78,10 +78,10 @@ impl ToJson for Team {
 }
 
 // produce some data
-pub fn make_data() -> BTreeMap<String, Json> {
-    let mut data = BTreeMap::new();
+pub fn make_data() -> Map<String, Json> {
+    let mut data = Map::new();
 
-    data.insert("year".to_string(), "2015".to_json());
+    data.insert("year".to_string(), to_json(&"2015".to_owned()));
 
     let teams = vec![Team {
                          name: "Jiangsu Suning".to_string(),
@@ -116,8 +116,8 @@ pub fn make_data() -> BTreeMap<String, Json> {
                          pts: 4u16,
                      }];
 
-    data.insert("teams".to_string(), teams.to_json());
-    data.insert("engine".to_string(), TYPES.to_json());
+    data.insert("teams".to_string(), to_json(&teams));
+    data.insert("engine".to_string(), to_json(&TYPES.to_owned()));
     data
 }
 

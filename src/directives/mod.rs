@@ -61,15 +61,8 @@ mod inline;
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use context::{as_string, Context};
+    use context::{self, as_string, Context};
     use render::{RenderContext, RenderError, Directive, Helper};
-
-    // default feature, using rustc_serialize `Json` as data type
-    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-    use serialize::json::ToJson;
-    // serde_type feature, using serde_json as data type
-    #[cfg(feature = "serde_type")]
-    use serde_json::value::ToJson;
 
     #[test]
     fn test_register_decorator() {
@@ -113,7 +106,7 @@ mod test {
                                                                           .as_object_mut()
                                                                           .as_mut() {
                                               m.insert("hello".to_string(),
-                                                       "war".to_owned().to_json());
+                                                       context::to_json(&"war".to_owned()));
                                           }
                                           Ok(())
                                       }));
@@ -168,7 +161,7 @@ mod test {
                                        let s = format!("{}m",
                                                        h.param(0)
                                                         .map(|v| v.value())
-                                                        .unwrap_or(&0.to_json()));
+                                                        .unwrap_or(&context::to_json(&0)));
                                        try!(rc.writer().write(s.into_bytes().as_ref()));
                                        Ok(())
                                    }));
@@ -188,7 +181,7 @@ mod test {
                                               let s = format!("{}{}",
                                                               h.param(0)
                                                                .map(|v| v.value())
-                                                               .unwrap_or(&0.to_json()),
+                                                               .unwrap_or(&context::to_json(&0)),
                                                               new_unit);
                                               try!(rc.writer().write(s.into_bytes().as_ref()));
                                               Ok(())
