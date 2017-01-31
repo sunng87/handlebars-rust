@@ -274,7 +274,7 @@ mod test {
     use context::{self, JsonRender, Context};
     use std::collections::{VecDeque, BTreeMap};
     use serde_json::error::Error;
-    use serde_json::value::{self, Value as Json, ToJson, Map};
+    use serde_json::value::{Value as Json, ToJson, Map};
 
     #[test]
     fn test_json_render() {
