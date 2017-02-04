@@ -10,6 +10,9 @@ extern crate serde_json;
 #[cfg(feature = "unstable")]
 #[macro_use]
 extern crate serde_derive;
+#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+#[macro_use]
+extern crate tojson_macros;
 
 // default feature, using rustc_serialize `Json` as data type
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
@@ -60,19 +63,10 @@ static TYPES: &'static str = "serde_json";
 
 // define some data
 #[cfg_attr(all(feature = "serde_type"), derive(Serialize))]
+#[cfg_attr(all(feature = "rustc_ser_type", not(feature = "serde_type")), derive(ToJson))]
 pub struct Team {
     name: String,
     pts: u16,
-}
-
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-impl ToJson for Team {
-    fn to_json(&self) -> Json {
-        let mut m: Map<String, Json> = Map::new();
-        m.insert("name".to_string(), self.name.to_json());
-        m.insert("pts".to_string(), self.pts.to_json());
-        m.to_json()
-    }
 }
 
 // produce some data
