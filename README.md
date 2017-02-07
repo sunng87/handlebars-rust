@@ -156,11 +156,10 @@ Feel free to report an issue if you find something broken. We aren't
 going to implement all features of handlebars-js, but we should have a
 workaround for cases we don't support.
 
-## Handlebars for Iron
+## Handlebars for Web Frameworks
 
-I have started another project
-[handlebars-iron](https://github.com/sunng87/handlebars-iron) for
-the Iron web framework.
+* Iron: [handlebars-iron](https://github.com/sunng87/handlebars-iron)
+* Rocket: [rocket/contrib](https://github.com/SergioBenitez/Rocket/tree/master/contrib)
 
 ## Using handlebars-rust?
 
