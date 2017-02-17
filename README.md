@@ -159,7 +159,7 @@ workaround for cases we don't support.
 ## Handlebars for Web Frameworks
 
 * Iron: [handlebars-iron](https://github.com/sunng87/handlebars-iron)
-* Rocket: [rocket/contrib](https://github.com/SergioBenitez/Rocket/tree/master/contrib)
+* Rocket: [rocket/contrib](https://api.rocket.rs/rocket_contrib/struct.Template.html)
 
 ## Using handlebars-rust?
 
