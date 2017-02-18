@@ -5,8 +5,8 @@ impl_rdp! {
     grammar! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
 
-        raw_text = @{ ( !["{{"] ~ any )+ }
-        raw_block_text = @{ ( !["{{{{"] ~ any )* }
+        raw_text = @{ ( ["\\{{"]? ~ !["{{"] ~ any )+ }
+        raw_block_text = @{ ( ["\\{{{{"]? ~ !["{{{{"] ~ any )* }
 
 // Note: this is not full and strict json literal definition, just for tokenize string,
 // array and object types which may contains whitespace. We will use a real json parser
@@ -43,53 +43,54 @@ impl_rdp! {
 
         pre_whitespace_omitter = { ["~"] }
         pro_whitespace_omitter = { ["~"] }
+        escape = { ["\\"] }
 
-        expression = { !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ name ~
+        expression = { !escape ~ !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ name ~
                         pro_whitespace_omitter? ~ ["}}"] }
 
-        html_expression = { ["{{{"] ~ pre_whitespace_omitter? ~ name ~
+        html_expression = { !escape ~ ["{{{"] ~ pre_whitespace_omitter? ~ name ~
                                       pro_whitespace_omitter? ~ ["}}}"] }
 
-        helper_expression = { !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ exp_line ~
+        helper_expression = { !escape ~ !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ exp_line ~
                                pro_whitespace_omitter? ~ ["}}"] }
 
-        directive_expression = { ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
-                                          pro_whitespace_omitter? ~ ["}}"] }
-        partial_expression = { ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line ~
-                                        pro_whitespace_omitter? ~ ["}}"] }
+        directive_expression = {  !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
+                                   pro_whitespace_omitter? ~ ["}}"] }
+        partial_expression = {  !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line ~
+                                 pro_whitespace_omitter? ~ ["}}"] }
 
         invert_tag_item = { ["else"]|["^"] }
-        invert_tag = { ["{{"] ~ pre_whitespace_omitter? ~ invert_tag_item
+        invert_tag = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ invert_tag_item
                                 ~ pro_whitespace_omitter? ~ ["}}"]}
 
-        helper_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
+        helper_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
                                         pro_whitespace_omitter? ~ ["}}"] }
-        helper_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+        helper_block_end = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                       pro_whitespace_omitter? ~ ["}}"] }
         helper_block = _{ helper_block_start ~ template ~
                          (invert_tag ~ template)? ~
                           helper_block_end }
 
-        directive_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ ["*"] ~ exp_line ~
+        directive_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ ["*"] ~ exp_line ~
                                            pro_whitespace_omitter? ~ ["}}"] }
-        directive_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+        directive_block_end = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                          pro_whitespace_omitter? ~ ["}}"] }
         directive_block = _{ directive_block_start ~ template ~
                              directive_block_end }
 
-        partial_block_start = { ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ partial_exp_line ~
-                                         pro_whitespace_omitter? ~ ["}}"] }
-        partial_block_end = { ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
-                                       pro_whitespace_omitter? ~ ["}}"] }
+        partial_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ partial_exp_line ~
+                                 pro_whitespace_omitter? ~ ["}}"] }
+        partial_block_end = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                               pro_whitespace_omitter? ~ ["}}"] }
         partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
-        raw_block_start = { ["{{{{"] ~ pre_whitespace_omitter? ~ exp_line ~
-                                       pro_whitespace_omitter? ~ ["}}}}"] }
-        raw_block_end = { ["{{{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
-                                     pro_whitespace_omitter? ~ ["}}}}"] }
+        raw_block_start = { !escape ~ ["{{{{"] ~ pre_whitespace_omitter? ~ exp_line ~
+                             pro_whitespace_omitter? ~ ["}}}}"] }
+        raw_block_end = { !escape ~ ["{{{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
+                           pro_whitespace_omitter? ~ ["}}}}"] }
         raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-        hbs_comment = { ["{{!"] ~ (!["}}"] ~ any)* ~ ["}}"] }
+        hbs_comment = { !escape ~ ["{{!"] ~ (!["}}"] ~ any)* ~ ["}}"] }
 
         template = { (
             raw_text |
@@ -127,7 +128,7 @@ impl_rdp! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
 
         raw_text = @{ ( ["\\{{"]? ~ !["{{"] ~ any )+ }
-        raw_block_text = @{ ( !["{{{{"] ~ any )* }
+        raw_block_text = @{ ( ["\\{{{{"]? ~ !["{{{{"] ~ any )* }
 
 // Note: this is not full and strict json literal definition, just for tokenize string,
 // array and object types which may contains whitespace. We will use a real json parser
