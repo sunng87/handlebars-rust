@@ -5,8 +5,8 @@ impl_rdp! {
     grammar! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
 
-        raw_text = @{ ( ["\\{{"]? ~ !["{{"] ~ any )+ }
-        raw_block_text = @{ ( ["\\{{{{"]? ~ !["{{{{"] ~ any )* }
+        raw_text = @{ ( ["\\{{{{"]? ~ ["\\{{"]? ~ !["{{"] ~ any )+ }
+        raw_block_text = @{ ( !["{{{{"] ~ any )* }
 
 // Note: this is not full and strict json literal definition, just for tokenize string,
 // array and object types which may contains whitespace. We will use a real json parser
@@ -127,8 +127,8 @@ impl_rdp! {
     grammar! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
 
-        raw_text = @{ ( ["\\{{"]? ~ !["{{"] ~ any )+ }
-        raw_block_text = @{ ( ["\\{{{{"]? ~ !["{{{{"] ~ any )* }
+        raw_text = @{ ( ["\\{{{{"]? ~ ["\\{{"]? ~ !["{{"] ~ any )+ }
+        raw_block_text = @{ ( !["{{{{"] ~ any )* }
 
 // Note: this is not full and strict json literal definition, just for tokenize string,
 // array and object types which may contains whitespace. We will use a real json parser
@@ -246,7 +246,10 @@ impl_rdp! {
 
 #[test]
 fn test_raw_text() {
-    let s = vec!["<h1> helloworld </h1>    ", "hello\\{{world}}"];
+    let s = vec!["<h1> helloworld </h1>    ",
+                 "hello\\{{world}}",
+                 "hello\\{{#if world}}nice\\{{/if}}",
+                 "hello \\{{{{raw}}}}hello\\{{{{/raw}}}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.raw_text());
