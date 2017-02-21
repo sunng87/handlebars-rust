@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.25.1](https://github.com/sunng87/handlebars-rust/compare/0.25.0...0.25.1) - 2017-02-21
+
+* [Added] Added support for braces escaping`\{{var}}`.
+
 ## [0.25.0](https://github.com/sunng87/handlebars-rust/compare/0.24.2...0.25.0) - 2017-01-28
 
 * [Changed] Updated serde family to 0.9.x
