@@ -11,4 +11,4 @@ script:
   - |
       cargo test &&
       cargo test --features partial_legacy &&
-      travis-cargo --only nightly test
+      cargo test --features serde_test

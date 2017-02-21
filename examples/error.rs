@@ -3,11 +3,11 @@ extern crate env_logger;
 extern crate handlebars;
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 extern crate rustc_serialize;
-#[cfg(feature = "unstable")]
+#[cfg(feature = "serde_test")]
 extern crate serde;
 #[cfg(feature = "serde_type")]
 extern crate serde_json;
-#[cfg(feature = "unstable")]
+#[cfg(feature = "serde_test")]
 #[macro_use]
 extern crate serde_derive;
 #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
