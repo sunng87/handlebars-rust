@@ -3,9 +3,7 @@ use registry::Registry;
 // use context::to_json;
 use render::{Renderable, RenderContext, RenderError, Helper};
 
-pub struct IfCompareHelper {
-    compare: Box<Fn(f64, f64) -> bool + Send + Sync>,
-}
+pub struct IfCompareHelper(Box<Fn(f64, f64) -> bool + Send + Sync>);
 
 impl HelperDef for IfCompareHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
@@ -23,7 +21,7 @@ impl HelperDef for IfCompareHelper {
         let param0_f64 = param0.as_f64().unwrap();
         let param1_f64 = param1.as_f64().unwrap();
 
-        let tmpl = if (self.compare)(param0_f64, param1_f64) {
+        let tmpl = if (self.0)(param0_f64, param1_f64) {
             h.template()
         } else {
             h.inverse()
@@ -36,7 +34,12 @@ impl HelperDef for IfCompareHelper {
     }
 }
 
-lazy_static!{
-    pub static ref IFGT_HELPER: IfCompareHelper = IfCompareHelper { compare: Box::new(|x, y| x > y) };
-    pub static ref IFLT_HELPER: IfCompareHelper = IfCompareHelper { compare: Box::new(|x, y| x < y) };
+
+pub fn setup_ext_helpers(reg: &mut Registry) {
+    reg.register_helper("ifgt", Box::new(IfCompareHelper(Box::new(|x, y| x > y))));
+    reg.register_helper("iflt", Box::new(IfCompareHelper(Box::new(|x, y| x < y))));
+    reg.register_helper("ifgte", Box::new(IfCompareHelper(Box::new(|x, y| x >= y))));
+    reg.register_helper("iflte", Box::new(IfCompareHelper(Box::new(|x, y| x <= y))));
+    reg.register_helper("ifeq", Box::new(IfCompareHelper(Box::new(|x, y| x == y))));
+    reg.register_helper("ifneq", Box::new(IfCompareHelper(Box::new(|x, y| x != y))));
 }
