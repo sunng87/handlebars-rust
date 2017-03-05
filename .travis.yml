@@ -6,4 +6,4 @@ rust:
 script:
   - |
       cargo test &&
-      cargo test --features partial_legacy
+      cargo test --features serde_test
