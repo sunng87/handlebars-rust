@@ -62,44 +62,22 @@ impl HelperDef for WithHelper {
 pub static WITH_HELPER: WithHelper = WithHelper;
 
 #[cfg(test)]
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 mod test {
     use registry::Registry;
     use context::to_json;
 
-    use std::collections::BTreeMap;
-    use serialize::json::{Json, ToJson};
-
+    #[derive(Serialize)]
     struct Address {
         city: String,
         country: String,
     }
 
-    impl ToJson for Address {
-        fn to_json(&self) -> Json {
-            let mut m = BTreeMap::new();
-            m.insert("city".to_string(), self.city.to_json());
-            m.insert("country".to_string(), self.country.to_json());
-            Json::Object(m)
-        }
-    }
-
+    #[derive(Serialize)]
     struct Person {
         name: String,
         age: i16,
         addr: Address,
         titles: Vec<String>,
-    }
-
-    impl ToJson for Person {
-        fn to_json(&self) -> Json {
-            let mut m = BTreeMap::new();
-            m.insert("name".to_string(), self.name.to_json());
-            m.insert("age".to_string(), self.age.to_json());
-            m.insert("addr".to_string(), self.addr.to_json());
-            m.insert("titles".to_string(), self.titles.to_json());
-            Json::Object(m)
-        }
     }
 
     #[test]

@@ -5,18 +5,6 @@ use render::{RenderError, RenderContext, Directive};
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
-    d.param(0)
-        .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
-        .and_then(|v| {
-                      v.value()
-          .as_string()
-          .ok_or_else(|| RenderError::new("inline name must be string"))
-                  })
-}
-
-#[cfg(feature = "serde_type")]
 fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
     d.param(0)
         .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))

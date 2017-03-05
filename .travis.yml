@@ -3,12 +3,7 @@ rust:
   - nightly
   - beta
   - stable
-before_script:
-- |
-    pip install 'travis-cargo<0.2' --user &&
-    export PATH=$HOME/.local/bin:$PATH
 script:
   - |
       cargo test &&
-      cargo test --features partial_legacy &&
-      cargo test --features serde_test
+      cargo test --features partial_legacy

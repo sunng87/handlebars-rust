@@ -292,16 +292,16 @@ extern crate pest;
 #[macro_use]
 extern crate lazy_static;
 
-extern crate regex;
-
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
+#[cfg(test)]
+#[macro_use]
+extern crate serde_derive;
+#[cfg(test)]
+extern crate serde;
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-extern crate rustc_serialize as serialize;
-
-#[cfg(feature = "serde_type")]
+extern crate regex;
 extern crate serde_json;
 
 pub use self::template::Template;

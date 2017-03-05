@@ -1,15 +1,13 @@
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-extern crate rustc_serialize;
 #[macro_use]
 extern crate maplit;
 
 use std::path::Path;
 use handlebars::Handlebars;
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type"), feature = "partial_legacy"))]
+#[cfg(feature = "partial_legacy")]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();
@@ -44,10 +42,7 @@ fn main() {
              handlebars.render("template", &data1).unwrap_or_else(|e| format!("{}", e)));
 }
 
-#[cfg(feature = "serde_type")]
-fn main() {}
-
-#[cfg(all(not(feature = "partial_legacy"), feature = "rustc_ser_type", not(feature="serde_type")))]
+#[cfg(not(feature = "partial_legacy"))]
 fn main() {
     env_logger::init().unwrap();
     let mut handlebars = Handlebars::new();

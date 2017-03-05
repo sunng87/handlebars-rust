@@ -33,9 +33,8 @@ pub static UNLESS_HELPER: IfHelper = IfHelper { positive: false };
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-    use serialize::json::Json;
-    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
+    use std::str::FromStr;
+    use serde_json::value::Value as Json;
     use helpers::WITH_HELPER;
 
     #[test]
@@ -57,7 +56,6 @@ mod test {
     }
 
     #[test]
-    #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
     fn test_if_context() {
         let json_str = r#"{"a":{"b":99,"c":{"d": true}}}"#;
         let data = Json::from_str(json_str).unwrap();
