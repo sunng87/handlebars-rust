@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.25.2](https://github.com/sunng87/handlebars-rust/compare/0.25.1...0.25.2) - 2017-03-22
+
+* [Changed] Fixed bug when including two partials with same name [#143](https://github.com/sunng87/handlebars-rust/issues/143)
+
 ## [0.25.1](https://github.com/sunng87/handlebars-rust/compare/0.25.0...0.25.1) - 2017-02-21
 
 * [Added] Added support for braces escaping`\{{var}}`.
