@@ -24,40 +24,34 @@ pub fn expand_partial(d: &Directive,
     let render_template = partial.as_ref().or(r.get_template(tname)).or(d.template());
     match render_template {
         Some(t) => {
+            let mut local_rc = rc.derive();
             let context_param = d.params().get(0).and_then(|p| p.path());
-            let old_path = context_param.map(|p| {
-                let old_path = rc.get_path().clone();
-                rc.promote_local_vars();
+            if let Some(p) = context_param {
+                let old_path = local_rc.get_path().clone();
+                local_rc.promote_local_vars();
                 let new_path = format!("{}/{}", old_path, p);
-                rc.set_path(new_path);
-                old_path
-            });
+                local_rc.set_path(new_path);
+            };
 
             // @partial-block
             if let Some(t) = d.template() {
-                rc.set_partial("@partial-block".to_string(), t.clone());
+                local_rc.set_partial("@partial-block".to_string(), t.clone());
             }
 
             let hash = d.hash();
             let r = if hash.is_empty() {
-                t.render(r, rc)
+                t.render(r, &mut local_rc)
             } else {
                 let hash_ctx = BTreeMap::from_iter(hash.iter()
                                                        .map(|(k, v)| {
                                                            (k.clone(), v.value().clone())
                                                        }));
-                let mut local_rc = rc.derive();
                 {
                     let mut ctx_ref = local_rc.context_mut();
                     *ctx_ref = ctx_ref.extend(&hash_ctx);
                 }
                 t.render(r, &mut local_rc)
             };
-
-            if let Some(path) = old_path {
-                rc.set_path(path);
-                rc.demote_local_vars();
-            }
 
             r
         }
@@ -110,5 +104,30 @@ mod test {
 
         let r0 = handlebars.render("t1", &true);
         assert_eq!(r0.ok().unwrap(), "hello inner true".to_string());
+    }
+
+    #[test]
+    fn test_self_inclusion() {
+        let t0 = "hello {{> t1}} {{> t0}}";
+        let t1 = "some template";
+        let mut handlebars = Registry::new();
+        assert!(handlebars.register_template_string("t0", t0).is_ok());
+        assert!(handlebars.register_template_string("t1", t1).is_ok());
+
+        let r0 = handlebars.render("t0", &true);
+        assert!(r0.is_err());
+    }
+
+    #[test]
+    fn test_issue_143() {
+        let main_template = "one{{> two }}three{{> two }}";
+        let two_partial = "--- two ---";
+
+        let mut handlebars = Registry::new();
+        assert!(handlebars.register_template_string("template", main_template).is_ok());
+        assert!(handlebars.register_template_string("two", two_partial).is_ok());
+
+        let r0 = handlebars.render("template", &true);
+        assert_eq!(r0.ok().unwrap(), "one--- two ---three--- two ---");
     }
 }
