@@ -42,10 +42,8 @@ pub fn expand_partial(d: &Directive,
             let r = if hash.is_empty() {
                 t.render(r, &mut local_rc)
             } else {
-                let hash_ctx = BTreeMap::from_iter(hash.iter()
-                                                       .map(|(k, v)| {
-                                                           (k.clone(), v.value().clone())
-                                                       }));
+                let hash_ctx =
+                    BTreeMap::from_iter(hash.iter().map(|(k, v)| (k.clone(), v.value().clone())));
                 {
                     let mut ctx_ref = local_rc.context_mut();
                     *ctx_ref = ctx_ref.extend(&hash_ctx);
@@ -85,8 +83,8 @@ mod test {
         assert_eq!(handlebars.render("t4", &1).ok().unwrap(),
                    "include navbar".to_string());
         assert_eq!(handlebars.render("t6", &btreemap!{"a".to_string() => "2".to_string()})
-                             .ok()
-                             .unwrap(),
+                       .ok()
+                       .unwrap(),
                    "2".to_string());
         assert_eq!(handlebars.render("t7", &1).ok().unwrap(),
                    "world".to_string());

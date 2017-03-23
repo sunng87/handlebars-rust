@@ -44,9 +44,13 @@ fn format_decorator(d: &Decorator,
                     rc: &mut RenderContext)
                     -> Result<(), RenderError> {
     let suffix = d.param(0).map(|v| v.value().render()).unwrap_or("".to_owned());
-    rc.register_local_helper("format", Box::new(move |h: &Helper, _: &Handlebars, rc: &mut RenderContext|{
+    rc.register_local_helper("format",
+                             Box::new(move |h: &Helper,
+                                            _: &Handlebars,
+                                            rc: &mut RenderContext| {
         // get parameter from helper or throw an error
-        let param = try!(h.param(0).ok_or(RenderError::new("Param 0 is required for format helper.")));
+        let param =
+            try!(h.param(0).ok_or(RenderError::new("Param 0 is required for format helper.")));
         let rendered = format!("{} {}", param.value().render(), suffix);
         try!(rc.writer.write(rendered.into_bytes().as_ref()));
         Ok(())
@@ -59,7 +63,8 @@ fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(),
     let rank = try!(h.param(0)
                     .and_then(|v| v.value().as_u64())
                     .ok_or(RenderError::new("Param 0 with u64 type is required for rank helper."))) as usize;
-    let teams = try!(h.param(1)
+    let teams =
+        try!(h.param(1)
               .and_then(|v| v.value().as_array())
               .ok_or(RenderError::new("Param 1 with array type is required for rank helper")));
     let total = teams.len();
@@ -137,8 +142,8 @@ fn main() {
 
     // register template from a file and assign a name to it
     // deal with errors
-    if let Err(e) = handlebars.register_template_file("table",
-                                                      "./examples/decorator/template.hbs") {
+    if let Err(e) =
+        handlebars.register_template_file("table", "./examples/decorator/template.hbs") {
         panic!("{}", e);
     }
 

@@ -176,7 +176,10 @@ impl<'a> RenderContext<'a> {
             new_key.push_str("@../");
             new_key.push_str(&key[1..]);
 
-            let v = self.local_variables.get(key).unwrap().clone();
+            let v = self.local_variables
+                .get(key)
+                .unwrap()
+                .clone();
             new_map.insert(new_key, v);
         }
         self.local_variables = new_map;
@@ -190,7 +193,10 @@ impl<'a> RenderContext<'a> {
                 new_key.push('@');
                 new_key.push_str(&key[4..]);
 
-                let v = self.local_variables.get(key).unwrap().clone();
+                let v = self.local_variables
+                    .get(key)
+                    .unwrap()
+                    .clone();
                 new_map.insert(new_key, v);
             }
         }
@@ -227,7 +233,10 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn is_current_template(&self, p: &str) -> bool {
-        self.current_template.as_ref().map(|s| s == p).unwrap_or(false)
+        self.current_template
+            .as_ref()
+            .map(|s| s == p)
+            .unwrap_or(false)
     }
 
     pub fn context(&self) -> &Context {
@@ -324,14 +333,14 @@ impl<'a, 'b> Helper<'a> {
         }
 
         Ok(Helper {
-            name: &ht.name,
-            params: evaluated_params,
-            hash: evaluated_hash,
-            block_param: &ht.block_param,
-            template: &ht.template,
-            inverse: &ht.inverse,
-            block: ht.block,
-        })
+               name: &ht.name,
+               params: evaluated_params,
+               hash: evaluated_hash,
+               block_param: &ht.block_param,
+               template: &ht.template,
+               inverse: &ht.inverse,
+               block: ht.block,
+           })
     }
 
     /// Returns helper name
@@ -421,7 +430,7 @@ impl<'a, 'b> Helper<'a> {
     /// Return block param pair (for example |key, val|) if any
     pub fn block_param_pair(&self) -> Option<(&str, &str)> {
         if let Some(BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
-               *self.block_param {
+            *self.block_param {
             Some((s1, s2))
         } else {
             None
@@ -457,11 +466,11 @@ impl<'a, 'b> Directive<'a> {
         }
 
         Ok(Directive {
-            name: name,
-            params: evaluated_params,
-            hash: evaluated_hash,
-            template: &dt.template,
-        })
+               name: name,
+               params: evaluated_params,
+               hash: evaluated_hash,
+               template: &dt.template,
+           })
     }
 
     /// Returns helper name
@@ -566,16 +575,16 @@ impl Parameter {
             }
             &Parameter::Literal(ref j) => {
                 Ok(ContextJson {
-                    path: None,
-                    value: j.clone(),
-                })
+                       path: None,
+                       value: j.clone(),
+                   })
             }
             &Parameter::Subexpression(_) => {
                 let text_value = try!(self.expand_as_name(registry, rc));
                 Ok(ContextJson {
-                    path: None,
-                    value: Json::String(text_value),
-                })
+                       path: None,
+                       value: Json::String(text_value),
+                   })
             }
         }
     }
@@ -662,24 +671,26 @@ impl Renderable for TemplateElement {
                 try!(rc.writer.write(rendered.into_bytes().as_ref()));
                 Ok(())
             }
-            HelperExpression(ref ht) | HelperBlock(ref ht) => {
+            HelperExpression(ref ht) |
+            HelperBlock(ref ht) => {
                 let helper = try!(Helper::from_template(ht, registry, rc));
                 if let Some(ref d) = rc.get_local_helper(&ht.name) {
                     d.call(&helper, registry, rc)
                 } else {
                     registry.get_helper(&ht.name)
-                            .or(registry.get_helper(if ht.block {
-                                "blockHelperMissing"
-                            } else {
-                                "helperMissing"
-                            }))
-                            .ok_or(RenderError::new(format!("Helper not defined: {:?}", ht.name)))
-                            .and_then(|d| d.call(&helper, registry, rc))
+                        .or(registry.get_helper(if ht.block {
+                                                    "blockHelperMissing"
+                                                } else {
+                                                    "helperMissing"
+                                                }))
+                        .ok_or(RenderError::new(format!("Helper not defined: {:?}", ht.name)))
+                        .and_then(|d| d.call(&helper, registry, rc))
                 }
             }
-            DirectiveExpression(_) | DirectiveBlock(_) | PartialExpression(_) | PartialBlock(_) => {
-                self.eval(registry, rc)
-            }
+            DirectiveExpression(_) |
+            DirectiveBlock(_) |
+            PartialExpression(_) |
+            PartialBlock(_) => self.eval(registry, rc),
             _ => Ok(()),
         }
     }
@@ -688,7 +699,8 @@ impl Renderable for TemplateElement {
 impl Evaluable for TemplateElement {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         match *self {
-            DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
+            DirectiveExpression(ref dt) |
+            DirectiveBlock(ref dt) => {
                 Directive::from_template(dt, registry, rc).and_then(|di| {
                     match registry.get_decorator(&di.name) {
                         Some(d) => (**d).call(&di, registry, rc),
@@ -853,13 +865,17 @@ fn test_render_subexpression_issue_115() {
                                 _: &Registry,
                                 rc: &mut RenderContext|
                                 -> Result<(), RenderError> {
-                          rc.writer
-                            .write(format!("{}", h.param(0).unwrap().value().render())
-                                       .into_bytes()
-                                       .as_ref())
-                            .map(|_| ())
-                            .map_err(RenderError::from)
-                      }));
+        rc.writer
+            .write(format!("{}",
+                           h.param(0)
+                               .unwrap()
+                               .value()
+                               .render())
+                           .into_bytes()
+                           .as_ref())
+            .map(|_| ())
+            .map_err(RenderError::from)
+    }));
 
     let mut sw = StringWriter::new();
     let mut m: HashMap<String, String> = HashMap::new();
@@ -881,7 +897,7 @@ fn test_render_error_line_no() {
 
     let name = "invalid_template";
     assert!(r.register_template_string(name, "<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}")
-             .is_ok());
+                .is_ok());
 
     if let Err(e) = r.render(name, &m) {
         assert_eq!(e.line_no.unwrap(), 3);

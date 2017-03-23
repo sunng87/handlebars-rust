@@ -24,24 +24,24 @@ impl HelperDef for LookupHelper {
         let value = match collection_value.value() {
             &Json::Array(ref v) => {
                 index.value()
-                     .as_u64()
-                     .and_then(|u| Some(u as usize))
-                     .and_then(|u| v.get(u))
-                     .unwrap_or(&null)
+                    .as_u64()
+                    .and_then(|u| Some(u as usize))
+                    .and_then(|u| v.get(u))
+                    .unwrap_or(&null)
             }
             #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
             &Json::Object(ref m) => {
                 index.value()
-                     .as_string()
-                     .and_then(|k| m.get(k))
-                     .unwrap_or(&null)
+                    .as_string()
+                    .and_then(|k| m.get(k))
+                    .unwrap_or(&null)
             }
             #[cfg(feature = "serde_type")]
             &Json::Object(ref m) => {
                 index.value()
-                     .as_str()
-                     .and_then(|k| m.get(k))
-                     .unwrap_or(&null)
+                    .as_str()
+                    .and_then(|k| m.get(k))
+                    .unwrap_or(&null)
             }
             _ => &null,
         };
@@ -65,7 +65,7 @@ mod test {
         assert!(handlebars.register_template_string("t0", "{{#each v1}}{{lookup ../../v2 @index}}{{/each}}").is_ok());
         assert!(handlebars.register_template_string("t1",
                                                     "{{#each v1}}{{lookup ../../v2 1}}{{/each}}")
-                          .is_ok());
+                    .is_ok());
         assert!(handlebars.register_template_string("t2", "{{lookup kk \"a\"}}").is_ok());
 
         let mut m: BTreeMap<String, Vec<u16>> = BTreeMap::new();

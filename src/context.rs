@@ -32,7 +32,9 @@ fn parse_json_visitor_inner<'a>(path_stack: &mut VecDeque<&'a str>, path: &'a st
                 Rule::path_up => {
                     path_stack.pop_back();
                 }
-                Rule::path_id | Rule::path_raw_id | Rule::path_num_id => {
+                Rule::path_id |
+                Rule::path_raw_id |
+                Rule::path_num_id => {
                     let id = &path[seg.start..seg.end];
                     path_stack.push_back(id);
                 }
@@ -159,8 +161,8 @@ impl Context {
             data = match *data {
                 Json::Array(ref l) => {
                     p.parse::<usize>()
-                     .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
-                     .unwrap_or(&DEFAULT_VALUE)
+                        .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
+                        .unwrap_or(&DEFAULT_VALUE)
                 }
                 Json::Object(ref m) => m.get(*p).unwrap_or(&DEFAULT_VALUE),
                 _ => &DEFAULT_VALUE,

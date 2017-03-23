@@ -133,11 +133,7 @@ impl Template {
         Template {
             elements: Vec::new(),
             name: None,
-            mapping: if mapping {
-                Some(Vec::new())
-            } else {
-                None
-            },
+            mapping: if mapping { Some(Vec::new()) } else { None },
         }
     }
 
@@ -160,10 +156,10 @@ impl Template {
         let espec = try!(Template::parse_expression(source, it.by_ref(), limit));
         if let Parameter::Name(name) = espec.name {
             Ok(Parameter::Subexpression(Subexpression {
-                name: name,
-                params: espec.params,
-                hash: espec.hash,
-            }))
+                                            name: name,
+                                            params: espec.params,
+                                            hash: espec.hash,
+                                        }))
         } else {
             // line/col no
             Err(TemplateError::of(TemplateErrorReason::NestedSubexpression))
@@ -177,7 +173,9 @@ impl Template {
                       -> Result<Parameter, TemplateError> {
         let name_node = it.next().unwrap();
         match name_node.rule {
-            Rule::identifier | Rule::reference | Rule::invert_tag_item => {
+            Rule::identifier |
+            Rule::reference |
+            Rule::invert_tag_item => {
                 Ok(Parameter::Name(source[name_node.start..name_node.end].to_owned()))
             }
             Rule::subexpression => {
@@ -249,13 +247,11 @@ impl Template {
         // identifier
         let p1 = source[p1_name.start..p1_name.end].to_owned();
 
-        let p2 = it.peek().and_then(|p2_name| {
-            if p2_name.end <= limit {
-                Some(source[p2_name.start..p2_name.end].to_owned())
-            } else {
-                None
-            }
-        });
+        let p2 = it.peek().and_then(|p2_name| if p2_name.end <= limit {
+                                        Some(source[p2_name.start..p2_name.end].to_owned())
+                                    } else {
+                                        None
+                                    });
 
         if p2.is_some() {
             it.next();
@@ -317,13 +313,13 @@ impl Template {
             }
         }
         Ok(ExpressionSpec {
-            name: name,
-            params: params,
-            hash: hashes,
-            block_param: block_param,
-            omit_pre_ws: omit_pre_ws,
-            omit_pro_ws: omit_pro_ws,
-        })
+               name: name,
+               params: params,
+               hash: hashes,
+               block_param: block_param,
+               omit_pre_ws: omit_pre_ws,
+               omit_pro_ws: omit_pro_ws,
+           })
     }
 
     #[inline]
@@ -625,7 +621,12 @@ fn test_parse_template() {
         HelperBlock(ref h) => {
             assert_eq!(h.name, "if".to_string());
             assert_eq!(h.params.len(), 1);
-            assert_eq!(h.template.as_ref().unwrap().elements.len(), 1);
+            assert_eq!(h.template
+                           .as_ref()
+                           .unwrap()
+                           .elements
+                           .len(),
+                       1);
         }
         _ => {
             panic!("Helper expected here.");
@@ -647,7 +648,12 @@ fn test_parse_template() {
         HelperBlock(ref h) => {
             assert_eq!(h.name, "unless".to_string());
             assert_eq!(h.params.len(), 1);
-            assert_eq!(h.inverse.as_ref().unwrap().elements.len(), 1);
+            assert_eq!(h.inverse
+                           .as_ref()
+                           .unwrap()
+                           .elements
+                           .len(),
+                       1);
         }
         _ => {
             panic!("Helper expression here");
@@ -752,9 +758,17 @@ fn test_white_space_omitter() {
     assert_eq!(t2.elements.len(), 1);
     match t2.elements[0] {
         HelperBlock(ref h) => {
-            assert_eq!(h.template.as_ref().unwrap().elements[0],
+            assert_eq!(h.template
+                           .as_ref()
+                           .unwrap()
+                           .elements
+                           [0],
                        RawString("1".to_string()));
-            assert_eq!(h.inverse.as_ref().unwrap().elements[0],
+            assert_eq!(h.inverse
+                           .as_ref()
+                           .unwrap()
+                           .elements
+                           [0],
                        RawString("2".to_string()));
         }
         _ => unreachable!(),
@@ -865,7 +879,11 @@ fn test_template_mapping() {
 fn test_whitespace_elements() {
     let c = Template::compile("  {{elem}}\n\t{{#if true}} \
                                {{/if}}\n{{{{raw}}}} {{{{/raw}}}}\n{{{{raw}}}}{{{{/raw}}}}\n");
-    assert_eq!(c.ok().unwrap().elements.len(), 9);
+    assert_eq!(c.ok()
+                   .unwrap()
+                   .elements
+                   .len(),
+               9);
 }
 
 #[test]
@@ -888,8 +906,8 @@ fn test_block_param() {
     match Template::compile("{{#each people as |key val|}}{{person}}{{/each}}") {
         Ok(t) => {
             if let HelperBlock(ref ht) = t.elements[0] {
-                if let Some(BlockParam::Pair((Parameter::Name(ref n1), Parameter::Name(ref n2)))) =
-                       ht.block_param {
+                if let Some(BlockParam::Pair((Parameter::Name(ref n1),
+                                              Parameter::Name(ref n2)))) = ht.block_param {
                     assert_eq!(n1, "key");
                     assert_eq!(n2, "val");
                 } else {
@@ -933,7 +951,11 @@ fn test_directive() {
                 assert_eq!(db.name, Parameter::Name("inline".to_owned()));
                 assert_eq!(db.params[0],
                            Parameter::Literal(Json::String("hello".to_owned())));
-                assert_eq!(db.template.as_ref().unwrap().elements[0],
+                assert_eq!(db.template
+                               .as_ref()
+                               .unwrap()
+                               .elements
+                               [0],
                            TemplateElement::RawString("expand to hello".to_owned()));
             }
         }
@@ -946,7 +968,11 @@ fn test_directive() {
                 assert_eq!(db.name, Parameter::Name("layout".to_owned()));
                 assert_eq!(db.params[0],
                            Parameter::Literal(Json::String("hello".to_owned())));
-                assert_eq!(db.template.as_ref().unwrap().elements[0],
+                assert_eq!(db.template
+                               .as_ref()
+                               .unwrap()
+                               .elements
+                               [0],
                            TemplateElement::RawString("expand to hello".to_owned()));
             }
         }

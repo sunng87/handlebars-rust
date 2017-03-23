@@ -34,16 +34,16 @@ pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
 /// with the equivalent html / xml entities.
 pub fn html_escape(data: &str) -> String {
     DEFAULT_REPLACE.replace_all(data, |cap: &Captures| {
-                       match cap.get(0).map(|m| m.as_str()) {
-                           Some("<") => "&lt;",
-                           Some(">") => "&gt;",
-                           Some("\"") => "&quot;",
-                           Some("&") => "&amp;",
-                           _ => unreachable!(),
-                       }
-                       .to_owned()
-                   })
-                   .into_owned()
+            match cap.get(0).map(|m| m.as_str()) {
+                    Some("<") => "&lt;",
+                    Some(">") => "&gt;",
+                    Some("\"") => "&quot;",
+                    Some("&") => "&amp;",
+                    _ => unreachable!(),
+                }
+                .to_owned()
+        })
+        .into_owned()
 }
 
 /// `EscapeFn` that donot change any thing. Useful when using in a non-html
@@ -148,8 +148,8 @@ impl Registry {
                                      -> Result<(), TemplateFileError>
         where P: AsRef<Path>
     {
-        let mut file = try!(File::open(tpl_path)
-                                .map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
+        let mut file =
+            try!(File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         self.register_template_source(name, &mut file)
     }
 

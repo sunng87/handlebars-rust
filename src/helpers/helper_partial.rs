@@ -18,20 +18,18 @@ pub struct PartialHelper;
 impl HelperDef for IncludeHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let template = try!(h.params()
-                             .get(0)
-                             .ok_or(RenderError::new("Param not found for helper"))
-                             .and_then(|ref t| {
-                                 t.path()
-                                  .or(Some(&t.value().render()))
-                                  .ok_or(RenderError::new("Invalid template name to include"))
-                                  .and_then(|p| {
-                                      if rc.is_current_template(p) {
-                                          Err(RenderError::new("Cannot include self in >"))
-                                      } else {
-                                          Ok(r.get_template(&p))
-                                      }
-                                  })
-                             }));
+                                .get(0)
+                                .ok_or(RenderError::new("Param not found for helper"))
+                                .and_then(|ref t| {
+            t.path()
+                .or(Some(&t.value().render()))
+                .ok_or(RenderError::new("Invalid template name to include"))
+                .and_then(|p| if rc.is_current_template(p) {
+                              Err(RenderError::new("Cannot include self in >"))
+                          } else {
+                              Ok(r.get_template(&p))
+                          })
+        }));
 
         let context_param = h.params().get(1).and_then(|p| p.path());
         let old_path = match context_param {
@@ -50,11 +48,10 @@ impl HelperDef for IncludeHelper {
                 if h.hash().is_empty() {
                     t.render(r, rc)
                 } else {
-                    let hash_ctx = BTreeMap::from_iter(h.hash()
-                                                        .iter()
-                                                        .map(|(k, v)| {
-                                                            (k.clone(), v.value().clone())
-                                                        }));
+                    let hash_ctx = BTreeMap::from_iter(h.hash().iter().map(|(k, v)| {
+                                                                               (k.clone(),
+                                                                                v.value().clone())
+                                                                           }));
                     let mut local_rc = rc.derive();
 
                     {

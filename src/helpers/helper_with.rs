@@ -10,8 +10,8 @@ pub struct WithHelper;
 
 impl HelperDef for WithHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param = try!(h.param(0)
-                          .ok_or_else(|| RenderError::new("Param not found for helper \"with\"")));
+        let param =
+            try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"with\"")));
 
         rc.promote_local_vars();
 
@@ -19,11 +19,7 @@ impl HelperDef for WithHelper {
             let mut local_rc = rc.derive();
 
             let not_empty = param.value().is_truthy();
-            let template = if not_empty {
-                h.template()
-            } else {
-                h.inverse()
-            };
+            let template = if not_empty { h.template() } else { h.inverse() };
 
             if let Some(path_root) = param.path_root() {
                 let local_path_root = format!("{}/{}", local_rc.get_path(), path_root);
@@ -122,13 +118,13 @@ mod test {
 
         let mut handlebars = Registry::new();
         assert!(handlebars.register_template_string("t0", "{{#with addr}}{{city}}{{/with}}")
-                          .is_ok());
+                    .is_ok());
         assert!(handlebars.register_template_string("t1",
                                                     "{{#with notfound}}hello{{else}}world{{/with}}")
-                          .is_ok());
+                    .is_ok());
         assert!(handlebars.register_template_string("t2",
                                                     "{{#with addr/country}}{{this}}{{/with}}")
-                          .is_ok());
+                    .is_ok());
 
         let r0 = handlebars.render("t0", &person);
         assert_eq!(r0.ok().unwrap(), "Beijing".to_string());
@@ -157,11 +153,11 @@ mod test {
         let mut handlebars = Registry::new();
         assert!(handlebars.register_template_string("t0",
                                                     "{{#with addr as |a|}}{{a.city}}{{/with}}")
-                          .is_ok());
+                    .is_ok());
         assert!(handlebars.register_template_string("t1", "{{#with notfound as |c|}}hello{{else}}world{{/with}}").is_ok());
         assert!(handlebars.register_template_string("t2",
                                                     "{{#with addr/country as |t|}}{{t}}{{/with}}")
-                          .is_ok());
+                    .is_ok());
 
         let r0 = handlebars.render("t0", &person);
         assert_eq!(r0.ok().unwrap(), "Beijing".to_string());

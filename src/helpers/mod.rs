@@ -144,14 +144,14 @@ mod test {
                                              _: &Registry,
                                              rc: &mut RenderContext|
                                              -> Result<(), RenderError> {
-                                       let output = format!("{}",
-                                                            h.hash_get("value")
-                                                             .unwrap()
-                                                             .value()
-                                                             .render());
-                                       try!(rc.writer.write(output.into_bytes().as_ref()));
-                                       Ok(())
-                                   }));
+            let output = format!("{}",
+                                 h.hash_get("value")
+                                     .unwrap()
+                                     .value()
+                                     .render());
+            try!(rc.writer.write(output.into_bytes().as_ref()));
+            Ok(())
+        }));
 
         let mut data = BTreeMap::new();
         // handlebars should never try to lookup this value because

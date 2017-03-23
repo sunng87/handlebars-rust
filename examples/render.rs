@@ -44,7 +44,8 @@ fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(),
     let rank = try!(h.param(0)
                     .and_then(|v| v.value().as_u64())
                     .ok_or(RenderError::new("Param 0 with u64 type is required for rank helper."))) as usize;
-    let teams = try!(h.param(1)
+    let teams =
+        try!(h.param(1)
               .and_then(|v| v.value().as_array())
               .ok_or(RenderError::new("Param 1 with array type is required for rank helper")));
     let total = teams.len();
