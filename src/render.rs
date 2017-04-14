@@ -688,9 +688,12 @@ impl Renderable for TemplateElement {
                 }
             }
             DirectiveExpression(_) |
-            DirectiveBlock(_) |
-            PartialExpression(_) |
-            PartialBlock(_) => self.eval(registry, rc),
+            DirectiveBlock(_) => self.eval(registry, rc),
+            #[cfg(not(feature="partial_legacy"))]
+            PartialExpression(ref dt) | PartialBlock(ref dt) => {
+                Directive::from_template(dt, registry, rc)
+                    .and_then(|di| partial::expand_partial(&di, registry, rc))
+            }
             _ => Ok(()),
         }
     }
@@ -709,11 +712,6 @@ impl Evaluable for TemplateElement {
                         }
                     }
                 })
-            }
-            #[cfg(not(feature="partial_legacy"))]
-            PartialExpression(ref dt) | PartialBlock(ref dt) => {
-                Directive::from_template(dt, registry, rc)
-                    .and_then(|di| partial::expand_partial(&di, registry, rc))
             }
             _ => Ok(()),
         }
@@ -906,4 +904,17 @@ fn test_render_error_line_no() {
     } else {
         panic!("Error expected");
     }
+}
+
+#[test]
+#[cfg(not(feature="partial_legacy"))]
+fn test_partial_failback_render() {
+    let mut r = Registry::new();
+
+    assert!(r.register_template_string("parent", "<html>{{> layout}}</html>").is_ok());
+    assert!(r.register_template_string("child", "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}").is_ok());
+    assert!(r.register_template_string("seg", "1234").is_ok());
+
+    let r = r.render("child", &true).expect("should work");
+    assert_eq!(r, "<html>content</html>");
 }
