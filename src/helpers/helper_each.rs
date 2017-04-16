@@ -304,4 +304,16 @@ mod test {
         let r0 = handlebars.render("t0", &data);
         assert_eq!(r0.ok().unwrap(), "1".to_string());
     }
+
+    #[test]
+    fn test_nested_each_with_path_up_this() {
+        let mut handlebars = Registry::new();
+        assert!(handlebars.register_template_string("t0", "{{#each variant}}{{#each ../typearg}}{{#if @first}}template<{{/if}}{{this}}{{#if @last}}>{{else}},{{/if}}{{/each}}{{/each}}").is_ok());
+        let data = btreemap! {
+            "typearg".to_string() => vec!["T".to_string()],
+            "variant".to_string() => vec!["1".to_string(), "2".to_string()]
+        };
+        let r0 = handlebars.render("t0", &data);
+        assert_eq!(r0.ok().unwrap(), "template<T>template<T>".to_string());
+    }
 }
