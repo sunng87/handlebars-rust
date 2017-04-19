@@ -46,7 +46,7 @@ pub fn html_escape(data: &str) -> String {
         .into_owned()
 }
 
-/// `EscapeFn` that donot change any thing. Useful when using in a non-html
+/// `EscapeFn` that do not change any thing. Useful when using in a non-html
 /// environment.
 pub fn no_escape(data: &str) -> String {
     data.to_owned()
