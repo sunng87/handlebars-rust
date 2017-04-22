@@ -1,4 +1,5 @@
-use serde_json::value::{Value as Json, ToJson, Map};
+use serde::Serialize;
+use serde_json::value::{Value as Json, Map, to_value};
 
 use pest::prelude::*;
 use std::collections::{VecDeque, BTreeMap};
@@ -114,7 +115,7 @@ impl Context {
     }
 
     /// Create a context with given data
-    pub fn wraps<T: ToJson>(e: &T) -> Context {
+    pub fn wraps<T: Serialize>(e: &T) -> Context {
         Context { data: to_json(e) }
     }
 
@@ -200,9 +201,9 @@ impl JsonRender for Json {
 }
 
 pub fn to_json<T>(src: &T) -> Json
-    where T: ToJson
+    where T: Serialize
 {
-    src.to_json().unwrap_or(Json::Null)
+    to_value(src).unwrap_or(Json::Null)
 }
 
 pub fn as_string(src: &Json) -> Option<&str> {

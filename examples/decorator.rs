@@ -5,7 +5,8 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-use serde_json::value::{self, Value as Json, ToJson, Map};
+use serde::Serialize;
+use serde_json::value::{self, Value as Json, Map};
 
 use std::error::Error;
 

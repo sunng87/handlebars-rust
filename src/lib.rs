@@ -298,10 +298,9 @@ extern crate maplit;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_derive;
-#[cfg(test)]
-extern crate serde;
 
 extern crate regex;
+extern crate serde;
 extern crate serde_json;
 
 pub use self::template::Template;

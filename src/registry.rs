@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
 
-use serde_json::value::ToJson;
+use serde::Serialize;
 
 use regex::{Regex, Captures};
 
@@ -232,7 +232,7 @@ impl Registry {
     ///
     /// Returns rendered string or an struct with error information
     pub fn render<T>(&self, name: &str, data: &T) -> Result<String, RenderError>
-        where T: ToJson
+        where T: Serialize
     {
         let mut writer = StringWriter::new();
         {
@@ -244,7 +244,7 @@ impl Registry {
 
     /// Render a registered template and write some data to the `std::io::Write`
     pub fn renderw<T>(&self, name: &str, data: &T, writer: &mut Write) -> Result<(), RenderError>
-        where T: ToJson
+        where T: Serialize
     {
         self.get_template(&name.to_string())
             .ok_or(RenderError::new(format!("Template not found: {}", name)))
@@ -262,7 +262,7 @@ impl Registry {
                               template_string: &str,
                               data: &T)
                               -> Result<String, TemplateRenderError>
-        where T: ToJson
+        where T: Serialize
     {
         let mut writer = StringWriter::new();
         {
@@ -277,7 +277,7 @@ impl Registry {
                                data: &T,
                                writer: &mut Write)
                                -> Result<(), TemplateRenderError>
-        where T: ToJson
+        where T: Serialize
     {
         let tpl = try!(Template::compile(template_string));
         let mut ctx = Context::wraps(data);
@@ -292,7 +292,7 @@ impl Registry {
                                 data: &T,
                                 writer: &mut Write)
                                 -> Result<(), TemplateRenderError>
-        where T: ToJson
+        where T: Serialize
     {
         let mut tpl_str = String::new();
         try!(template_source.read_to_string(&mut tpl_str).map_err(|e| {
