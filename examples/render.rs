@@ -1,30 +1,12 @@
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-extern crate rustc_serialize;
 
-#[cfg(feature = "serde_test")]
 extern crate serde;
-#[cfg(feature = "serde_type")]
 extern crate serde_json;
-#[cfg(feature = "serde_test")]
 #[macro_use]
 extern crate serde_derive;
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-#[macro_use]
-extern crate tojson_macros;
-
-// default feature, using rustc_serialize `Json` as data type
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use rustc_serialize::json::{Json, ToJson};
-// serde_type feature, using serde_json as data type
-#[cfg(feature = "serde_type")]
 use serde_json::value::{self, Value as Json, ToJson, Map};
-
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use std::collections::BTreeMap as Map;
-
 
 use std::error::Error;
 
@@ -59,14 +41,10 @@ fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(),
     Ok(())
 }
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-static TYPES: &'static str = "rustc_serialize";
-#[cfg(feature = "serde_type")]
 static TYPES: &'static str = "serde_json";
 
 // define some data
-#[cfg_attr(all(feature = "serde_type"), derive(Serialize))]
-#[cfg_attr(all(feature = "rustc_ser_type", not(feature = "serde_type")), derive(ToJson))]
+#[derive(Serialize)]
 pub struct Team {
     name: String,
     pts: u16,

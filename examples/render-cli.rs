@@ -1,15 +1,14 @@
 #![allow(unused_imports, dead_code)]
 extern crate env_logger;
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-extern crate rustc_serialize;
+extern crate serde_json;
 extern crate handlebars;
 
 use std::io::{self, Write};
 use std::process;
 use std::env;
+use std::str::FromStr;
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use rustc_serialize::json::Json;
+use serde_json::value::Value as Json;
 
 use handlebars::Handlebars;
 
@@ -22,7 +21,6 @@ fn usage() -> ! {
     process::exit(1);
 }
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn parse_json(text: &str) -> Json {
     match Json::from_str(text) {
         Ok(json) => json,
@@ -30,7 +28,6 @@ fn parse_json(text: &str) -> Json {
     }
 }
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn main() {
     env_logger::init().unwrap();
 

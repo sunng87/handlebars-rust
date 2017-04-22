@@ -1,6 +1,3 @@
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use serialize::json::Json;
-#[cfg(feature = "serde_type")]
 use serde_json::value::Value as Json;
 
 use helpers::HelperDef;
@@ -29,14 +26,6 @@ impl HelperDef for LookupHelper {
                     .and_then(|u| v.get(u))
                     .unwrap_or(&null)
             }
-            #[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-            &Json::Object(ref m) => {
-                index.value()
-                    .as_string()
-                    .and_then(|k| m.get(k))
-                    .unwrap_or(&null)
-            }
-            #[cfg(feature = "serde_type")]
             &Json::Object(ref m) => {
                 index.value()
                     .as_str()

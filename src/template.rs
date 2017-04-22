@@ -4,11 +4,7 @@ use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
 use pest::prelude::*;
 
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
-use serialize::json::Json;
-#[cfg(feature = "serde_type")]
 use serde_json::value::Value as Json;
-#[cfg(feature = "serde_type")]
 use std::str::FromStr;
 
 use grammar::{Rdp, Rule};
