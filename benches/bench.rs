@@ -1,12 +1,13 @@
 #![feature(test)]
 extern crate handlebars;
-extern crate rustc_serialize as serialize;
+extern crate serde;
+extern crate serde_json;
 extern crate test;
 
 use std::collections::BTreeMap;
 
-use handlebars::{Handlebars, Template};
-use serialize::json::{Json, ToJson};
+use serde_json::value::Value as Json;
+use handlebars::{Handlebars, Template, to_json};
 
 static SOURCE: &'static str = "<html>
   <head>
@@ -27,7 +28,7 @@ static SOURCE: &'static str = "<html>
 fn make_data() -> BTreeMap<String, Json> {
     let mut data = BTreeMap::new();
 
-    data.insert("year".to_string(), "2015".to_json());
+    data.insert("year".to_string(), to_json(&"2015".to_owned()));
 
     let mut teams = Vec::new();
 
@@ -38,12 +39,12 @@ fn make_data() -> BTreeMap<String, Json> {
                 .iter() {
         let (name, score) = *v;
         let mut t = BTreeMap::new();
-        t.insert("name".to_string(), name.to_json());
-        t.insert("score".to_string(), score.to_json());
+        t.insert("name".to_string(), to_json(&name));
+        t.insert("score".to_string(), to_json(&score));
         teams.push(t)
     }
 
-    data.insert("teams".to_string(), teams.to_json());
+    data.insert("teams".to_string(), to_json(&teams));
     data
 }
 

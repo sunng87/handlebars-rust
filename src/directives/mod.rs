@@ -14,16 +14,15 @@ pub use self::inline::INLINE_DIRECTIVE;
 ///
 /// In decorator, you can change some context data your are about to render.
 ///
-/// ```ignore
+/// ```
 /// use handlebars::*;
-/// use rustc_serialize::json::ToJson;
 ///
 /// fn update_data(_: &Decorator, _: &Handlebars, rc: &mut RenderContext)
 ///         -> Result<(), RenderError> {
 ///     // modify json object
 ///     let mut ctx_ref = rc.context_mut();
 ///     if let Some(ref mut m) = ctx_ref.data_mut().as_object_mut() {
-///         m.insert("hello".to_string(), "world".to_owned().to_json());
+///         m.insert("hello".to_string(), to_json(&"world".to_owned()));
 ///     }
 ///     Ok(())
 /// }

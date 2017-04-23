@@ -20,8 +20,7 @@
 //!
 //!   // Prepare some data.
 //!   //
-//!   // The data type should implements `rustc_serialize::json::ToJson` or
-//!   // `serde::Serialize`
+//!   // The data type should implements `serde::Serialize`
 //!   let mut data = BTreeMap::new();
 //!   data.insert("world".to_string(), "世界!".to_string());
 //!   assert_eq!(handlebars.render("t1", &data).unwrap(), "hello 世界!");
@@ -148,23 +147,14 @@
 //! You can use default `render` function to render a template into `String`. From 0.9, there's `renderw` to render text into anything of `std::io::Write`.
 //!
 //! ```ignore
-//! use rustc_serialize::json::{Json, ToJson};
 //! use std::collections::BTreeMap;
 //!
 //! use handlebars::Handlebars;
 //!
+//! #[derive(Serialize)]
 //! struct Person {
 //!   name: String,
 //!   age: i16,
-//! }
-//!
-//! impl ToJson for Person {
-//!   fn to_json(&self) -> Json {
-//!     let mut m: BTreeMap<String, Json> = BTreeMap::new();
-//!     m.insert("name".to_string(), self.name.to_json());
-//!     m.insert("age".to_string(), self.age.to_json());
-//!     m.to_json()
-//!   }
 //! }
 //!
 //! fn main() {
