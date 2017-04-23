@@ -1,4 +1,3 @@
-#![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
 extern crate serde;
@@ -6,12 +5,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-use serde::Serialize;
-use serde_json::value::{self, Value as Json, Map};
+use serde_json::value::{Value as Json, Map};
 
-use std::error::Error;
-
-use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender, to_json};
+use handlebars::{Handlebars, RenderError, RenderContext, Helper, JsonRender, to_json};
 
 fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
     let param = try!(h.param(0).ok_or(RenderError::new("Param 0 is required for format helper.")));

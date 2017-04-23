@@ -1,4 +1,3 @@
-#![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate handlebars;
 
@@ -7,12 +6,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-use serde::Serialize;
-use serde_json::value::{self, Value as Json, Map};
+use serde_json::value::{Value as Json, Map};
 
-use std::error::Error;
-
-use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender, to_json};
+use handlebars::{Handlebars, RenderError, RenderContext, Helper, JsonRender, to_json};
 
 // define a custom helper
 fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {

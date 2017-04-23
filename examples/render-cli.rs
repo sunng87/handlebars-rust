@@ -1,4 +1,3 @@
-#![allow(unused_imports, dead_code)]
 extern crate env_logger;
 extern crate serde_json;
 extern crate handlebars;
