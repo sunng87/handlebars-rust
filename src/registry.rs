@@ -228,7 +228,7 @@ impl Registry {
     /// Render a registered template with some data into a string
     ///
     /// * `name` is the template name you registred previously
-    /// * `ctx` is the data that implements `ToJson` of either rustc_serialize or serde_json
+    /// * `ctx` is the data that implements `serde::Serialize``
     ///
     /// Returns rendered string or an struct with error information
     pub fn render<T>(&self, name: &str, data: &T) -> Result<String, RenderError>

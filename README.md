@@ -31,11 +31,14 @@ output).
 
 Checkout `examples/` for more concrete demos of current API.
 
-From 0.13, you can use either `rustc_serialize` or `serde` for your
-data type. By default we use `ToJson` from `rustc_serialize` to
-convert your data into handlebars internal types. If you use `serde`
-framework in your project, you can enable `serde_type` feature of this
-crate and we will use `Serialize` from `serde` to convert.
+From 0.26, [Serde](https://serde.rs/) JSON is the default type system
+for this library. The data you pass to handlebars template must
+implements the `Serialize` trait. Note that we don't actually
+serialize data to JSON string, we just use the JSON type: number,
+boolean and etc.
+
+Rustc_serialize is now officially deprecated. If your application is
+still using it, you need to use handlebars-rust `0.25.*`.
 
 ## Documents
 

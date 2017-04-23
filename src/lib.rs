@@ -92,12 +92,10 @@
 //! #### Static typed
 //!
 //! As a static typed language, it's a little verbose to use handlebars.
-//! You will have to make your data `ToJson`-able, so we can render
-//! it. If you are on nightly channel, we have [a syntax
-//! extension](https://github.com/sunng87/tojson_macros) to generate
-//! default `ToJson` implementation for you. If you prefer
-//! [serde](https://github.com/serde-rs/serde), you can enable `serde_type` feature
-//! of handlebars-rust and add `#[Serialize]` for your types.
+//! Handlebars templating language is designed against JSON data type. In rust,
+//! we will convert user's structs, vectors or maps to JSON type in order to use
+//! in template. You have to make sure your data implements the `Serialize` trait
+//! from the [Serde](https://serde.rs) project.
 //!
 //! ## Usage
 //!
@@ -143,9 +141,9 @@
 //!
 //! ### Rendering Something
 //!
-//! Since handlebars is originally based on JavaScript type system. It supports dynamic features like duck-typing, truthy/falsey values. But for a static language like Rust, this is a little difficult. As a solution, we are using the `serialize::json::Json` internally for data rendering.
+//! Since handlebars is originally based on JavaScript type system. It supports dynamic features like duck-typing, truthy/falsey values. But for a static language like Rust, this is a little difficult. As a solution, we are using the `serde_json::value::Value` internally for data rendering.
 //!
-//! That means, if you want to render something, you have to ensure the data type implements the `rustc_serialize::json::ToJson` trait (or serde's `Serialize`). Luckily, most rust internal types already have that trait. However, if you want to render your custom struct, you need to implement it manually, or use [tojson_macros](https://github.com/sunng87/tojson_macros) to generate default `ToJson` implementation.
+//! That means, if you want to render something, you have to ensure the data type implements the `serde::Serialize` trait. Most rust internal types already have that trait. Use `#derive[Serialize]` for your types to generate default implementation.
 //!
 //! You can use default `render` function to render a template into `String`. From 0.9, there's `renderw` to render text into anything of `std::io::Write`.
 //!
