@@ -915,3 +915,16 @@ fn test_partial_failback_render() {
     let r = r.render("child", &true).expect("should work");
     assert_eq!(r, "<html>content</html>");
 }
+
+#[test]
+fn test_key_with_slash() {
+    let mut r = Registry::new();
+
+    assert!(r.register_template_string("t", "{{#each .}}{{@key}}: {{this}}\n{{/each}}").is_ok());
+
+    let r = r.render("t", &json!({
+        "/foo": "bar"
+    })).expect("should work");
+
+    assert_eq!(r, "/foo: bar\n");
+}
