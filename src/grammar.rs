@@ -111,7 +111,7 @@ impl_rdp! {
         path_ident = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["@"]|["$"]|["<"]|[">"]|["-"]}
         path_id = { path_ident+ }
         path_num_id = { ['0'..'9']+ }
-        path_raw_id = { path_ident* }
+        path_raw_id = { (path_ident|["/"])* }
         path_sep = _{ ["/"] | ["."] }
         path_up = { [".."] }
         path_var = { path_id }
@@ -233,7 +233,7 @@ impl_rdp! {
         path_ident = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["@"]|["$"]|["<"]|[">"]|["-"]}
         path_id = { path_ident+ }
         path_num_id = { ['0'..'9']+ }
-        path_raw_id = { path_ident* }
+        path_raw_id = { (path_ident|["/"])* }
         path_sep = _{ ["/"] | ["."] }
         path_up = { [".."] }
         path_var = { path_id }
@@ -482,7 +482,8 @@ fn test_path() {
                  "a[\"bbc\"]/b/c/../d",
                  "../a/b[0][1]",
                  "./this[0][1]/this/../a",
-                 "./this_name"];
+                 "./this_name",
+                 "./goo[/bar]"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.path());
