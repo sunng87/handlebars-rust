@@ -5,7 +5,8 @@ use serde_json::value::Value as Json;
 use helpers::HelperDef;
 use registry::Registry;
 use context::{JsonTruthy, to_json};
-use render::{Renderable, RenderContext, RenderError, Helper};
+use render::{Renderable, RenderContext, Helper};
+use error::RenderError;
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;

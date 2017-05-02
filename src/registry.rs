@@ -8,12 +8,12 @@ use serde::Serialize;
 use regex::{Regex, Captures};
 
 use template::Template;
-use render::{Renderable, RenderError, RenderContext};
+use render::{Renderable, RenderContext};
 use context::Context;
 use helpers::{self, HelperDef};
 use directives::{self, DirectiveDef};
 use support::str::StringWriter;
-use error::{TemplateError, TemplateFileError, TemplateRenderError};
+use error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 
 
 lazy_static!{
@@ -30,7 +30,8 @@ pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
 /// The default *escape fn* replaces the characters `&"<>`
 /// with the equivalent html / xml entities.
 pub fn html_escape(data: &str) -> String {
-    DEFAULT_REPLACE.replace_all(data, |cap: &Captures| {
+    DEFAULT_REPLACE
+        .replace_all(data, |cap: &Captures| {
             match cap.get(0).map(|m| m.as_str()) {
                     Some("<") => "&lt;",
                     Some(">") => "&gt;",
@@ -156,8 +157,9 @@ impl Registry {
                                     tpl_source: &mut Read)
                                     -> Result<(), TemplateFileError> {
         let mut buf = String::new();
-        try!(tpl_source.read_to_string(&mut buf)
-                       .map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
+        try!(tpl_source
+                 .read_to_string(&mut buf)
+                 .map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         try!(self.register_template_string(name, buf));
         Ok(())
     }
@@ -249,12 +251,13 @@ impl Registry {
         self.get_template(&name.to_string())
             .ok_or(RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
-                let mut ctx = Context::wraps(data);
-                let mut local_helpers = HashMap::new();
-                let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
-                render_context.root_template = t.name.clone();
-                t.render(self, &mut render_context)
-            })
+                          let mut ctx = Context::wraps(data);
+                          let mut local_helpers = HashMap::new();
+                          let mut render_context =
+                              RenderContext::new(&mut ctx, &mut local_helpers, writer);
+                          render_context.root_template = t.name.clone();
+                          t.render(self, &mut render_context)
+                      })
     }
 
     /// render a template string using current registry without register it
@@ -283,7 +286,8 @@ impl Registry {
         let mut ctx = Context::wraps(data);
         let mut local_helpers = HashMap::new();
         let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
-        tpl.render(self, &mut render_context).map_err(TemplateRenderError::from)
+        tpl.render(self, &mut render_context)
+            .map_err(TemplateRenderError::from)
     }
 
     /// render a template source using current registry without register it
@@ -295,9 +299,11 @@ impl Registry {
         where T: Serialize
     {
         let mut tpl_str = String::new();
-        try!(template_source.read_to_string(&mut tpl_str).map_err(|e| {
-            TemplateRenderError::IOError(e, "Unamed template source".to_owned())
-        }));
+        try!(template_source
+                 .read_to_string(&mut tpl_str)
+                 .map_err(|e| {
+                              TemplateRenderError::IOError(e, "Unamed template source".to_owned())
+                          }));
         self.template_renderw(&tpl_str, data, writer)
     }
 }
@@ -305,9 +311,10 @@ impl Registry {
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use render::{RenderContext, Renderable, RenderError, Helper};
+    use render::{RenderContext, Renderable, Helper};
     use helpers::HelperDef;
     use support::str::StringWriter;
+    use error::RenderError;
     #[cfg(feature = "partial_legacy")]
     use error::TemplateRenderError;
 
@@ -373,7 +380,8 @@ mod test {
 
         let input = String::from("\"<>&");
 
-        r.register_template_string("test", String::from("{{this}}")).unwrap();
+        r.register_template_string("test", String::from("{{this}}"))
+            .unwrap();
 
         assert_eq!("&quot;&lt;&gt;&amp;", r.render("test", &input).unwrap());
 
@@ -397,7 +405,8 @@ mod test {
                    r.template_render("{{> index}}", &{}).unwrap());
 
         assert_eq!("hello world".to_string(),
-                   r.template_render("hello {{this}}", &"world".to_string()).unwrap());
+                   r.template_render("hello {{this}}", &"world".to_string())
+                       .unwrap());
 
         let mut sw = StringWriter::new();
 

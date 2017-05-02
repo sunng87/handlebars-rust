@@ -3,7 +3,8 @@ use std::collections::BTreeMap;
 use helpers::HelperDef;
 use registry::Registry;
 use context::{JsonTruthy, to_json};
-use render::{Renderable, RenderContext, RenderError, Helper};
+use render::{Renderable, RenderContext, Helper};
+use error::RenderError;
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;

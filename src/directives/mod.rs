@@ -1,5 +1,6 @@
-use render::{RenderContext, RenderError, Directive};
+use render::{RenderContext, Directive};
 use registry::Registry;
+use error::RenderError;
 
 pub use self::inline::INLINE_DIRECTIVE;
 
@@ -66,7 +67,8 @@ mod inline;
 mod test {
     use registry::Registry;
     use context::{self, as_string, Context};
-    use render::{RenderContext, RenderError, Directive, Helper};
+    use render::{RenderContext, Directive, Helper};
+    use error::RenderError;
 
     #[test]
     fn test_register_decorator() {

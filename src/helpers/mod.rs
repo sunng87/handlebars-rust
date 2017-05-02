@@ -1,5 +1,6 @@
-use render::{RenderContext, RenderError, Helper};
+use render::{RenderContext, Helper};
 use registry::Registry;
+use error::RenderError;
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::EACH_HELPER;
@@ -80,7 +81,8 @@ mod test {
     use context::JsonRender;
     use helpers::HelperDef;
     use registry::Registry;
-    use render::{RenderContext, RenderError, Renderable, Helper};
+    use render::{RenderContext, Renderable, Helper};
+    use error::RenderError;
 
     #[derive(Clone, Copy)]
     struct MetaHelper;
