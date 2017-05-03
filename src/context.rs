@@ -104,11 +104,7 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>,
 fn merge_json(base: &Json, addition: &Object) -> Json {
     let mut base_map = match base {
         &Json::Object(ref m) => m.clone(),
-        _ => {
-            let mut map = Map::new();
-            map.insert("this".to_owned(), base.clone());
-            map
-        }
+        _ => Map::new(),
     };
 
     for (k, v) in addition.iter() {
@@ -154,7 +150,7 @@ impl Context {
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: &Json = &self.data;
         for p in paths.iter() {
-            if *p == "this" && data.as_object().and_then(|m| m.get("this")).is_none() {
+            if *p == "this" {
                 continue;
             }
             data = match *data {
@@ -344,7 +340,7 @@ mod test {
         assert_eq!(ctx1.navigate(".", &VecDeque::new(), "this")
                        .unwrap()
                        .render(),
-                   "hello".to_owned());
+                   "[object]".to_owned());
         assert_eq!(ctx2.navigate(".", &VecDeque::new(), "age")
                        .unwrap()
                        .render(),
@@ -380,7 +376,7 @@ mod test {
                        .navigate(".", &VecDeque::new(), "this")
                        .unwrap()
                        .render(),
-                   "hello".to_owned());
+                   "[object]".to_owned());
         assert_eq!(ctx_a2
                        .navigate(".", &VecDeque::new(), "tag")
                        .unwrap()
