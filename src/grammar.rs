@@ -119,7 +119,7 @@ impl_rdp! {
         path_idx = { ["["] ~ path_num_id ~ ["]"]}
         path_item = _{ path_up|path_var }
         path_current = { ["this"] | ["."] }
-        path = _{ (path_current | (["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))*)) ~ eoi }
+        path = _{ (path_current ~ eoi) | (["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi)  }
     }
 }
 
@@ -242,7 +242,7 @@ impl_rdp! {
         path_idx = { ["["] ~ path_num_id ~ ["]"]}
         path_item = _{ path_up|path_var }
         path_current = { ["this"] | ["."] }
-        path = _{ path_current | (["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))*) ~ eoi }
+        path = _{ (path_current ~ eoi) | (["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi)  }
     }
 }
 
