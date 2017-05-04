@@ -4,7 +4,8 @@ use std::iter::FromIterator;
 use helpers::HelperDef;
 use registry::Registry;
 use context::JsonRender;
-use render::{Renderable, RenderContext, RenderError, Helper};
+use render::{Renderable, RenderContext, Helper};
+use error::RenderError;
 
 #[derive(Clone, Copy)]
 pub struct IncludeHelper;
