@@ -209,6 +209,10 @@ impl<'a> RenderContext<'a> {
     pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<HelperDef + 'static>>> {
         self.local_helpers.get(name).map(|r| r.clone())
     }
+
+    pub fn evaluate(&self, path: &str) -> Result<&Json, RenderError> {
+        self.context.navigate(self.get_path(), self.get_local_path_root(), path)
+    }
 }
 
 impl<'a> fmt::Debug for RenderContext<'a> {
@@ -516,7 +520,7 @@ impl Parameter {
                 } else {
                     let block_context_value = rc.evaluate_in_block_context(name)?;
                     let value = if block_context_value.is_none() {
-                        rc.context().navigate(rc.get_path(), rc.get_local_path_root(), name)?
+                        rc.evaluate(name)?
                     } else {
                         block_context_value.unwrap()
                     };
