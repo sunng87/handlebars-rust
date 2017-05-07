@@ -22,18 +22,18 @@ use partial;
 /// this context stores information of a render and a writer where generated
 /// content is written to.
 ///
-pub struct RenderContext<'a> {
+pub struct RenderContext<'a, 'b> {
     partials: HashMap<String, Template>,
     path: String,
     local_path_root: VecDeque<String>,
     local_variables: HashMap<String, Json>,
-    local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+    local_helpers: &'b mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
     default_var: Json,
     block_context: VecDeque<Context>,
     /// the context
     context: &'a mut Context,
     /// the `Write` where page is generated
-    pub writer: &'a mut Write,
+    pub writer: &'b mut Write,
     /// current template name
     pub current_template: Option<String>,
     /// root template name
@@ -41,12 +41,12 @@ pub struct RenderContext<'a> {
     pub disable_escape: bool,
 }
 
-impl<'a> RenderContext<'a> {
+impl<'a, 'b> RenderContext<'a, 'b> {
     /// Create a render context from a `Write`
     pub fn new(ctx: &'a mut Context,
-               local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
-               w: &'a mut Write)
-               -> RenderContext<'a> {
+               local_helpers: &'b mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+               w: &'b mut Write)
+               -> RenderContext<'a, 'b> {
         RenderContext {
             partials: HashMap::new(),
             path: ".".to_string(),
@@ -77,6 +77,24 @@ impl<'a> RenderContext<'a> {
             disable_escape: self.disable_escape,
             local_helpers: self.local_helpers,
             context: self.context,
+            writer: self.writer,
+        }
+    }
+
+    pub fn derive_partial_context(&mut self, partial_context: &'a mut Context) -> RenderContext {
+        RenderContext {
+            partials: self.partials.clone(),
+            path: ".".to_string(),
+            local_path_root: VecDeque::new(),
+            local_variables: self.local_variables.clone(),
+            current_template: self.current_template.clone(),
+            root_template: self.root_template.clone(),
+            default_var: self.default_var.clone(),
+            block_context: VecDeque::new(),
+
+            disable_escape: self.disable_escape,
+            local_helpers: self.local_helpers,
+            context: partial_context,
             writer: self.writer,
         }
     }
@@ -215,7 +233,7 @@ impl<'a> RenderContext<'a> {
     }
 }
 
-impl<'a> fmt::Debug for RenderContext<'a> {
+impl<'a, 'b> fmt::Debug for RenderContext<'a, 'b> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f,
                "partials: {:?}, path: {:?}, local_variables: {:?}, current_template: {:?}, \

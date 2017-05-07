@@ -39,20 +39,11 @@ pub fn expand_partial(d: &Directive,
                 local_rc.set_partial("@partial-block".to_string(), t.clone());
             }
 
-            let hash = d.hash();
-            let r = if hash.is_empty() {
-                t.render(r, &mut local_rc)
-            } else {
-                let hash_ctx =
-                    BTreeMap::from_iter(hash.iter().map(|(k, v)| (k.clone(), v.value().clone())));
-                {
-                    let mut ctx_ref = local_rc.context_mut();
-                    *ctx_ref = ctx_ref.extend(&hash_ctx);
-                }
-                t.render(r, &mut local_rc)
-            };
-
-            r
+            let hash_ctx =
+                BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
+            let mut partial_context = local_rc.context().extend(&hash_ctx);
+            let mut partial_rc = local_rc.derive_partial_context(&mut partial_context);
+            t.render(r, &mut partial_rc)
         }
         None => Ok(()),
     }
