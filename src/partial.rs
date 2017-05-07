@@ -129,4 +129,28 @@ mod test {
         let r0 = handlebars.render("template", &true);
         assert_eq!(r0.ok().unwrap(), "one--- two ---three--- two ---");
     }
+
+    #[test]
+    fn test_hash_context_outscope() {
+        let main_template = "In: {{> p a=2}} Out: {{a}}";
+        let p_partial = "{{a}}";
+
+        let mut handlebars = Registry::new();
+        assert!(handlebars.register_template_string("template", main_template).is_ok());
+        assert!(handlebars.register_template_string("p", p_partial).is_ok());
+
+        let r0 = handlebars.render("template", &true);
+        assert_eq!(r0.ok().unwrap(), "In: 2 Out: ");
+    }
+
+    #[test]
+    fn test_nested_partial_scope() {
+        let t = "{{#inline* \"pp\"}}{{a}} {{b}}{{/inline}}{{#each c}}{{> pp a=2}}{{/each}}";
+        let data = json!({"c": [{"b": true}, {"b": false}]});
+
+        let mut handlebars = Registry::new();
+        assert!(handlebars.register_template_string("t", t).is_ok());
+        let r0 = handlebars.render("t", &data);
+        assert_eq!(r0.ok().unwrap(), "2 true2 false");
+    }
 }
