@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use registry::Registry;
+use context::{Context, merge_json};
 use render::{RenderContext, Directive, Evaluable, Renderable};
 use error::RenderError;
 
@@ -39,11 +40,16 @@ pub fn expand_partial(d: &Directive,
                 local_rc.set_partial("@partial-block".to_string(), t.clone());
             }
 
-            let hash_ctx =
-                BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
-            let partial_context = local_rc.context().extend(&hash_ctx);
-            let mut partial_rc = local_rc.with_context(partial_context);
-            t.render(r, &mut partial_rc)
+            let hash = d.hash();
+            if hash.is_empty() {
+                t.render(r, &mut local_rc)
+            } else {
+                let hash_ctx =
+                    BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
+                let partial_context = merge_json(local_rc.evaluate(".")?, &hash_ctx);
+                let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context));
+                t.render(r, &mut partial_rc)
+            }
         }
         None => Ok(()),
     }
@@ -136,7 +142,7 @@ mod test {
 
     #[test]
     fn test_nested_partial_scope() {
-        let t = "{{#inline* \"pp\"}}{{a}} {{b}}{{/inline}}{{#each c}}{{> pp a=2}}{{/each}}";
+        let t = "{{#*inline \"pp\"}}{{a}} {{b}}{{/inline}}{{#each c}}{{> pp a=2}}{{/each}}";
         let data = json!({"c": [{"b": true}, {"b": false}]});
 
         let mut handlebars = Registry::new();

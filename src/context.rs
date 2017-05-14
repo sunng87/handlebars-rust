@@ -101,7 +101,7 @@ fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>,
 
 }
 
-fn merge_json(base: &Json, addition: &Object) -> Json {
+pub fn merge_json(base: &Json, addition: &Object) -> Json {
     let mut base_map = match base {
         &Json::Object(ref m) => m.clone(),
         _ => Map::new(),
@@ -123,15 +123,6 @@ impl Context {
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: &T) -> Context {
         Context { data: to_json(e) }
-    }
-
-    /// Extend current context with another JSON object
-    /// If current context is a JSON object, it's identical to a normal merge
-    /// Otherwise, the current value will be stored in new JSON object with key `this`, and merged
-    /// keys are also available.
-    pub fn extend(&self, hash: &Object) -> Context {
-        let new_data = merge_json(&self.data, hash);
-        Context { data: new_data }
     }
 
     /// Navigate the context with base path and relative path
@@ -232,7 +223,7 @@ impl JsonTruthy for Json {
 #[cfg(test)]
 mod test {
     use context::{self, JsonRender, Context};
-    use std::collections::{VecDeque, BTreeMap};
+    use std::collections::VecDeque;
     use serde_json::value::{Value as Json, Map};
 
     #[test]
@@ -348,18 +339,14 @@ mod test {
     }
 
     #[test]
-    fn test_extend() {
-        let mut map = Map::new();
-        map.insert("age".to_string(), context::to_json(&4usize));
-        let ctx1 = Context::wraps(&map);
-
+    fn test_merge_json() {
+        let map = json!({ "age": 4 });
         let s = "hello".to_owned();
-        let ctx2 = Context::wraps(&s);
+        let hash = btreemap!{
+            "tag".to_owned() => context::to_json(&"h1")
+        };
 
-        let mut hash = BTreeMap::new();
-        hash.insert("tag".to_owned(), context::to_json(&"h1"));
-
-        let ctx_a1 = ctx1.extend(&hash);
+        let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash));
         assert_eq!(ctx_a1
                        .navigate(".", &VecDeque::new(), "age")
                        .unwrap()
@@ -371,7 +358,7 @@ mod test {
                        .render(),
                    "h1".to_owned());
 
-        let ctx_a2 = ctx2.extend(&hash);
+        let ctx_a2 = Context::wraps(&context::merge_json(&context::to_json(&s), &hash));
         assert_eq!(ctx_a2
                        .navigate(".", &VecDeque::new(), "this")
                        .unwrap()
