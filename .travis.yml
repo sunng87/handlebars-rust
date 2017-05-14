@@ -3,7 +3,3 @@ rust:
   - nightly
   - beta
   - stable
-script:
-  - |
-      cargo test &&
-      cargo test --features partial_legacy
