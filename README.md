@@ -107,11 +107,6 @@ embed you page into this parent.
 You can find a real example for template inheritance in
 `examples/partials.rs`, and templates used by this file.
 
-From 0.23 we support Handlebars 4.0 partial syntax by
-default. Original partial syntax via `block`, `partial` helpers are
-still supported via feature flag `partial_legacy`. Examples can be
-find in `examples/partials.rs`.
-
 #### WebAssembly compatible
 
 You can use this handlebars implementation in your rust project that
