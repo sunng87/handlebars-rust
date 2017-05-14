@@ -119,13 +119,9 @@ compiles to WebAssembly. Checkout my fork of
   javascript version. Specifically, mustache list iteration and null
   check doesn't work. But you can use `#each` and `#if` for same
   behavior.
-* You will need to make your data `ToJson`-able, so we can render
-  it. If you were on nightly channel, we have [a syntax
-  extension](https://github.com/sunng87/tojson_macros) to generate
-  default `ToJson` implementation for you. If you use
-  [serde](https://github.com/serde-rs/serde), you can enable
-  `serde_type` feature of handlebars-rust and add `#derive[Serialize]`
-  for your types.
+* You will need to make your data `Serializable` on serde. We don't
+  actually serialize data into JSON string or similar. However, we use
+  JSON data type system in template render process.
 
 ### Handlebars-js features supported in Handlebars-rust
 
