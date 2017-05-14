@@ -1,6 +1,7 @@
 use helpers::HelperDef;
 use registry::Registry;
-use render::{Renderable, RenderContext, RenderError, Helper};
+use render::{Renderable, RenderContext, Helper};
+use error::RenderError;
 
 #[derive(Clone, Copy)]
 pub struct RawHelper;
@@ -25,7 +26,10 @@ mod test {
     #[test]
     fn test_raw_helper() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", "a{{{{raw}}}}{{content}}{{else}}hello{{{{/raw}}}}").is_ok());
+        assert!(handlebars
+                    .register_template_string("t0",
+                                              "a{{{{raw}}}}{{content}}{{else}}hello{{{{/raw}}}}")
+                    .is_ok());
 
         let r = handlebars.render("t0", &());
         assert_eq!(r.ok().unwrap(), "a{{content}}{{else}}hello");

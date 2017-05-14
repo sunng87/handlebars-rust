@@ -118,7 +118,8 @@ impl_rdp! {
         path_key = { ["["] ~ (["\""]|["'"])? ~ path_raw_id ~ (["\""]|["'"])? ~ ["]"] }
         path_idx = { ["["] ~ path_num_id ~ ["]"]}
         path_item = _{ path_up|path_var }
-        path = _{ ["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi }
+        path_current = { ["this"] | ["."] }
+        path = _{ (path_current ~ eoi) | (["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi)  }
     }
 }
 
@@ -240,7 +241,8 @@ impl_rdp! {
         path_key = { ["["] ~ (["\""]|["'"])? ~ path_raw_id ~ (["\""]|["'"])? ~ ["]"] }
         path_idx = { ["["] ~ path_num_id ~ ["]"]}
         path_item = _{ path_up|path_var }
-        path = _{ ["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi }
+        path_current = { ["this"] | ["."] }
+        path = _{ (path_current ~ eoi) | (["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi)  }
     }
 }
 

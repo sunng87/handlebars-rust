@@ -1,7 +1,8 @@
 use helpers::HelperDef;
 use registry::Registry;
 use context::JsonTruthy;
-use render::{Renderable, RenderContext, RenderError, Helper};
+use render::{Renderable, RenderContext, Helper};
+use error::RenderError;
 
 #[derive(Clone, Copy)]
 pub struct IfHelper {

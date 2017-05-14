@@ -1,9 +1,7 @@
 use std::collections::{HashMap, BTreeMap, VecDeque};
-use std::error;
 use std::fmt;
 use std::rc::Rc;
 use std::io::Write;
-use std::io::Error as IOError;
 
 use serde::Serialize;
 use serde_json::value::{Value as Json};
@@ -15,57 +13,9 @@ use registry::Registry;
 use context::{Context, JsonRender};
 use helpers::HelperDef;
 use support::str::StringWriter;
+use error::RenderError;
 #[cfg(not(feature="partial_legacy"))]
 use partial;
-
-/// Error when rendering data on template.
-#[derive(Debug, Clone)]
-pub struct RenderError {
-    pub desc: String,
-    pub template_name: Option<String>,
-    pub line_no: Option<usize>,
-    pub column_no: Option<usize>,
-}
-
-impl fmt::Display for RenderError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match (self.line_no, self.column_no) {
-            (Some(line), Some(col)) => {
-                write!(f,
-                       "Error rendering \"{}\" line {}, col {}: {}",
-                       self.template_name.as_ref().unwrap_or(&"Unnamed template".to_owned()),
-                       line,
-                       col,
-                       self.desc)
-            }
-            _ => write!(f, "{}", self.desc),
-        }
-
-    }
-}
-
-impl error::Error for RenderError {
-    fn description(&self) -> &str {
-        &self.desc[..]
-    }
-}
-
-impl From<IOError> for RenderError {
-    fn from(_: IOError) -> RenderError {
-        RenderError::new("IO Error")
-    }
-}
-
-impl RenderError {
-    pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
-        RenderError {
-            desc: desc.as_ref().to_owned(),
-            template_name: None,
-            line_no: None,
-            column_no: None,
-        }
-    }
-}
 
 /// The context of a render call
 ///
@@ -219,15 +169,15 @@ impl<'a> RenderContext<'a> {
         self.block_context.pop_front();
     }
 
-    pub fn evaluate_in_block_context(&self, local_path: &str) -> Option<&Json> {
+    pub fn evaluate_in_block_context(&self, local_path: &str) -> Result<Option<&Json>, RenderError> {
         for bc in self.block_context.iter() {
-            let v = bc.navigate(".", &self.local_path_root, local_path);
+            let v = bc.navigate(".", &self.local_path_root, local_path)?;
             if !v.is_null() {
-                return Some(v);
+                return Ok(Some(v));
             }
         }
 
-        None
+        Ok(None)
     }
 
     pub fn is_current_template(&self, p: &str) -> bool {
@@ -557,19 +507,24 @@ impl Parameter {
                   -> Result<ContextJson, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
-                Ok(rc.get_local_var(&name).map_or_else(|| {
-                                                           ContextJson {
-                                                               path: Some(name.to_owned()),
-                                                               value: rc.evaluate_in_block_context(name).map_or_else(|| {rc.context().navigate(rc.get_path(), rc.get_local_path_root(), name).clone()}, |v| v.clone()),
-                                                           }
-
-                                                       },
-                                                       |v| {
-                                                           ContextJson {
-                                                               path: None,
-                                                               value: v.clone(),
-                                                           }
-                                                       }))
+                let local_value = rc.get_local_var(&name);
+                if let Some(value) = local_value {
+                    Ok(ContextJson {
+                        path: Some(name.to_owned()),
+                        value: value.clone(),
+                    })
+                } else {
+                    let block_context_value = rc.evaluate_in_block_context(name)?;
+                    let value = if block_context_value.is_none() {
+                        rc.context().navigate(rc.get_path(), rc.get_local_path_root(), name)?
+                    } else {
+                        block_context_value.unwrap()
+                    };
+                    Ok(ContextJson {
+                        path: Some(name.to_owned()),
+                        value: value.clone(),
+                    })
+                }
             }
             &Parameter::Literal(ref j) => {
                 Ok(ContextJson {

@@ -3,7 +3,57 @@ use std::error::Error;
 use std::fmt;
 
 use template::Parameter;
-use render::RenderError;
+
+/// Error when rendering data on template.
+#[derive(Debug, Clone)]
+pub struct RenderError {
+    pub desc: String,
+    pub template_name: Option<String>,
+    pub line_no: Option<usize>,
+    pub column_no: Option<usize>,
+}
+
+impl fmt::Display for RenderError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match (self.line_no, self.column_no) {
+            (Some(line), Some(col)) => {
+                write!(f,
+                       "Error rendering \"{}\" line {}, col {}: {}",
+                       self.template_name
+                           .as_ref()
+                           .unwrap_or(&"Unnamed template".to_owned()),
+                       line,
+                       col,
+                       self.desc)
+            }
+            _ => write!(f, "{}", self.desc),
+        }
+
+    }
+}
+
+impl Error for RenderError {
+    fn description(&self) -> &str {
+        &self.desc[..]
+    }
+}
+
+impl From<IOError> for RenderError {
+    fn from(_: IOError) -> RenderError {
+        RenderError::new("IO Error")
+    }
+}
+
+impl RenderError {
+    pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
+        RenderError {
+            desc: desc.as_ref().to_owned(),
+            template_name: None,
+            line_no: None,
+            column_no: None,
+        }
+    }
+}
 
 quick_error! {
 /// Template parsing error
@@ -77,7 +127,9 @@ impl fmt::Display for TemplateError {
             (Some(line), Some(col)) => {
                 write!(f,
                        "Template \"{}\" line {}, col {}: {}",
-                       self.template_name.as_ref().unwrap_or(&"Unnamed template".to_owned()),
+                       self.template_name
+                           .as_ref()
+                           .unwrap_or(&"Unnamed template".to_owned()),
                        line,
                        col,
                        self.reason)
