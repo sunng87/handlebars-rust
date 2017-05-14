@@ -22,18 +22,18 @@ use partial;
 /// this context stores information of a render and a writer where generated
 /// content is written to.
 ///
-pub struct RenderContext<'a, 'b> {
+pub struct RenderContext<'a> {
     partials: HashMap<String, Template>,
     path: String,
     local_path_root: VecDeque<String>,
     local_variables: HashMap<String, Json>,
-    local_helpers: &'b mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+    local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
     default_var: Json,
     block_context: VecDeque<Context>,
     /// the context
-    context: &'a mut Context,
+    context: Context,
     /// the `Write` where page is generated
-    pub writer: &'b mut Write,
+    pub writer: &'a mut Write,
     /// current template name
     pub current_template: Option<String>,
     /// root template name
@@ -41,12 +41,12 @@ pub struct RenderContext<'a, 'b> {
     pub disable_escape: bool,
 }
 
-impl<'a, 'b> RenderContext<'a, 'b> {
+impl<'a> RenderContext<'a> {
     /// Create a render context from a `Write`
-    pub fn new(ctx: &'a mut Context,
-               local_helpers: &'b mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
-               w: &'b mut Write)
-               -> RenderContext<'a, 'b> {
+    pub fn new(ctx: Context,
+               local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+               w: &'a mut Write)
+               -> RenderContext<'a> {
         RenderContext {
             partials: HashMap::new(),
             path: ".".to_string(),
@@ -76,15 +76,15 @@ impl<'a, 'b> RenderContext<'a, 'b> {
 
             disable_escape: self.disable_escape,
             local_helpers: self.local_helpers,
-            context: self.context,
+            context: self.context.clone(),
             writer: self.writer,
         }
     }
 
-    pub fn derive_partial_context(&mut self, partial_context: &'a mut Context) -> RenderContext {
+    pub fn with_context(&mut self, ctx: Context) -> RenderContext {
         RenderContext {
             partials: self.partials.clone(),
-            path: ".".to_string(),
+            path: ".".to_owned(),
             local_path_root: VecDeque::new(),
             local_variables: self.local_variables.clone(),
             current_template: self.current_template.clone(),
@@ -94,7 +94,7 @@ impl<'a, 'b> RenderContext<'a, 'b> {
 
             disable_escape: self.disable_escape,
             local_helpers: self.local_helpers,
-            context: partial_context,
+            context: ctx,
             writer: self.writer,
         }
     }
@@ -206,11 +206,11 @@ impl<'a, 'b> RenderContext<'a, 'b> {
     }
 
     pub fn context(&self) -> &Context {
-        self.context
+        &self.context
     }
 
     pub fn context_mut(&mut self) -> &mut Context {
-        self.context
+        &mut self.context
     }
 
     pub fn register_local_helper(&mut self,
@@ -233,7 +233,7 @@ impl<'a, 'b> RenderContext<'a, 'b> {
     }
 }
 
-impl<'a, 'b> fmt::Debug for RenderContext<'a, 'b> {
+impl<'a> fmt::Debug for RenderContext<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f,
                "partials: {:?}, path: {:?}, local_variables: {:?}, current_template: {:?}, \
@@ -697,10 +697,10 @@ impl Evaluable for TemplateElement {
 fn test_raw_string() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
-    let mut ctx = Context::null();
+    let ctx = Context::null();
     let mut hlps = HashMap::new();
     {
-        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
         let raw_string = RawString("<h1>hello world</h1>".to_string());
 
         raw_string.render(&r, &mut rc).ok().unwrap();
@@ -716,10 +716,10 @@ fn test_expression() {
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "<p></p>".to_string();
     m.insert("hello".to_string(), value);
-    let mut ctx = Context::wraps(&m);
+    let ctx = Context::wraps(&m);
     {
 
-        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
         let element = Expression(Parameter::Name("hello".into()));
 
         element.render(&r, &mut rc).ok().unwrap();
@@ -736,10 +736,10 @@ fn test_html_expression() {
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "world";
     m.insert("hello".to_string(), value.to_string());
-    let mut ctx = Context::wraps(&m);
+    let ctx = Context::wraps(&m);
     {
 
-        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
         let element = HTMLExpression(Parameter::Name("hello".into()));
         element.render(&r, &mut rc).ok().unwrap();
     }
@@ -755,12 +755,12 @@ fn test_template() {
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "world".to_string();
     m.insert("hello".to_string(), value);
-    let mut ctx = Context::wraps(&m);
+    let ctx = Context::wraps(&m);
 
     {
 
 
-        let mut rc = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
         let mut elements: Vec<TemplateElement> = Vec::new();
 
         let e1 = RawString("<h1>".to_string());
@@ -790,10 +790,10 @@ fn test_template() {
 fn test_render_context_promotion_and_demotion() {
     use context::to_json;
     let mut sw = StringWriter::new();
-    let mut ctx = Context::null();
+    let ctx = Context::null();
     let mut hlps = HashMap::new();
 
-    let mut render_context = RenderContext::new(&mut ctx, &mut hlps, &mut sw);
+    let mut render_context = RenderContext::new(ctx, &mut hlps, &mut sw);
 
     render_context.set_local_var("@index".to_string(), to_json(&0));
 

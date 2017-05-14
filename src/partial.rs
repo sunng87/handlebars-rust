@@ -41,8 +41,8 @@ pub fn expand_partial(d: &Directive,
 
             let hash_ctx =
                 BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
-            let mut partial_context = local_rc.context().extend(&hash_ctx);
-            let mut partial_rc = local_rc.derive_partial_context(&mut partial_context);
+            let partial_context = local_rc.context().extend(&hash_ctx);
+            let mut partial_rc = local_rc.with_context(partial_context);
             t.render(r, &mut partial_rc)
         }
         None => Ok(()),
