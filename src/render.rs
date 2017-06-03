@@ -14,7 +14,6 @@ use context::{Context, JsonRender};
 use helpers::HelperDef;
 use support::str::StringWriter;
 use error::RenderError;
-#[cfg(not(feature="partial_legacy"))]
 use partial;
 
 /// The context of a render call
@@ -670,7 +669,6 @@ impl Renderable for TemplateElement {
             }
             DirectiveExpression(_) |
             DirectiveBlock(_) => self.eval(registry, rc),
-            #[cfg(not(feature="partial_legacy"))]
             PartialExpression(ref dt) |
             PartialBlock(ref dt) => {
                 Directive::from_template(dt, registry, rc)
@@ -886,7 +884,6 @@ fn test_render_error_line_no() {
 }
 
 #[test]
-#[cfg(not(feature="partial_legacy"))]
 fn test_partial_failback_render() {
     let mut r = Registry::new();
 

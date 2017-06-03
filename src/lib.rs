@@ -311,5 +311,4 @@ mod helpers;
 mod context;
 mod support;
 mod directives;
-#[cfg(not(feature="partial_legacy"))]
 mod partial;
