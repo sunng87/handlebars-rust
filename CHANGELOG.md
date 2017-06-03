@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.27.0](https://github.com/sunng87/handlebars-rust/compare/0.26.2...0.27.0) - 2017-06-03
+
+* [Changed] `partial_legacy` is dropped
+* [Changed] `context.navigate` now returns a `Result<&Json,RenderError>`. Error is raised when
+  given path cannot be not parsed.
+* [Changed] removed `context::extend` because it's like to ruin your context outside the helper.
+* [Changed] `RenderContext` now owns `Context`, you can host a new Context for particular block
+  helper.
+* [Changed] Added some convenience functions to `RenderContext`. However, `RenderContext` may
+  still change in future release.
+
 ## [0.26.1](https://github.com/sunng87/handlebars-rust/compare/0.25.3...0.26.1) - 2017-04-23
 
 * [Changed] Updated to Serde 1.0
