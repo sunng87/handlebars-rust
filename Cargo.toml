@@ -27,11 +27,6 @@ serde_json = "^1.0.0"
 regex = "^0.2.0"
 lazy_static = "^0.2.2"
 
-[features]
-default = ["partial4"]
-partial4 = []
-partial_legacy = []
-
 [dev-dependencies]
 env_logger = "^0.4.0"
 maplit = "^0.1.3"

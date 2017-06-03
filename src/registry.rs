@@ -74,24 +74,6 @@ impl Registry {
         r.setup_builtins()
     }
 
-    #[cfg(feature="partial_legacy")]
-    fn setup_builtins(mut self) -> Registry {
-        self.register_helper("if", Box::new(helpers::IF_HELPER));
-        self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
-        self.register_helper("each", Box::new(helpers::EACH_HELPER));
-        self.register_helper("with", Box::new(helpers::WITH_HELPER));
-        self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
-        self.register_helper("raw", Box::new(helpers::RAW_HELPER));
-        self.register_helper(">", Box::new(helpers::INCLUDE_HELPER));
-        self.register_helper("block", Box::new(helpers::BLOCK_HELPER));
-        self.register_helper("partial", Box::new(helpers::PARTIAL_HELPER));
-        self.register_helper("log", Box::new(helpers::LOG_HELPER));
-
-        self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
-        self
-    }
-
-    #[cfg(not(feature = "partial_legacy"))]
     fn setup_builtins(mut self) -> Registry {
         self.register_helper("if", Box::new(helpers::IF_HELPER));
         self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
@@ -146,8 +128,8 @@ impl Registry {
                                      -> Result<(), TemplateFileError>
         where P: AsRef<Path>
     {
-        let mut file =
-            try!(File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
+        let mut file = try!(File::open(tpl_path)
+                                .map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         self.register_template_source(name, &mut file)
     }
 
@@ -315,8 +297,6 @@ mod test {
     use helpers::HelperDef;
     use support::str::StringWriter;
     use error::RenderError;
-    #[cfg(feature = "partial_legacy")]
-    use error::TemplateRenderError;
 
     #[derive(Clone, Copy)]
     struct DummyHelper;
@@ -352,10 +332,6 @@ mod test {
         r.register_helper("dummy", Box::new(DUMMY_HELPER));
 
         // built-in helpers plus 1
-        #[cfg(feature = "partial_legacy")]
-        assert_eq!(r.helpers.len(), 10 + 1);
-
-        #[cfg(not(feature = "partial_legacy"))]
         assert_eq!(r.helpers.len(), 7 + 1);
     }
 
@@ -392,44 +368,5 @@ mod test {
         r.unregister_escape_fn();
 
         assert_eq!("&quot;&lt;&gt;&amp;", r.render("test", &input).unwrap());
-    }
-
-    #[test]
-    #[cfg(feature="partial_legacy")]
-    fn test_template_render() {
-        let mut r = Registry::new();
-
-        assert!(r.register_template_string("index", "<h1></h1>").is_ok());
-
-        assert_eq!("<h1></h1>".to_string(),
-                   r.template_render("{{> index}}", &{}).unwrap());
-
-        assert_eq!("hello world".to_string(),
-                   r.template_render("hello {{this}}", &"world".to_string())
-                       .unwrap());
-
-        let mut sw = StringWriter::new();
-
-        {
-            r.template_renderw("{{> index}}", &{}, &mut sw).unwrap();
-        }
-
-        assert_eq!("<h1></h1>".to_string(), sw.to_string());
-
-        // fail for template error
-        match r.template_render("{{ hello", &{}).unwrap_err() {
-            TemplateRenderError::TemplateError(_) => {}
-            _ => {
-                panic!();
-            }
-        }
-
-        // fail to render error
-        match r.template_render("{{> notfound}}", &{}).unwrap_err() {
-            TemplateRenderError::RenderError(_) => {}
-            _ => {
-                panic!();
-            }
-        }
     }
 }

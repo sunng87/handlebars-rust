@@ -1,129 +1,5 @@
 use pest::prelude::*;
 
-#[cfg(feature="partial_legacy")]
-impl_rdp! {
-    grammar! {
-        whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
-
-        raw_text = @{ ( ["\\{{{{"]? ~ ["\\{{"]? ~ !["{{"] ~ any )+ }
-        raw_block_text = @{ ( !["{{{{"] ~ any )* }
-
-// Note: this is not full and strict json literal definition, just for tokenize string,
-// array and object types which may contains whitespace. We will use a real json parser
-// for real json processing
-        literal = { string_literal |
-                    array_literal |
-                    object_literal |
-                    number_literal |
-                    null_literal |
-                    boolean_literal }
-
-        null_literal = { ["null"] }
-        boolean_literal = { ["true"]|["false"] }
-        number_literal = @{ ["-"]? ~ ['0'..'9']+ ~ ["."]? ~ ['0'..'9']* ~ (["E"] ~ ["-"]? ~ ['0'..'9']+)? }
-        string_literal = @{ ["\""] ~ (!["\""] ~ (["\\\""] | any))* ~ ["\""] }
-        array_literal = { ["["] ~ literal? ~ ([","] ~ literal)* ~ ["]"] }
-        object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)? ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
-
-// FIXME: a[0], a["b]
-        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["-"]|["<"]|[">"] }
-        path_char = _{ ["/"] }
-
-        identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
-        reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])* ~ ["-"]* ~ reference* }
-        name = _{ subexpression | reference }
-
-        param = { !["as"] ~ (literal | reference | subexpression) }
-        hash = { identifier ~ ["="] ~ param }
-        block_param = { ["as"] ~ ["|"] ~ identifier ~ identifier? ~ ["|"]}
-        exp_line = _{ identifier ~ (hash|param)* ~ block_param?}
-        partial_exp_line = _{ name ~ (hash|param)* }
-
-        subexpression = { ["("] ~ name ~ (hash|param)* ~ [")"] }
-
-        pre_whitespace_omitter = { ["~"] }
-        pro_whitespace_omitter = { ["~"] }
-        escape = { ["\\"] }
-
-        expression = { !escape ~ !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ name ~
-                        pro_whitespace_omitter? ~ ["}}"] }
-
-        html_expression = { !escape ~ ["{{{"] ~ pre_whitespace_omitter? ~ name ~
-                                      pro_whitespace_omitter? ~ ["}}}"] }
-
-        helper_expression = { !escape ~ !invert_tag ~ ["{{"] ~ pre_whitespace_omitter? ~ exp_line ~
-                               pro_whitespace_omitter? ~ ["}}"] }
-
-        directive_expression = {  !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
-                                   pro_whitespace_omitter? ~ ["}}"] }
-        partial_expression = {  !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line ~
-                                 pro_whitespace_omitter? ~ ["}}"] }
-
-        invert_tag_item = { ["else"]|["^"] }
-        invert_tag = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ invert_tag_item
-                                ~ pro_whitespace_omitter? ~ ["}}"]}
-
-        helper_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ exp_line ~
-                                        pro_whitespace_omitter? ~ ["}}"] }
-        helper_block_end = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
-                                      pro_whitespace_omitter? ~ ["}}"] }
-        helper_block = _{ helper_block_start ~ template ~
-                         (invert_tag ~ template)? ~
-                          helper_block_end }
-
-        directive_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ ["*"] ~ exp_line ~
-                                           pro_whitespace_omitter? ~ ["}}"] }
-        directive_block_end = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
-                                         pro_whitespace_omitter? ~ ["}}"] }
-        directive_block = _{ directive_block_start ~ template ~
-                             directive_block_end }
-
-        partial_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ partial_exp_line ~
-                                 pro_whitespace_omitter? ~ ["}}"] }
-        partial_block_end = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
-                               pro_whitespace_omitter? ~ ["}}"] }
-        partial_block = _{ partial_block_start ~ template ~ partial_block_end }
-
-        raw_block_start = { !escape ~ ["{{{{"] ~ pre_whitespace_omitter? ~ exp_line ~
-                             pro_whitespace_omitter? ~ ["}}}}"] }
-        raw_block_end = { !escape ~ ["{{{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
-                           pro_whitespace_omitter? ~ ["}}}}"] }
-        raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
-
-        hbs_comment = { !escape ~ ["{{!"] ~ (!["}}"] ~ any)* ~ ["}}"] }
-
-        template = { (
-            raw_text |
-            expression |
-            html_expression |
-            helper_expression |
-            helper_block |
-            raw_block |
-            hbs_comment |
-            directive_expression |
-            directive_block )*
-        }
-
-        parameter = _{ param ~ eoi }
-        handlebars = _{ template ~ eoi }
-
-// json path visitor
-        path_ident = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["@"]|["$"]|["<"]|[">"]|["-"]}
-        path_id = { path_ident+ }
-        path_num_id = { ['0'..'9']+ }
-        path_raw_id = { (path_ident|["/"])* }
-        path_sep = _{ ["/"] | ["."] }
-        path_up = { [".."] }
-        path_var = { path_id }
-        path_key = { ["["] ~ (["\""]|["'"])? ~ path_raw_id ~ (["\""]|["'"])? ~ ["]"] }
-        path_idx = { ["["] ~ path_num_id ~ ["]"]}
-        path_item = _{ path_up|path_var }
-        path_current = { ["this"] | ["."] }
-        path = _{ (path_current ~ eoi) | (["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi)  }
-    }
-}
-
-#[cfg(not(feature="partial_legacy"))]
 impl_rdp! {
     grammar! {
         whitespace = _{ [" "]|["\t"]|["\n"]|["\r"] }
@@ -307,7 +183,10 @@ fn test_param() {
 
 #[test]
 fn test_hash() {
-    let s = vec!["hello=world", "hello=\"world\"", "hello=(world)", "hello=(world 0)"];
+    let s = vec!["hello=world",
+                 "hello=\"world\"",
+                 "hello=(world)",
+                 "hello=(world 0)"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.hash());
@@ -517,7 +396,10 @@ fn test_directive_block() {
 
 #[test]
 fn test_partial_expression() {
-    let s = vec!["{{> hello}}", "{{> (hello)}}", "{{~> hello a}}", "{{> hello a=1}}"];
+    let s = vec!["{{> hello}}",
+                 "{{> (hello)}}",
+                 "{{~> hello a}}",
+                 "{{> hello a=1}}"];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.partial_expression());
