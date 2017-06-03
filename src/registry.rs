@@ -251,10 +251,10 @@ impl Registry {
         self.get_template(&name.to_string())
             .ok_or(RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
-                          let mut ctx = Context::wraps(data);
+                          let ctx = Context::wraps(data);
                           let mut local_helpers = HashMap::new();
                           let mut render_context =
-                              RenderContext::new(&mut ctx, &mut local_helpers, writer);
+                              RenderContext::new(ctx, &mut local_helpers, writer);
                           render_context.root_template = t.name.clone();
                           t.render(self, &mut render_context)
                       })
@@ -283,9 +283,9 @@ impl Registry {
         where T: Serialize
     {
         let tpl = try!(Template::compile(template_string));
-        let mut ctx = Context::wraps(data);
+        let ctx = Context::wraps(data);
         let mut local_helpers = HashMap::new();
-        let mut render_context = RenderContext::new(&mut ctx, &mut local_helpers, writer);
+        let mut render_context = RenderContext::new(ctx, &mut local_helpers, writer);
         tpl.render(self, &mut render_context)
             .map_err(TemplateRenderError::from)
     }

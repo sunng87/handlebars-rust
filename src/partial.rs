@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use registry::Registry;
+use context::{Context, merge_json};
 use render::{RenderContext, Directive, Evaluable, Renderable};
 use error::RenderError;
 
@@ -40,19 +41,15 @@ pub fn expand_partial(d: &Directive,
             }
 
             let hash = d.hash();
-            let r = if hash.is_empty() {
+            if hash.is_empty() {
                 t.render(r, &mut local_rc)
             } else {
                 let hash_ctx =
-                    BTreeMap::from_iter(hash.iter().map(|(k, v)| (k.clone(), v.value().clone())));
-                {
-                    let mut ctx_ref = local_rc.context_mut();
-                    *ctx_ref = ctx_ref.extend(&hash_ctx);
-                }
-                t.render(r, &mut local_rc)
-            };
-
-            r
+                    BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
+                let partial_context = merge_json(local_rc.evaluate(".")?, &hash_ctx);
+                let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context));
+                t.render(r, &mut partial_rc)
+            }
         }
         None => Ok(()),
     }
@@ -128,5 +125,29 @@ mod test {
 
         let r0 = handlebars.render("template", &true);
         assert_eq!(r0.ok().unwrap(), "one--- two ---three--- two ---");
+    }
+
+    #[test]
+    fn test_hash_context_outscope() {
+        let main_template = "In: {{> p a=2}} Out: {{a}}";
+        let p_partial = "{{a}}";
+
+        let mut handlebars = Registry::new();
+        assert!(handlebars.register_template_string("template", main_template).is_ok());
+        assert!(handlebars.register_template_string("p", p_partial).is_ok());
+
+        let r0 = handlebars.render("template", &true);
+        assert_eq!(r0.ok().unwrap(), "In: 2 Out: ");
+    }
+
+    #[test]
+    fn test_nested_partial_scope() {
+        let t = "{{#*inline \"pp\"}}{{a}} {{b}}{{/inline}}{{#each c}}{{> pp a=2}}{{/each}}";
+        let data = json!({"c": [{"b": true}, {"b": false}]});
+
+        let mut handlebars = Registry::new();
+        assert!(handlebars.register_template_string("t", t).is_ok());
+        let r0 = handlebars.render("t", &data);
+        assert_eq!(r0.ok().unwrap(), "2 true2 false");
     }
 }
