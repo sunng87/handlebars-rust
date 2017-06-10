@@ -2,6 +2,8 @@ use std::io::Error as IOError;
 use std::error::Error;
 use std::fmt;
 
+use serde_json::error::Error as SerdeError;
+
 use template::Parameter;
 
 /// Error when rendering data on template.
@@ -39,8 +41,14 @@ impl Error for RenderError {
 }
 
 impl From<IOError> for RenderError {
-    fn from(_: IOError) -> RenderError {
-        RenderError::new("IO Error")
+    fn from(e: IOError) -> RenderError {
+        RenderError::new(e.description())
+    }
+}
+
+impl From<SerdeError> for RenderError {
+    fn from(e: SerdeError) -> RenderError {
+        RenderError::new(e.description())
     }
 }
 

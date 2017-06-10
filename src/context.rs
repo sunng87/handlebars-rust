@@ -121,8 +121,8 @@ impl Context {
     }
 
     /// Create a context with given data
-    pub fn wraps<T: Serialize>(e: &T) -> Context {
-        Context { data: to_json(e) }
+    pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
+        to_json(e).map(|d| Context { data: d })
     }
 
     /// Navigate the context with base path and relative path
@@ -197,10 +197,10 @@ impl JsonRender for Json {
     }
 }
 
-pub fn to_json<T>(src: &T) -> Json
+pub fn to_json<T>(src: &T) -> Result<Json, RenderError>
     where T: Serialize
 {
-    to_value(src).unwrap_or(Json::Null)
+    to_value(src).map_err(RenderError::from)
 }
 
 pub fn as_string(src: &Json) -> Option<&str> {

@@ -14,14 +14,17 @@ pub struct EachHelper;
 impl HelperDef for EachHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let value =
-            try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
+            try!(h.param(0)
+                     .ok_or_else(|| RenderError::new("Param not found for helper \"each\"")));
 
         let template = h.template();
 
         match template {
             Some(t) => {
                 rc.promote_local_vars();
-                let local_path_root = value.path_root().map(|p| format!("{}/{}", rc.get_path(), p));
+                let local_path_root = value
+                    .path_root()
+                    .map(|p| format!("{}/{}", rc.get_path(), p));
 
                 debug!("each value {:?}", value.value());
                 let rendered = match (value.value().is_truthy(), value.value()) {
@@ -33,9 +36,9 @@ impl HelperDef for EachHelper {
                                 local_rc.push_local_path_root(p.clone());
                             }
 
-                            local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize)));
-                            local_rc.set_local_var("@last".to_string(), to_json(&(i == len - 1)));
-                            local_rc.set_local_var("@index".to_string(), to_json(&i));
+                            local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize))?);
+                            local_rc.set_local_var("@last".to_string(), to_json(&(i == len - 1))?);
+                            local_rc.set_local_var("@index".to_string(), to_json(&i)?);
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
@@ -46,8 +49,8 @@ impl HelperDef for EachHelper {
 
                             if let Some(block_param) = h.block_param() {
                                 let mut map = BTreeMap::new();
-                                map.insert(block_param.to_string(), to_json(&list[i]));
-                                local_rc.push_block_context(&map);
+                                map.insert(block_param.to_string(), to_json(&list[i])?);
+                                local_rc.push_block_context(&map)?;
                             }
 
                             try!(t.render(r, &mut local_rc));
@@ -69,12 +72,12 @@ impl HelperDef for EachHelper {
                             if let Some(ref p) = local_path_root {
                                 local_rc.push_local_path_root(p.clone());
                             }
-                            local_rc.set_local_var("@first".to_string(), to_json(&first));
+                            local_rc.set_local_var("@first".to_string(), to_json(&first)?);
                             if first {
                                 first = false;
                             }
 
-                            local_rc.set_local_var("@key".to_string(), to_json(k));
+                            local_rc.set_local_var("@key".to_string(), to_json(k)?);
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
@@ -84,9 +87,9 @@ impl HelperDef for EachHelper {
 
                             if let Some((bp_key, bp_val)) = h.block_param_pair() {
                                 let mut map = BTreeMap::new();
-                                map.insert(bp_key.to_string(), to_json(k));
-                                map.insert(bp_val.to_string(), to_json(obj.get(k).unwrap()));
-                                local_rc.push_block_context(&map);
+                                map.insert(bp_key.to_string(), to_json(k)?);
+                                map.insert(bp_val.to_string(), to_json(obj.get(k).unwrap())?);
+                                local_rc.push_block_context(&map)?;
                             }
 
                             try!(t.render(r, &mut local_rc));
@@ -163,8 +166,9 @@ mod test {
         // previously, to access the parent in an each block,
         // a user would need to specify ../../b, as the path
         // that is computed includes the array index: ./a.c.[0]
-        assert!(handlebars.register_template_string("t0",
-                                                    "{{#each a.c}} d={{d}} b={{../a.a}} {{/each}}")
+        assert!(handlebars
+                    .register_template_string("t0",
+                                              "{{#each a.c}} d={{d}} b={{../a.a}} {{/each}}")
                     .is_ok());
 
         let r1 = handlebars.render("t0", &data);
@@ -202,7 +206,8 @@ mod test {
     #[test]
     fn test_nested_array() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", "{{#each this.[0]}}{{this}}{{/each}}")
+        assert!(handlebars
+                    .register_template_string("t0", "{{#each this.[0]}}{{this}}{{/each}}")
                     .is_ok());
 
         let r0 = handlebars.render("t0", &(vec![vec![1, 2, 3]]));
@@ -213,25 +218,27 @@ mod test {
     #[test]
     fn test_empty_key() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0",
-                                                    "{{#each this}}{{@key}}-{{value}}\n{{/each}}")
+        assert!(handlebars
+                    .register_template_string("t0",
+                                              "{{#each this}}{{@key}}-{{value}}\n{{/each}}")
                     .is_ok());
 
-        let r0 = handlebars.render("t0",
-                                   &({
-                                         let mut rv = BTreeMap::new();
-                                         rv.insert("foo".to_owned(), {
+        let r0 = handlebars
+            .render("t0",
+                    &({
+                         let mut rv = BTreeMap::new();
+                         rv.insert("foo".to_owned(), {
                     let mut rv = BTreeMap::new();
                     rv.insert("value".to_owned(), "bar".to_owned());
                     rv
                 });
-                                         rv.insert("".to_owned(), {
+                         rv.insert("".to_owned(), {
                     let mut rv = BTreeMap::new();
                     rv.insert("value".to_owned(), "baz".to_owned());
                     rv
                 });
-                                         rv
-                                     }))
+                         rv
+                     }))
             .unwrap();
 
         let mut r0_sp: Vec<_> = r0.split('\n').collect();
@@ -243,7 +250,8 @@ mod test {
     #[test]
     fn test_each_else() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", "{{#each a}}1{{else}}empty{{/each}}")
+        assert!(handlebars
+                    .register_template_string("t0", "{{#each a}}1{{else}}empty{{/each}}")
                     .is_ok());
         let m1 = btreemap! {
             "a".to_string() => Vec::<String>::new(),
@@ -261,7 +269,8 @@ mod test {
     #[test]
     fn test_block_param() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", "{{#each a as |i|}}{{i}}{{/each}}")
+        assert!(handlebars
+                    .register_template_string("t0", "{{#each a as |i|}}{{i}}{{/each}}")
                     .is_ok());
         let m1 = btreemap! {
             "a".to_string() => vec![1,2,3,4,5]

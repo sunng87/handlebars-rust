@@ -170,10 +170,11 @@ impl<'a> RenderContext<'a> {
         self.writer
     }
 
-    pub fn push_block_context<T>(&mut self, ctx: &T)
+    pub fn push_block_context<T>(&mut self, ctx: &T) -> Result<(), RenderError>
         where T: Serialize
     {
-        self.block_context.push_front(Context::wraps(ctx));
+        let r = self.block_context.push_front(Context::wraps(ctx)?);
+        Ok(r)
     }
 
     pub fn pop_block_context(&mut self) {
