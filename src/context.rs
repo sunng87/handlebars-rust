@@ -122,7 +122,9 @@ impl Context {
 
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
-        to_json(e).map(|d| Context { data: d })
+        to_value(e)
+            .map_err(RenderError::from)
+            .map(|d| Context { data: d })
     }
 
     /// Navigate the context with base path and relative path
@@ -197,10 +199,10 @@ impl JsonRender for Json {
     }
 }
 
-pub fn to_json<T>(src: &T) -> Result<Json, RenderError>
+pub fn to_json<T>(src: &T) -> Json
     where T: Serialize
 {
-    to_value(src).map_err(RenderError::from)
+    to_value(src).unwrap_or_default()
 }
 
 pub fn as_string(src: &Json) -> Option<&str> {
@@ -251,7 +253,7 @@ mod test {
     #[test]
     fn test_render() {
         let v = "hello";
-        let ctx = Context::wraps(&v.to_string());
+        let ctx = Context::wraps(&v.to_string()).unwrap();
         assert_eq!(ctx.navigate(".", &VecDeque::new(), "this")
                        .unwrap()
                        .render(),
@@ -272,7 +274,7 @@ mod test {
             titles: vec!["programmer".to_string(), "cartographier".to_string()],
         };
 
-        let ctx = Context::wraps(&person);
+        let ctx = Context::wraps(&person).unwrap();
         assert_eq!(ctx.navigate(".", &VecDeque::new(), "./name/../addr/country")
                        .unwrap()
                        .render(),
@@ -291,7 +293,7 @@ mod test {
                    "China".to_string());
 
         let v = true;
-        let ctx2 = Context::wraps(&v);
+        let ctx2 = Context::wraps(&v).unwrap();
         assert_eq!(ctx2.navigate(".", &VecDeque::new(), "this")
                        .unwrap()
                        .render(),
@@ -322,11 +324,11 @@ mod test {
         let mut map_with_this = Map::new();
         map_with_this.insert("this".to_string(), context::to_json(&"hello"));
         map_with_this.insert("age".to_string(), context::to_json(&5usize));
-        let ctx1 = Context::wraps(&map_with_this);
+        let ctx1 = Context::wraps(&map_with_this).unwrap();
 
         let mut map_without_this = Map::new();
         map_without_this.insert("age".to_string(), context::to_json(&4usize));
-        let ctx2 = Context::wraps(&map_without_this);
+        let ctx2 = Context::wraps(&map_without_this).unwrap();
 
         assert_eq!(ctx1.navigate(".", &VecDeque::new(), "this")
                        .unwrap()
@@ -346,7 +348,7 @@ mod test {
             "tag".to_owned() => context::to_json(&"h1")
         };
 
-        let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash));
+        let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
         assert_eq!(ctx_a1
                        .navigate(".", &VecDeque::new(), "age")
                        .unwrap()
@@ -358,7 +360,7 @@ mod test {
                        .render(),
                    "h1".to_owned());
 
-        let ctx_a2 = Context::wraps(&context::merge_json(&context::to_json(&s), &hash));
+        let ctx_a2 = Context::wraps(&context::merge_json(&context::to_json(&s), &hash)).unwrap();
         assert_eq!(ctx_a2
                        .navigate(".", &VecDeque::new(), "this")
                        .unwrap()
@@ -376,7 +378,7 @@ mod test {
         let m = btreemap!{
             "this_name".to_string() => "the_value".to_string()
         };
-        let ctx = Context::wraps(&m);
+        let ctx = Context::wraps(&m).unwrap();
         assert_eq!(ctx.navigate(".", &VecDeque::new(), "this_name")
                        .unwrap()
                        .render(),

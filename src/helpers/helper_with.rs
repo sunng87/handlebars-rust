@@ -35,7 +35,7 @@ impl HelperDef for WithHelper {
 
                 if let Some(block_param) = h.block_param() {
                     let mut map = BTreeMap::new();
-                    map.insert(block_param.to_string(), to_json(param.value())?);
+                    map.insert(block_param.to_string(), to_json(param.value()));
                     local_rc.push_block_context(&map)?;
                 }
             }

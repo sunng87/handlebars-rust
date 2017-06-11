@@ -36,9 +36,9 @@ impl HelperDef for EachHelper {
                                 local_rc.push_local_path_root(p.clone());
                             }
 
-                            local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize))?);
-                            local_rc.set_local_var("@last".to_string(), to_json(&(i == len - 1))?);
-                            local_rc.set_local_var("@index".to_string(), to_json(&i)?);
+                            local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize)));
+                            local_rc.set_local_var("@last".to_string(), to_json(&(i == len - 1)));
+                            local_rc.set_local_var("@index".to_string(), to_json(&i));
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
@@ -49,7 +49,7 @@ impl HelperDef for EachHelper {
 
                             if let Some(block_param) = h.block_param() {
                                 let mut map = BTreeMap::new();
-                                map.insert(block_param.to_string(), to_json(&list[i])?);
+                                map.insert(block_param.to_string(), to_json(&list[i]));
                                 local_rc.push_block_context(&map)?;
                             }
 
@@ -72,12 +72,12 @@ impl HelperDef for EachHelper {
                             if let Some(ref p) = local_path_root {
                                 local_rc.push_local_path_root(p.clone());
                             }
-                            local_rc.set_local_var("@first".to_string(), to_json(&first)?);
+                            local_rc.set_local_var("@first".to_string(), to_json(&first));
                             if first {
                                 first = false;
                             }
 
-                            local_rc.set_local_var("@key".to_string(), to_json(k)?);
+                            local_rc.set_local_var("@key".to_string(), to_json(k));
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
@@ -87,8 +87,8 @@ impl HelperDef for EachHelper {
 
                             if let Some((bp_key, bp_val)) = h.block_param_pair() {
                                 let mut map = BTreeMap::new();
-                                map.insert(bp_key.to_string(), to_json(k)?);
-                                map.insert(bp_val.to_string(), to_json(obj.get(k).unwrap())?);
+                                map.insert(bp_key.to_string(), to_json(k));
+                                map.insert(bp_val.to_string(), to_json(obj.get(k).unwrap()));
                                 local_rc.push_block_context(&map)?;
                             }
 
