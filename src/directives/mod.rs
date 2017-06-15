@@ -55,8 +55,9 @@ pub trait DirectiveDef: Send + Sync {
 
 /// implement DirectiveDef for bare function so we can use function as directive
 impl<F: Send + Sync + for<'b, 'c, 'd, 'e> Fn(&'b Directive, &'c Registry, &'d mut RenderContext)
-                                             -> Result<(), RenderError>> DirectiveDef for F {
-    fn call(&self, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>{
+                            -> Result<(), RenderError>> DirectiveDef
+    for F {
+    fn call(&self, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         (*self)(d, r, rc)
     }
 }
@@ -73,7 +74,9 @@ mod test {
     #[test]
     fn test_register_decorator() {
         let mut handlebars = Registry::new();
-        handlebars.register_template_string("t0", "{{*foo}}".to_string()).unwrap();
+        handlebars
+            .register_template_string("t0", "{{*foo}}".to_string())
+            .unwrap();
 
         let data = btreemap! {
             "hello".to_string() => "world".to_string()
@@ -94,7 +97,8 @@ mod test {
     #[test]
     fn test_update_data_with_decorator() {
         let mut handlebars = Registry::new();
-        handlebars.register_template_string("t0", "{{hello}}{{*foo}}{{hello}}".to_string())
+        handlebars
+            .register_template_string("t0", "{{hello}}{{*foo}}{{hello}}".to_string())
             .unwrap();
 
         let data = btreemap! {
@@ -123,26 +127,29 @@ mod test {
                                                 _: &Registry,
                                                 rc: &mut RenderContext|
                                                 -> Result<(), RenderError> {
-                                          // modify value
-                                          let v = d.param(0)
-                                                   .map(|v| Context::wraps(v.value()))
-                                                   .unwrap_or(Context::null());
-                                          *rc.context_mut() = v;
-                                          Ok(())
-                                      }));
-        handlebars.register_template_string("t1", "{{this}}{{*bar 1}}{{this}}".to_string())
+            // modify value
+            let v = d.param(0)
+                .and_then(|v| Context::wraps(v.value()).ok())
+                .unwrap_or(Context::null());
+            *rc.context_mut() = v;
+            Ok(())
+        }));
+        handlebars
+            .register_template_string("t1", "{{this}}{{*bar 1}}{{this}}".to_string())
             .unwrap();
         assert_eq!(handlebars.render("t1", &data2).ok().unwrap(),
                    "01".to_string());
 
-        handlebars.register_template_string("t2",
-                                            "{{this}}{{*bar \"string_literal\"}}{{this}}"
-                                                .to_string())
+        handlebars
+            .register_template_string("t2",
+                                      "{{this}}{{*bar \"string_literal\"}}{{this}}".to_string())
             .unwrap();
         assert_eq!(handlebars.render("t2", &data2).ok().unwrap(),
                    "0string_literal".to_string());
 
-        handlebars.register_template_string("t3", "{{this}}{{*bar}}{{this}}".to_string()).unwrap();
+        handlebars
+            .register_template_string("t3", "{{this}}{{*bar}}{{this}}".to_string())
+            .unwrap();
         assert_eq!(handlebars.render("t3", &data2).ok().unwrap(),
                    "0".to_string());
     }
@@ -179,7 +186,9 @@ mod test {
                                    rc: &mut RenderContext|
                   -> Result<(), RenderError> {
                 let s = format!("{}{}",
-                                h.param(0).map(|v| v.value()).unwrap_or(&context::to_json(&0)),
+                                h.param(0)
+                                    .map(|v| v.value())
+                                    .unwrap_or(&context::to_json(&0)),
                                 new_unit);
                 try!(rc.writer().write(s.into_bytes().as_ref()));
                 Ok(())

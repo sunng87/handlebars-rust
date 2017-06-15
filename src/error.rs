@@ -2,15 +2,18 @@ use std::io::Error as IOError;
 use std::error::Error;
 use std::fmt;
 
+use serde_json::error::Error as SerdeError;
+
 use template::Parameter;
 
 /// Error when rendering data on template.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RenderError {
     pub desc: String,
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
+    cause: Option<Box<Error>>,
 }
 
 impl fmt::Display for RenderError {
@@ -36,11 +39,21 @@ impl Error for RenderError {
     fn description(&self) -> &str {
         &self.desc[..]
     }
+
+    fn cause(&self) -> Option<&Error> {
+        self.cause.as_ref().map(|e| &**e)
+    }
 }
 
 impl From<IOError> for RenderError {
-    fn from(_: IOError) -> RenderError {
-        RenderError::new("IO Error")
+    fn from(e: IOError) -> RenderError {
+        RenderError::with(e)
+    }
+}
+
+impl From<SerdeError> for RenderError {
+    fn from(e: SerdeError) -> RenderError {
+        RenderError::with(e)
     }
 }
 
@@ -51,7 +64,17 @@ impl RenderError {
             template_name: None,
             line_no: None,
             column_no: None,
+            cause: None,
         }
+    }
+
+    pub fn with<E>(cause: E) -> RenderError
+        where E: Error + 'static
+    {
+        let mut e = RenderError::new(cause.description());
+        e.cause = Some(Box::new(cause));
+
+        e
     }
 }
 

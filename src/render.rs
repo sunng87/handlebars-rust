@@ -170,10 +170,11 @@ impl<'a> RenderContext<'a> {
         self.writer
     }
 
-    pub fn push_block_context<T>(&mut self, ctx: &T)
+    pub fn push_block_context<T>(&mut self, ctx: &T) -> Result<(), RenderError>
         where T: Serialize
     {
-        self.block_context.push_front(Context::wraps(ctx));
+        let r = self.block_context.push_front(Context::wraps(ctx)?);
+        Ok(r)
     }
 
     pub fn pop_block_context(&mut self) {
@@ -721,7 +722,7 @@ fn test_expression() {
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "<p></p>".to_string();
     m.insert("hello".to_string(), value);
-    let ctx = Context::wraps(&m);
+    let ctx = Context::wraps(&m).unwrap();
     {
 
         let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
@@ -741,7 +742,7 @@ fn test_html_expression() {
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "world";
     m.insert("hello".to_string(), value.to_string());
-    let ctx = Context::wraps(&m);
+    let ctx = Context::wraps(&m).unwrap();
     {
 
         let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
@@ -760,7 +761,7 @@ fn test_template() {
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "world".to_string();
     m.insert("hello".to_string(), value);
-    let ctx = Context::wraps(&m);
+    let ctx = Context::wraps(&m).unwrap();
 
     {
 

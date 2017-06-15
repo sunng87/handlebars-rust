@@ -12,7 +12,8 @@ pub struct WithHelper;
 impl HelperDef for WithHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let param =
-            try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"with\"")));
+            try!(h.param(0)
+                     .ok_or_else(|| RenderError::new("Param not found for helper \"with\"")));
 
         rc.promote_local_vars();
 
@@ -35,7 +36,7 @@ impl HelperDef for WithHelper {
                 if let Some(block_param) = h.block_param() {
                     let mut map = BTreeMap::new();
                     map.insert(block_param.to_string(), to_json(param.value()));
-                    local_rc.push_block_context(&map);
+                    local_rc.push_block_context(&map)?;
                 }
             }
 
@@ -96,13 +97,15 @@ mod test {
         };
 
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", "{{#with addr}}{{city}}{{/with}}")
+        assert!(handlebars
+                    .register_template_string("t0", "{{#with addr}}{{city}}{{/with}}")
                     .is_ok());
-        assert!(handlebars.register_template_string("t1",
-                                                    "{{#with notfound}}hello{{else}}world{{/with}}")
+        assert!(handlebars
+                    .register_template_string("t1",
+                                              "{{#with notfound}}hello{{else}}world{{/with}}")
                     .is_ok());
-        assert!(handlebars.register_template_string("t2",
-                                                    "{{#with addr/country}}{{this}}{{/with}}")
+        assert!(handlebars
+                    .register_template_string("t2", "{{#with addr/country}}{{this}}{{/with}}")
                     .is_ok());
 
         let r0 = handlebars.render("t0", &person);
@@ -130,12 +133,14 @@ mod test {
         };
 
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0",
-                                                    "{{#with addr as |a|}}{{a.city}}{{/with}}")
+        assert!(handlebars
+                    .register_template_string("t0",
+                                              "{{#with addr as |a|}}{{a.city}}{{/with}}")
                     .is_ok());
         assert!(handlebars.register_template_string("t1", "{{#with notfound as |c|}}hello{{else}}world{{/with}}").is_ok());
-        assert!(handlebars.register_template_string("t2",
-                                                    "{{#with addr/country as |t|}}{{t}}{{/with}}")
+        assert!(handlebars
+                    .register_template_string("t2",
+                                              "{{#with addr/country as |t|}}{{t}}{{/with}}")
                     .is_ok());
 
         let r0 = handlebars.render("t0", &person);
@@ -194,9 +199,10 @@ mod test {
     #[test]
     fn test_path_up() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0",
-                                                    "{{#with a}}{{#with b}}{{../../d}}{{/with}}{{/with}}")
-                          .is_ok());
+        assert!(handlebars
+                    .register_template_string("t0",
+                                              "{{#with a}}{{#with b}}{{../../d}}{{/with}}{{/with}}")
+                    .is_ok());
         let data = btreemap! {
             "a".to_string() => to_json(&btreemap! {
                 "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
