@@ -20,14 +20,16 @@ impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match (self.line_no, self.column_no) {
             (Some(line), Some(col)) => {
-                write!(f,
-                       "Error rendering \"{}\" line {}, col {}: {}",
-                       self.template_name
-                           .as_ref()
-                           .unwrap_or(&"Unnamed template".to_owned()),
-                       line,
-                       col,
-                       self.desc)
+                write!(
+                    f,
+                    "Error rendering \"{}\" line {}, col {}: {}",
+                    self.template_name.as_ref().unwrap_or(
+                        &"Unnamed template".to_owned(),
+                    ),
+                    line,
+                    col,
+                    self.desc
+                )
             }
             _ => write!(f, "{}", self.desc),
         }
@@ -69,7 +71,8 @@ impl RenderError {
     }
 
     pub fn with<E>(cause: E) -> RenderError
-        where E: Error + 'static
+    where
+        E: Error + 'static,
     {
         let mut e = RenderError::new(cause.description());
         e.cause = Some(Box::new(cause));
@@ -148,14 +151,16 @@ impl fmt::Display for TemplateError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match (self.line_no, self.column_no) {
             (Some(line), Some(col)) => {
-                write!(f,
-                       "Template \"{}\" line {}, col {}: {}",
-                       self.template_name
-                           .as_ref()
-                           .unwrap_or(&"Unnamed template".to_owned()),
-                       line,
-                       col,
-                       self.reason)
+                write!(
+                    f,
+                    "Template \"{}\" line {}, col {}: {}",
+                    self.template_name.as_ref().unwrap_or(
+                        &"Unnamed template".to_owned(),
+                    ),
+                    line,
+                    col,
+                    self.reason
+                )
             }
             _ => write!(f, "{}", self.reason),
         }

@@ -13,7 +13,9 @@ use handlebars::{Handlebars, RenderError, RenderContext, Helper, JsonRender, to_
 // define a custom helper
 fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
     // get parameter from helper or throw an error
-    let param = try!(h.param(0).ok_or(RenderError::new("Param 0 is required for format helper.")));
+    let param = try!(h.param(0).ok_or(RenderError::new(
+        "Param 0 is required for format helper.",
+    )));
     let rendered = format!("{} pts", param.value().render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
     Ok(())
@@ -21,13 +23,12 @@ fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(
 
 // another custom helper
 fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-    let rank = try!(h.param(0)
-                    .and_then(|v| v.value().as_u64())
-                    .ok_or(RenderError::new("Param 0 with u64 type is required for rank helper."))) as usize;
-    let teams =
-        try!(h.param(1)
-              .and_then(|v| v.value().as_array())
-              .ok_or(RenderError::new("Param 1 with array type is required for rank helper")));
+    let rank = try!(h.param(0).and_then(|v| v.value().as_u64()).ok_or(
+        RenderError::new("Param 0 with u64 type is required for rank helper."),
+    )) as usize;
+    let teams = try!(h.param(1).and_then(|v| v.value().as_array()).ok_or(
+        RenderError::new("Param 1 with array type is required for rank helper"),
+    ));
     let total = teams.len();
     if rank == 0 {
         try!(rc.writer.write("champion".as_bytes()));
@@ -54,38 +55,40 @@ pub fn make_data() -> Map<String, Json> {
 
     data.insert("year".to_string(), to_json(&"2015".to_owned()));
 
-    let teams = vec![Team {
-                         name: "Jiangsu Suning".to_string(),
-                         pts: 43u16,
-                     },
-                     Team {
-                         name: "Shanghai SIPG".to_string(),
-                         pts: 39u16,
-                     },
-                     Team {
-                         name: "Hebei CFFC".to_string(),
-                         pts: 27u16,
-                     },
-                     Team {
-                         name: "Guangzhou Evergrand".to_string(),
-                         pts: 22u16,
-                     },
-                     Team {
-                         name: "Shandong Luneng".to_string(),
-                         pts: 12u16,
-                     },
-                     Team {
-                         name: "Beijing Guoan".to_string(),
-                         pts: 7u16,
-                     },
-                     Team {
-                         name: "Hangzhou Greentown".to_string(),
-                         pts: 7u16,
-                     },
-                     Team {
-                         name: "Shanghai Shenhua".to_string(),
-                         pts: 4u16,
-                     }];
+    let teams = vec![
+        Team {
+            name: "Jiangsu Suning".to_string(),
+            pts: 43u16,
+        },
+        Team {
+            name: "Shanghai SIPG".to_string(),
+            pts: 39u16,
+        },
+        Team {
+            name: "Hebei CFFC".to_string(),
+            pts: 27u16,
+        },
+        Team {
+            name: "Guangzhou Evergrand".to_string(),
+            pts: 22u16,
+        },
+        Team {
+            name: "Shandong Luneng".to_string(),
+            pts: 12u16,
+        },
+        Team {
+            name: "Beijing Guoan".to_string(),
+            pts: 7u16,
+        },
+        Team {
+            name: "Hangzhou Greentown".to_string(),
+            pts: 7u16,
+        },
+        Team {
+            name: "Shanghai Shenhua".to_string(),
+            pts: 4u16,
+        },
+    ];
 
     data.insert("teams".to_string(), to_json(&teams));
     data.insert("engine".to_string(), to_json(&TYPES.to_owned()));
@@ -109,6 +112,10 @@ fn main() {
 
     // make data and render it
     let data = make_data();
-    println!("{}",
-             handlebars.render("table", &data).unwrap_or_else(|e| format!("{}", e)));
+    println!(
+        "{}",
+        handlebars.render("table", &data).unwrap_or_else(
+            |e| format!("{}", e),
+        )
+    );
 }

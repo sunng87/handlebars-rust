@@ -8,20 +8,23 @@ pub struct InlineDirective;
 
 fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
     d.param(0)
-        .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
+        .ok_or_else(|| {
+            RenderError::new("Param required for directive \"inline\"")
+        })
         .and_then(|v| {
-                      v.value()
-                          .as_str()
-                          .ok_or_else(|| RenderError::new("inline name must be string"))
-                  })
+            v.value().as_str().ok_or_else(|| {
+                RenderError::new("inline name must be string")
+            })
+        })
 }
 
 impl DirectiveDef for InlineDirective {
     fn call(&self, d: &Directive, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         let name = try!(get_name(d));
 
-        let template = try!(d.template()
-                                .ok_or_else(|| RenderError::new("inline should have a block")));
+        let template = try!(d.template().ok_or_else(|| {
+            RenderError::new("inline should have a block")
+        }));
 
 
         rc.set_partial(name.to_owned(), template.clone());
@@ -42,11 +45,10 @@ mod test {
 
     #[test]
     fn test_inline() {
-        let t0 =
-            Template::compile("{{#*inline \"hello\"}}the hello world inline partial.{{/inline}}"
-                                  .to_string())
-                    .ok()
-                    .unwrap();
+        let t0 = Template::compile(
+            "{{#*inline \"hello\"}}the hello world inline partial.{{/inline}}".to_string(),
+        ).ok()
+            .unwrap();
 
         let hbs = Registry::new();
 

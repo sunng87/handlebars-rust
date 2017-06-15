@@ -19,17 +19,20 @@ impl_rdp! {
 
         null_literal = { ["null"] }
         boolean_literal = { ["true"]|["false"] }
-        number_literal = @{ ["-"]? ~ ['0'..'9']+ ~ ["."]? ~ ['0'..'9']* ~ (["E"] ~ ["-"]? ~ ['0'..'9']+)? }
+        number_literal = @{ ["-"]? ~ ['0'..'9']+ ~ ["."]? ~ ['0'..'9']*
+                            ~ (["E"] ~ ["-"]? ~ ['0'..'9']+)? }
         string_literal = @{ ["\""] ~ (!["\""] ~ (["\\\""] | any))* ~ ["\""] }
         array_literal = { ["["] ~ literal? ~ ([","] ~ literal)* ~ ["]"] }
-        object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)? ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
+        object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)?
+                           ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
 
-// FIXME: a[0], a["b]
+        // FIXME: a[0], a["b]
         symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["-"] }
         path_char = _{ ["/"] }
 
         identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
-        reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])* ~ ["-"]* ~ reference* }
+        reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])*
+                       ~ ["-"]* ~ reference* }
         name = _{ subexpression | reference }
 
         param = { !["as"] ~ (literal | reference | subexpression) }
@@ -55,8 +58,8 @@ impl_rdp! {
 
         directive_expression = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["*"] ~ exp_line ~
                                   pro_whitespace_omitter? ~ ["}}"] }
-        partial_expression = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line ~
-                                pro_whitespace_omitter? ~ ["}}"] }
+        partial_expression = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ [">"] ~ partial_exp_line
+                                ~ pro_whitespace_omitter? ~ ["}}"] }
         invert_tag_item = { ["else"]|["^"] }
         invert_tag = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ invert_tag_item
                         ~ pro_whitespace_omitter? ~ ["}}"]}
@@ -68,15 +71,15 @@ impl_rdp! {
                          (invert_tag ~ template)? ~
                           helper_block_end }
 
-        directive_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ ["*"] ~ exp_line ~
-                                   pro_whitespace_omitter? ~ ["}}"] }
+        directive_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ ["*"]
+                                  ~ exp_line ~ pro_whitespace_omitter? ~ ["}}"] }
         directive_block_end = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                  pro_whitespace_omitter? ~ ["}}"] }
         directive_block = _{ directive_block_start ~ template ~
                              directive_block_end }
 
-        partial_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"] ~ partial_exp_line ~
-                                 pro_whitespace_omitter? ~ ["}}"] }
+        partial_block_start = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["#"] ~ [">"]
+                                ~ partial_exp_line ~ pro_whitespace_omitter? ~ ["}}"] }
         partial_block_end = { !escape ~ ["{{"] ~ pre_whitespace_omitter? ~ ["/"] ~ name ~
                                pro_whitespace_omitter? ~ ["}}"] }
         partial_block = _{ partial_block_start ~ template ~ partial_block_end }
@@ -118,16 +121,19 @@ impl_rdp! {
         path_idx = { ["["] ~ path_num_id ~ ["]"]}
         path_item = _{ path_up|path_var }
         path_current = { ["this"] | ["."] }
-        path = _{ (path_current ~ eoi) | (["./"]? ~ path_item ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi)  }
+        path = _{ (path_current ~ eoi) | (["./"]? ~ path_item
+                  ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi)  }
     }
 }
 
 #[test]
 fn test_raw_text() {
-    let s = vec!["<h1> helloworld </h1>    ",
-                 "hello\\{{world}}",
-                 "hello\\{{#if world}}nice\\{{/if}}",
-                 "hello \\{{{{raw}}}}hello\\{{{{/raw}}}}"];
+    let s = vec![
+        "<h1> helloworld </h1>    ",
+        "hello\\{{world}}",
+        "hello\\{{#if world}}nice\\{{/if}}",
+        "hello \\{{{{raw}}}}hello\\{{{{/raw}}}}",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.raw_text());
@@ -144,16 +150,18 @@ fn test_raw_block_text() {
 
 #[test]
 fn test_reference() {
-    let s = vec!["a",
-                 "abc",
-                 "../a",
-                 "a.b",
-                 "@abc",
-                 "a[\"abc\"]",
-                 "aBc[\"abc\"]",
-                 "abc[0][\"nice\"]",
-                 "some-name",
-                 "this.[0].ok"];
+    let s = vec![
+        "a",
+        "abc",
+        "../a",
+        "a.b",
+        "@abc",
+        "a[\"abc\"]",
+        "aBc[\"abc\"]",
+        "abc[0][\"nice\"]",
+        "some-name",
+        "this.[0].ok",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.reference());
@@ -183,10 +191,12 @@ fn test_param() {
 
 #[test]
 fn test_hash() {
-    let s = vec!["hello=world",
-                 "hello=\"world\"",
-                 "hello=(world)",
-                 "hello=(world 0)"];
+    let s = vec![
+        "hello=world",
+        "hello=\"world\"",
+        "hello=(world)",
+        "hello=(world 0)",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.hash());
@@ -196,14 +206,16 @@ fn test_hash() {
 
 #[test]
 fn test_json_literal() {
-    let s = vec!["\"json string\"",
-                 "\"quot: \\\"\"",
-                 "[]",
-                 "[\"hello\"]",
-                 "[1,2,3,4,true]",
-                 "{\"hello\": \"world\"}",
-                 "{}",
-                 "{\"a\":1, \"b\":2 }"];
+    let s = vec![
+        "\"json string\"",
+        "\"quot: \\\"\"",
+        "[]",
+        "[\"hello\"]",
+        "[1,2,3,4,true]",
+        "{\"hello\": \"world\"}",
+        "{}",
+        "{\"a\":1, \"b\":2 }",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.literal());
@@ -243,17 +255,19 @@ fn test_expression() {
 
 #[test]
 fn test_helper_expression() {
-    let s = vec!["{{exp 1}}",
-                 "{{exp \"literal\"}}",
-                 "{{exp ref}}",
-                 "{{exp (sub)}}",
-                 "{{exp (sub 123)}}",
-                 "{{exp []}}",
-                 "{{exp {}}}",
-                 "{{exp key=1}}",
-                 "{{exp key=ref}}",
-                 "{{exp key=(sub)}}",
-                 "{{exp key=(sub 0)}}"];
+    let s = vec![
+        "{{exp 1}}",
+        "{{exp \"literal\"}}",
+        "{{exp ref}}",
+        "{{exp (sub)}}",
+        "{{exp (sub 123)}}",
+        "{{exp []}}",
+        "{{exp {}}}",
+        "{{exp key=1}}",
+        "{{exp key=ref}}",
+        "{{exp key=(sub)}}",
+        "{{exp key=(sub 0)}}",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.helper_expression());
@@ -285,16 +299,18 @@ fn test_html_expression() {
 
 #[test]
 fn test_helper_start() {
-    let s = vec!["{{#if hello}}",
-                 "{{#if (hello)}}",
-                 "{{#if hello=world}}",
-                 "{{#if hello hello=world}}",
-                 "{{#if []}}",
-                 "{{#if {}}}",
-                 "{{#if}}",
-                 "{{~#if hello~}}",
-                 "{{#each people as |person|}}",
-                 "{{#each-obj obj as |key val|}}"];
+    let s = vec![
+        "{{#if hello}}",
+        "{{#if (hello)}}",
+        "{{#if hello=world}}",
+        "{{#if hello hello=world}}",
+        "{{#if []}}",
+        "{{#if {}}}",
+        "{{#if}}",
+        "{{~#if hello~}}",
+        "{{#each people as |person|}}",
+        "{{#each-obj obj as |key val|}}",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.helper_block_start());
@@ -314,16 +330,18 @@ fn test_helper_end() {
 
 #[test]
 fn test_helper_block() {
-    let s = vec!["{{#if hello}}hello{{/if}}",
-                 "{{#if true}}hello{{/if}}",
-                 "{{#if nice ok=1}}hello{{/if}}",
-                 "{{#if}}hello{{else}}world{{/if}}",
-                 "{{#if}}hello{{^}}world{{/if}}",
-                 "{{#if}}{{#if}}hello{{/if}}{{/if}}",
-                 "{{#if}}hello{{~else}}world{{/if}}",
-                 "{{#if}}hello{{else~}}world{{/if}}",
-                 "{{#if}}hello{{~^~}}world{{/if}}",
-                 "{{#if}}{{/if}}"];
+    let s = vec![
+        "{{#if hello}}hello{{/if}}",
+        "{{#if true}}hello{{/if}}",
+        "{{#if nice ok=1}}hello{{/if}}",
+        "{{#if}}hello{{else}}world{{/if}}",
+        "{{#if}}hello{{^}}world{{/if}}",
+        "{{#if}}{{#if}}hello{{/if}}{{/if}}",
+        "{{#if}}hello{{~else}}world{{/if}}",
+        "{{#if}}hello{{else~}}world{{/if}}",
+        "{{#if}}hello{{~^~}}world{{/if}}",
+        "{{#if}}{{/if}}",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.helper_block());
@@ -333,8 +351,10 @@ fn test_helper_block() {
 
 #[test]
 fn test_raw_block() {
-    let s = vec!["{{{{if hello}}}}good {{hello}}{{{{/if}}}}",
-                 "{{{{if hello}}}}{{#if nice}}{{/if}}{{{{/if}}}}"];
+    let s = vec![
+        "{{{{if hello}}}}good {{hello}}{{{{/if}}}}",
+        "{{{{if hello}}}}{{#if nice}}{{/if}}{{{{/if}}}}",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.raw_block());
@@ -354,17 +374,19 @@ fn test_block_param() {
 
 #[test]
 fn test_path() {
-    let s = vec!["a",
-                 "a.b.c.d",
-                 "a[0][1][2]",
-                 "a[\"abc\"]",
-                 "a/v/c.d.s",
-                 "a[0]/b/c/../d",
-                 "a[\"bbc\"]/b/c/../d",
-                 "../a/b[0][1]",
-                 "./this[0][1]/this/../a",
-                 "./this_name",
-                 "./goo[/bar]"];
+    let s = vec![
+        "a",
+        "a.b.c.d",
+        "a[0][1][2]",
+        "a[\"abc\"]",
+        "a/v/c.d.s",
+        "a[0]/b/c/../d",
+        "a[\"bbc\"]/b/c/../d",
+        "../a/b[0][1]",
+        "./this[0][1]/this/../a",
+        "./this_name",
+        "./goo[/bar]",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.path());
@@ -384,9 +406,11 @@ fn test_directive_expression() {
 
 #[test]
 fn test_directive_block() {
-    let s = vec!["{{#* inline}}something{{/inline}}",
-                 "{{~#* inline}}hello{{/inline}}",
-                 "{{#* inline \"partialname\"}}something{{/inline}}"];
+    let s = vec![
+        "{{#* inline}}something{{/inline}}",
+        "{{~#* inline}}hello{{/inline}}",
+        "{{#* inline \"partialname\"}}something{{/inline}}",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.directive_block());
@@ -396,10 +420,12 @@ fn test_directive_block() {
 
 #[test]
 fn test_partial_expression() {
-    let s = vec!["{{> hello}}",
-                 "{{> (hello)}}",
-                 "{{~> hello a}}",
-                 "{{> hello a=1}}"];
+    let s = vec![
+        "{{> hello}}",
+        "{{> (hello)}}",
+        "{{~> hello a}}",
+        "{{> hello a=1}}",
+    ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.partial_expression());

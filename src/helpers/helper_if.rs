@@ -11,8 +11,9 @@ pub struct IfHelper {
 
 impl HelperDef for IfHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let param =
-            try!(h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"if\"")));
+        let param = try!(h.param(0).ok_or_else(|| {
+            RenderError::new("Param not found for helper \"if\"")
+        }));
 
         let mut value = param.value().is_truthy();
 
@@ -41,10 +42,16 @@ mod test {
     #[test]
     fn test_if() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", "{{#if this}}hello{{/if}}").is_ok());
-        assert!(handlebars.register_template_string("t1",
-                                                    "{{#unless this}}hello{{else}}world{{/unless}}")
-                    .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t0", "{{#if this}}hello{{/if}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t1", "{{#unless this}}hello{{else}}world{{/unless}}")
+                .is_ok()
+        );
 
         let r0 = handlebars.render("t0", &true);
         assert_eq!(r0.ok().unwrap(), "hello".to_string());
@@ -63,9 +70,19 @@ mod test {
 
         let mut handlebars = Registry::new();
         handlebars.register_helper("with", Box::new(WITH_HELPER));
-        assert!(handlebars.register_template_string("t0", "{{#if a.c.d}}hello {{a.b}}{{/if}}")
-                    .is_ok());
-        assert!(handlebars.register_template_string("t1", "{{#with a}}{{#if c.d}}hello {{../a.b}}{{/if}}{{/with}}").is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t0", "{{#if a.c.d}}hello {{a.b}}{{/if}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string(
+                    "t1",
+                    "{{#with a}}{{#if c.d}}hello {{../a.b}}{{/if}}{{/with}}",
+                )
+                .is_ok()
+        );
 
         let r0 = handlebars.render("t0", &data);
         assert_eq!(r0.ok().unwrap(), "hello 99".to_string());

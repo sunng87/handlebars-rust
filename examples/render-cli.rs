@@ -13,10 +13,11 @@ use handlebars::Handlebars;
 
 
 fn usage() -> ! {
-    writeln!(&mut io::stderr(),
-             "{}",
-             r#"Usage: ./render-cli template.hbs '{"json": "data"}'"#)
-            .ok();
+    writeln!(
+        &mut io::stderr(),
+        "{}",
+        r#"Usage: ./render-cli template.hbs '{"json": "data"}'"#
+    ).ok();
     process::exit(1);
 }
 
@@ -40,7 +41,10 @@ fn main() {
 
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file(&filename, &filename).ok().unwrap();
+    handlebars
+        .register_template_file(&filename, &filename)
+        .ok()
+        .unwrap();
     match handlebars.render(&filename, &data) {
         Ok(data) => {
             println!("{}", data);
