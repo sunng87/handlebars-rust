@@ -19,9 +19,10 @@ pub struct Context {
 }
 
 #[inline]
-fn parse_json_visitor_inner<'a>(path_stack: &mut VecDeque<&'a str>,
-                                path: &'a str)
-                                -> Result<(), RenderError> {
+fn parse_json_visitor_inner<'a>(
+    path_stack: &mut VecDeque<&'a str>,
+    path: &'a str,
+) -> Result<(), RenderError> {
     let path_in = StringInput::new(path);
     let mut parser = Rdp::new(path_in);
 
@@ -59,11 +60,12 @@ fn parse_json_visitor_inner<'a>(path_stack: &mut VecDeque<&'a str>,
 }
 
 #[inline]
-fn parse_json_visitor<'a>(path_stack: &mut VecDeque<&'a str>,
-                          base_path: &'a str,
-                          path_context: &'a VecDeque<String>,
-                          relative_path: &'a str)
-                          -> Result<(), RenderError> {
+fn parse_json_visitor<'a>(
+    path_stack: &mut VecDeque<&'a str>,
+    base_path: &'a str,
+    path_context: &'a VecDeque<String>,
+    relative_path: &'a str,
+) -> Result<(), RenderError> {
     let path_in = StringInput::new(relative_path);
     let mut parser = Rdp::new(path_in);
 
@@ -122,9 +124,9 @@ impl Context {
 
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
-        to_value(e)
-            .map_err(RenderError::from)
-            .map(|d| Context { data: d })
+        to_value(e).map_err(RenderError::from).map(|d| {
+            Context { data: d }
+        })
     }
 
     /// Navigate the context with base path and relative path
@@ -132,11 +134,12 @@ impl Context {
     /// and set relative path to helper argument or so.
     ///
     /// If you want to navigate from top level, set the base path to `"."`
-    pub fn navigate(&self,
-                    base_path: &str,
-                    path_context: &VecDeque<String>,
-                    relative_path: &str)
-                    -> Result<&Json, RenderError> {
+    pub fn navigate(
+        &self,
+        base_path: &str,
+        path_context: &VecDeque<String>,
+        relative_path: &str,
+    ) -> Result<&Json, RenderError> {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
 
@@ -200,7 +203,8 @@ impl JsonRender for Json {
 }
 
 pub fn to_json<T>(src: &T) -> Json
-    where T: Serialize
+where
+    T: Serialize,
 {
     to_value(src).unwrap_or_default()
 }
@@ -254,10 +258,12 @@ mod test {
     fn test_render() {
         let v = "hello";
         let ctx = Context::wraps(&v.to_string()).unwrap();
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this")
-                       .unwrap()
-                       .render(),
-                   v.to_string());
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "this")
+                .unwrap()
+                .render(),
+            v.to_string()
+        );
     }
 
     #[test]
@@ -275,47 +281,65 @@ mod test {
         };
 
         let ctx = Context::wraps(&person).unwrap();
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "./name/../addr/country")
-                       .unwrap()
-                       .render(),
-                   "China".to_string());
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.[country]")
-                       .unwrap()
-                       .render(),
-                   "China".to_string());
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.[\"country\"]")
-                       .unwrap()
-                       .render(),
-                   "China".to_string());
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "addr.['country']")
-                       .unwrap()
-                       .render(),
-                   "China".to_string());
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "./name/../addr/country")
+                .unwrap()
+                .render(),
+            "China".to_string()
+        );
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "addr.[country]")
+                .unwrap()
+                .render(),
+            "China".to_string()
+        );
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "addr.[\"country\"]")
+                .unwrap()
+                .render(),
+            "China".to_string()
+        );
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "addr.['country']")
+                .unwrap()
+                .render(),
+            "China".to_string()
+        );
 
         let v = true;
         let ctx2 = Context::wraps(&v).unwrap();
-        assert_eq!(ctx2.navigate(".", &VecDeque::new(), "this")
-                       .unwrap()
-                       .render(),
-                   "true".to_string());
+        assert_eq!(
+            ctx2.navigate(".", &VecDeque::new(), "this")
+                .unwrap()
+                .render(),
+            "true".to_string()
+        );
 
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles[0]")
-                       .unwrap()
-                       .render(),
-                   "programmer".to_string());
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles.[0]")
-                       .unwrap()
-                       .render(),
-                   "programmer".to_string());
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "titles[0]")
+                .unwrap()
+                .render(),
+            "programmer".to_string()
+        );
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "titles.[0]")
+                .unwrap()
+                .render(),
+            "programmer".to_string()
+        );
 
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "titles[0]/../../age")
-                       .unwrap()
-                       .render(),
-                   "27".to_string());
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this.titles[0]/../../age")
-                       .unwrap()
-                       .render(),
-                   "27".to_string());
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "titles[0]/../../age")
+                .unwrap()
+                .render(),
+            "27".to_string()
+        );
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "this.titles[0]/../../age")
+                .unwrap()
+                .render(),
+            "27".to_string()
+        );
 
     }
 
@@ -330,21 +354,26 @@ mod test {
         map_without_this.insert("age".to_string(), context::to_json(&4usize));
         let ctx2 = Context::wraps(&map_without_this).unwrap();
 
-        assert_eq!(ctx1.navigate(".", &VecDeque::new(), "this")
-                       .unwrap()
-                       .render(),
-                   "[object]".to_owned());
-        assert_eq!(ctx2.navigate(".", &VecDeque::new(), "age")
-                       .unwrap()
-                       .render(),
-                   "4".to_owned());
+        assert_eq!(
+            ctx1.navigate(".", &VecDeque::new(), "this")
+                .unwrap()
+                .render(),
+            "[object]".to_owned()
+        );
+        assert_eq!(
+            ctx2.navigate(".", &VecDeque::new(), "age")
+                .unwrap()
+                .render(),
+            "4".to_owned()
+        );
     }
 
     #[test]
     fn test_merge_json() {
         let map = json!({ "age": 4 });
         let s = "hello".to_owned();
-        let hash = btreemap!{
+        let hash =
+            btreemap!{
             "tag".to_owned() => context::to_json(&"h1")
         };
 
@@ -375,7 +404,8 @@ mod test {
 
     #[test]
     fn test_key_name_with_this() {
-        let m = btreemap!{
+        let m =
+            btreemap!{
             "this_name".to_string() => "the_value".to_string()
         };
         let ctx = Context::wraps(&m).unwrap();
@@ -383,5 +413,25 @@ mod test {
                        .unwrap()
                        .render(),
                    "the_value".to_string());
+    }
+
+    use serde::{Serialize, Serializer};
+    use serde::ser::Error as SerdeError;
+
+    struct UnserializableType {}
+
+    impl Serialize for UnserializableType {
+        fn serialize<S>(&self, _: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            Err(SerdeError::custom("test"))
+        }
+    }
+
+    #[test]
+    fn test_serialize_error() {
+        let d = UnserializableType {};
+        assert!(Context::wraps(&d).is_err());
     }
 }
