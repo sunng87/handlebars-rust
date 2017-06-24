@@ -1,0 +1,33 @@
+{
+  "name": "handlebars-wasm",
+  "version": "1.0.0",
+  "description": "handlebars templating via wasm",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "compile": "webpack --progress",
+    "serve": "http-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sunng87/handlebars-rust.git"
+  },
+  "keywords": [
+    "wasm",
+    "handlebars",
+    "templating"
+  ],
+  "author": "Ning Sun",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sunng87/handlebars-rust/issues"
+  },
+  "homepage": "https://github.com/sunng87/handlebars-rust#readme",
+  "devDependencies": {
+    "http-server": "^0.10.0",
+    "rust-wasm-loader": "^0.1.2",
+    "webpack": "^3.0.0"
+  }
+}

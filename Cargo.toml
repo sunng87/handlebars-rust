@@ -12,10 +12,9 @@ repository = "https://github.com/sunng87/handlebars-rust"
 documentation = "https://docs.rs/handlebars/"
 readme = "README.md"
 
-[lib]
-
+[[bin]]
 name = "handlebars"
-path = "src/lib.rs"
+path = "src/wasm.rs"
 
 [dependencies]
 
