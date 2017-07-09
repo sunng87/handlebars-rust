@@ -22,9 +22,11 @@ pub use self::inline::INLINE_DIRECTIVE;
 ///         -> Result<(), RenderError> {
 ///     // modify json object
 ///     let mut ctx_ref = rc.context_mut();
-///     if let Some(ref mut m) = ctx_ref.data_mut().as_object_mut() {
+///     let mut data = ctx_ref.data_clone();
+///     if let Some(ref mut m) = data.as_object_mut() {
 ///         m.insert("hello".to_string(), to_json(&"world".to_owned()));
 ///     }
+///     *ctx_ref = Context::wraps(&data)?;
 ///     Ok(())
 /// }
 ///
@@ -120,9 +122,13 @@ mod test {
              -> Result<(), RenderError> {
                 // modify json object
                 let mut ctx_ref = rc.context_mut();
-                if let Some(ref mut m) = ctx_ref.data_mut().as_object_mut().as_mut() {
+                let mut data = ctx_ref.data_clone();
+
+                if let Some(ref mut m) = data.as_object_mut().as_mut() {
                     m.insert("hello".to_string(), context::to_json(&"war".to_owned()));
                 }
+
+                *ctx_ref = Context::wraps(&data)?;
                 Ok(())
             }),
         );
