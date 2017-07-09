@@ -2,6 +2,9 @@
 extern crate handlebars;
 extern crate serde;
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
+
 extern crate test;
 
 use std::collections::BTreeMap;
@@ -65,4 +68,35 @@ fn render_template(b: &mut test::Bencher) {
 
     let data = make_data();
     b.iter(|| handlebars.render("table", &data).ok().unwrap())
+}
+
+#[derive(Serialize)]
+struct DataWrapper {
+    v: String,
+}
+
+#[derive(Serialize)]
+struct RowWrapper {
+    real: Vec<DataWrapper>,
+    dummy: Vec<DataWrapper>,
+}
+
+#[bench]
+fn large_loop_helper(b: &mut test::Bencher) {
+    let mut handlebars = Handlebars::new();
+    handlebars
+        .register_template_string("test", "BEFORE\n{{#each real}}{{this.v}}{{/each}}AFTER")
+        .ok()
+        .expect("Invalid template format");
+
+    let real: Vec<DataWrapper> = (1..1000)
+        .into_iter()
+        .map(|i| DataWrapper { v: format!("n={}", i) })
+        .collect();
+    let dummy: Vec<DataWrapper> = (1..1000)
+        .into_iter()
+        .map(|i| DataWrapper { v: format!("n={}", i) })
+        .collect();
+    let rows = RowWrapper { real, dummy };
+    b.iter(|| handlebars.render("test", &rows).ok().unwrap());
 }
