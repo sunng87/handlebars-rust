@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use serde::Serialize;
 use serde_json::value::{Value as Json, Map, to_value};
 
@@ -15,7 +17,7 @@ pub type Object = BTreeMap<String, Json>;
 ///
 #[derive(Debug, Clone)]
 pub struct Context {
-    data: Json,
+    data: Rc<Json>,
 }
 
 #[inline]
@@ -119,13 +121,13 @@ pub fn merge_json(base: &Json, addition: &Object) -> Json {
 impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
-        Context { data: Json::Null }
+        Context { data: Rc::new(Json::Null) }
     }
 
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
         to_value(e).map_err(RenderError::from).map(|d| {
-            Context { data: d }
+            Context { data: Rc::new(d) }
         })
     }
 
@@ -144,7 +146,7 @@ impl Context {
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
 
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
-        let mut data: &Json = &self.data;
+        let mut data: &Json = self.data.as_ref();
         for p in paths.iter() {
             if *p == "this" {
                 continue;
@@ -162,12 +164,8 @@ impl Context {
         Ok(data)
     }
 
-    pub fn data(&self) -> &Json {
-        &self.data
-    }
-
-    pub fn data_mut(&mut self) -> &mut Json {
-        &mut self.data
+    pub fn data_clone(&self) -> Json {
+        self.data.as_ref().clone()
     }
 }
 
