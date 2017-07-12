@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use serde::Serialize;
 use serde_json::value::{Value as Json, Map, to_value};
@@ -17,7 +17,7 @@ pub type Object = BTreeMap<String, Json>;
 ///
 #[derive(Debug, Clone)]
 pub struct Context {
-    data: Rc<Json>,
+    data: Arc<Json>,
 }
 
 #[inline]
@@ -121,13 +121,13 @@ pub fn merge_json(base: &Json, addition: &Object) -> Json {
 impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
-        Context { data: Rc::new(Json::Null) }
+        Context { data: Arc::new(Json::Null) }
     }
 
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
         to_value(e).map_err(RenderError::from).map(|d| {
-            Context { data: Rc::new(d) }
+            Context { data: Arc::new(d) }
         })
     }
 
@@ -164,12 +164,8 @@ impl Context {
         Ok(data)
     }
 
-    pub fn update(&mut self, data: Json) {
-        self.data = Rc::new(data);
-    }
-
-    pub fn data_clone(&self) -> Json {
-        self.data.as_ref().clone()
+    pub fn data_mut(&mut self) -> &mut Json {
+        Arc::make_mut(&mut self.data)
     }
 }
 
