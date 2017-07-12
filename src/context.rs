@@ -164,6 +164,10 @@ impl Context {
         Ok(data)
     }
 
+    pub fn update(&mut self, data: Json) {
+        self.data = Rc::new(data);
+    }
+
     pub fn data_clone(&self) -> Json {
         self.data.as_ref().clone()
     }

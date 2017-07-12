@@ -128,7 +128,7 @@ mod test {
                     m.insert("hello".to_string(), context::to_json(&"war".to_owned()));
                 }
 
-                *ctx_ref = Context::wraps(&data)?;
+                ctx_ref.update(data);
                 Ok(())
             }),
         );
