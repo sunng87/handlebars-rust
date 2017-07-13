@@ -21,12 +21,10 @@ pub use self::inline::INLINE_DIRECTIVE;
 /// fn update_data(_: &Decorator, _: &Handlebars, rc: &mut RenderContext)
 ///         -> Result<(), RenderError> {
 ///     // modify json object
-///     let mut ctx_ref = rc.context_mut();
-///     let mut data = ctx_ref.data_clone();
+///     let mut data = rc.context_mut().data_mut();
 ///     if let Some(ref mut m) = data.as_object_mut() {
 ///         m.insert("hello".to_string(), to_json(&"world".to_owned()));
 ///     }
-///     *ctx_ref = Context::wraps(&data)?;
 ///     Ok(())
 /// }
 ///
@@ -122,13 +120,12 @@ mod test {
              -> Result<(), RenderError> {
                 // modify json object
                 let mut ctx_ref = rc.context_mut();
-                let mut data = ctx_ref.data_clone();
+                let mut data = ctx_ref.data_mut();
 
                 if let Some(ref mut m) = data.as_object_mut().as_mut() {
                     m.insert("hello".to_string(), context::to_json(&"war".to_owned()));
                 }
 
-                *ctx_ref = Context::wraps(&data)?;
                 Ok(())
             }),
         );
