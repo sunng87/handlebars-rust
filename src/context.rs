@@ -164,6 +164,10 @@ impl Context {
         Ok(data)
     }
 
+    pub fn data(&self) -> &Json {
+        self.data.as_ref()
+    }
+
     pub fn data_mut(&mut self) -> &mut Json {
         Arc::make_mut(&mut self.data)
     }
