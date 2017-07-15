@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.28.0](https://github.com/sunng87/handlebars-rust/compare/0.27.0...0.28.0) - 2017-07-15
+
+* [Changed] Fixed performance issue discussed in [#166](https://github.com/sunng87/handlebars-rust/issues/166)
+
 ## [0.27.0](https://github.com/sunng87/handlebars-rust/compare/0.26.2...0.27.0) - 2017-06-03
 
 * [Changed] `partial_legacy` is dropped
