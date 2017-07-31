@@ -377,12 +377,18 @@ impl Template {
                     {
                         let (line_no, col_no) = parser.input().line_col(prev_end);
                         if token.rule == Rule::raw_block_end {
-                            let text = &source[prev_end..token.start];
+                            let mut text = &source[prev_end..token.start];
+                            if text.starts_with("\\{{") {
+                                text = text.trim_left_matches("\\")
+                            }
                             let mut t = Template::new(mapping);
                             t.push_element(RawString(text.to_owned()), line_no, col_no);
                             template_stack.push_front(t);
                         } else {
-                            let text = &source[prev_end..token.start];
+                            let mut text = &source[prev_end..token.start];
+                            if text.starts_with("\\{{") {
+                                text = text.trim_left_matches("\\")
+                            }
                             let mut t = template_stack.front_mut().unwrap();
                             t.push_element(RawString(text.to_owned()), line_no, col_no);
                         }
@@ -398,6 +404,9 @@ impl Template {
                         let mut text = &source[prev_end..token.end];
                         if omit_pro_ws {
                             text = text.trim_left();
+                        }
+                        if text.starts_with("\\{{") {
+                            text = text.trim_left_matches("\\");
                         }
                         let mut t = template_stack.front_mut().unwrap();
                         t.push_element(RawString(text.to_owned()), line_no, col_no);
@@ -463,6 +472,9 @@ impl Template {
                         let mut text = &source[prev_end..token.end];
                         if omit_pro_ws {
                             text = text.trim_left();
+                        }
+                        if text.starts_with("\\{{") {
+                            text = text.trim_left_matches("\\")
                         }
                         let mut t = Template::new(mapping);
                         t.push_element(RawString(text.to_owned()), line_no, col_no);
@@ -626,6 +638,28 @@ pub enum TemplateElement {
     PartialExpression(Directive),
     PartialBlock(Directive),
     Comment(String),
+}
+
+#[test]
+fn test_parse_escaped_tag_raw_string() {
+    let source = "\\{{foo}}";
+    let t = Template::compile(source.to_string()).ok().unwrap();
+    assert_eq!(t.elements.len(), 1);
+    assert_eq!(
+        *t.elements.get(0).unwrap(),
+        RawString("{{foo}}".to_string())
+    );
+}
+
+#[test]
+fn test_parse_escaped_block_raw_string() {
+    let source = "\\{{{{foo}}}}";
+    let t = Template::compile(source.to_string()).ok().unwrap();
+    assert_eq!(t.elements.len(), 1);
+    assert_eq!(
+        *t.elements.get(0).unwrap(),
+        RawString("{{{{foo}}}}".to_string())
+    );
 }
 
 #[test]
