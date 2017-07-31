@@ -135,11 +135,8 @@ impl Template {
         }
     }
 
-    fn unescape_tags<T>(txt: T) -> String
-    where
-        T: Into<String>,
-    {
-        txt.into().replace("\\{{", "{{")
+    fn unescape_tags(txt: &str) -> String {
+        txt.replace("\\{{", "{{")
     }
 
     fn push_element(&mut self, e: TemplateElement, line: usize, col: usize) {
