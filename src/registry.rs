@@ -388,4 +388,14 @@ mod test {
 
         assert_eq!("&quot;&lt;&gt;&amp;", r.render("test", &input).unwrap());
     }
+
+    #[test]
+    fn test_escape() {
+        let r = Registry::new();
+        let data = json!({
+            "hello": "world"
+        });
+
+        assert_eq!("{{hello}}", r.template_render("\\{{hello}}", &data).unwrap());
+    }
 }
