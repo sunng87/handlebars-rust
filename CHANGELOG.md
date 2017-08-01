@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.28.2](https://github.com/sunng87/handlebars-rust/compare/0.28.1...0.28.2) - 2017-08-01
+
+* [Changed] Fixed support for escape `\\{{`. [#170](https://github.com/sunng87/handlebars-rust/issues/170)
+
 ## [0.28.1](https://github.com/sunng87/handlebars-rust/compare/0.28.0...0.28.1) - 2017-07-16
 
 * [Changed] Mark `RenderError` with `Send` trait
