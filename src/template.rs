@@ -135,6 +135,10 @@ impl Template {
         }
     }
 
+    fn unescape_tags(txt: &str) -> String {
+        txt.replace("\\{{", "{{")
+    }
+
     fn push_element(&mut self, e: TemplateElement, line: usize, col: usize) {
         self.elements.push(e);
         if let Some(ref mut maps) = self.mapping {
@@ -379,12 +383,20 @@ impl Template {
                         if token.rule == Rule::raw_block_end {
                             let text = &source[prev_end..token.start];
                             let mut t = Template::new(mapping);
-                            t.push_element(RawString(text.to_owned()), line_no, col_no);
+                            t.push_element(
+                                RawString(Template::unescape_tags(text)),
+                                line_no,
+                                col_no,
+                            );
                             template_stack.push_front(t);
                         } else {
                             let text = &source[prev_end..token.start];
                             let mut t = template_stack.front_mut().unwrap();
-                            t.push_element(RawString(text.to_owned()), line_no, col_no);
+                            t.push_element(
+                                RawString(Template::unescape_tags(text)),
+                                line_no,
+                                col_no,
+                            );
                         }
                     }
                 }
@@ -400,7 +412,7 @@ impl Template {
                             text = text.trim_left();
                         }
                         let mut t = template_stack.front_mut().unwrap();
-                        t.push_element(RawString(text.to_owned()), line_no, col_no);
+                        t.push_element(RawString(Template::unescape_tags(text)), line_no, col_no);
                     }
                     Rule::helper_block_start |
                     Rule::raw_block_start |
@@ -465,7 +477,7 @@ impl Template {
                             text = text.trim_left();
                         }
                         let mut t = Template::new(mapping);
-                        t.push_element(RawString(text.to_owned()), line_no, col_no);
+                        t.push_element(RawString(Template::unescape_tags(text)), line_no, col_no);
                         template_stack.push_front(t);
                     }
                     Rule::expression |
@@ -626,6 +638,28 @@ pub enum TemplateElement {
     PartialExpression(Directive),
     PartialBlock(Directive),
     Comment(String),
+}
+
+#[test]
+fn test_parse_escaped_tag_raw_string() {
+    let source = "foo \\{{bar}}";
+    let t = Template::compile(source.to_string()).ok().unwrap();
+    assert_eq!(t.elements.len(), 1);
+    assert_eq!(
+        *t.elements.get(0).unwrap(),
+        RawString("foo {{bar}}".to_string())
+    );
+}
+
+#[test]
+fn test_parse_escaped_block_raw_string() {
+    let source = "\\{{{{foo}}}} bar";
+    let t = Template::compile(source.to_string()).ok().unwrap();
+    assert_eq!(t.elements.len(), 1);
+    assert_eq!(
+        *t.elements.get(0).unwrap(),
+        RawString("{{{{foo}}}} bar".to_string())
+    );
 }
 
 #[test]
