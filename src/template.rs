@@ -136,7 +136,6 @@ impl Template {
     }
 
     fn unescape_tags(txt: &str) -> String {
-        // unescaped this is really \\
         txt.replace(r"\\{{", "{{")
     }
 
