@@ -396,6 +396,6 @@ mod test {
             "hello": "world"
         });
 
-        assert_eq!("{{hello}}", r.template_render("\\{{hello}}", &data).unwrap());
+        assert_eq!("{{hello}}", r.template_render(r"\\{{hello}}", &data).unwrap());
     }
 }
