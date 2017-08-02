@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.28.3](https://github.com/sunng87/handlebars-rust/compare/0.28.2...0.28.3) - 2017-08-02
+
+* [Changed] fixed support for escape, again
+
 ## [0.28.2](https://github.com/sunng87/handlebars-rust/compare/0.28.1...0.28.2) - 2017-08-01
 
 * [Changed] Fixed support for escape `\\{{`. [#170](https://github.com/sunng87/handlebars-rust/issues/170)
