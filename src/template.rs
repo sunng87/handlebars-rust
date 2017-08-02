@@ -136,7 +136,8 @@ impl Template {
     }
 
     fn unescape_tags(txt: &str) -> String {
-        txt.replace("\\{{", "{{")
+        // unescaped this is really \\
+        txt.replace("\\\\{{", "{{")
     }
 
     fn push_element(&mut self, e: TemplateElement, line: usize, col: usize) {
@@ -642,7 +643,7 @@ pub enum TemplateElement {
 
 #[test]
 fn test_parse_escaped_tag_raw_string() {
-    let source = "foo \\{{bar}}";
+    let source = "foo \\\\{{bar}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
     assert_eq!(t.elements.len(), 1);
     assert_eq!(
@@ -653,7 +654,7 @@ fn test_parse_escaped_tag_raw_string() {
 
 #[test]
 fn test_parse_escaped_block_raw_string() {
-    let source = "\\{{{{foo}}}} bar";
+    let source = "\\\\{{{{foo}}}} bar";
     let t = Template::compile(source.to_string()).ok().unwrap();
     assert_eq!(t.elements.len(), 1);
     assert_eq!(
