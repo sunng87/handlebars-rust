@@ -30,7 +30,7 @@ impl_rdp! {
         symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["-"] }
         path_char = _{ ["/"] }
 
-        identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
+        identifier = @{ ( path_literal_id | symbol_char ) ~ ( path_literal_id | symbol_char | path_char )* }
         reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])*
                        ~ ["-"]* ~ reference* }
         name = _{ subexpression | reference }
@@ -111,12 +111,17 @@ impl_rdp! {
 
 // json path visitor
         path_ident = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["@"]|["$"]|["<"]|[">"]|["-"]}
+        // any unicode character except ], byte 0x5d
+        path_literal_char = _{['\u{1}'..'\u{5c}']|['\u{5e}'..'\u{7f}']|['\u{80}'..'\u{7ff}']|['\u{800}'..'\u{ffff}']|['\u{10000}'..'\u{10ffff}']}
+        // TODO use "" '' as delimiters
+        path_literal_id = { ["["] ~ path_literal_char+ ~ ["]"] }
+
         path_id = { path_ident+ }
         path_num_id = { ['0'..'9']+ }
         path_raw_id = { (path_ident|["/"])* }
         path_sep = _{ ["/"] | ["."] }
         path_up = { [".."] }
-        path_var = { path_id }
+        path_var = { path_id|path_literal_id }
         path_key = { ["["] ~ (["\""]|["'"])? ~ path_raw_id ~ (["\""]|["'"])? ~ ["]"] }
         path_idx = { ["["] ~ path_num_id ~ ["]"]}
         path_item = _{ path_up|path_var }
