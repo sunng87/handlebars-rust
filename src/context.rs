@@ -30,7 +30,7 @@ fn parse_json_visitor_inner<'a>(
 
     let mut seg_stack: VecDeque<&Token<Rule>> = VecDeque::new();
     if parser.path() {
-        for seg in parser.queue().iter() {
+        for mut seg in parser.queue_mut().iter_mut() {
             match seg.rule {
                 Rule::path_var | Rule::path_idx | Rule::path_key => {}
                 Rule::path_up => {
@@ -41,6 +41,13 @@ fn parse_json_visitor_inner<'a>(
                             seg_stack.pop_back();
                         }
                     }
+                }
+                Rule::path_literal_id => {
+                    // TODO only this type of seg needs to be mutable
+                    // is it better to use seg.copy() than to create a mutable iterator?
+                    seg.start += 1;
+                    seg.end -= 1;
+                    seg_stack.push_back(seg);
                 }
                 Rule::path_id |
                 Rule::path_raw_id |
