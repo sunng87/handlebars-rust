@@ -57,7 +57,7 @@ fn parse_json_visitor_inner<'a>(
         }
         Ok(())
     } else {
-        Err(RenderError::new("Invalid JSON path"))
+        Err(RenderError::new(format!("Invalid JSON path: {}", path)))
     }
 }
 
@@ -100,7 +100,7 @@ fn parse_json_visitor<'a>(
         parse_json_visitor_inner(path_stack, relative_path)?;
         Ok(())
     } else {
-        Err(RenderError::new("Invalid JSON path."))
+        Err(RenderError::new(format!("Invalid JSON path: {}", relative_path)))
     }
 
 }
