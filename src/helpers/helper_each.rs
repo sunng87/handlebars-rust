@@ -42,7 +42,7 @@ impl HelperDef for EachHelper {
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
-                                    format!("{}/{}.[{}]", local_rc.get_path(), inner_path, i);
+                                    format!("{}/{}/[{}]", local_rc.get_path(), inner_path, i);
                                 debug!("each path {:?}", new_path);
                                 local_rc.set_path(new_path.clone());
                             }
@@ -81,7 +81,7 @@ impl HelperDef for EachHelper {
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
-                                    format!("{}/{}.[{}]", local_rc.get_path(), inner_path, k);
+                                    format!("{}/{}/[{}]", local_rc.get_path(), inner_path, k);
                                 local_rc.set_path(new_path);
                             }
 

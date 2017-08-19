@@ -32,7 +32,7 @@ fn parse_json_visitor_inner<'a>(
     if parser.path() {
         for seg in parser.queue().iter() {
             match seg.rule {
-                Rule::path_var | Rule::path_idx | Rule::path_key => {}
+                Rule::path_var | Rule::path_key => {}
                 Rule::path_up => {
                     path_stack.pop_back();
                     if let Some(p) = seg_stack.pop_back() {
@@ -295,18 +295,6 @@ mod test {
                 .render(),
             "China".to_string()
         );
-        assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "addr.[\"country\"]")
-                .unwrap()
-                .render(),
-            "China".to_string()
-        );
-        assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "addr.['country']")
-                .unwrap()
-                .render(),
-            "China".to_string()
-        );
 
         let v = true;
         let ctx2 = Context::wraps(&v).unwrap();
@@ -318,12 +306,6 @@ mod test {
         );
 
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "titles[0]")
-                .unwrap()
-                .render(),
-            "programmer".to_string()
-        );
-        assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "titles.[0]")
                 .unwrap()
                 .render(),
@@ -331,13 +313,13 @@ mod test {
         );
 
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "titles[0]/../../age")
+            ctx.navigate(".", &VecDeque::new(), "titles.[0]/../../age")
                 .unwrap()
                 .render(),
             "27".to_string()
         );
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "this.titles[0]/../../age")
+            ctx.navigate(".", &VecDeque::new(), "this.titles.[0]/../../age")
                 .unwrap()
                 .render(),
             "27".to_string()
