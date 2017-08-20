@@ -32,7 +32,6 @@ fn parse_json_visitor_inner<'a>(
     if parser.path() {
         for seg in parser.queue().iter() {
             match seg.rule {
-                Rule::path_var | Rule::path_key => {}
                 Rule::path_up => {
                     path_stack.pop_back();
                     if let Some(p) = seg_stack.pop_back() {
@@ -43,8 +42,7 @@ fn parse_json_visitor_inner<'a>(
                     }
                 }
                 Rule::path_id |
-                Rule::path_raw_id |
-                Rule::path_num_id => {
+                Rule::path_raw_id => {
                     seg_stack.push_back(seg);
                 }
                 _ => {}
