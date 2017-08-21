@@ -161,7 +161,6 @@ fn test_reference() {
         "this.[0].ok",
     ];
     for i in s.iter() {
-        println!("{}", i);
         let mut rdp = Rdp::new(StringInput::new(i));
         assert!(rdp.reference());
         assert!(rdp.end());
