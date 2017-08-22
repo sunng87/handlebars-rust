@@ -26,13 +26,11 @@ impl_rdp! {
         object_literal = { ["{"] ~ (string_literal ~ [":"] ~ literal)?
                            ~ ([","] ~ string_literal ~ [":"] ~ literal)* ~ ["}"] }
 
-        // FIXME: a[0], a["b]
-        symbol_char = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["."]|["@"]|["$"]|["-"] }
+        symbol_char = _{['a'..'z']|['A'..'Z']|['0'..'9']|["-"]|["_"]|['\u{80}'..'\u{7ff}']|['\u{800}'..'\u{ffff}']|['\u{10000}'..'\u{10ffff}']}
         path_char = _{ ["/"] }
 
-        identifier = @{ symbol_char ~ ( symbol_char | path_char )* }
-        reference = @{ identifier ~ (["["] ~ (string_literal|['0'..'9']+) ~ ["]"])*
-                       ~ ["-"]* ~ reference* }
+        identifier = @{ symbol_char+ }
+        reference = @{ ["@"]? ~ path_inline }
         name = _{ subexpression | reference }
 
         param = { !["as"] ~ (literal | reference | subexpression) }
@@ -109,20 +107,20 @@ impl_rdp! {
         parameter = _{ param ~ eoi }
         handlebars = _{ template ~ eoi }
 
-// json path visitor
-        path_ident = _{ ['a'..'z']|['A'..'Z']|['0'..'9']|["_"]|["@"]|["$"]|["<"]|[">"]|["-"]}
-        path_id = { path_ident+ }
-        path_num_id = { ['0'..'9']+ }
-        path_raw_id = { (path_ident|["/"])* }
+        // json path visitor
+        // Disallowed chars: Whitespace ! " # % & ' ( ) * + , . / ; < = > @ [ \ ] ^ ` { | } ~
+
+        path_id = { symbol_char+ }
+
+        path_raw_id = { (!["]"] ~ any)* }
         path_sep = _{ ["/"] | ["."] }
         path_up = { [".."] }
-        path_var = { path_id }
-        path_key = { ["["] ~ (["\""]|["'"])? ~ path_raw_id ~ (["\""]|["'"])? ~ ["]"] }
-        path_idx = { ["["] ~ path_num_id ~ ["]"]}
-        path_item = _{ path_up|path_var }
+        path_key = _{ ["["] ~  path_raw_id ~ ["]"] }
+        path_item = _{ path_up|path_id|path_current|path_key }
         path_current = { ["this"] | ["."] }
-        path = _{ (path_current ~ eoi) | (["./"]? ~ path_item
-                  ~ ((path_sep ~ path_item) | (path_sep? ~  (path_key | path_idx)))* ~ eoi)  }
+
+        path_inline = _{ path_item ~ (path_sep ~  path_item)* }
+        path = _{ path_inline ~ eoi }
     }
 }
 
@@ -156,9 +154,9 @@ fn test_reference() {
         "../a",
         "a.b",
         "@abc",
-        "a[\"abc\"]",
-        "aBc[\"abc\"]",
-        "abc[0][\"nice\"]",
+        "a.[abc]",
+        "aBc.[abc]",
+        "abc.[0].[nice]",
         "some-name",
         "this.[0].ok",
     ];
@@ -377,15 +375,21 @@ fn test_path() {
     let s = vec![
         "a",
         "a.b.c.d",
-        "a[0][1][2]",
-        "a[\"abc\"]",
+        "a.[0].[1].[2]",
+        "a.[abc]",
         "a/v/c.d.s",
-        "a[0]/b/c/../d",
-        "a[\"bbc\"]/b/c/../d",
-        "../a/b[0][1]",
-        "./this[0][1]/this/../a",
+        "a.[0]/b/c/../d",
+        "a.[bb c]/b/c/../d",
+        "a.[0].[#hello]",
+        "../a/b.[0].[1]",
+        "./this.[0]/[1]/this/../a",
         "./this_name",
-        "./goo[/bar]",
+        "./goo/[/bar]",
+        "a.[你好]",
+        "a.[10].[#comment]",
+        "a.[]", // empty key
+        "././[/foo]",
+        "[foo]",
     ];
     for i in s.iter() {
         let mut rdp = Rdp::new(StringInput::new(i));
