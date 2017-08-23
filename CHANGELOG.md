@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.28.3...Unreleased) - 2017-08-23
+
+* [Changed] Align JSON path with original JavaScript implementation
+
 ## [0.28.3](https://github.com/sunng87/handlebars-rust/compare/0.28.2...0.28.3) - 2017-08-02
 
 * [Changed] fixed support for escape, again
