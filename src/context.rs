@@ -3,10 +3,12 @@ use std::sync::Arc;
 use serde::Serialize;
 use serde_json::value::{Value as Json, Map, to_value};
 
-use pest::prelude::*;
 use std::collections::{VecDeque, BTreeMap};
 
-use grammar::{Rdp, Rule};
+use pest::Parser;
+use pest::iterators::Pair;
+use pest::inputs::StringInput;
+use grammar::{HandlebarsParser, Rule};
 use error::RenderError;
 
 static DEFAULT_VALUE: Json = Json::Null;
@@ -25,38 +27,34 @@ fn parse_json_visitor_inner<'a>(
     path_stack: &mut VecDeque<&'a str>,
     path: &'a str,
 ) -> Result<(), RenderError> {
-    let path_in = StringInput::new(path);
-    let mut parser = Rdp::new(path_in);
+    let parsed_path = HandlebarsParser::parse_str(Rule::path, path)
+        .map(|p| p.flatten())
+        .map_err(|e| RenderError::new("Invalid JSON path"))?;
 
-    let mut seg_stack: VecDeque<&Token<Rule>> = VecDeque::new();
-    if parser.path() {
-        for seg in parser.queue().iter() {
-            match seg.rule {
-                Rule::path_up => {
-                    path_stack.pop_back();
-                    if let Some(p) = seg_stack.pop_back() {
-                        // also pop array index like [1]
-                        if p.rule == Rule::path_raw_id {
-                            seg_stack.pop_back();
-                        }
+    let mut seg_stack: VecDeque<&Pair<Rule, StringInput>> = VecDeque::new();
+    for seg in parsed_path {
+        match seg.as_rule() {
+            Rule::path_up => {
+                path_stack.pop_back();
+                if let Some(p) = seg_stack.pop_back() {
+                    // also pop array index like [1]
+                    if p.as_rule() == Rule::path_raw_id {
+                        seg_stack.pop_back();
                     }
                 }
-                Rule::path_id |
-                Rule::path_raw_id => {
-                    seg_stack.push_back(seg);
-                }
-                _ => {}
             }
+            Rule::path_id |
+            Rule::path_raw_id => {
+                seg_stack.push_back(&seg);
+            }
+            _ => {}
         }
-
-        for i in seg_stack.iter() {
-            let id = &path[i.start..i.end];
-            path_stack.push_back(id);
-        }
-        Ok(())
-    } else {
-        Err(RenderError::new("Invalid JSON path"))
     }
+
+    for i in seg_stack.iter() {
+        path_stack.push_back(i.into_span().as_str());
+    }
+    Ok(())
 }
 
 #[inline]
@@ -66,41 +64,36 @@ fn parse_json_visitor<'a>(
     path_context: &'a VecDeque<String>,
     relative_path: &'a str,
 ) -> Result<(), RenderError> {
-    let path_in = StringInput::new(relative_path);
-    let mut parser = Rdp::new(path_in);
+    let parser = HandlebarsParser::parse_str(Rule::path, relative_path)
+        .map(|p| p.flatten())
+        .map_err(|_| RenderError::new("Invalid JSON path."))?;
 
-    if parser.path() {
-        let mut path_context_depth: i64 = -1;
+    let mut path_context_depth: i64 = -1;
 
-        let mut iter = parser.queue().iter();
-        loop {
-            if let Some(sg) = iter.next() {
-                if sg.rule == Rule::path_up {
-                    path_context_depth += 1;
-                } else {
-                    break;
-                }
+    loop {
+        if let Some(sg) = parser.next() {
+            if sg.as_rule() == Rule::path_up {
+                path_context_depth += 1;
             } else {
                 break;
             }
+        } else {
+            break;
         }
+    }
 
-        if path_context_depth >= 0 {
-            if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
-                parse_json_visitor_inner(path_stack, context_base_path)?;
-            } else {
-                parse_json_visitor_inner(path_stack, base_path)?;
-            }
+    if path_context_depth >= 0 {
+        if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
+            parse_json_visitor_inner(path_stack, context_base_path)?;
         } else {
             parse_json_visitor_inner(path_stack, base_path)?;
         }
-
-        parse_json_visitor_inner(path_stack, relative_path)?;
-        Ok(())
     } else {
-        Err(RenderError::new("Invalid JSON path."))
+        parse_json_visitor_inner(path_stack, base_path)?;
     }
 
+    parse_json_visitor_inner(path_stack, relative_path)?;
+    Ok(())
 }
 
 pub fn merge_json(base: &Json, addition: &Object) -> Json {

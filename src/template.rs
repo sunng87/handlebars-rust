@@ -2,12 +2,15 @@ use std::slice::Iter;
 use std::iter::Peekable;
 use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
-use pest::prelude::*;
+
+use pest::{Token, Parser};
+use pest::error::Error as PestError;
+use pest::iterators::Pair;
+use pest::inputs::StringInput;
+use grammar::{HandlebarsParser, Rule};
 
 use serde_json::value::Value as Json;
 use std::str::FromStr;
-
-use grammar::{Rdp, Rule};
 
 use error::{TemplateError, TemplateErrorReason};
 
@@ -114,14 +117,13 @@ impl Parameter {
     }
 
     pub fn parse(s: &str) -> Result<Parameter, TemplateError> {
-        let mut parser = Rdp::new(StringInput::new(s));
-        if !parser.parameter() {
-            return Err(TemplateError::of(
-                TemplateErrorReason::InvalidParam(s.to_owned()),
-            ));
-        }
+        let mut parser = HandlebarsParser::parse_str(Rule::parameter, s).map_err(
+            |_| {
+                TemplateError::of(TemplateErrorReason::InvalidParam(s.to_owned()))
+            },
+        )?;
 
-        let mut it = parser.queue().iter().peekable();
+        let mut it = parser.flatten().into_iter().peekable();
         Template::parse_param(s, &mut it, s.len() - 1)
     }
 }
@@ -358,19 +360,24 @@ impl Template {
 
         let mut omit_pro_ws = false;
 
-        let input = StringInput::new(source);
-        let mut parser = Rdp::new(input);
+        let parser_queue = HandlebarsParser::parse_str(Rule::handlebars, source)
+            .map_err(|e| match e {
+                PestError::ParsingError(e) => {
+                    let (line_no, col_no) = e.pos.line_col();
+                    // TODO: better error msg
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
+                }
+                PestError::CustomErrorPos(e) => {
+                    let (line_no, col_no) = e.pos.line_col();
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
+                }
+                PestError::CustomErrorSpan(e) => {
+                    // TODO: deal with it
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                }
+            })?;
 
-        if !parser.handlebars() {
-            let (_, pos) = parser.expected();
-            let (line_no, col_no) = parser.input().line_col(pos);
-            return Err(TemplateError::of(TemplateErrorReason::InvalidSyntax).at(
-                line_no,
-                col_no,
-            ));
-        }
-
-        let mut it = parser.queue().iter().peekable();
+        let mut it = parser_queue.flattern().into_iter().peekable();
         let mut prev_end = 0;
         loop {
             if let Some(ref token) = it.next() {
