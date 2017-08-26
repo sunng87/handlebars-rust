@@ -2,10 +2,11 @@ use std::slice::Iter;
 use std::iter::Peekable;
 use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
+use std::rc::Rc;
 
 use pest::{Token, Parser};
-use pest::error::Error as PestError;
-use pest::iterators::Pair;
+use pest::Error as PestError;
+use pest::iterators::{Pair, FlatPairs};
 use pest::inputs::StringInput;
 use grammar::{HandlebarsParser, Rule};
 
@@ -123,7 +124,7 @@ impl Parameter {
             },
         )?;
 
-        let mut it = parser.flatten().into_iter().peekable();
+        let mut it = parser.flatten().peekable();
         Template::parse_param(s, &mut it, s.len() - 1)
     }
 }
@@ -155,7 +156,7 @@ impl Template {
     #[inline]
     fn parse_subexpression<'a>(
         source: &'a str,
-        it: &mut Peekable<Iter<Token<Rule>>>,
+        it: &mut Peekable<FlatPairs<Rule, StringInput>>,
         limit: usize,
     ) -> Result<Parameter, TemplateError> {
         let espec = try!(Template::parse_expression(source, it.by_ref(), limit));
@@ -174,20 +175,18 @@ impl Template {
     #[inline]
     fn parse_name<'a>(
         source: &'a str,
-        it: &mut Peekable<Iter<Token<Rule>>>,
+        it: &mut Peekable<FlatPairs<Rule, StringInput>>,
         _: usize,
     ) -> Result<Parameter, TemplateError> {
         let name_node = it.next().unwrap();
-        match name_node.rule {
+        let rule = name_node.as_rule();
+        let name_span = name_node.into_span();
+        match rule {
             Rule::identifier |
             Rule::reference |
-            Rule::invert_tag_item => {
-                Ok(Parameter::Name(
-                    source[name_node.start..name_node.end].to_owned(),
-                ))
-            }
+            Rule::invert_tag_item => Ok(Parameter::Name(name_span.as_str().to_owned())),
             Rule::subexpression => {
-                Template::parse_subexpression(source, it.by_ref(), name_node.end)
+                Template::parse_subexpression(source, it.by_ref(), name_span.end())
             }
             _ => unreachable!(),
         }
@@ -196,17 +195,19 @@ impl Template {
     #[inline]
     fn parse_param<'a>(
         source: &'a str,
-        it: &mut Peekable<Iter<Token<Rule>>>,
+        it: &mut Peekable<FlatPairs<Rule, StringInput>>,
         _: usize,
     ) -> Result<Parameter, TemplateError> {
         let mut param = it.next().unwrap();
-        if param.rule == Rule::param {
+        if param.as_rule() == Rule::param {
             param = it.next().unwrap();
         }
-        let result = match param.rule {
-            Rule::reference => Parameter::Name(source[param.start..param.end].to_owned()),
+        let param_rule = param.as_rule();
+        let param_span = param.into_span();
+        let result = match param_rule {
+            Rule::reference => Parameter::Name(param_span.as_str().to_owned()),
             Rule::literal => {
-                let s = &source[param.start..param.end];
+                let s = param_span.as_str();
                 if let Ok(json) = Json::from_str(s) {
                     Parameter::Literal(json)
                 } else {
@@ -217,7 +218,7 @@ impl Template {
                 try!(Template::parse_subexpression(
                     source,
                     it.by_ref(),
-                    param.end,
+                    param_span.end(),
                 ))
             }
             _ => unreachable!(),
@@ -225,7 +226,8 @@ impl Template {
 
         loop {
             if let Some(ref n) = it.peek() {
-                if n.end > param.end {
+                let n_span = n.into_span();
+                if n_span.end() > param_span.end() {
                     break;
                 }
             } else {
@@ -241,12 +243,13 @@ impl Template {
     #[inline]
     fn parse_hash<'a>(
         source: &'a str,
-        it: &mut Peekable<Iter<Token<Rule>>>,
+        it: &mut Peekable<FlatPairs<Rule, StringInput>>,
         limit: usize,
     ) -> Result<(String, Parameter), TemplateError> {
         let name = it.next().unwrap();
+        let name_node = name.into_span();
         // identifier
-        let key = source[name.start..name.end].to_owned();
+        let key = name_node.as_str().to_owned();
 
         let value = try!(Template::parse_param(source, it.by_ref(), limit));
         Ok((key, value))
@@ -255,17 +258,21 @@ impl Template {
     #[inline]
     fn parse_block_param<'a>(
         source: &'a str,
-        it: &mut Peekable<Iter<Token<Rule>>>,
+        it: &mut Peekable<FlatPairs<Rule, StringInput>>,
         limit: usize,
     ) -> Result<BlockParam, TemplateError> {
         let p1_name = it.next().unwrap();
+        let p1_name_span = p1_name.into_span();
         // identifier
-        let p1 = source[p1_name.start..p1_name.end].to_owned();
+        let p1 = p1_name_span.as_str().to_owned();
 
-        let p2 = it.peek().and_then(|p2_name| if p2_name.end <= limit {
-            Some(source[p2_name.start..p2_name.end].to_owned())
-        } else {
-            None
+        let p2 = it.peek().and_then(|p2_name| {
+            let p2_name_span = p2_name.into_span();
+            if p2_name_span.end() <= limit {
+                Some(p2_name_span.as_str().to_owned())
+            } else {
+                None
+            }
         });
 
         if p2.is_some() {
@@ -281,7 +288,7 @@ impl Template {
     #[inline]
     fn parse_expression<'a>(
         source: &'a str,
-        it: &mut Peekable<Iter<Token<Rule>>>,
+        it: &mut Peekable<FlatPairs<Rule, StringInput>>,
         limit: usize,
     ) -> Result<ExpressionSpec, TemplateError> {
         let mut params: Vec<Parameter> = Vec::new();
@@ -290,7 +297,7 @@ impl Template {
         let mut omit_pro_ws = false;
         let mut block_param = None;
 
-        if it.peek().unwrap().rule == Rule::pre_whitespace_omitter {
+        if it.peek().unwrap().as_rule() == Rule::pre_whitespace_omitter {
             omit_pre_ws = true;
             it.next();
         }
@@ -300,10 +307,11 @@ impl Template {
         loop {
             let rule;
             let end;
-            if let Some(ref token) = it.peek() {
-                if token.end < limit {
-                    rule = token.rule;
-                    end = token.end;
+            if let Some(ref pair) = it.peek() {
+                let pair_span = pair.into_span();
+                if pair_span.end() < limit {
+                    rule = pair.as_rule();
+                    end = pair_span.end();
                 } else {
                     break;
                 }
@@ -362,33 +370,47 @@ impl Template {
 
         let parser_queue = HandlebarsParser::parse_str(Rule::handlebars, source)
             .map_err(|e| match e {
-                PestError::ParsingError(e) => {
-                    let (line_no, col_no) = e.pos.line_col();
+                PestError::ParsingError {
+                    pos: pos,
+                    positives: _,
+                    negatives: _,
+                } => {
+                    let (line_no, col_no) = pos.line_col();
                     // TODO: better error msg
                     TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
                 }
-                PestError::CustomErrorPos(e) => {
-                    let (line_no, col_no) = e.pos.line_col();
+                PestError::CustomErrorPos {
+                    pos: pos,
+                    message: _,
+                } => {
+                    let (line_no, col_no) = pos.line_col();
                     TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
                 }
-                PestError::CustomErrorSpan(e) => {
+                PestError::CustomErrorSpan {
+                    span: span,
+                    message: _,
+                } => {
                     // TODO: deal with it
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                    let (line_no, col_no) = span.start_pos().line_col();
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
                 }
             })?;
 
-        let mut it = parser_queue.flattern().into_iter().peekable();
+        let mut it = parser_queue.flatten().peekable();
         let mut prev_end = 0;
         loop {
-            if let Some(ref token) = it.next() {
+            if let Some(ref pair) = it.next() {
+                let rule = pair.as_rule();
+                let span = pair.into_span();
 
-                if token.rule != Rule::template {
-                    if token.start != prev_end && !omit_pro_ws && token.rule != Rule::raw_text &&
-                        token.rule != Rule::raw_block_text
+                if rule != Rule::template {
+                    if span.start() != prev_end && !omit_pro_ws && rule != Rule::raw_text &&
+                        rule != Rule::raw_block_text
                     {
-                        let (line_no, col_no) = parser.input().line_col(prev_end);
-                        if token.rule == Rule::raw_block_end {
-                            let text = &source[prev_end..token.start];
+                        let (line_no, col_no) = span.start_pos().line_col();
+                        if rule == Rule::raw_block_end {
+                            // let text = &source[prev_end..token.start];
+                            let text = span.as_str();
                             let mut t = Template::new(mapping);
                             t.push_element(
                                 RawString(Template::unescape_tags(text)),
@@ -397,7 +419,8 @@ impl Template {
                             );
                             template_stack.push_front(t);
                         } else {
-                            let text = &source[prev_end..token.start];
+                            // let text = &source[prev_end..token.start];
+                            let text = span.as_str();
                             let mut t = template_stack.front_mut().unwrap();
                             t.push_element(
                                 RawString(Template::unescape_tags(text)),
@@ -408,13 +431,13 @@ impl Template {
                     }
                 }
 
-                let (line_no, col_no) = parser.input().line_col(token.start);
-                match token.rule {
+                let (line_no, col_no) = span.start_pos().line_col();
+                match rule {
                     Rule::template => {
                         template_stack.push_front(Template::new(mapping));
                     }
                     Rule::raw_text => {
-                        let mut text = &source[prev_end..token.end];
+                        let mut text = span.as_str();
                         if omit_pro_ws {
                             text = text.trim_left();
                         }
@@ -425,9 +448,9 @@ impl Template {
                     Rule::raw_block_start |
                     Rule::directive_block_start |
                     Rule::partial_block_start => {
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), span.end()));
 
-                        match token.rule {
+                        match rule {
                             Rule::helper_block_start |
                             Rule::raw_block_start => {
                                 let helper_template = HelperTemplate {
@@ -467,7 +490,7 @@ impl Template {
                     Rule::invert_tag => {
                         // hack: invert_tag structure is similar to ExpressionSpec, so I
                         // use it here to represent the data
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), span.end()));
 
                         if exp.omit_pre_ws {
                             Template::remove_previous_whitespace(&mut template_stack);
@@ -479,7 +502,7 @@ impl Template {
                         h.template = Some(t);
                     }
                     Rule::raw_block_text => {
-                        let mut text = &source[prev_end..token.end];
+                        let mut text = span.as_str();
                         if omit_pro_ws {
                             text = text.trim_left();
                         }
@@ -496,14 +519,14 @@ impl Template {
                     Rule::raw_block_end |
                     Rule::directive_block_end |
                     Rule::partial_block_end => {
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), token.end));
+                        let exp = try!(Template::parse_expression(source, it.by_ref(), span.end()));
                         if exp.omit_pre_ws {
                             Template::remove_previous_whitespace(&mut template_stack);
                         }
 
                         omit_pro_ws = exp.omit_pro_ws;
 
-                        match token.rule {
+                        match rule {
                             Rule::expression => {
                                 let el = Expression(exp.name);
                                 let mut t = template_stack.front_mut().unwrap();
@@ -536,7 +559,7 @@ impl Template {
                                     hash: exp.hash,
                                     template: None,
                                 };
-                                let el = if token.rule == Rule::directive_expression {
+                                let el = if rule == Rule::directive_expression {
                                     DirectiveExpression(directive)
                                 } else {
                                     PartialExpression(directive)
@@ -576,7 +599,7 @@ impl Template {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     d.template = Some(prev_t);
                                     let t = template_stack.front_mut().unwrap();
-                                    if token.rule == Rule::directive_block_end {
+                                    if rule == Rule::directive_block_end {
                                         t.elements.push(DirectiveBlock(d));
                                     } else {
                                         t.elements.push(PartialBlock(d));
@@ -596,20 +619,22 @@ impl Template {
                         }
                     }
                     Rule::hbs_comment => {
-                        let text = parser.input().slice(token.start + 3, token.end - 2);
+                        // let text = parser.input().slice(token.start + 3, token.end - 2);
+                        // TODO: slice
+                        let text = span.as_str();
                         let mut t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     _ => {}
                 }
 
-                if token.rule != Rule::template {
-                    prev_end = token.end;
+                if rule != Rule::template {
+                    prev_end = span.end();
                 }
             } else {
                 if prev_end < source.len() {
                     let text = &source[prev_end..source.len()];
-                    let (line_no, col_no) = parser.input().line_col(prev_end);
+                    let (line_no, col_no) = (0, 0);
                     let mut t = template_stack.front_mut().unwrap();
                     t.push_element(RawString(text.to_owned()), line_no, col_no);
                 }
