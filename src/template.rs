@@ -1,12 +1,10 @@
-use std::slice::Iter;
 use std::iter::Peekable;
 use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
-use std::rc::Rc;
 
-use pest::{Token, Parser};
+use pest::Parser;
 use pest::Error as PestError;
-use pest::iterators::{Pair, FlatPairs};
+use pest::iterators::FlatPairs;
 use pest::inputs::StringInput;
 use grammar::{HandlebarsParser, Rule};
 
@@ -118,7 +116,7 @@ impl Parameter {
     }
 
     pub fn parse(s: &str) -> Result<Parameter, TemplateError> {
-        let mut parser = HandlebarsParser::parse_str(Rule::parameter, s).map_err(
+        let parser = HandlebarsParser::parse_str(Rule::parameter, s).map_err(
             |_| {
                 TemplateError::of(TemplateErrorReason::InvalidParam(s.to_owned()))
             },
@@ -225,8 +223,8 @@ impl Template {
         };
 
         loop {
-            if let Some(ref n) = it.peek() {
-                let n_span = n.into_span();
+            if let Some(n) = it.peek() {
+                let n_span = n.clone().into_span();
                 if n_span.end() > param_span.end() {
                     break;
                 }
@@ -257,7 +255,7 @@ impl Template {
 
     #[inline]
     fn parse_block_param<'a>(
-        source: &'a str,
+        _: &'a str,
         it: &mut Peekable<FlatPairs<Rule, StringInput>>,
         limit: usize,
     ) -> Result<BlockParam, TemplateError> {
@@ -267,7 +265,7 @@ impl Template {
         let p1 = p1_name_span.as_str().to_owned();
 
         let p2 = it.peek().and_then(|p2_name| {
-            let p2_name_span = p2_name.into_span();
+            let p2_name_span = p2_name.clone().into_span();
             if p2_name_span.end() <= limit {
                 Some(p2_name_span.as_str().to_owned())
             } else {
@@ -307,8 +305,8 @@ impl Template {
         loop {
             let rule;
             let end;
-            if let Some(ref pair) = it.peek() {
-                let pair_span = pair.into_span();
+            if let Some(pair) = it.peek() {
+                let pair_span = pair.clone().into_span();
                 if pair_span.end() < limit {
                     rule = pair.as_rule();
                     end = pair_span.end();
@@ -371,7 +369,7 @@ impl Template {
         let parser_queue = HandlebarsParser::parse_str(Rule::handlebars, source)
             .map_err(|e| match e {
                 PestError::ParsingError {
-                    pos: pos,
+                    pos,
                     positives: _,
                     negatives: _,
                 } => {
@@ -379,17 +377,11 @@ impl Template {
                     // TODO: better error msg
                     TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
                 }
-                PestError::CustomErrorPos {
-                    pos: pos,
-                    message: _,
-                } => {
+                PestError::CustomErrorPos { pos, message: _ } => {
                     let (line_no, col_no) = pos.line_col();
                     TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
                 }
-                PestError::CustomErrorSpan {
-                    span: span,
-                    message: _,
-                } => {
+                PestError::CustomErrorSpan { span, message: _ } => {
                     // TODO: deal with it
                     let (line_no, col_no) = span.start_pos().line_col();
                     TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
@@ -399,9 +391,9 @@ impl Template {
         let mut it = parser_queue.flatten().peekable();
         let mut prev_end = 0;
         loop {
-            if let Some(ref pair) = it.next() {
+            if let Some(pair) = it.next() {
                 let rule = pair.as_rule();
-                let span = pair.into_span();
+                let span = pair.clone().into_span();
 
                 if rule != Rule::template {
                     if span.start() != prev_end && !omit_pro_ws && rule != Rule::raw_text &&

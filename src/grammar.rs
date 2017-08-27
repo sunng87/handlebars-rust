@@ -1,4 +1,3 @@
-use pest::Parser;
 const _GRAMMAR: &'static str = include_str!("grammar.pest");
 
 #[derive(Parser)]

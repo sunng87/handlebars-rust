@@ -29,9 +29,9 @@ fn parse_json_visitor_inner<'a>(
 ) -> Result<(), RenderError> {
     let parsed_path = HandlebarsParser::parse_str(Rule::path, path)
         .map(|p| p.flatten())
-        .map_err(|e| RenderError::new("Invalid JSON path"))?;
+        .map_err(|_| RenderError::new("Invalid JSON path"))?;
 
-    let mut seg_stack: VecDeque<&Pair<Rule, StringInput>> = VecDeque::new();
+    let mut seg_stack: VecDeque<Pair<Rule, StringInput>> = VecDeque::new();
     for seg in parsed_path {
         match seg.as_rule() {
             Rule::path_up => {
@@ -45,14 +45,15 @@ fn parse_json_visitor_inner<'a>(
             }
             Rule::path_id |
             Rule::path_raw_id => {
-                seg_stack.push_back(&seg);
+                seg_stack.push_back(seg);
             }
             _ => {}
         }
     }
 
-    for i in seg_stack.iter() {
-        path_stack.push_back(i.into_span().as_str());
+    for i in seg_stack.into_iter() {
+        let span = i.into_span();
+        path_stack.push_back(&path[span.start()..span.end()]);
     }
     Ok(())
 }
@@ -64,7 +65,7 @@ fn parse_json_visitor<'a>(
     path_context: &'a VecDeque<String>,
     relative_path: &'a str,
 ) -> Result<(), RenderError> {
-    let parser = HandlebarsParser::parse_str(Rule::path, relative_path)
+    let mut parser = HandlebarsParser::parse_str(Rule::path, relative_path)
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new("Invalid JSON path."))?;
 
