@@ -4,6 +4,24 @@ const _GRAMMAR: &'static str = include_str!("grammar.pest");
 #[grammar = "grammar.pest"]
 pub struct HandlebarsParser;
 
+#[cfg(test)]
+use pest::Parser;
+
+#[cfg(test)]
+macro_rules! assert_rule {
+    ($rule: expr, $in: expr) => {
+        assert_eq!(
+            HandlebarsParser::parse_str($rule, $in)
+                .unwrap()
+                .next()
+                .unwrap()
+                .into_span()
+                .end(),
+            $in.len()
+        );
+    }
+}
+
 #[test]
 fn test_raw_text() {
     let s = vec![
@@ -13,14 +31,14 @@ fn test_raw_text() {
         "hello \\{{{{raw}}}}hello\\{{{{/raw}}}}",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::raw_text, i).is_ok());
+        assert_rule!(Rule::raw_text, i);
     }
 }
 
 #[test]
 fn test_raw_block_text() {
     let s = "<h1> {{hello}} </h1>";
-    assert!(HandlebarsParser::parse_str(Rule::raw_block_text, s).is_ok());
+    assert_rule!(Rule::raw_block_text, s);
 }
 
 #[test]
@@ -38,7 +56,7 @@ fn test_reference() {
         "this.[0].ok",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::reference(), i).is_ok());
+        assert_rule!(Rule::reference, i);
     }
 }
 
@@ -46,7 +64,7 @@ fn test_reference() {
 fn test_name() {
     let s = vec!["if", "(abc)"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::name, i).is_ok());
+        assert_rule!(Rule::name, i);
     }
 }
 
@@ -54,7 +72,7 @@ fn test_name() {
 fn test_param() {
     let s = vec!["hello", "\"json literal\""];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::param, i).is_ok());
+        assert_rule!(Rule::param, i);
     }
 }
 
@@ -67,7 +85,7 @@ fn test_hash() {
         "hello=(world 0)",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::hash, i).is_ok());
+        assert_rule!(Rule::hash, i);
     }
 }
 
@@ -84,7 +102,7 @@ fn test_json_literal() {
         "{\"a\":1, \"b\":2 }",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::literal, i).is_ok());
+        assert_rule!(Rule::literal, i);
     }
 }
 
@@ -92,7 +110,7 @@ fn test_json_literal() {
 fn test_comment() {
     let s = vec!["{{! hello }}"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::comment, i).is_ok());
+        assert_rule!(Rule::hbs_comment, i);
     }
 }
 
@@ -100,7 +118,7 @@ fn test_comment() {
 fn test_subexpression() {
     let s = vec!["(sub)", "(sub 0)", "(sub a=1)"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::subexpression, i).is_ok());
+        assert_rule!(Rule::subexpression, i);
     }
 }
 
@@ -108,7 +126,7 @@ fn test_subexpression() {
 fn test_expression() {
     let s = vec!["{{exp}}", "{{(exp)}}", "{{this.name}}", "{{this.[0].name}}"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::expression, i).is_ok());
+        assert_rule!(Rule::expression, i);
     }
 }
 
@@ -128,7 +146,7 @@ fn test_helper_expression() {
         "{{exp key=(sub 0)}}",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::helper_expression, i).is_ok());
+        assert_rule!(Rule::helper_expression, i);
     }
 }
 
@@ -137,7 +155,7 @@ fn test_helper_expression() {
 fn test_identifier_with_dash() {
     let s = vec!["{{exp-foo}}"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::expression, i).is_ok());
+        assert_rule!(Rule::expression, i);
     }
 }
 
@@ -146,7 +164,7 @@ fn test_identifier_with_dash() {
 fn test_html_expression() {
     let s = vec!["{{{html}}}", "{{{(html)}}}", "{{{(html)}}}"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::html_expression, i).is_ok());
+        assert_rule!(Rule::html_expression, i);
     }
 }
 
@@ -165,7 +183,7 @@ fn test_helper_start() {
         "{{#each-obj obj as |key val|}}",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::helper_block_start, i).is_ok());
+        assert_rule!(Rule::helper_block_start, i);
     }
 }
 
@@ -173,7 +191,7 @@ fn test_helper_start() {
 fn test_helper_end() {
     let s = vec!["{{/if}}", "{{~/if}}", "{{~/if ~}}", "{{/if   ~}}"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::helper_block_end, i).is_ok());
+        assert_rule!(Rule::helper_block_end, i);
     }
 }
 
@@ -192,7 +210,7 @@ fn test_helper_block() {
         "{{#if}}{{/if}}",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::helper_block, i).is_ok());
+        assert_rule!(Rule::helper_block, i);
     }
 }
 
@@ -203,7 +221,7 @@ fn test_raw_block() {
         "{{{{if hello}}}}{{#if nice}}{{/if}}{{{{/if}}}}",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::raw_block, i).is_ok());
+        assert_rule!(Rule::raw_block, i);
     }
 }
 
@@ -211,7 +229,7 @@ fn test_raw_block() {
 fn test_block_param() {
     let s = vec!["as |person|", "as |key val|"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::block_param, i).is_ok());
+        assert_rule!(Rule::block_param, i);
     }
 }
 
@@ -237,7 +255,7 @@ fn test_path() {
         "[foo]",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::path, i).is_ok());
+        assert_rule!(Rule::path, i);
     }
 }
 
@@ -245,7 +263,7 @@ fn test_path() {
 fn test_directive_expression() {
     let s = vec!["{{* ssh}}", "{{~* ssh}}"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::directive_expression, i).is_ok());
+        assert_rule!(Rule::directive_expression, i);
     }
 }
 
@@ -257,7 +275,7 @@ fn test_directive_block() {
         "{{#* inline \"partialname\"}}something{{/inline}}",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::directive_block, i).is_ok());
+        assert_rule!(Rule::directive_block, i);
     }
 }
 
@@ -270,7 +288,7 @@ fn test_partial_expression() {
         "{{> hello a=1}}",
     ];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::partial_expression, i).is_ok());
+        assert_rule!(Rule::partial_expression, i);
     }
 }
 
@@ -278,6 +296,10 @@ fn test_partial_expression() {
 fn test_partial_block() {
     let s = vec!["{{#> hello}}nice{{/hello}}"];
     for i in s.iter() {
-        assert!(HandlebarsParser::parse_str(Rule::partial_block, i).is_ok());
+        let h = HandlebarsParser::parse_str(Rule::partial_block, i).unwrap();
+        for i in h {
+            println!("{:?}", i);
+        }
+        assert_rule!(Rule::partial_block, i);
     }
 }
