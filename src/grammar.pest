@@ -107,7 +107,7 @@ path_raw_id = { (!"]" ~ any)* }
 path_sep = _{ "/" | "." }
 path_up = { ".." }
 path_key = _{ "[" ~  path_raw_id ~ "]" }
-path_item = _{ path_up|path_id|path_current|path_key }
+path_item = { path_up|path_id|path_current|path_key }
 path_current = { "this" | "." }
 
 path_inline = _{ path_item ~ (path_sep ~  path_item)* }

@@ -691,6 +691,14 @@ fn test_parse_template() {
     let source = "<h1>{{title}} 你好</h1> {{{content}}}
 {{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}中文你好
 {{#unless true}}kitkat{{^}}lollipop{{/unless}}";
+    for p in HandlebarsParser::parse_str(Rule::handlebars, source)
+        .unwrap()
+        .flatten()
+    {
+        println!("{:?}", p);
+    }
+    println!("finished");
+
     let t = Template::compile(source.to_string()).ok().unwrap();
 
     assert_eq!(t.elements.len(), 10);

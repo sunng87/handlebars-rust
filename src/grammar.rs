@@ -10,13 +10,11 @@ use pest::Parser;
 #[cfg(test)]
 macro_rules! assert_rule {
     ($rule: expr, $in: expr) => {
-        assert_eq!(
-            HandlebarsParser::parse_str($rule, $in)
-                .unwrap()
-                .next()
-                .unwrap()
-                .into_span()
-                .end(),
+        assert_eq!(HandlebarsParser::parse_str($rule, $in).unwrap()
+                   .last()
+                   .unwrap()
+                   .into_span()
+                   .end(),
             $in.len()
         );
     }
