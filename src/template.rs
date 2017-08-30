@@ -390,10 +390,11 @@ impl Template {
 
         let mut it = parser_queue.flatten().peekable();
         let mut prev_end = 0;
+        let mut end_pos = None;
         loop {
             if let Some(pair) = it.next() {
                 let rule = pair.as_rule();
-                let span = pair.clone().into_span();
+                let span = pair.into_span();
 
                 if rule != Rule::template {
                     if span.start() != prev_end && !omit_pro_ws && rule != Rule::raw_text &&
@@ -401,8 +402,7 @@ impl Template {
                     {
                         let (line_no, col_no) = span.start_pos().line_col();
                         if rule == Rule::raw_block_end {
-                            // let text = &source[prev_end..token.start];
-                            let text = span.as_str();
+                            let text = &source[prev_end..span.start()];
                             let mut t = Template::new(mapping);
                             t.push_element(
                                 RawString(Template::unescape_tags(text)),
@@ -411,8 +411,7 @@ impl Template {
                             );
                             template_stack.push_front(t);
                         } else {
-                            // let text = &source[prev_end..token.start];
-                            let text = span.as_str();
+                            let text = &source[prev_end..span.start()];
                             let mut t = template_stack.front_mut().unwrap();
                             t.push_element(
                                 RawString(Template::unescape_tags(text)),
@@ -622,11 +621,13 @@ impl Template {
 
                 if rule != Rule::template {
                     prev_end = span.end();
+                    end_pos = Some(span.end_pos());
                 }
             } else {
-                if prev_end < source.len() {
+                if prev_end < source.len() && end_pos.is_some() {
                     let text = &source[prev_end..source.len()];
-                    let (line_no, col_no) = (0, 0);
+                    // is some called in if check
+                    let (line_no, col_no) = end_pos.unwrap().line_col();
                     let mut t = template_stack.front_mut().unwrap();
                     t.push_element(RawString(text.to_owned()), line_no, col_no);
                 }
@@ -691,14 +692,6 @@ fn test_parse_template() {
     let source = "<h1>{{title}} 你好</h1> {{{content}}}
 {{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}中文你好
 {{#unless true}}kitkat{{^}}lollipop{{/unless}}";
-    for p in HandlebarsParser::parse_str(Rule::handlebars, source)
-        .unwrap()
-        .flatten()
-    {
-        println!("{:?}", p);
-    }
-    println!("finished");
-
     let t = Template::compile(source.to_string()).ok().unwrap();
 
     assert_eq!(t.elements.len(), 10);
