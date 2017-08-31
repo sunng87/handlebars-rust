@@ -638,7 +638,6 @@ impl Evaluable for Template {
 
 impl Renderable for TemplateElement {
     fn render(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        debug!("rendering {:?}, {:?}", self, rc);
         match *self {
             RawString(ref v) => {
                 try!(rc.writer.write(v.clone().into_bytes().as_ref()));
