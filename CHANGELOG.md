@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.29.0...0.29.1) - 2017-09-01
+## [0.29.1](https://github.com/sunng87/handlebars-rust/compare/0.29.0...0.29.1) - 2017-09-01
 
 * [Changed] Remove `debug!` logging from render to avoid conflict when
   using handlebars as logging backend
