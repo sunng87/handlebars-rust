@@ -397,6 +397,7 @@ impl Template {
                 let span = pair.into_span();
 
                 if rule != Rule::template {
+                    // trailing string check
                     if span.start() != prev_end && !omit_pro_ws && rule != Rule::raw_text &&
                         rule != Rule::raw_block_text
                     {
@@ -428,7 +429,13 @@ impl Template {
                         template_stack.push_front(Template::new(mapping));
                     }
                     Rule::raw_text => {
-                        let mut text = span.as_str();
+                        // leading space fix
+                        let start = if span.start() != prev_end {
+                            prev_end
+                        } else {
+                            span.start()
+                        };
+                        let mut text = &source[start..span.end()];
                         if omit_pro_ws {
                             text = text.trim_left();
                         }
