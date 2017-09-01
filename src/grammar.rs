@@ -20,6 +20,13 @@ macro_rules! assert_rule {
     }
 }
 
+#[cfg(test)]
+macro_rules! assert_rule_match {
+    ($rule: expr, $in: expr) => {
+        assert!(HandlebarsParser::parse_str($rule, $in).is_ok());
+    }
+}
+
 #[test]
 fn test_raw_text() {
     let s = vec![
@@ -253,7 +260,7 @@ fn test_path() {
         "[foo]",
     ];
     for i in s.iter() {
-        assert_rule!(Rule::path, i);
+        assert_rule_match!(Rule::path, i);
     }
 }
 
