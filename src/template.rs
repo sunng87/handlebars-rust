@@ -374,7 +374,6 @@ impl Template {
                     negatives: _,
                 } => {
                     let (line_no, col_no) = pos.line_col();
-                    // TODO: better error msg
                     TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
                 }
                 PestError::CustomErrorPos { pos, message: _ } => {
@@ -382,7 +381,6 @@ impl Template {
                     TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
                 }
                 PestError::CustomErrorSpan { span, message: _ } => {
-                    // TODO: deal with it
                     let (line_no, col_no) = span.start_pos().line_col();
                     TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
                 }
