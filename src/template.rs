@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, VecDeque};
 use pest::Parser;
 use pest::Error as PestError;
 use pest::iterators::FlatPairs;
-use pest::inputs::StringInput;
+use pest::inputs::{StringInput, Position};
 use grammar::{HandlebarsParser, Rule};
 
 use serde_json::value::Value as Json;
@@ -389,10 +389,10 @@ impl Template {
             })?;
 
         let mut it = parser_queue.flatten().peekable();
-        let mut prev_end = 0;
-        let mut end_pos = None;
+        let mut end_pos: Option<Position<StringInput>> = None;
         loop {
             if let Some(pair) = it.next() {
+                let prev_end = end_pos.as_ref().map(|p| p.pos()).unwrap_or(0);
                 let rule = pair.as_rule();
                 let span = pair.into_span();
 
@@ -627,11 +627,11 @@ impl Template {
                 }
 
                 if rule != Rule::template {
-                    prev_end = span.end();
                     end_pos = Some(span.end_pos());
                 }
             } else {
-                if prev_end < source.len() && end_pos.is_some() {
+                let prev_end = end_pos.as_ref().map(|e| e.pos()).unwrap_or(0);
+                if prev_end < source.len() {
                     let text = &source[prev_end..source.len()];
                     // is some called in if check
                     let (line_no, col_no) = end_pos.unwrap().line_col();
