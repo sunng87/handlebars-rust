@@ -7,7 +7,7 @@ use std::collections::{VecDeque, BTreeMap};
 
 use pest::Parser;
 use pest::iterators::Pair;
-use pest::inputs::StringInput;
+use pest::inputs::StrInput;
 use grammar::{HandlebarsParser, Rule};
 use error::RenderError;
 
@@ -31,7 +31,7 @@ fn parse_json_visitor_inner<'a>(
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new("Invalid JSON path"))?;
 
-    let mut seg_stack: VecDeque<Pair<Rule, StringInput>> = VecDeque::new();
+    let mut seg_stack: VecDeque<Pair<Rule, StrInput>> = VecDeque::new();
     for seg in parsed_path {
         match seg.as_rule() {
             Rule::path_up => {
