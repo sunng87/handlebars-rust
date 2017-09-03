@@ -114,6 +114,6 @@ fn main() {
     if let Ok(_) = handlebars.template_renderw2(&mut source_template, &data, &mut output_file) {
         println!("target/table.html generated");
     } else {
-        println!("Failed to geneate target/table.html");
+        println!("Failed to generate target/table.html");
     };
 }
