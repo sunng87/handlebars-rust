@@ -1,7 +1,6 @@
 extern crate env_logger;
 extern crate handlebars;
 
-extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;

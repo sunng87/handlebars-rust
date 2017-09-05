@@ -1,4 +1,4 @@
-const _GRAMMAR: &'static str = include_str!("grammar.pest");
+//const _GRAMMAR: &'static str = include_str!("grammar.pest");
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]

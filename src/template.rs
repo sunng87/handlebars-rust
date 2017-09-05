@@ -348,7 +348,7 @@ impl Template {
 
     #[inline]
     fn remove_previous_whitespace(template_stack: &mut VecDeque<Template>) {
-        let mut t = template_stack.front_mut().unwrap();
+        let t = template_stack.front_mut().unwrap();
         if let Some(el) = t.elements.pop() {
             if let RawString(ref text) = el {
                 t.elements.push(RawString(text.trim_right().to_owned()));
@@ -411,7 +411,7 @@ impl Template {
                             template_stack.push_front(t);
                         } else {
                             let text = &source[prev_end..span.start()];
-                            let mut t = template_stack.front_mut().unwrap();
+                            let t = template_stack.front_mut().unwrap();
                             t.push_element(
                                 RawString(Template::unescape_tags(text)),
                                 line_no,
@@ -437,7 +437,7 @@ impl Template {
                         if omit_pro_ws {
                             text = text.trim_left();
                         }
-                        let mut t = template_stack.front_mut().unwrap();
+                        let t = template_stack.front_mut().unwrap();
                         t.push_element(RawString(Template::unescape_tags(text)), line_no, col_no);
                     }
                     Rule::helper_block_start |
@@ -478,7 +478,7 @@ impl Template {
                         }
                         omit_pro_ws = exp.omit_pro_ws;
 
-                        let mut t = template_stack.front_mut().unwrap();
+                        let t = template_stack.front_mut().unwrap();
                         if let Some(ref mut maps) = t.mapping {
                             maps.push(TemplateMapping(line_no, col_no));
                         }
@@ -494,7 +494,7 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         let t = template_stack.pop_front().unwrap();
-                        let mut h = helper_stack.front_mut().unwrap();
+                        let h = helper_stack.front_mut().unwrap();
                         h.template = Some(t);
                     }
                     Rule::raw_block_text => {
@@ -525,12 +525,12 @@ impl Template {
                         match rule {
                             Rule::expression => {
                                 let el = Expression(exp.name);
-                                let mut t = template_stack.front_mut().unwrap();
+                                let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::html_expression => {
                                 let el = HTMLExpression(exp.name);
-                                let mut t = template_stack.front_mut().unwrap();
+                                let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::helper_expression => {
@@ -544,7 +544,7 @@ impl Template {
                                     inverse: None,
                                 };
                                 let el = HelperExpression(helper_template);
-                                let mut t = template_stack.front_mut().unwrap();
+                                let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::directive_expression |
@@ -560,7 +560,7 @@ impl Template {
                                 } else {
                                     PartialExpression(directive)
                                 };
-                                let mut t = template_stack.front_mut().unwrap();
+                                let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::helper_block_end |
@@ -618,7 +618,7 @@ impl Template {
                         // let text = parser.input().slice(token.start + 3, token.end - 2);
                         // TODO: slice
                         let text = span.as_str();
-                        let mut t = template_stack.front_mut().unwrap();
+                        let t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     _ => {}
@@ -633,7 +633,7 @@ impl Template {
                     let text = &source[prev_end..source.len()];
                     // is some called in if check
                     let (line_no, col_no) = end_pos.unwrap().line_col();
-                    let mut t = template_stack.front_mut().unwrap();
+                    let t = template_stack.front_mut().unwrap();
                     t.push_element(RawString(text.to_owned()), line_no, col_no);
                 }
                 return Ok(template_stack.pop_front().unwrap());
