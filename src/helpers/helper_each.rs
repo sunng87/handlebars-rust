@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde_json::value::Value as Json;
 
-use helpers::HelperDef;
+use helpers::{HelperDef, HelperResult};
 use registry::Registry;
 use context::{JsonTruthy, to_json};
 use render::{Renderable, RenderContext, Helper};
@@ -12,7 +12,7 @@ use error::RenderError;
 pub struct EachHelper;
 
 impl HelperDef for EachHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         let value = try!(h.param(0).ok_or_else(|| {
             RenderError::new("Param not found for helper \"each\"")
         }));

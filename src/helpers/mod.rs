@@ -1,6 +1,7 @@
 use render::{RenderContext, Helper};
 use registry::Registry;
 use error::RenderError;
+use serde_json::Value;
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::EACH_HELPER;
@@ -45,18 +46,21 @@ pub use self::helper_log::LOG_HELPER;
 /// ```
 ///
 ///
+
+
+pub type HelperResult = Result<(), RenderError>;
+
 pub trait HelperDef: Send + Sync {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult;
 }
 
 /// implement HelperDef for bare function so we can use function as helper
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext)
-                           -> Result<(), RenderError>,
+        + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext) -> HelperResult,
 > HelperDef for F {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         (*self)(h, r, rc)
     }
 }

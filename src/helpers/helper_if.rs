@@ -1,4 +1,4 @@
-use helpers::HelperDef;
+use helpers::{HelperDef, HelperResult};
 use registry::Registry;
 use context::JsonTruthy;
 use render::{Renderable, RenderContext, Helper};
@@ -10,7 +10,7 @@ pub struct IfHelper {
 }
 
 impl HelperDef for IfHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         let param = try!(h.param(0).ok_or_else(|| {
             RenderError::new("Param not found for helper \"if\"")
         }));
