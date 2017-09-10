@@ -1,4 +1,5 @@
 use render::{RenderContext, Helper};
+use context::JsonRender;
 use registry::Registry;
 use error::RenderError;
 use serde_json::Value;
@@ -51,7 +52,22 @@ pub use self::helper_log::LOG_HELPER;
 pub type HelperResult = Result<(), RenderError>;
 
 pub trait HelperDef: Send + Sync {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult;
+    fn call_inner(
+        &self,
+        _: &Helper,
+        _: &Registry,
+        _: &mut RenderContext,
+    ) -> Result<Option<Value>, RenderError> {
+        Ok(None)
+    }
+
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+        if let Some(result) = self.call_inner(h, r, rc)? {
+            rc.writer.write(result.render().into_bytes().as_ref())?;
+        }
+
+        Ok(())
+    }
 }
 
 /// implement HelperDef for bare function so we can use function as helper

@@ -2,6 +2,7 @@ use std::collections::{HashMap, BTreeMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
 use std::io::Write;
+use std::borrow::Borrow;
 
 use serde::Serialize;
 use serde_json::value::Value as Json;
@@ -512,6 +513,36 @@ pub trait Evaluable {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
 
+fn call_helper_for_value(
+    hd: &Box<HelperDef>,
+    ht: &Helper,
+    registry: &Registry,
+    rc: &mut RenderContext,
+) -> Result<ContextJson, RenderError> {
+    // test if helperDef has json result
+    if let Some(inner_value) = hd.call_inner(ht, registry, rc)? {
+        Ok(ContextJson {
+            path: None,
+            value: inner_value,
+        })
+    } else {
+        // parse value from output
+        let mut local_writer = StringWriter::new();
+        {
+            let mut local_rc = rc.derive();
+            local_rc.writer = &mut local_writer;
+            // disable html escape for subexpression
+            local_rc.disable_escape = true;
+
+            hd.call(ht, registry, &mut local_rc)?;
+        }
+        Ok(ContextJson {
+            path: None,
+            value: Json::String(local_writer.to_string()),
+        })
+    }
+}
+
 
 impl Parameter {
     pub fn expand_as_name(
@@ -521,19 +552,7 @@ impl Parameter {
     ) -> Result<String, RenderError> {
         match self {
             &Parameter::Name(ref name) => Ok(name.to_owned()),
-            &Parameter::Subexpression(ref t) => {
-                let mut local_writer = StringWriter::new();
-                {
-                    let mut local_rc = rc.derive();
-                    local_rc.writer = &mut local_writer;
-                    // disable html escape for subexpression
-                    local_rc.disable_escape = true;
-
-                    try!(t.as_template().render(registry, &mut local_rc));
-                }
-
-                Ok(local_writer.to_string())
-            }
+            &Parameter::Subexpression(_) => self.expand(registry, rc).map(|v| v.value.render()),
             &Parameter::Literal(ref j) => Ok(j.render()),
         }
     }
@@ -570,12 +589,29 @@ impl Parameter {
                     value: j.clone(),
                 })
             }
-            &Parameter::Subexpression(_) => {
-                let text_value = try!(self.expand_as_name(registry, rc));
-                Ok(ContextJson {
-                    path: None,
-                    value: Json::String(text_value),
-                })
+            &Parameter::Subexpression(ref t) => {
+                match t.into_element() {
+                    Expression(ref expr) => expr.expand(registry, rc),
+                    HelperExpression(ref ht) => {
+                        let helper = Helper::from_template(ht, registry, rc)?;
+                        if let Some(ref d) = rc.get_local_helper(&ht.name) {
+                            call_helper_for_value(d.borrow(), &helper, registry, rc)
+                        } else {
+                            registry
+                                .get_helper(&ht.name)
+                                .or(registry.get_helper(if ht.block {
+                                    "blockHelperMissing"
+                                } else {
+                                    "helperMissing"
+                                }))
+                                .ok_or(RenderError::new(
+                                    format!("Helper not defined: {:?}", ht.name),
+                                ))
+                                .and_then(|d| call_helper_for_value(d, &helper, registry, rc))
+                        }
+                    }
+                    _ => unreachable!(),
+                }
             }
         }
     }
