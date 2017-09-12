@@ -200,14 +200,14 @@
 //!
 //! ```
 //! use std::io::Write;
-//! use handlebars::{Handlebars, HelperDef, RenderError, RenderContext, Helper, Context, JsonRender};
+//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult};
 //!
 //! // implement by a structure impls HelperDef
 //! #[derive(Clone, Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+//!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
 //!     try!(rc.writer.write("1st helper: ".as_bytes()));
@@ -217,7 +217,7 @@
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+//! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
 //!     try!(rc.writer.write("2nd helper: ".as_bytes()));
@@ -232,7 +232,7 @@
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
-//!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> Result<(), RenderError>{
+//!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> HelperResult {
 //!           let param = h.param(0).unwrap();
 //!
 //!           try!(rc.writer.write("3rd helper: ".as_bytes()));
@@ -252,7 +252,7 @@
 //!
 //! #### Built-in Helpers
 //!
-//! * `{{#raw}} ... {{/raw}}` escape handlebars expression within the block
+//! * `{{{{#raw}}}} ... {{{{/raw}}}}` escape handlebars expression within the block
 //! * `{{#if ...}} ... {{else}} ... {{/if}}` if-else block
 //! * `{{#unless ...}} ... {{else}} .. {{/unless}}` if-not-else block
 //! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebar-rust doesn't support mustach iteration syntax so use this instead.
@@ -298,7 +298,7 @@ pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRen
 pub use self::registry::{EscapeFn, no_escape, html_escape, Registry as Handlebars};
 pub use self::render::{Renderable, Evaluable, RenderContext, Helper, ContextJson,
                        Directive as Decorator};
-pub use self::helpers::HelperDef;
+pub use self::helpers::{HelperDef, HelperResult};
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::context::{Context, JsonRender, to_json};
 

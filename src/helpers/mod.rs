@@ -2,7 +2,7 @@ use render::{RenderContext, Helper};
 use context::JsonRender;
 use registry::Registry;
 use error::RenderError;
-use serde_json::Value;
+use serde_json::Value as Json;
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::EACH_HELPER;
@@ -26,7 +26,7 @@ pub use self::helper_log::LOG_HELPER;
 /// ```ignore
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
 ///    // get parameter from helper or throw an error
 ///    let param = h.param(0).and_then(|v| v.value().as_string()).unwrap_or("");
 ///    try!(rc.writer.write(param.to_uppercase().into_bytes().as_ref()));
@@ -41,7 +41,7 @@ pub use self::helper_log::LOG_HELPER;
 /// ```
 /// use handlebars::*;
 ///
-/// fn dummy_block(h: &Helper, r: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+/// fn dummy_block(h: &Helper, r: &Handlebars, rc: &mut RenderContext) -> HelperResult {
 ///     h.template().map(|t| t.render(r, rc)).unwrap_or(Ok(()))
 /// }
 /// ```
@@ -57,7 +57,7 @@ pub trait HelperDef: Send + Sync {
         _: &Helper,
         _: &Registry,
         _: &mut RenderContext,
-    ) -> Result<Option<Value>, RenderError> {
+    ) -> Result<Option<Json>, RenderError> {
         Ok(None)
     }
 
@@ -74,7 +74,7 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext) -> HelperResult,
+        + for<'b, 'c, 'd> Fn(&'b Helper, &'c Registry, &'d mut RenderContext) -> HelperResult,
 > HelperDef for F {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         (*self)(h, r, rc)
