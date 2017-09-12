@@ -1,13 +1,12 @@
-use helpers::HelperDef;
+use helpers::{HelperDef, HelperResult};
 use registry::Registry;
 use render::{Renderable, RenderContext, Helper};
-use error::RenderError;
 
 #[derive(Clone, Copy)]
 pub struct RawHelper;
 
 impl HelperDef for RawHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         let tpl = h.template();
         if let Some(t) = tpl {
             t.render(r, rc)

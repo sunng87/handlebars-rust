@@ -38,15 +38,12 @@ impl Subexpression {
         !(self.params.is_empty() && self.hash.is_empty())
     }
 
-    pub fn as_template(&self) -> Template {
-        let mut t = Template::new(false);
-        let el = if self.is_helper() {
+    pub fn into_element(&self) -> TemplateElement {
+        if self.is_helper() {
             HelperExpression(HelperTemplate::from(self))
         } else {
             Expression(Parameter::Name(self.name.clone()))
-        };
-        t.elements.push(el);
-        t
+        }
     }
 }
 

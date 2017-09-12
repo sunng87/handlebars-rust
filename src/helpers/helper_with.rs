@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use helpers::HelperDef;
+use helpers::{HelperDef, HelperResult};
 use registry::Registry;
 use context::{JsonTruthy, to_json};
 use render::{Renderable, RenderContext, Helper};
@@ -10,7 +10,7 @@ use error::RenderError;
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         let param = try!(h.param(0).ok_or_else(|| {
             RenderError::new("Param not found for helper \"with\"")
         }));
