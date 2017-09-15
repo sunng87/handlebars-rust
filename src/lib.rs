@@ -301,6 +301,7 @@ pub use self::render::{Renderable, Evaluable, RenderContext, Helper, ContextJson
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::context::{Context, JsonRender, to_json};
+pub use self::support::str::StringWriter;
 
 mod grammar;
 mod template;
