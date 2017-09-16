@@ -33,6 +33,12 @@ fn parse_json_visitor_inner<'a>(
 
     let mut seg_stack: VecDeque<Pair<Rule, StrInput>> = VecDeque::new();
     for seg in parsed_path {
+        if seg.as_str() == "@root" {
+            seg_stack.clear();
+            path_stack.clear();
+            continue;
+        }
+
         match seg.as_rule() {
             Rule::path_up => {
                 path_stack.pop_back();
@@ -409,5 +415,24 @@ mod test {
     fn test_serialize_error() {
         let d = UnserializableType {};
         assert!(Context::wraps(&d).is_err());
+    }
+
+    #[test]
+    fn test_root() {
+        let m = json!({
+            "a" : {
+                "b" : {
+                    "c" : {
+                        "d" : 1
+                    }
+                }
+            },
+            "b": 2
+        });
+        let ctx = Context::wraps(&m).unwrap();
+        assert_eq!(ctx.navigate("a/b", &VecDeque::new(), "@root/b")
+                   .unwrap()
+                   .render(),
+                   "2".to_string());
     }
 }
