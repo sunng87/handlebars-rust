@@ -111,9 +111,9 @@ impl HelperDef for EachHelper {
                         }
                         Ok(())
                     }
-                    _ => {
+                    (true, v) => {
                         Err(RenderError::new(
-                            format!("Param type is not iterable: {:?}", template),
+                            format!("Param type is not iterable: {:?}", v),
                         ))
                     }
                 };
