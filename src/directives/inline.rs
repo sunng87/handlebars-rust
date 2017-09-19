@@ -27,7 +27,7 @@ impl DirectiveDef for InlineDirective {
         }));
 
 
-        rc.set_partial(name.to_owned(), template.clone());
+        rc.set_partial(name.to_owned(), template);
         Ok(())
     }
 }

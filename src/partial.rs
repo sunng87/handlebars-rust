@@ -24,7 +24,7 @@ pub fn expand_partial(
 
     let tname = d.name();
     let partial = rc.get_partial(tname);
-    let render_template = partial.as_ref().or(r.get_template(tname)).or(d.template());
+    let render_template = partial.or(r.get_template(tname)).or(d.template());
     match render_template {
         Some(t) => {
             let mut local_rc = rc.derive();
@@ -38,7 +38,7 @@ pub fn expand_partial(
 
             // @partial-block
             if let Some(t) = d.template() {
-                local_rc.set_partial("@partial-block".to_string(), t.clone());
+                local_rc.set_partial("@partial-block".to_string(), t);
             }
 
             let hash = d.hash();
