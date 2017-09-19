@@ -19,7 +19,7 @@ array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
 
-symbol_char = _{'a'..'z'|'A'..'Z'|'0'..'9'|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
+symbol_char = _{'a'..'z'|'A'..'Z'|'0'..'9'|"@"|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
 path_char = _{ "/" }
 
 identifier = @{ symbol_char+ }
