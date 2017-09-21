@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
-use std::rc::Rc;
 
 use serde::Serialize;
 
@@ -54,7 +53,7 @@ pub fn no_escape(data: &str) -> String {
 ///
 /// It maintains compiled templates and registered helpers.
 pub struct Registry {
-    templates: HashMap<String, Rc<Template>>,
+    templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<HelperDef + 'static>>,
     directives: HashMap<String, Box<DirectiveDef + 'static>>,
     escape_fn: EscapeFn,
@@ -110,7 +109,7 @@ impl Registry {
     {
         try!(
             Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)
-                .and_then(|t| Ok(self.templates.insert(name.to_string(), Rc::new(t))))
+                .and_then(|t| Ok(self.templates.insert(name.to_string(), t)))
         );
         Ok(())
     }
@@ -197,8 +196,8 @@ impl Registry {
     }
 
     /// Return a registered template,
-    pub fn get_template(&self, name: &str) -> Option<Rc<Template>> {
-        self.templates.get(name).map(|t| t.clone())
+    pub fn get_template(&self, name: &str) -> Option<&Template> {
+        self.templates.get(name)
     }
 
     /// Return a registered helper
@@ -212,7 +211,7 @@ impl Registry {
     }
 
     /// Return all templates registered
-    pub fn get_templates(&self) -> &HashMap<String, Rc<Template>> {
+    pub fn get_templates(&self) -> &HashMap<String, Template> {
         &self.templates
     }
 
