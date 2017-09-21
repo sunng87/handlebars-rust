@@ -23,7 +23,7 @@ use partial;
 /// content is written to.
 ///
 pub struct RenderContext<'a> {
-    partials: HashMap<String, Rc<Template>>,
+    partials: HashMap<String, Template>,
     path: String,
     local_path_root: VecDeque<String>,
     local_variables: HashMap<String, Json>,
@@ -100,12 +100,12 @@ impl<'a> RenderContext<'a> {
         }
     }
 
-    pub fn get_partial(&self, name: &str) -> Option<Rc<Template>> {
-        self.partials.get(name).map(|trc| trc.clone())
+    pub fn get_partial(&self, name: &str) -> Option<Template> {
+        self.partials.get(name).map(|t| t.clone())
     }
 
-    pub fn set_partial(&mut self, name: String, tpl: Rc<Template>) {
-        self.partials.insert(name, tpl);
+    pub fn set_partial(&mut self, name: String, result: Template) {
+        self.partials.insert(name, result);
     }
 
     pub fn get_path(&self) -> &String {
@@ -292,8 +292,8 @@ pub struct Helper<'a> {
     params: Vec<ContextJson>,
     hash: BTreeMap<String, ContextJson>,
     block_param: &'a Option<BlockParam>,
-    template: Option<Rc<Template>>,
-    inverse: Option<Rc<Template>>,
+    template: &'a Option<Template>,
+    inverse: &'a Option<Template>,
     block: bool,
 }
 
@@ -320,8 +320,8 @@ impl<'a, 'b> Helper<'a> {
             params: evaluated_params,
             hash: evaluated_hash,
             block_param: &ht.block_param,
-            template: ht.template.clone(),
-            inverse: ht.inverse.clone(),
+            template: &ht.template,
+            inverse: &ht.inverse,
             block: ht.block,
         })
     }
@@ -387,13 +387,13 @@ impl<'a, 'b> Helper<'a> {
     ///
     /// Typically you will render the template via: `template.render(registry, render_context)`
     ///
-    pub fn template(&self) -> Option<Rc<Template>> {
-        self.template.as_ref().map(|t| t.clone())
+    pub fn template(&self) -> Option<&Template> {
+        (*self.template).as_ref().map(|t| t)
     }
 
     /// Returns the template of `else` branch if any
-    pub fn inverse(&self) -> Option<Rc<Template>> {
-        self.inverse.as_ref().map(|t| t.clone())
+    pub fn inverse(&self) -> Option<&Template> {
+        (*self.inverse).as_ref().map(|t| t)
     }
 
     /// Returns if the helper is a block one `{{#helper}}{{/helper}}` or not `{{helper 123}}`
@@ -423,19 +423,19 @@ impl<'a, 'b> Helper<'a> {
 }
 
 /// Render-time Decorator data when using in a decorator definition
-pub struct Directive {
+pub struct Directive<'a> {
     name: String,
     params: Vec<ContextJson>,
     hash: BTreeMap<String, ContextJson>,
-    template: Option<Rc<Template>>,
+    template: &'a Option<Template>,
 }
 
-impl<'a> Directive {
+impl<'a, 'b> Directive<'a> {
     fn from_template(
-        dt: &DirectiveTemplate,
+        dt: &'a DirectiveTemplate,
         registry: &Registry,
-        rc: &'a mut RenderContext,
-    ) -> Result<Directive, RenderError> {
+        rc: &'b mut RenderContext,
+    ) -> Result<Directive<'a>, RenderError> {
         let name = try!(dt.name.expand_as_name(registry, rc));
 
         let mut evaluated_params = Vec::new();
@@ -454,7 +454,7 @@ impl<'a> Directive {
             name: name,
             params: evaluated_params,
             hash: evaluated_hash,
-            template: dt.template.clone(),
+            template: &dt.template,
         })
     }
 
@@ -484,8 +484,8 @@ impl<'a> Directive {
     }
 
     /// Returns the default inner template if any
-    pub fn template(&self) -> Option<Rc<Template>> {
-        self.template.as_ref().map(|t| t.clone())
+    pub fn template(&self) -> Option<&Template> {
+        (*self.template).as_ref().map(|t| t)
     }
 }
 

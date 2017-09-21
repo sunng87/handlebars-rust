@@ -1,7 +1,6 @@
 use std::iter::Peekable;
 use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
-use std::rc::Rc;
 
 use pest::Parser;
 use pest::Error as PestError;
@@ -77,8 +76,8 @@ pub struct HelperTemplate {
     pub params: Vec<Parameter>,
     pub hash: BTreeMap<String, Parameter>,
     pub block_param: Option<BlockParam>,
-    pub template: Option<Rc<Template>>,
-    pub inverse: Option<Rc<Template>>,
+    pub template: Option<Template>,
+    pub inverse: Option<Template>,
     pub block: bool,
 }
 
@@ -101,7 +100,7 @@ pub struct Directive {
     pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: BTreeMap<String, Parameter>,
-    pub template: Option<Rc<Template>>,
+    pub template: Option<Template>,
 }
 
 impl Parameter {
@@ -493,7 +492,7 @@ impl Template {
 
                         let t = template_stack.pop_front().unwrap();
                         let h = helper_stack.front_mut().unwrap();
-                        h.template = Some(Rc::new(t));
+                        h.template = Some(t);
                     }
                     Rule::raw_block_text => {
                         let mut text = span.as_str();
@@ -568,9 +567,9 @@ impl Template {
                                 if h.name == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     if h.template.is_some() {
-                                        h.inverse = Some(Rc::new(prev_t));
+                                        h.inverse = Some(prev_t);
                                     } else {
-                                        h.template = Some(Rc::new(prev_t));
+                                        h.template = Some(prev_t);
                                     }
                                     let t = template_stack.front_mut().unwrap();
                                     t.elements.push(HelperBlock(h));
@@ -591,7 +590,7 @@ impl Template {
                                 let close_tag_name = exp.name;
                                 if d.name == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
-                                    d.template = Some(Rc::new(prev_t));
+                                    d.template = Some(prev_t);
                                     let t = template_stack.front_mut().unwrap();
                                     if rule == Rule::directive_block_end {
                                         t.elements.push(DirectiveBlock(d));
