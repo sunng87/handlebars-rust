@@ -1,15 +1,15 @@
 #![feature(test)]
 extern crate handlebars;
-extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 
 extern crate test;
 
 use std::collections::BTreeMap;
 
 use serde_json::value::Value as Json;
-use handlebars::{Handlebars, Template, to_json};
+use handlebars::{to_json, Handlebars, Template};
 
 static SOURCE: &'static str = "<html>
   <head>
@@ -90,11 +90,19 @@ fn large_loop_helper(b: &mut test::Bencher) {
 
     let real: Vec<DataWrapper> = (1..1000)
         .into_iter()
-        .map(|i| DataWrapper { v: format!("n={}", i) })
+        .map(|i| {
+            DataWrapper {
+                v: format!("n={}", i),
+            }
+        })
         .collect();
     let dummy: Vec<DataWrapper> = (1..1000)
         .into_iter()
-        .map(|i| DataWrapper { v: format!("n={}", i) })
+        .map(|i| {
+            DataWrapper {
+                v: format!("n={}", i),
+            }
+        })
         .collect();
     let rows = RowWrapper { real, dummy };
     b.iter(|| handlebars.render("test", &rows).ok().unwrap());

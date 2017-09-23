@@ -5,10 +5,10 @@ use std::path::Path;
 
 use serde::Serialize;
 
-use regex::{Regex, Captures};
+use regex::{Captures, Regex};
 
 use template::Template;
-use render::{Renderable, RenderContext};
+use render::{RenderContext, Renderable};
 use context::Context;
 use helpers::{self, HelperDef};
 use directives::{self, DirectiveDef};
@@ -134,9 +134,9 @@ impl Registry {
     where
         P: AsRef<Path>,
     {
-        let mut file = try!(File::open(tpl_path).map_err(|e| {
-            TemplateFileError::IOError(e, name.to_owned())
-        }));
+        let mut file = try!(
+            File::open(tpl_path).map_err(|e| { TemplateFileError::IOError(e, name.to_owned()) })
+        );
         self.register_template_source(name, &mut file)
     }
 
@@ -147,9 +147,11 @@ impl Registry {
         tpl_source: &mut Read,
     ) -> Result<(), TemplateFileError> {
         let mut buf = String::new();
-        try!(tpl_source.read_to_string(&mut buf).map_err(|e| {
-            TemplateFileError::IOError(e, name.to_owned())
-        }));
+        try!(
+            tpl_source
+                .read_to_string(&mut buf)
+                .map_err(|e| { TemplateFileError::IOError(e, name.to_owned()) })
+        );
         try!(self.register_template_string(name, buf));
         Ok(())
     }
@@ -285,9 +287,8 @@ impl Registry {
         let ctx = try!(Context::wraps(data));
         let mut local_helpers = HashMap::new();
         let mut render_context = RenderContext::new(ctx, &mut local_helpers, writer);
-        tpl.render(self, &mut render_context).map_err(
-            TemplateRenderError::from,
-        )
+        tpl.render(self, &mut render_context)
+            .map_err(TemplateRenderError::from)
     }
 
     /// render a template source using current registry without register it
@@ -311,7 +312,7 @@ impl Registry {
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use render::{RenderContext, Renderable, Helper};
+    use render::{Helper, RenderContext, Renderable};
     use helpers::HelperDef;
     use support::str::StringWriter;
     use error::RenderError;
@@ -366,7 +367,6 @@ mod test {
         }
 
         assert_eq!("<h1></h1>".to_string(), sw.to_string());
-
     }
 
     #[test]
@@ -396,6 +396,9 @@ mod test {
             "hello": "world"
         });
 
-        assert_eq!("{{hello}}", r.template_render(r"\\{{hello}}", &data).unwrap());
+        assert_eq!(
+            "{{hello}}",
+            r.template_render(r"\\{{hello}}", &data).unwrap()
+        );
     }
 }

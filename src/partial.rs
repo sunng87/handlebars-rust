@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use registry::Registry;
-use context::{Context, merge_json};
-use render::{RenderContext, Directive, Evaluable, Renderable};
+use context::{merge_json, Context};
+use render::{Directive, Evaluable, RenderContext, Renderable};
 use error::RenderError;
 
 pub fn expand_partial(
@@ -11,7 +11,6 @@ pub fn expand_partial(
     r: &Registry,
     rc: &mut RenderContext,
 ) -> Result<(), RenderError> {
-
     // try eval inline partials first
     if let Some(t) = d.template() {
         try!(t.eval(r, rc));
@@ -55,7 +54,6 @@ pub fn expand_partial(
         }
         None => Ok(()),
     }
-
 }
 
 #[cfg(test)]
@@ -89,7 +87,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t4",
-                    "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}",
+                    "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}"
                 )
                 .is_ok()
         );
@@ -107,7 +105,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t7",
-                    "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}",
+                    "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}"
                 )
                 .is_ok()
         );

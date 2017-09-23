@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use serde::Serialize;
-use serde_json::value::{Value as Json, Map, to_value};
+use serde_json::value::{to_value, Map, Value as Json};
 
-use std::collections::{VecDeque, BTreeMap};
+use std::collections::{BTreeMap, VecDeque};
 
 use pest::Parser;
 use pest::iterators::Pair;
@@ -49,8 +49,7 @@ fn parse_json_visitor_inner<'a>(
                     }
                 }
             }
-            Rule::path_id |
-            Rule::path_raw_id => {
+            Rule::path_id | Rule::path_raw_id => {
                 seg_stack.push_back(seg);
             }
             _ => {}
@@ -119,14 +118,16 @@ pub fn merge_json(base: &Json, addition: &Object) -> Json {
 impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
-        Context { data: Arc::new(Json::Null) }
+        Context {
+            data: Arc::new(Json::Null),
+        }
     }
 
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
-        to_value(e).map_err(RenderError::from).map(|d| {
-            Context { data: Arc::new(d) }
-        })
+        to_value(e)
+            .map_err(RenderError::from)
+            .map(|d| Context { data: Arc::new(d) })
     }
 
     /// Navigate the context with base path and relative path
@@ -150,11 +151,9 @@ impl Context {
                 continue;
             }
             data = match *data {
-                Json::Array(ref l) => {
-                    p.parse::<usize>()
-                        .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
-                        .unwrap_or(&DEFAULT_VALUE)
-                }
+                Json::Array(ref l) => p.parse::<usize>()
+                    .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
+                    .unwrap_or(&DEFAULT_VALUE),
                 Json::Object(ref m) => m.get(*p).unwrap_or(&DEFAULT_VALUE),
                 _ => &DEFAULT_VALUE,
             }
@@ -228,9 +227,9 @@ impl JsonTruthy for Json {
 
 #[cfg(test)]
 mod test {
-    use context::{self, JsonRender, Context};
+    use context::{self, Context, JsonRender};
     use std::collections::VecDeque;
-    use serde_json::value::{Value as Json, Map};
+    use serde_json::value::{Map, Value as Json};
 
     #[test]
     fn test_json_render() {
@@ -322,7 +321,6 @@ mod test {
                 .render(),
             "27".to_string()
         );
-
     }
 
     #[test]
@@ -354,47 +352,55 @@ mod test {
     fn test_merge_json() {
         let map = json!({ "age": 4 });
         let s = "hello".to_owned();
-        let hash =
-            btreemap!{
+        let hash = btreemap!{
             "tag".to_owned() => context::to_json(&"h1")
         };
 
         let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
-        assert_eq!(ctx_a1
-                       .navigate(".", &VecDeque::new(), "age")
-                       .unwrap()
-                       .render(),
-                   "4".to_owned());
-        assert_eq!(ctx_a1
-                       .navigate(".", &VecDeque::new(), "tag")
-                       .unwrap()
-                       .render(),
-                   "h1".to_owned());
+        assert_eq!(
+            ctx_a1
+                .navigate(".", &VecDeque::new(), "age")
+                .unwrap()
+                .render(),
+            "4".to_owned()
+        );
+        assert_eq!(
+            ctx_a1
+                .navigate(".", &VecDeque::new(), "tag")
+                .unwrap()
+                .render(),
+            "h1".to_owned()
+        );
 
         let ctx_a2 = Context::wraps(&context::merge_json(&context::to_json(&s), &hash)).unwrap();
-        assert_eq!(ctx_a2
-                       .navigate(".", &VecDeque::new(), "this")
-                       .unwrap()
-                       .render(),
-                   "[object]".to_owned());
-        assert_eq!(ctx_a2
-                       .navigate(".", &VecDeque::new(), "tag")
-                       .unwrap()
-                       .render(),
-                   "h1".to_owned());
+        assert_eq!(
+            ctx_a2
+                .navigate(".", &VecDeque::new(), "this")
+                .unwrap()
+                .render(),
+            "[object]".to_owned()
+        );
+        assert_eq!(
+            ctx_a2
+                .navigate(".", &VecDeque::new(), "tag")
+                .unwrap()
+                .render(),
+            "h1".to_owned()
+        );
     }
 
     #[test]
     fn test_key_name_with_this() {
-        let m =
-            btreemap!{
+        let m = btreemap!{
             "this_name".to_string() => "the_value".to_string()
         };
         let ctx = Context::wraps(&m).unwrap();
-        assert_eq!(ctx.navigate(".", &VecDeque::new(), "this_name")
-                       .unwrap()
-                       .render(),
-                   "the_value".to_string());
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "this_name")
+                .unwrap()
+                .render(),
+            "the_value".to_string()
+        );
     }
 
     use serde::{Serialize, Serializer};
@@ -430,9 +436,11 @@ mod test {
             "b": 2
         });
         let ctx = Context::wraps(&m).unwrap();
-        assert_eq!(ctx.navigate("a/b", &VecDeque::new(), "@root/b")
-                   .unwrap()
-                   .render(),
-                   "2".to_string());
+        assert_eq!(
+            ctx.navigate("a/b", &VecDeque::new(), "@root/b")
+                .unwrap()
+                .render(),
+            "2".to_string()
+        );
     }
 }

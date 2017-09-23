@@ -24,13 +24,11 @@ fn main() {
         .ok()
         .unwrap();
 
-    let data0 =
-        btreemap! {
+    let data0 = btreemap! {
         "title".to_string() => "example 0".to_string(),
         "parent".to_string() => "base0".to_string()
     };
-    let data1 =
-        btreemap! {
+    let data1 = btreemap! {
         "title".to_string() => "example 1".to_string(),
         "parent".to_string() => "base1".to_string()
     };
@@ -38,17 +36,17 @@ fn main() {
     println!("Page 0");
     println!(
         "{}",
-        handlebars.render("template", &data0).unwrap_or_else(
-            |e| format!("{}", e),
-        )
+        handlebars
+            .render("template", &data0,)
+            .unwrap_or_else(|e| format!("{}", e),)
     );
     println!("=======================================================");
 
     println!("Page 1");
     println!(
         "{}",
-        handlebars.render("template", &data1).unwrap_or_else(
-            |e| format!("{}", e),
-        )
+        handlebars
+            .render("template", &data1,)
+            .unwrap_or_else(|e| format!("{}", e),)
     );
 }

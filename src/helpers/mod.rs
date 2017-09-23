@@ -1,4 +1,4 @@
-use render::{RenderContext, Helper};
+use render::{Helper, RenderContext};
 use context::JsonRender;
 use registry::Registry;
 use error::RenderError;
@@ -74,7 +74,8 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd> Fn(&'b Helper, &'c Registry, &'d mut RenderContext) -> HelperResult,
+        + for<'b, 'c, 'd> Fn(&'b Helper, &'c Registry, &'d mut RenderContext)
+        -> HelperResult,
 > HelperDef for F {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         (*self)(h, r, rc)
@@ -102,7 +103,7 @@ mod test {
     use context::JsonRender;
     use helpers::HelperDef;
     use registry::Registry;
-    use render::{RenderContext, Renderable, Helper};
+    use render::{Helper, RenderContext, Renderable};
     use error::RenderError;
 
     #[derive(Clone, Copy)]
@@ -166,25 +167,23 @@ mod test {
 
         handlebars.register_helper(
             "helperMissing",
-            Box::new(|h: &Helper,
-             _: &Registry,
-             rc: &mut RenderContext|
-             -> Result<(), RenderError> {
-                let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
-                try!(rc.writer.write(output.into_bytes().as_ref()));
-                Ok(())
-            }),
+            Box::new(
+                |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
+                    let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
+                    try!(rc.writer.write(output.into_bytes().as_ref()));
+                    Ok(())
+                },
+            ),
         );
         handlebars.register_helper(
             "foo",
-            Box::new(|h: &Helper,
-             _: &Registry,
-             rc: &mut RenderContext|
-             -> Result<(), RenderError> {
-                let output = format!("{}", h.hash_get("value").unwrap().value().render());
-                try!(rc.writer.write(output.into_bytes().as_ref()));
-                Ok(())
-            }),
+            Box::new(
+                |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
+                    let output = format!("{}", h.hash_get("value").unwrap().value().render());
+                    try!(rc.writer.write(output.into_bytes().as_ref()));
+                    Ok(())
+                },
+            ),
         );
 
         let mut data = BTreeMap::new();

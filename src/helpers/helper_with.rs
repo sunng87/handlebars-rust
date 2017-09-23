@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::{JsonTruthy, to_json};
-use render::{Renderable, RenderContext, Helper};
+use context::{to_json, JsonTruthy};
+use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
 
 #[derive(Clone, Copy)]
@@ -147,7 +147,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t1",
-                    "{{#with notfound as |c|}}hello{{else}}world{{/with}}",
+                    "{{#with notfound as |c|}}hello{{else}}world{{/with}}"
                 )
                 .is_ok()
         );
@@ -200,7 +200,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t0",
-                    "{{#each this}}{{#with addr}}{{city}}{{/with}}{{/each}}",
+                    "{{#each this}}{{#with addr}}{{city}}{{/with}}{{/each}}"
                 )
                 .is_ok()
         );
@@ -208,7 +208,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t1",
-                    "{{#each this}}{{#with addr}}{{../age}}{{/with}}{{/each}}",
+                    "{{#each this}}{{#with addr}}{{../age}}{{/with}}{{/each}}"
                 )
                 .is_ok()
         );
@@ -216,7 +216,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t2",
-                    "{{#each this}}{{#with addr}}{{@../index}}{{/with}}{{/each}}",
+                    "{{#each this}}{{#with addr}}{{@../index}}{{/with}}{{/each}}"
                 )
                 .is_ok()
         );
@@ -238,12 +238,11 @@ mod test {
             handlebars
                 .register_template_string(
                     "t0",
-                    "{{#with a}}{{#with b}}{{../../d}}{{/with}}{{/with}}",
+                    "{{#with a}}{{#with b}}{{../../d}}{{/with}}{{/with}}"
                 )
                 .is_ok()
         );
-        let data =
-            btreemap! {
+        let data = btreemap! {
             "a".to_string() => to_json(&btreemap! {
                 "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
             }),
@@ -252,6 +251,5 @@ mod test {
 
         let r0 = handlebars.render("t0", &data);
         assert_eq!(r0.ok().unwrap(), "1".to_string());
-
     }
 }

@@ -272,17 +272,17 @@
 #![recursion_limit = "200"]
 
 #[macro_use]
-extern crate log;
+extern crate lazy_static;
 #[macro_use]
-extern crate quick_error;
+extern crate log;
+#[cfg(test)]
+#[macro_use]
+extern crate maplit;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 #[macro_use]
-extern crate lazy_static;
-#[cfg(test)]
-#[macro_use]
-extern crate maplit;
+extern crate quick_error;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_derive;
@@ -295,12 +295,12 @@ extern crate serde_json;
 
 pub use self::template::Template;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
-pub use self::registry::{EscapeFn, no_escape, html_escape, Registry as Handlebars};
-pub use self::render::{Renderable, Evaluable, RenderContext, Helper, ContextJson,
-                       Directive as Decorator};
+pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
+pub use self::render::{ContextJson, Directive as Decorator, Evaluable, Helper, RenderContext,
+                       Renderable};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::directives::DirectiveDef as DecoratorDef;
-pub use self::context::{Context, JsonRender, to_json};
+pub use self::context::{to_json, Context, JsonRender};
 pub use self::support::str::StringWriter;
 
 mod grammar;

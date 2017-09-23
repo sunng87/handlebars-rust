@@ -1,7 +1,7 @@
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
 use context::JsonTruthy;
-use render::{Renderable, RenderContext, Helper};
+use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
 
 #[derive(Clone, Copy)]
@@ -11,9 +11,10 @@ pub struct IfHelper {
 
 impl HelperDef for IfHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
-        let param = try!(h.param(0).ok_or_else(|| {
-            RenderError::new("Param not found for helper \"if\"")
-        }));
+        let param = try!(
+            h.param(0)
+                .ok_or_else(|| { RenderError::new("Param not found for helper \"if\"") })
+        );
 
         let mut value = param.value().is_truthy();
 
@@ -79,7 +80,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t1",
-                    "{{#with a}}{{#if c.d}}hello {{../a.b}}{{/if}}{{/with}}",
+                    "{{#with a}}{{#if c.d}}hello {{../a.b}}{{/if}}{{/with}}"
                 )
                 .is_ok()
         );

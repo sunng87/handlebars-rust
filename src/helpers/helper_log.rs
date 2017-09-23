@@ -1,7 +1,7 @@
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
 use context::JsonRender;
-use render::{RenderContext, Helper};
+use render::{Helper, RenderContext};
 use error::RenderError;
 
 #[derive(Clone, Copy)]

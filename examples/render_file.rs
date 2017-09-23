@@ -2,22 +2,23 @@
 extern crate env_logger;
 extern crate handlebars;
 extern crate serde;
-extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 use serde::Serialize;
-use serde_json::value::{self, Value as Json, Map};
+use serde_json::value::{self, Map, Value as Json};
 
-use std::io::{Write, Read};
+use std::io::{Read, Write};
 use std::fs::File;
 
-use handlebars::{Handlebars, RenderError, RenderContext, Helper, Context, JsonRender, to_json};
+use handlebars::{to_json, Context, Handlebars, Helper, JsonRender, RenderContext, RenderError};
 
 // define a custom helper
 fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-    let param = try!(h.param(0).ok_or(RenderError::new(
-        "Param 0 is required for format helper.",
-    )));
+    let param = try!(
+        h.param(0,)
+            .ok_or(RenderError::new("Param 0 is required for format helper.",),)
+    );
     let rendered = format!("{} pts", param.value().render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
     Ok(())
@@ -25,10 +26,10 @@ fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(
 
 // another custom helper
 fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-    let rank = try!(h.param(0).and_then(|v| v.value().as_u64()).ok_or(
+    let rank = try!(h.param(0,).and_then(|v| v.value().as_u64(),).ok_or(
         RenderError::new("Param 0 with u64 type is required for rank helper."),
     )) as usize;
-    let teams = try!(h.param(1).and_then(|v| v.value().as_array()).ok_or(
+    let teams = try!(h.param(1,).and_then(|v| v.value().as_array(),).ok_or(
         RenderError::new("Param 1 with array type is required for rank helper"),
     ));
     let total = teams.len();

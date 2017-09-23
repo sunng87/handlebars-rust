@@ -1,6 +1,6 @@
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use render::{Renderable, RenderContext, Helper};
+use render::{Helper, RenderContext, Renderable};
 
 #[derive(Clone, Copy)]
 pub struct RawHelper;

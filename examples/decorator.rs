@@ -1,18 +1,19 @@
 extern crate env_logger;
 extern crate handlebars;
-extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-use serde_json::value::{Value as Json, Map};
+extern crate serde_json;
+use serde_json::value::{Map, Value as Json};
 
-use handlebars::{Handlebars, RenderError, RenderContext, Helper, JsonRender, Decorator, to_json};
+use handlebars::{to_json, Decorator, Handlebars, Helper, JsonRender, RenderContext, RenderError};
 
 // default format helper
 fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
     // get parameter from helper or throw an error
-    let param = try!(h.param(0).ok_or(RenderError::new(
-        "Param 0 is required for format helper.",
-    )));
+    let param = try!(
+        h.param(0,)
+            .ok_or(RenderError::new("Param 0 is required for format helper.",),)
+    );
     let rendered = format!("{} pts", param.value().render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
     Ok(())
@@ -23,16 +24,17 @@ fn format_decorator(
     _: &Handlebars,
     rc: &mut RenderContext,
 ) -> Result<(), RenderError> {
-    let suffix = d.param(0).map(|v| v.value().render()).unwrap_or(
-        "".to_owned(),
-    );
+    let suffix = d.param(0)
+        .map(|v| v.value().render())
+        .unwrap_or("".to_owned());
     rc.register_local_helper(
         "format",
         Box::new(move |h: &Helper, _: &Handlebars, rc: &mut RenderContext| {
             // get parameter from helper or throw an error
-            let param = try!(h.param(0).ok_or(RenderError::new(
-                "Param 0 is required for format helper.",
-            )));
+            let param = try!(
+                h.param(0,)
+                    .ok_or(RenderError::new("Param 0 is required for format helper.",),)
+            );
             let rendered = format!("{} {}", param.value().render(), suffix);
             try!(rc.writer.write(rendered.into_bytes().as_ref()));
             Ok(())
@@ -43,10 +45,10 @@ fn format_decorator(
 
 // another custom helper
 fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-    let rank = try!(h.param(0).and_then(|v| v.value().as_u64()).ok_or(
+    let rank = try!(h.param(0,).and_then(|v| v.value().as_u64(),).ok_or(
         RenderError::new("Param 0 with u64 type is required for rank helper."),
     )) as usize;
-    let teams = try!(h.param(1).and_then(|v| v.value().as_array()).ok_or(
+    let teams = try!(h.param(1,).and_then(|v| v.value().as_array(),).ok_or(
         RenderError::new("Param 1 with array type is required for rank helper"),
     ));
     let total = teams.len();
@@ -122,10 +124,7 @@ fn main() {
 
     // register template from a file and assign a name to it
     // deal with errors
-    if let Err(e) = handlebars.register_template_file(
-        "table",
-        "./examples/decorator/template.hbs",
-    )
+    if let Err(e) = handlebars.register_template_file("table", "./examples/decorator/template.hbs")
     {
         panic!("{}", e);
     }
@@ -139,8 +138,8 @@ fn main() {
     let data = make_data();
     println!(
         "{}",
-        handlebars.render("table", &data).unwrap_or_else(
-            |e| format!("{}", e),
-        )
+        handlebars
+            .render("table", &data,)
+            .unwrap_or_else(|e| format!("{}", e),)
     );
 }

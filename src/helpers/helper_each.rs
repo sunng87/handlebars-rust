@@ -4,8 +4,8 @@ use serde_json::value::Value as Json;
 
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::{JsonTruthy, to_json};
-use render::{Renderable, RenderContext, Helper};
+use context::{to_json, JsonTruthy};
+use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
 
 #[derive(Clone, Copy)]
@@ -22,9 +22,9 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => {
                 rc.promote_local_vars();
-                let local_path_root = value.path_root().map(
-                    |p| format!("{}/{}", rc.get_path(), p),
-                );
+                let local_path_root = value
+                    .path_root()
+                    .map(|p| format!("{}/{}", rc.get_path(), p));
 
                 debug!("each value {:?}", value.value());
                 let rendered = match (value.value().is_truthy(), value.value()) {
@@ -111,11 +111,9 @@ impl HelperDef for EachHelper {
                         }
                         Ok(())
                     }
-                    _ => {
-                        Err(RenderError::new(
-                            format!("Param type is not iterable: {:?}", template),
-                        ))
-                    }
+                    _ => Err(RenderError::new(
+                        format!("Param type is not iterable: {:?}", template),
+                    )),
                 };
 
                 rc.demote_local_vars();
@@ -144,7 +142,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t0",
-                    "{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}",
+                    "{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}"
                 )
                 .is_ok()
         );
@@ -152,7 +150,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t1",
-                    "{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}",
+                    "{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}"
                 )
                 .is_ok()
         );
@@ -172,7 +170,6 @@ mod test {
 
     #[test]
     fn test_each_with_parent() {
-
         let json_str = r#"{"a":{"a":99,"c":[{"d":100},{"d":200}]}}"#;
 
         let data = Json::from_str(json_str).unwrap();
@@ -194,7 +191,6 @@ mod test {
 
     #[test]
     fn test_nested_each_with_parent() {
-
         let json_str = r#"{"a": [{"b": [{"d": 100}], "c": 200}]}"#;
 
         let data = Json::from_str(json_str).unwrap();
@@ -203,7 +199,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t0",
-                    "{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}",
+                    "{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}"
                 )
                 .is_ok()
         );
@@ -214,7 +210,6 @@ mod test {
 
     #[test]
     fn test_nested_each() {
-
         let json_str = r#"{"a": [{"b": true}], "b": [[1, 2, 3],[4, 5]]}"#;
 
         let data = Json::from_str(json_str).unwrap();
@@ -224,7 +219,7 @@ mod test {
             handlebars
                 .register_template_string(
                     "t0",
-                    "{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}",
+                    "{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}"
                 )
                 .is_ok()
         );
@@ -261,19 +256,19 @@ mod test {
             .render(
                 "t0",
                 &({
-                      let mut rv = BTreeMap::new();
-                      rv.insert("foo".to_owned(), {
+                    let mut rv = BTreeMap::new();
+                    rv.insert("foo".to_owned(), {
                         let mut rv = BTreeMap::new();
                         rv.insert("value".to_owned(), "bar".to_owned());
                         rv
                     });
-                      rv.insert("".to_owned(), {
+                    rv.insert("".to_owned(), {
                         let mut rv = BTreeMap::new();
                         rv.insert("value".to_owned(), "baz".to_owned());
                         rv
                     });
-                      rv
-                  }),
+                    rv
+                }),
             )
             .unwrap();
 
@@ -291,15 +286,13 @@ mod test {
                 .register_template_string("t0", "{{#each a}}1{{else}}empty{{/each}}")
                 .is_ok()
         );
-        let m1 =
-            btreemap! {
+        let m1 = btreemap! {
             "a".to_string() => Vec::<String>::new(),
         };
         let r0 = handlebars.render("t0", &m1).unwrap();
         assert_eq!(r0, "empty");
 
-        let m2 =
-            btreemap!{
+        let m2 = btreemap!{
             "b".to_string() => Vec::<String>::new()
         };
         let r1 = handlebars.render("t0", &m2).unwrap();
@@ -314,8 +307,7 @@ mod test {
                 .register_template_string("t0", "{{#each a as |i|}}{{i}}{{/each}}")
                 .is_ok()
         );
-        let m1 =
-            btreemap! {
+        let m1 = btreemap! {
             "a".to_string() => vec![1,2,3,4,5]
         };
         let r0 = handlebars.render("t0", &m1).unwrap();
@@ -325,10 +317,12 @@ mod test {
     #[test]
     fn test_each_object_block_param() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", "{{#each this as |k v|}}{{#with k as |inner_k|}}{{inner_k}}{{/with}}:{{v}}|{{/each}}").is_ok());
+        let template = "{{#each this as |k v|}}\
+                        {{#with k as |inner_k|}}{{inner_k}}{{/with}}:{{v}}|\
+                        {{/each}}";
+        assert!(handlebars.register_template_string("t0", template).is_ok());
 
-        let m =
-            btreemap!{
+        let m = btreemap!{
             "ftp".to_string() => 21,
             "http".to_string() => 80
         };
@@ -343,13 +337,12 @@ mod test {
             handlebars
                 .register_template_string(
                     "t0",
-                    "{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}",
+                    "{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}"
                 )
                 .is_ok()
         );
 
-        let data =
-            btreemap! {
+        let data = btreemap! {
             "a".to_string() => to_json(&btreemap! {
                 "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
             }),
@@ -363,9 +356,11 @@ mod test {
     #[test]
     fn test_nested_each_with_path_up_this() {
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", "{{#each variant}}{{#each ../typearg}}{{#if @first}}template<{{/if}}{{this}}{{#if @last}}>{{else}},{{/if}}{{/each}}{{/each}}").is_ok());
-        let data =
-            btreemap! {
+        let template = "{{#each variant}}{{#each ../typearg}}\
+                        {{#if @first}}template<{{/if}}{{this}}{{#if @last}}>{{else}},{{/if}}\
+                        {{/each}}{{/each}}";
+        assert!(handlebars.register_template_string("t0", template).is_ok());
+        let data = btreemap! {
             "typearg".to_string() => vec!["T".to_string()],
             "variant".to_string() => vec!["1".to_string(), "2".to_string()]
         };
