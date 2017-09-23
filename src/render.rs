@@ -290,8 +290,8 @@ pub struct Helper<'a> {
     params: Vec<ContextJson>,
     hash: BTreeMap<String, ContextJson>,
     block_param: &'a Option<BlockParam>,
-    template: &'a Option<Template>,
-    inverse: &'a Option<Template>,
+    template: Option<&'a Template>,
+    inverse: Option<&'a Template>,
     block: bool,
 }
 
@@ -318,8 +318,8 @@ impl<'a, 'b> Helper<'a> {
             params: evaluated_params,
             hash: evaluated_hash,
             block_param: &ht.block_param,
-            template: &ht.template,
-            inverse: &ht.inverse,
+            template: ht.template.as_ref(),
+            inverse: ht.inverse.as_ref(),
             block: ht.block,
         })
     }
@@ -386,12 +386,12 @@ impl<'a, 'b> Helper<'a> {
     /// Typically you will render the template via: `template.render(registry, render_context)`
     ///
     pub fn template(&self) -> Option<&Template> {
-        (*self.template).as_ref().map(|t| t)
+        self.template
     }
 
     /// Returns the template of `else` branch if any
     pub fn inverse(&self) -> Option<&Template> {
-        (*self.inverse).as_ref().map(|t| t)
+        self.inverse
     }
 
     /// Returns if the helper is a block one `{{#helper}}{{/helper}}` or not `{{helper 123}}`
@@ -425,7 +425,7 @@ pub struct Directive<'a> {
     name: String,
     params: Vec<ContextJson>,
     hash: BTreeMap<String, ContextJson>,
-    template: &'a Option<Template>,
+    template: Option<&'a Template>,
 }
 
 impl<'a, 'b> Directive<'a> {
@@ -452,7 +452,7 @@ impl<'a, 'b> Directive<'a> {
             name: name,
             params: evaluated_params,
             hash: evaluated_hash,
-            template: &dt.template,
+            template: dt.template.as_ref(),
         })
     }
 
@@ -483,7 +483,7 @@ impl<'a, 'b> Directive<'a> {
 
     /// Returns the default inner template if any
     pub fn template(&self) -> Option<&Template> {
-        (*self.template).as_ref().map(|t| t)
+        self.template
     }
 }
 
