@@ -23,7 +23,7 @@ use partial;
 /// content is written to.
 ///
 pub struct RenderContext<'a> {
-    partials: HashMap<String, Template>,
+    partials: HashMap<String, Rc<Template>>,
     path: String,
     local_path_root: VecDeque<String>,
     local_variables: HashMap<String, Json>,
@@ -100,11 +100,11 @@ impl<'a> RenderContext<'a> {
         }
     }
 
-    pub fn get_partial(&self, name: &str) -> Option<Template> {
+    pub fn get_partial(&self, name: &str) -> Option<Rc<Template>> {
         self.partials.get(name).map(|t| t.clone())
     }
 
-    pub fn set_partial(&mut self, name: String, result: Template) {
+    pub fn set_partial(&mut self, name: String, result: Rc<Template>) {
         self.partials.insert(name, result);
     }
 

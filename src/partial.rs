@@ -1,10 +1,44 @@
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
+use std::borrow::Borrow;
+use std::rc::Rc;
 
+use template::Template;
 use registry::Registry;
 use context::{merge_json, Context};
 use render::{Directive, Evaluable, RenderContext, Renderable};
 use error::RenderError;
+
+fn render_partial(
+    t: &Template,
+    d: &Directive,
+    r: &Registry,
+    local_rc: &mut RenderContext,
+) -> Result<(), RenderError> {
+    let context_param = d.params().get(0).and_then(|p| p.path());
+    if let Some(p) = context_param {
+        let old_path = local_rc.get_path().clone();
+        local_rc.promote_local_vars();
+        let new_path = format!("{}/{}", old_path, p);
+        local_rc.set_path(new_path);
+    };
+
+    // @partial-block
+    if let Some(t) = d.template() {
+        local_rc.set_partial("@partial-block".to_string(), Rc::new(t.clone()));
+    }
+
+    let hash = d.hash();
+    if hash.is_empty() {
+        t.render(r, local_rc)
+    } else {
+        let hash_ctx =
+            BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
+        let partial_context = merge_json(local_rc.evaluate(".")?, &hash_ctx);
+        let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
+        t.render(r, &mut partial_rc)
+    }
+}
 
 pub fn expand_partial(
     d: &Directive,
@@ -23,36 +57,18 @@ pub fn expand_partial(
 
     let tname = d.name();
     let partial = rc.get_partial(tname);
-    let render_template = partial.as_ref().or(r.get_template(tname)).or(d.template());
-    match render_template {
+
+    match partial {
         Some(t) => {
             let mut local_rc = rc.derive();
-            let context_param = d.params().get(0).and_then(|p| p.path());
-            if let Some(p) = context_param {
-                let old_path = local_rc.get_path().clone();
-                local_rc.promote_local_vars();
-                let new_path = format!("{}/{}", old_path, p);
-                local_rc.set_path(new_path);
-            };
-
-            // @partial-block
-            if let Some(t) = d.template() {
-                local_rc.set_partial("@partial-block".to_string(), t.clone());
-            }
-
-            let hash = d.hash();
-            if hash.is_empty() {
-                t.render(r, &mut local_rc)
-            } else {
-                let hash_ctx = BTreeMap::from_iter(
-                    d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())),
-                );
-                let partial_context = merge_json(local_rc.evaluate(".")?, &hash_ctx);
-                let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
-                t.render(r, &mut partial_rc)
-            }
+            render_partial(t.borrow(), d, r, &mut local_rc)
         }
-        None => Ok(()),
+        None => if let Some(t) = r.get_template(tname).or(d.template()) {
+            let mut local_rc = rc.derive();
+            render_partial(t, d, r, &mut local_rc)
+        } else {
+            Ok(())
+        },
     }
 }
 

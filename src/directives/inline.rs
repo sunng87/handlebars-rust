@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use directives::DirectiveDef;
 use registry::Registry;
 use render::{Directive, RenderContext};
@@ -28,7 +30,7 @@ impl DirectiveDef for InlineDirective {
         );
 
 
-        rc.set_partial(name.to_owned(), template.clone());
+        rc.set_partial(name.to_owned(), Rc::new(template.clone()));
         Ok(())
     }
 }
