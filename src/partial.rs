@@ -9,11 +9,11 @@ use context::{merge_json, Context};
 use render::{Directive, Evaluable, RenderContext, Renderable};
 use error::RenderError;
 
-fn render_partial(
-    t: &Template,
-    d: &Directive,
-    r: &Registry,
-    local_rc: &mut RenderContext,
+fn render_partial<'reg, 'rc: 'reg>(
+    t: &'reg Template,
+    d: &'reg Directive<'reg, 'rc>,
+    r: &'reg Registry,
+    local_rc: &'rc mut RenderContext<'rc>,
 ) -> Result<(), RenderError> {
     let context_param = d.params().get(0).and_then(|p| p.path());
     if let Some(p) = context_param {
@@ -40,10 +40,10 @@ fn render_partial(
     }
 }
 
-pub fn expand_partial(
-    d: &Directive,
-    r: &Registry,
-    rc: &mut RenderContext,
+pub fn expand_partial<'reg, 'rc: 'reg>(
+    d: &'reg Directive<'reg, 'rc>,
+    r: &'reg Registry,
+    rc: &'rc mut RenderContext<'rc>,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {

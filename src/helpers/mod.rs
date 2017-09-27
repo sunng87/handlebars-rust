@@ -52,16 +52,21 @@ pub use self::helper_log::LOG_HELPER;
 pub type HelperResult = Result<(), RenderError>;
 
 pub trait HelperDef: Send + Sync {
-    fn call_inner(
+    fn call_inner<'a, 'b: 'a>(
         &self,
-        _: &Helper,
-        _: &Registry,
-        _: &mut RenderContext,
+        _: &'a Helper<'a, 'b>,
+        _: &'a Registry,
+        _: &'b mut RenderContext<'b>,
     ) -> Result<Option<Json>, RenderError> {
         Ok(None)
     }
 
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call<'a, 'b: 'a>(
+        &self,
+        h: &'a Helper<'a, 'b>,
+        r: &'a Registry,
+        rc: &'b mut RenderContext<'b>,
+    ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, rc)? {
             rc.writer.write(result.render().into_bytes().as_ref())?;
         }
@@ -74,10 +79,16 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd> Fn(&'b Helper, &'c Registry, &'d mut RenderContext)
+        + 'static
+        + for<'a, 'b: 'a> Fn(&'a Helper<'a, 'b>, &'a Registry, &'b mut RenderContext<'b>)
         -> HelperResult,
 > HelperDef for F {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call<'a, 'b: 'a>(
+        &self,
+        h: &'a Helper<'a, 'b>,
+        r: &'a Registry,
+        rc: &'b mut RenderContext<'b>,
+    ) -> HelperResult {
         (*self)(h, r, rc)
     }
 }

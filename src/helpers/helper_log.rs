@@ -8,7 +8,12 @@ use error::RenderError;
 pub struct LogHelper;
 
 impl HelperDef for LogHelper {
-    fn call(&self, h: &Helper, _: &Registry, _: &mut RenderContext) -> HelperResult {
+    fn call<'reg, 'rc: 'reg>(
+        &self,
+        h: &'reg Helper<'reg, 'rc>,
+        _: &'reg Registry,
+        _: &'rc mut RenderContext<'rc>,
+    ) -> HelperResult {
         let param = try!(h.param(0).ok_or_else(|| {
             RenderError::new("Param not found for helper \"log\"")
         }));

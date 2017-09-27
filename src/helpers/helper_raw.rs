@@ -6,7 +6,12 @@ use render::{Helper, RenderContext, Renderable};
 pub struct RawHelper;
 
 impl HelperDef for RawHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call<'reg, 'rc: 'reg>(
+        &self,
+        h: &'reg Helper<'reg, 'rc>,
+        r: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> HelperResult {
         let tpl = h.template();
         if let Some(t) = tpl {
             t.render(r, rc)

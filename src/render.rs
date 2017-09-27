@@ -22,18 +22,18 @@ use partial;
 /// this context stores information of a render and a writer where generated
 /// content is written to.
 ///
-pub struct RenderContext<'a> {
+pub struct RenderContext<'rc> {
     partials: HashMap<String, Rc<Template>>,
     path: String,
     local_path_root: VecDeque<String>,
     local_variables: HashMap<String, Json>,
-    local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+    local_helpers: &'rc mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
     default_var: Json,
     block_context: VecDeque<Context>,
     /// the context
     context: Context,
     /// the `Write` where page is generated
-    pub writer: &'a mut Write,
+    pub writer: &'rc mut Write,
     /// current template name
     pub current_template: Option<String>,
     /// root template name
@@ -41,13 +41,13 @@ pub struct RenderContext<'a> {
     pub disable_escape: bool,
 }
 
-impl<'a> RenderContext<'a> {
+impl<'rc> RenderContext<'rc> {
     /// Create a render context from a `Write`
     pub fn new(
         ctx: Context,
-        local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
-        w: &'a mut Write,
-    ) -> RenderContext<'a> {
+        local_helpers: &'rc mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+        w: &'rc mut Write,
+    ) -> RenderContext<'rc> {
         RenderContext {
             partials: HashMap::new(),
             path: ".".to_string(),
@@ -239,7 +239,7 @@ impl<'a> RenderContext<'a> {
     }
 }
 
-impl<'a> fmt::Debug for RenderContext<'a> {
+impl<'rc> fmt::Debug for RenderContext<'rc> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(
             f,
@@ -259,12 +259,12 @@ impl<'a> fmt::Debug for RenderContext<'a> {
 /// Json wrapper that holds the Json value and reference path information
 ///
 #[derive(Debug)]
-pub struct ContextJson<'a> {
+pub struct ContextJson<'rc> {
     path: Option<String>,
-    value: Cow<'a, Json>,
+    value: Cow<'rc, Json>,
 }
 
-impl<'a> ContextJson<'a> {
+impl<'rc> ContextJson<'rc> {
     /// Returns relative path when the value is referenced
     /// If the value is from a literal, the path is `None`
     pub fn path(&self) -> Option<&String> {
@@ -285,22 +285,22 @@ impl<'a> ContextJson<'a> {
 }
 
 /// Render-time Helper data when using in a helper definition
-pub struct Helper<'a, 'b> {
-    name: &'a str,
-    params: Vec<ContextJson<'b>>,
-    hash: BTreeMap<String, ContextJson<'b>>,
-    block_param: &'a Option<BlockParam>,
-    template: Option<&'a Template>,
-    inverse: Option<&'a Template>,
+pub struct Helper<'reg, 'rc: 'reg> {
+    name: &'reg str,
+    params: Vec<ContextJson<'rc>>,
+    hash: BTreeMap<String, ContextJson<'rc>>,
+    block_param: &'reg Option<BlockParam>,
+    template: Option<&'reg Template>,
+    inverse: Option<&'reg Template>,
     block: bool,
 }
 
-impl<'a, 'b> Helper<'a, 'b> {
+impl<'reg, 'rc: 'reg> Helper<'reg, 'rc> {
     fn from_template(
-        ht: &'a HelperTemplate,
-        registry: &'a Registry,
-        rc: &'b mut RenderContext,
-    ) -> Result<Helper<'a, 'b>, RenderError> {
+        ht: &'reg HelperTemplate,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<Helper<'reg, 'rc>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in ht.params.iter() {
             let r = try!(p.expand(registry, rc));
@@ -421,19 +421,19 @@ impl<'a, 'b> Helper<'a, 'b> {
 }
 
 /// Render-time Decorator data when using in a decorator definition
-pub struct Directive<'a, 'b> {
+pub struct Directive<'reg, 'rc> {
     name: String,
-    params: Vec<ContextJson<'b>>,
-    hash: BTreeMap<String, ContextJson<'b>>,
-    template: Option<&'a Template>,
+    params: Vec<ContextJson<'rc>>,
+    hash: BTreeMap<String, ContextJson<'rc>>,
+    template: Option<&'reg Template>,
 }
 
-impl<'a, 'b> Directive<'a, 'b> {
+impl<'reg, 'rc> Directive<'reg, 'rc> {
     fn from_template(
-        dt: &'a DirectiveTemplate,
+        dt: &'reg DirectiveTemplate,
         registry: &Registry,
-        rc: &'b mut RenderContext,
-    ) -> Result<Directive<'a, 'b>, RenderError> {
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<Directive<'reg, 'rc>, RenderError> {
         let name = try!(dt.name.expand_as_name(registry, rc));
 
         let mut evaluated_params = Vec::new();
@@ -490,7 +490,11 @@ impl<'a, 'b> Directive<'a, 'b> {
 /// Render trait
 pub trait Renderable {
     /// render into RenderContext's `writer`
-    fn render(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
+    fn render<'reg, 'rc: 'reg>(
+        &'reg self,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<(), RenderError>;
 
     /// render into string
     fn renders(&self, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
@@ -508,15 +512,19 @@ pub trait Renderable {
 
 /// Evaluate directive or decorator
 pub trait Evaluable {
-    fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
+    fn eval<'reg, 'rc: 'reg>(
+        &'reg self,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<(), RenderError>;
 }
 
-fn call_helper_for_value<'b>(
-    hd: &Box<HelperDef>,
-    ht: &Helper,
-    registry: &Registry,
-    rc: &mut RenderContext,
-) -> Result<ContextJson<'b>, RenderError> {
+fn call_helper_for_value<'reg, 'rc: 'reg>(
+    hd: &'reg Box<HelperDef>,
+    ht: &'reg Helper<'reg, 'rc>,
+    registry: &'reg Registry,
+    rc: &'rc mut RenderContext<'rc>,
+) -> Result<ContextJson<'rc>, RenderError> {
     // test if helperDef has json result
     if let Some(inner_value) = hd.call_inner(ht, registry, rc)? {
         Ok(ContextJson {
@@ -543,10 +551,10 @@ fn call_helper_for_value<'b>(
 
 
 impl Parameter {
-    pub fn expand_as_name(
+    pub fn expand_as_name<'rc>(
         &self,
         registry: &Registry,
-        rc: &mut RenderContext,
+        rc: &'rc mut RenderContext<'rc>,
     ) -> Result<String, RenderError> {
         match self {
             &Parameter::Name(ref name) => Ok(name.to_owned()),
@@ -555,11 +563,11 @@ impl Parameter {
         }
     }
 
-    pub fn expand<'b>(
+    pub fn expand<'rc>(
         &self,
         registry: &Registry,
-        rc: &mut RenderContext,
-    ) -> Result<ContextJson<'b>, RenderError> {
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<ContextJson<'rc>, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
                 let local_value = rc.get_local_var(&name);
@@ -612,7 +620,11 @@ impl Parameter {
 }
 
 impl Renderable for Template {
-    fn render(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn render<'reg, 'rc: 'reg>(
+        &'reg self,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<(), RenderError> {
         rc.current_template = self.name.clone();
         let iter = self.elements.iter();
         let mut idx = 0;
@@ -641,7 +653,11 @@ impl Renderable for Template {
 }
 
 impl Evaluable for Template {
-    fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn eval<'reg, 'rc: 'reg>(
+        &'reg self,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<(), RenderError> {
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
@@ -665,7 +681,11 @@ impl Evaluable for Template {
 }
 
 impl Renderable for TemplateElement {
-    fn render(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn render<'reg, 'rc: 'reg>(
+        &'reg self,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<(), RenderError> {
         match *self {
             RawString(ref v) => {
                 try!(rc.writer.write(v.clone().into_bytes().as_ref()));
@@ -718,7 +738,11 @@ impl Renderable for TemplateElement {
 }
 
 impl Evaluable for TemplateElement {
-    fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn eval<'reg, 'rc: 'reg>(
+        &'reg self,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> Result<(), RenderError> {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
                 Directive::from_template(dt, registry, rc).and_then(

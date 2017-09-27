@@ -10,7 +10,12 @@ pub struct IfHelper {
 }
 
 impl HelperDef for IfHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call<'a, 'b: 'a>(
+        &self,
+        h: &'a Helper<'a, 'b>,
+        r: &'a Registry,
+        rc: &'b mut RenderContext<'b>,
+    ) -> HelperResult {
         let param = try!(
             h.param(0)
                 .ok_or_else(|| { RenderError::new("Param not found for helper \"if\"") })

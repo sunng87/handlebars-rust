@@ -10,7 +10,12 @@ use error::RenderError;
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call<'reg, 'rc: 'reg>(
+        &self,
+        h: &'reg Helper<'reg, 'rc>,
+        r: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> HelperResult {
         let param = try!(h.param(0).ok_or_else(|| {
             RenderError::new("Param not found for helper \"with\"")
         }));

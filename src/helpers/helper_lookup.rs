@@ -10,7 +10,12 @@ use error::RenderError;
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call(&self, h: &Helper, _: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call<'reg, 'rc: 'reg>(
+        &self,
+        h: &'reg Helper<'reg, 'rc>,
+        _: &'reg Registry,
+        rc: &'rc mut RenderContext<'rc>,
+    ) -> HelperResult {
         let collection_value = try!(h.param(0).ok_or_else(|| {
             RenderError::new("Param not found for helper \"lookup\"")
         }));
