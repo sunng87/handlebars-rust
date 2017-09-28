@@ -116,7 +116,7 @@ mod test {
             r: &Registry,
             rc: &mut RenderContext,
         ) -> Result<(), RenderError> {
-            let v = h.param(0).unwrap();
+            let v = h.param(0, rc).unwrap().unwrap();
 
             if !h.is_block() {
                 let output = format!("{}:{}", h.name(), v.value().render());
@@ -169,7 +169,8 @@ mod test {
             "helperMissing",
             Box::new(
                 |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
-                    let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
+                    let output =
+                        format!("{}{}", h.name(), h.param(0, rc).unwrap().unwrap().value());
                     try!(rc.writer.write(output.into_bytes().as_ref()));
                     Ok(())
                 },
@@ -179,7 +180,10 @@ mod test {
             "foo",
             Box::new(
                 |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
-                    let output = format!("{}", h.hash_get("value").unwrap().value().render());
+                    let output = format!(
+                        "{}",
+                        h.hash_get("value", rc).unwrap().unwrap().value().render()
+                    );
                     try!(rc.writer.write(output.into_bytes().as_ref()));
                     Ok(())
                 },

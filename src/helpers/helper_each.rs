@@ -13,9 +13,8 @@ pub struct EachHelper;
 
 impl HelperDef for EachHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
-        let value = try!(h.param(0).ok_or_else(|| {
-            RenderError::new("Param not found for helper \"each\"")
-        }));
+        let value = h.param(0, rc)?
+            .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
 
         let template = h.template();
 

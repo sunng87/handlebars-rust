@@ -10,10 +10,8 @@ use handlebars::{to_json, Decorator, Handlebars, Helper, JsonRender, RenderConte
 // default format helper
 fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
     // get parameter from helper or throw an error
-    let param = try!(
-        h.param(0,)
-            .ok_or(RenderError::new("Param 0 is required for format helper.",),)
-    );
+    let param = h.param(0, rc)?
+        .ok_or(RenderError::new("Param 0 is required for format helper."))?;
     let rendered = format!("{} pts", param.value().render());
     try!(rc.writer.write(rendered.into_bytes().as_ref()));
     Ok(())
@@ -24,17 +22,15 @@ fn format_decorator(
     _: &Handlebars,
     rc: &mut RenderContext,
 ) -> Result<(), RenderError> {
-    let suffix = d.param(0)
+    let suffix = d.param(0, rc)?
         .map(|v| v.value().render())
         .unwrap_or("".to_owned());
     rc.register_local_helper(
         "format",
         Box::new(move |h: &Helper, _: &Handlebars, rc: &mut RenderContext| {
             // get parameter from helper or throw an error
-            let param = try!(
-                h.param(0,)
-                    .ok_or(RenderError::new("Param 0 is required for format helper.",),)
-            );
+            let param = h.param(0, rc)?
+                .ok_or(RenderError::new("Param 0 is required for format helper."))?;
             let rendered = format!("{} {}", param.value().render(), suffix);
             try!(rc.writer.write(rendered.into_bytes().as_ref()));
             Ok(())
@@ -45,13 +41,16 @@ fn format_decorator(
 
 // another custom helper
 fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
-    let rank = try!(h.param(0,).and_then(|v| v.value().as_u64(),).ok_or(
-        RenderError::new("Param 0 with u64 type is required for rank helper."),
-    )) as usize;
-    let teams = try!(h.param(1,).and_then(|v| v.value().as_array(),).ok_or(
-        RenderError::new("Param 1 with array type is required for rank helper"),
-    ));
-    let total = teams.len();
+    let rank = h.param(0, rc)?
+        .and_then(|v| v.value().as_u64())
+        .ok_or(RenderError::new(
+            "Param 0 with u64 type is required for rank helper.",
+        ))? as usize;
+    let total = h.param(1, rc)?
+        .and_then(|v| v.value().as_array().map(|t| t.len()))
+        .ok_or(RenderError::new(
+            "Param 1 with array type is required for rank helper",
+        ))?;
     if rank == 0 {
         try!(rc.writer.write("champion".as_bytes()));
     } else if rank >= total - 2 {

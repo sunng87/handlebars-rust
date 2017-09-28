@@ -15,25 +15,29 @@ fn render_partial(
     r: &Registry,
     local_rc: &mut RenderContext,
 ) -> Result<(), RenderError> {
-    let context_param = d.params().get(0).and_then(|p| p.path());
-    if let Some(p) = context_param {
-        let old_path = local_rc.get_path().clone();
-        local_rc.promote_local_vars();
-        let new_path = format!("{}/{}", old_path, p);
-        local_rc.set_path(new_path);
-    };
+    if let Some(context_param) = d.param(0, local_rc)? {
+        if let Some(p) = context_param.path() {
+            let old_path = local_rc.get_path().clone();
+            local_rc.promote_local_vars();
+            let new_path = format!("{}/{}", old_path, p);
+            local_rc.set_path(new_path);
+        };
+    }
 
     // @partial-block
     if let Some(t) = d.template() {
         local_rc.set_partial("@partial-block".to_string(), Rc::new(t.clone()));
     }
 
-    let hash = d.hash();
+    let hash = d.hash(local_rc)?;
     if hash.is_empty() {
         t.render(r, local_rc)
     } else {
-        let hash_ctx =
-            BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
+        let hash_ctx = BTreeMap::from_iter(
+            d.hash(local_rc)?
+                .iter()
+                .map(|(k, v)| (k.clone(), v.value().clone())),
+        );
         let partial_context = merge_json(local_rc.evaluate(".")?, &hash_ctx);
         let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
         t.render(r, &mut partial_rc)

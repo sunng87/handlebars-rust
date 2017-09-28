@@ -8,21 +8,22 @@ use error::RenderError;
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
 
-fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
-    d.param(0)
+fn get_name(d: &Directive, rc: &mut RenderContext) -> Result<String, RenderError> {
+    d.param(0, rc)?
         .ok_or_else(|| {
             RenderError::new("Param required for directive \"inline\"")
         })
         .and_then(|v| {
             v.value()
                 .as_str()
+                .map(|v| v.to_owned())
                 .ok_or_else(|| RenderError::new("inline name must be string"))
         })
 }
 
 impl DirectiveDef for InlineDirective {
     fn call(&self, d: &Directive, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let name = try!(get_name(d));
+        let name = try!(get_name(d, rc));
 
         let template = try!(
             d.template()

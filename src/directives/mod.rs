@@ -138,7 +138,7 @@ mod test {
             Box::new(
                 |d: &Directive, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
                     // modify value
-                    let v = d.param(0)
+                    let v = d.param(0, rc)?
                         .and_then(|v| Context::wraps(v.value()).ok())
                         .unwrap_or(Context::null());
                     *rc.context_mut() = v;
@@ -189,12 +189,9 @@ mod test {
             "distance",
             Box::new(
                 |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
-                    let s = format!(
-                        "{}m",
-                        h.param(0,)
-                            .map(|v| v.value(),)
-                            .unwrap_or(&context::to_json(&0),)
-                    );
+                    let s = h.param(0, rc)?
+                        .map(|v| format!("{}m", v.value()))
+                        .unwrap_or("0m".to_owned());
                     try!(rc.writer().write(s.into_bytes().as_ref()));
                     Ok(())
                 },
@@ -204,21 +201,16 @@ mod test {
             "foo",
             Box::new(
                 |d: &Directive, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
-                    let new_unit = d.param(0)
-                        .and_then(|v| as_string(v.value()))
-                        .unwrap_or("")
-                        .to_owned();
+                    let new_unit = d.param(0, rc)?
+                        .and_then(|v| as_string(v.value()).map(|s| s.to_owned()))
+                        .unwrap_or("".to_owned());
                     let new_helper = move |h: &Helper,
                                            _: &Registry,
                                            rc: &mut RenderContext|
                           -> Result<(), RenderError> {
-                        let s = format!(
-                            "{}{}",
-                            h.param(0,)
-                                .map(|v| v.value(),)
-                                .unwrap_or(&context::to_json(&0),),
-                            new_unit
-                        );
+                        let s = h.param(0, rc)?
+                            .map(|v| format!("{}{}", v.value(), new_unit))
+                            .unwrap_or(format!("0{}", new_unit));
                         try!(rc.writer().write(s.into_bytes().as_ref()));
                         Ok(())
                     };

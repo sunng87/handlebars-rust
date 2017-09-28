@@ -200,25 +200,24 @@
 //!
 //! ```
 //! use std::io::Write;
-//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult};
+//! use handlebars::*;
 //!
 //! // implement by a structure impls HelperDef
-//! #[derive(Clone, Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
 //!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
-//!     let param = h.param(0).unwrap();
+//!     let param = h.param(0, rc)?.ok_or(RenderError::new("Param 0 required"))?;
 //!
-//!     try!(rc.writer.write("1st helper: ".as_bytes()));
-//!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
+//!     rc.writer.write("1st helper: ".as_bytes())?;
+//!     rc.writer.write(param.value().render().into_bytes().as_ref())?;
 //!     Ok(())
 //!   }
 //! }
 //!
 //! // implement via bare function
 //! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
-//!     let param = h.param(0).unwrap();
+//!     let param = h.param(0, rc)?.ok_or(RenderError::new("Param 0 required"))?;
 //!
 //!     try!(rc.writer.write("2nd helper: ".as_bytes()));
 //!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
@@ -233,7 +232,7 @@
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
 //!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> HelperResult {
-//!           let param = h.param(0).unwrap();
+//!           let param = h.param(0, rc)?.ok_or(RenderError::new("Param 0 required"))?;
 //!
 //!           try!(rc.writer.write("3rd helper: ".as_bytes()));
 //!           try!(rc.writer.write(param.value().render().into_bytes().as_ref()));

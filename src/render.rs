@@ -287,40 +287,26 @@ impl ContextJson {
 /// Render-time Helper data when using in a helper definition
 pub struct Helper<'a> {
     name: &'a str,
-    params: Vec<ContextJson>,
-    hash: BTreeMap<String, ContextJson>,
-    block_param: &'a Option<BlockParam>,
+    params: &'a Vec<Parameter>,
+    hash: &'a BTreeMap<String, Parameter>,
+    block_param: Option<&'a BlockParam>,
     template: Option<&'a Template>,
     inverse: Option<&'a Template>,
     block: bool,
+    registry: &'a Registry,
 }
 
-impl<'a, 'b> Helper<'a> {
-    fn from_template(
-        ht: &'a HelperTemplate,
-        registry: &Registry,
-        rc: &'b mut RenderContext,
-    ) -> Result<Helper<'a>, RenderError> {
-        let mut evaluated_params = Vec::new();
-        for p in ht.params.iter() {
-            let r = try!(p.expand(registry, rc));
-            evaluated_params.push(r);
-        }
-
-        let mut evaluated_hash = BTreeMap::new();
-        for (k, p) in ht.hash.iter() {
-            let r = try!(p.expand(registry, rc));
-            evaluated_hash.insert(k.clone(), r);
-        }
-
+impl<'a> Helper<'a> {
+    fn from_template(ht: &'a HelperTemplate, r: &'a Registry) -> Result<Helper<'a>, RenderError> {
         Ok(Helper {
             name: &ht.name,
-            params: evaluated_params,
-            hash: evaluated_hash,
-            block_param: &ht.block_param,
+            params: &ht.params,
+            hash: &ht.hash,
+            block_param: ht.block_param.as_ref(),
             template: ht.template.as_ref(),
             inverse: ht.inverse.as_ref(),
             block: ht.block,
+            registry: r,
         })
     }
 
@@ -330,8 +316,13 @@ impl<'a, 'b> Helper<'a> {
     }
 
     /// Returns all helper params, resolved within the context
-    pub fn params(&self) -> &Vec<ContextJson> {
-        &self.params
+    pub fn params(&self, rc: &mut RenderContext) -> Result<Vec<ContextJson>, RenderError> {
+        let mut evaluated_params = Vec::new();
+        for p in self.params.iter() {
+            let r = p.expand(self.registry, rc)?;
+            evaluated_params.push(r);
+        }
+        Ok(evaluated_params)
     }
 
     /// Returns nth helper param, resolved within the context.
@@ -339,25 +330,43 @@ impl<'a, 'b> Helper<'a> {
     /// ## Example
     ///
     /// To get the first param in `{{my_helper abc}}` or `{{my_helper 2}}`,
-    /// use `h.param(0)` in helper definition.
+    /// use `h.param(0, rc)` in helper definition.
     /// Variable `abc` is auto resolved in current context.
     ///
     /// ```
     /// use handlebars::*;
     ///
     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
-    ///     let v = h.param(0).map(|v| v.value()).unwrap();
+    ///     let v = h.param(0, rc)?.ok_or(RenderError::new("Param 0 not found"))?;
     ///     // ..
     ///     Ok(())
     /// }
     /// ```
-    pub fn param(&self, idx: usize) -> Option<&ContextJson> {
-        self.params.get(idx)
+    pub fn param(
+        &self,
+        idx: usize,
+        rc: &mut RenderContext,
+    ) -> Result<Option<ContextJson>, RenderError> {
+        // TODO: cache
+        if let Some(p) = self.params.get(idx) {
+            let v = p.expand(self.registry, rc)?;
+            Ok(Some(v))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &BTreeMap<String, ContextJson> {
-        &self.hash
+    pub fn hash(
+        &self,
+        rc: &mut RenderContext,
+    ) -> Result<BTreeMap<String, ContextJson>, RenderError> {
+        let mut evaluated_hash = BTreeMap::new();
+        for (k, p) in self.hash.iter() {
+            let r = p.expand(self.registry, rc)?;
+            evaluated_hash.insert(k.clone(), r);
+        }
+        Ok(evaluated_hash)
     }
 
     /// Return hash value of a given key, resolved within the context
@@ -365,20 +374,30 @@ impl<'a, 'b> Helper<'a> {
     /// ## Example
     ///
     /// To get the first param in `{{my_helper v=abc}}` or `{{my_helper v=2}}`,
-    /// use `h.hash_get("v")` in helper definition.
+    /// use `h.hash_get("v", rc)` in helper definition.
     /// Variable `abc` is auto resolved in current context.
     ///
     /// ```
     /// use handlebars::*;
     ///
     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
-    ///     let v = h.hash_get("v").map(|v| v.value()).unwrap();
+    ///     let v = h.hash_get("v", rc)?.ok_or(RenderError::new("Hash v not found"))?;
     ///     // ..
     ///     Ok(())
     /// }
     /// ```
-    pub fn hash_get(&self, key: &str) -> Option<&ContextJson> {
-        self.hash.get(key)
+    pub fn hash_get(
+        &self,
+        key: &str,
+        rc: &mut RenderContext,
+    ) -> Result<Option<ContextJson>, RenderError> {
+        // TODO: cache
+        if let Some(p) = self.hash.get(key) {
+            let v = p.expand(self.registry, rc)?;
+            Ok(Some(v))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Returns the default inner template if the helper is a block helper.
@@ -401,7 +420,7 @@ impl<'a, 'b> Helper<'a> {
 
     /// Returns block param if any
     pub fn block_param(&self) -> Option<&str> {
-        if let Some(BlockParam::Single(Parameter::Name(ref s))) = *self.block_param {
+        if let Some(&BlockParam::Single(Parameter::Name(ref s))) = self.block_param {
             Some(s)
         } else {
             None
@@ -410,8 +429,8 @@ impl<'a, 'b> Helper<'a> {
 
     /// Return block param pair (for example |key, val|) if any
     pub fn block_param_pair(&self) -> Option<(&str, &str)> {
-        if let Some(BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
-            *self.block_param
+        if let Some(&BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
+            self.block_param
         {
             Some((s1, s2))
         } else {
@@ -423,36 +442,25 @@ impl<'a, 'b> Helper<'a> {
 /// Render-time Decorator data when using in a decorator definition
 pub struct Directive<'a> {
     name: String,
-    params: Vec<ContextJson>,
-    hash: BTreeMap<String, ContextJson>,
+    params: &'a Vec<Parameter>,
+    hash: &'a BTreeMap<String, Parameter>,
     template: Option<&'a Template>,
+    registry: &'a Registry,
 }
 
-impl<'a, 'b> Directive<'a> {
+impl<'a> Directive<'a> {
     fn from_template(
         dt: &'a DirectiveTemplate,
-        registry: &Registry,
-        rc: &'b mut RenderContext,
+        registry: &'a Registry,
+        rc: &mut RenderContext,
     ) -> Result<Directive<'a>, RenderError> {
         let name = try!(dt.name.expand_as_name(registry, rc));
-
-        let mut evaluated_params = Vec::new();
-        for p in dt.params.iter() {
-            let r = try!(p.expand(registry, rc));
-            evaluated_params.push(r);
-        }
-
-        let mut evaluated_hash = BTreeMap::new();
-        for (k, p) in dt.hash.iter() {
-            let r = try!(p.expand(registry, rc));
-            evaluated_hash.insert(k.clone(), r);
-        }
-
         Ok(Directive {
             name: name,
-            params: evaluated_params,
-            hash: evaluated_hash,
+            params: &dt.params,
+            hash: &dt.hash,
             template: dt.template.as_ref(),
+            registry: registry,
         })
     }
 
@@ -462,23 +470,56 @@ impl<'a, 'b> Directive<'a> {
     }
 
     /// Returns all helper params, resolved within the context
-    pub fn params(&self) -> &Vec<ContextJson> {
-        &self.params
+    pub fn params(&self, rc: &mut RenderContext) -> Result<Vec<ContextJson>, RenderError> {
+        let mut evaluated_params = Vec::new();
+        for p in self.params.iter() {
+            let r = p.expand(self.registry, rc)?;
+            evaluated_params.push(r);
+        }
+        Ok(evaluated_params)
     }
 
     /// Returns nth helper param, resolved within the context
-    pub fn param(&self, idx: usize) -> Option<&ContextJson> {
-        self.params.get(idx)
+    pub fn param(
+        &self,
+        idx: usize,
+        rc: &mut RenderContext,
+    ) -> Result<Option<ContextJson>, RenderError> {
+        // TODO: cache
+        if let Some(p) = self.params.get(idx) {
+            let v = p.expand(self.registry, rc)?;
+            Ok(Some(v))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &BTreeMap<String, ContextJson> {
-        &self.hash
+    pub fn hash(
+        &self,
+        rc: &mut RenderContext,
+    ) -> Result<BTreeMap<String, ContextJson>, RenderError> {
+        let mut evaluated_hash = BTreeMap::new();
+        for (k, p) in self.hash.iter() {
+            let r = p.expand(self.registry, rc)?;
+            evaluated_hash.insert(k.clone(), r);
+        }
+        Ok(evaluated_hash)
     }
 
     /// Return hash value of a given key, resolved within the context
-    pub fn hash_get(&self, key: &str) -> Option<&ContextJson> {
-        self.hash.get(key)
+    pub fn hash_get(
+        &self,
+        key: &str,
+        rc: &mut RenderContext,
+    ) -> Result<Option<ContextJson>, RenderError> {
+        // TODO: cache
+        if let Some(p) = self.hash.get(key) {
+            let v = p.expand(self.registry, rc)?;
+            Ok(Some(v))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Returns the default inner template if any
@@ -588,7 +629,7 @@ impl Parameter {
             &Parameter::Subexpression(ref t) => match t.into_element() {
                 Expression(ref expr) => expr.expand(registry, rc),
                 HelperExpression(ref ht) => {
-                    let helper = Helper::from_template(ht, registry, rc)?;
+                    let helper = Helper::from_template(ht, registry)?;
                     if let Some(ref d) = rc.get_local_helper(&ht.name) {
                         call_helper_for_value(d.borrow(), &helper, registry, rc)
                     } else {
@@ -690,7 +731,7 @@ impl Renderable for TemplateElement {
                 Ok(())
             }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
-                let helper = try!(Helper::from_template(ht, registry, rc));
+                let helper = Helper::from_template(ht, registry)?;
                 if let Some(ref d) = rc.get_local_helper(&ht.name) {
                     d.call(&helper, registry, rc)
                 } else {
@@ -880,12 +921,9 @@ fn test_render_subexpression_issue_115() {
         "format",
         Box::new(
             |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
+                let v = h.param(0, rc).unwrap().unwrap().value().render();
                 rc.writer
-                    .write(
-                        format!("{}", h.param(0).unwrap().value().render())
-                            .into_bytes()
-                            .as_ref(),
-                    )
+                    .write(format!("{}", v).into_bytes().as_ref())
                     .map(|_| ())
                     .map_err(RenderError::from)
             },
