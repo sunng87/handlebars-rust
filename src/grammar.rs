@@ -186,6 +186,7 @@ fn test_helper_start() {
         "{{~#if hello~}}",
         "{{#each people as |person|}}",
         "{{#each-obj obj as |key val|}}",
+        "{{#each assets}}",
     ];
     for i in s.iter() {
         assert_rule!(Rule::helper_block_start, i);
