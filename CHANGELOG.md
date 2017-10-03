@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.29.1...Unreleased) - ReleaseDate
+## [0.30.0-beta.1](https://github.com/sunng87/handlebars-rust/compare/0.29.1...0.30.0-beta.1) - 2017-10-03
 
 * [Changed] Upgrade pest to 1.0
 * [Changed] Fixed template parsing issue when parameter starts with "as"
