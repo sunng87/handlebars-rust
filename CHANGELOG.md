@@ -4,6 +4,8 @@
 
 * [Changed] Upgrade pest to 1.0
 * [Changed] Fixed template parsing issue when parameter starts with "as"
+* [Changed] Added new HelperDef function to return JSON value
+* [Changed] Added support for @root
 
 ## [0.29.1](https://github.com/sunng87/handlebars-rust/compare/0.29.0...0.29.1) - 2017-09-01
 
