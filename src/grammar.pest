@@ -1,4 +1,5 @@
 whitespace = _{ " "|"\t"|"\n"|"\r" }
+keywords = @{ "as" | "else" }
 
 raw_text = @{ ( "\\{{{{"? ~ "\\{{"? ~ !"{{" ~ any )+ }
 raw_block_text = @{ ( !"{{{{" ~ any )* }
@@ -26,7 +27,7 @@ identifier = @{ symbol_char+ }
 reference = @{ "@"? ~ path_inline }
 name = _{ subexpression | reference }
 
-param = { !"as " ~ (literal | reference | subexpression) }
+param = { !(keywords ~ !symbol_char) ~ (literal | reference | subexpression) }
 hash = { identifier ~ "=" ~ param }
 block_param = { "as" ~ "|" ~ identifier ~ identifier? ~ "|"}
 exp_line = _{ identifier ~ (hash|param)* ~ block_param?}

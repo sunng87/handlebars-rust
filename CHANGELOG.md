@@ -1,5 +1,8 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.1...Unreleased) - ReleaseDate
+* [Changed] Fixed parsing keywords like `as`
+
 ## [0.30.0-beta.1](https://github.com/sunng87/handlebars-rust/compare/0.29.1...0.30.0-beta.1) - 2017-10-03
 
 * [Changed] Upgrade pest to 1.0
