@@ -61,9 +61,9 @@
 //! #### Template inheritance
 //!
 //! Every time I look into a templating system, I will investigate its
-//! support for [template
-//! inheritance](https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inh
-//! eritance).
+//! support for [template inheritance][t].
+//!
+//! [t]: https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance
 //!
 //! Template include is not enough. In most case you will need a skeleton
 //! of page as parent (header, footer, etc.), and embed you page into this
@@ -103,7 +103,6 @@
 //! Templates are created from String and registered to `Handlebars` with a name.
 //!
 //! ```
-//!
 //! extern crate handlebars;
 //!
 //! use handlebars::Handlebars;
