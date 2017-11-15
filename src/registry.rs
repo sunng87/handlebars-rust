@@ -283,7 +283,7 @@ impl Registry {
     where
         T: Serialize,
     {
-        let tpl = try!(Template::compile(template_string));
+        let tpl = try!(Template::compile2(template_string, self.source_map));
         let ctx = try!(Context::wraps(data));
         let mut local_helpers = HashMap::new();
         let mut render_context = RenderContext::new(ctx, &mut local_helpers, writer);
