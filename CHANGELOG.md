@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.30.0-beta.4](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.2...0.30.0-beta.4) - 2017-11-20
+* [Changed] Added `Sync` to the nested error of `RenderError`
+
 ## [0.30.0-beta.3](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.2...0.30.0-beta.3) - 2017-11-16
 * [Changed] Fixed issue `template_render` methods doesn't respect `source_map` setting
 
