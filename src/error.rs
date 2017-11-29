@@ -144,6 +144,30 @@ impl Error for TemplateError {
     }
 }
 
+pub fn template_segment(template_str: &str, line: usize, col: usize) -> String {
+    let line_start = if line >= 2 { line - 2 } else { 0 };
+    let line_end = line + 2 ;
+
+    let mut buf = String::new();
+    for (line_count, line_content) in template_str.lines().enumerate() {
+        if line_count >= line_start && line_count <= line_end {
+            buf.push_str(&format!("{}\n", line_content));
+            if line_count == line {
+                for c in 0..line_content.len() {
+                    if c != col {
+                        buf.push_str("-");
+                    } else {
+                        buf.push_str("^");
+                    }
+                }
+                buf.push_str("\n");
+            }
+        }
+    }
+    
+    buf
+}
+
 impl fmt::Display for TemplateError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match (self.line_no, self.column_no) {
@@ -199,5 +223,24 @@ quick_error! {
             description(err.description())
             display("Template \"{}\": {}", name, err)
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use error::template_segment;
+    
+    #[test]
+    fn test_error_segment() {
+        let d = "a\nbc\ndef\n123\n12345\n";
+        
+        let s1 = template_segment(d, 2, 2);
+        assert_eq!(s1.as_str(), "a\nbc\ndef\n--^\n123\n12345\n");
+
+        let s2 = template_segment(d, 0, 0);
+        assert_eq!(s2.as_str(), "a\n^\nbc\ndef\n");
+
+        let s3 = template_segment(d, 4, 0);
+        assert_eq!(s3.as_str(), "def\n123\n12345\n^----\n");
     }
 }
