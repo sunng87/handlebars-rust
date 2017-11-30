@@ -113,8 +113,8 @@ pub struct TemplateError {
     pub reason: TemplateErrorReason,
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
-    pub column_no: Option<usize>, 
-    segment: Option<String>
+    pub column_no: Option<usize>,
+    segment: Option<String>,
 }
 
 impl TemplateError {
@@ -124,15 +124,19 @@ impl TemplateError {
             template_name: None,
             line_no: None,
             column_no: None,
-            segment: None
+            segment: None,
         }
     }
 
     pub fn at(mut self, template_str: &str, line_no: usize, column_no: usize) -> TemplateError {
         self.line_no = Some(line_no);
         self.column_no = Some(column_no);
-        self.segment = Some(template_segment(template_str, self.reason.description(),
-                                             line_no, column_no));
+        self.segment = Some(template_segment(
+            template_str,
+            self.reason.description(),
+            line_no,
+            column_no,
+        ));
         self
     }
 
@@ -151,7 +155,7 @@ impl Error for TemplateError {
 fn template_segment(template_str: &str, reason: &str, line: usize, col: usize) -> String {
     let range = 3;
     let line_start = if line >= range { line - range } else { 0 };
-    let line_end = line + range ;
+    let line_end = line + range;
 
     let mut buf = String::new();
     for (line_count, line_content) in template_str.lines().enumerate() {
@@ -173,7 +177,7 @@ fn template_segment(template_str: &str, reason: &str, line: usize, col: usize) -
             }
         }
     }
-    
+
     buf
 }
 
@@ -235,4 +239,3 @@ quick_error! {
         }
     }
 }
-

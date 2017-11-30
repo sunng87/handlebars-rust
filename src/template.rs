@@ -367,18 +367,27 @@ impl Template {
                     negatives: _,
                 } => {
                     let (line_no, col_no) = pos.line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
-                        .at(source, line_no, col_no)
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(
+                        source,
+                        line_no,
+                        col_no,
+                    )
                 }
                 PestError::CustomErrorPos { pos, message: _ } => {
                     let (line_no, col_no) = pos.line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
-                        .at(source, line_no, col_no)
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(
+                        source,
+                        line_no,
+                        col_no,
+                    )
                 }
                 PestError::CustomErrorSpan { span, message: _ } => {
                     let (line_no, col_no) = span.start_pos().line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
-                        .at(source, line_no, col_no)
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(
+                        source,
+                        line_no,
+                        col_no,
+                    )
                 }
             })?;
 
@@ -436,10 +445,10 @@ impl Template {
                         let t = template_stack.front_mut().unwrap();
                         t.push_element(RawString(Template::unescape_tags(text)), line_no, col_no);
                     }
-                    Rule::helper_block_start |
-                    Rule::raw_block_start |
-                    Rule::directive_block_start |
-                    Rule::partial_block_start => {
+                    Rule::helper_block_start
+                    | Rule::raw_block_start
+                    | Rule::directive_block_start
+                    | Rule::partial_block_start => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), span.end()));
 
                         match rule {
@@ -500,15 +509,15 @@ impl Template {
                         t.push_element(RawString(Template::unescape_tags(text)), line_no, col_no);
                         template_stack.push_front(t);
                     }
-                    Rule::expression |
-                    Rule::html_expression |
-                    Rule::helper_expression |
-                    Rule::directive_expression |
-                    Rule::partial_expression |
-                    Rule::helper_block_end |
-                    Rule::raw_block_end |
-                    Rule::directive_block_end |
-                    Rule::partial_block_end => {
+                    Rule::expression
+                    | Rule::html_expression
+                    | Rule::helper_expression
+                    | Rule::directive_expression
+                    | Rule::partial_expression
+                    | Rule::helper_block_end
+                    | Rule::raw_block_end
+                    | Rule::directive_block_end
+                    | Rule::partial_block_end => {
                         let exp = try!(Template::parse_expression(source, it.by_ref(), span.end()));
                         if exp.omit_pre_ws {
                             Template::remove_previous_whitespace(&mut template_stack);

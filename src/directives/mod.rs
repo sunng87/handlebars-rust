@@ -89,12 +89,11 @@ mod test {
 
         handlebars.register_decorator(
             "foo",
-            Box::new(|_: &Directive,
-             _: &Registry,
-             _: &mut RenderContext|
-             -> Result<(), RenderError> {
-                Ok(())
-            }),
+            Box::new(
+                |_: &Directive, _: &Registry, _: &mut RenderContext| -> Result<(), RenderError> {
+                    Ok(())
+                },
+            ),
         );
         assert_eq!(handlebars.render("t0", &data).ok().unwrap(), "".to_string());
     }

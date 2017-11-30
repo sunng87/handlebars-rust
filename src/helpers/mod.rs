@@ -74,8 +74,7 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd> Fn(&'b Helper, &'c Registry, &'d mut RenderContext)
-        -> HelperResult,
+        + for<'b, 'c, 'd> Fn(&'b Helper, &'c Registry, &'d mut RenderContext) -> HelperResult,
 > HelperDef for F {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         (*self)(h, r, rc)
