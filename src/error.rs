@@ -113,7 +113,8 @@ pub struct TemplateError {
     pub reason: TemplateErrorReason,
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
-    pub column_no: Option<usize>, // template segment
+    pub column_no: Option<usize>, 
+    segment: Option<String>
 }
 
 impl TemplateError {
@@ -123,12 +124,15 @@ impl TemplateError {
             template_name: None,
             line_no: None,
             column_no: None,
+            segment: None
         }
     }
 
-    pub fn at(mut self, line_no: usize, column_no: usize) -> TemplateError {
+    pub fn at(mut self, template_str: &str, line_no: usize, column_no: usize) -> TemplateError {
         self.line_no = Some(line_no);
         self.column_no = Some(column_no);
+        self.segment = Some(template_segment(template_str, self.reason.description(),
+                                             line_no, column_no));
         self
     }
 
@@ -144,15 +148,17 @@ impl Error for TemplateError {
     }
 }
 
-pub fn template_segment(template_str: &str, line: usize, col: usize) -> String {
-    let line_start = if line >= 2 { line - 2 } else { 0 };
-    let line_end = line + 2 ;
+fn template_segment(template_str: &str, reason: &str, line: usize, col: usize) -> String {
+    let range = 3;
+    let line_start = if line >= range { line - range } else { 0 };
+    let line_end = line + range ;
 
     let mut buf = String::new();
     for (line_count, line_content) in template_str.lines().enumerate() {
         if line_count >= line_start && line_count <= line_end {
-            buf.push_str(&format!("{}\n", line_content));
-            if line_count == line {
+            buf.push_str(&format!("{:4} {}\n", line_count, line_content));
+            if line_count == line - 1 {
+                buf.push_str("     ");
                 for c in 0..line_content.len() {
                     if c != col {
                         buf.push_str("-");
@@ -160,6 +166,9 @@ pub fn template_segment(template_str: &str, line: usize, col: usize) -> String {
                         buf.push_str("^");
                     }
                 }
+                buf.push_str("\n");
+                buf.push_str("     ");
+                buf.push_str(reason);
                 buf.push_str("\n");
             }
         }
@@ -170,16 +179,17 @@ pub fn template_segment(template_str: &str, line: usize, col: usize) -> String {
 
 impl fmt::Display for TemplateError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match (self.line_no, self.column_no) {
-            (Some(line), Some(col)) => write!(
+        match (self.line_no, self.column_no, &self.segment) {
+            (Some(line), Some(col), &Some(ref seg)) => write!(
                 f,
-                "Template \"{}\" line {}, col {}: {}",
+                "Template \"{}\" line {}, col {}:\nReason: {}\n\n{}",
                 self.template_name
                     .as_ref()
                     .unwrap_or(&"Unnamed template".to_owned(),),
                 line,
                 col,
-                self.reason
+                self.reason,
+                seg
             ),
             _ => write!(f, "{}", self.reason),
         }
@@ -226,21 +236,3 @@ quick_error! {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use error::template_segment;
-    
-    #[test]
-    fn test_error_segment() {
-        let d = "a\nbc\ndef\n123\n12345\n";
-        
-        let s1 = template_segment(d, 2, 2);
-        assert_eq!(s1.as_str(), "a\nbc\ndef\n--^\n123\n12345\n");
-
-        let s2 = template_segment(d, 0, 0);
-        assert_eq!(s2.as_str(), "a\n^\nbc\ndef\n");
-
-        let s3 = template_segment(d, 4, 0);
-        assert_eq!(s3.as_str(), "def\n123\n12345\n^----\n");
-    }
-}

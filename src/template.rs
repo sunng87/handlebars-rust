@@ -367,15 +367,18 @@ impl Template {
                     negatives: _,
                 } => {
                     let (line_no, col_no) = pos.line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                        .at(source, line_no, col_no)
                 }
                 PestError::CustomErrorPos { pos, message: _ } => {
                     let (line_no, col_no) = pos.line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                        .at(source, line_no, col_no)
                 }
                 PestError::CustomErrorSpan { span, message: _ } => {
                     let (line_no, col_no) = span.start_pos().line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(line_no, col_no)
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                        .at(source, line_no, col_no)
                 }
             })?;
 
@@ -573,6 +576,7 @@ impl Template {
                                                 close_tag_name,
                                             ),
                                         ).at(
+                                            source,
                                             line_no,
                                             col_no,
                                         ),
@@ -599,6 +603,7 @@ impl Template {
                                                 close_tag_name,
                                             ),
                                         ).at(
+                                            source,
                                             line_no,
                                             col_no,
                                         ),
@@ -748,7 +753,7 @@ fn test_parse_error() {
 
     assert_eq!(
         t.unwrap_err(),
-        TemplateError::of(TemplateErrorReason::InvalidSyntax).at(4, 5)
+        TemplateError::of(TemplateErrorReason::InvalidSyntax).at(source, 4, 5)
     );
 }
 
