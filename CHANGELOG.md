@@ -1,6 +1,12 @@
 # Change Log
 
-## [0.30.0-beta.4](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.2...0.30.0-beta.4) - 2017-11-20
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.4...Unreleased) - ReleaseDate
+
+* [Changed] Improve `TemplateError` display. Now includes a segment of
+  template string.
+* [Changed] Updated `lazy_static` to 1.0
+
+## [0.30.0-beta.4](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.3...0.30.0-beta.4) - 2017-11-20
 * [Changed] Added `Sync` to the nested error of `RenderError`
 
 ## [0.30.0-beta.3](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.2...0.30.0-beta.3) - 2017-11-16
