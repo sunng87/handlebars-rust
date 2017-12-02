@@ -14,7 +14,7 @@ fn test_root_var() {
     });
 
     assert_eq!(
-        hbs.template_render("{{#each a}}{{@root/b}}: {{this}};{{/each}}", &data)
+        hbs.render_template("{{#each a}}{{@root/b}}: {{this}};{{/each}}", &data)
             .unwrap(),
         "top: 1;top: 2;top: 3;top: 4;"
     );

@@ -411,14 +411,14 @@ mod test {
     }
 
     #[test]
-    fn test_renderw() {
+    fn test_render_to_write() {
         let mut r = Registry::new();
 
         assert!(r.register_template_string("index", "<h1></h1>").is_ok());
 
         let mut sw = StringWriter::new();
         {
-            r.renderw("index", &(), &mut sw).ok().unwrap();
+            r.render_to_write("index", &(), &mut sw).ok().unwrap();
         }
 
         assert_eq!("<h1></h1>".to_string(), sw.to_string());
@@ -453,7 +453,7 @@ mod test {
 
         assert_eq!(
             "{{hello}}",
-            r.template_render(r"\\{{hello}}", &data).unwrap()
+            r.render_template(r"\\{{hello}}", &data).unwrap()
         );
     }
 }

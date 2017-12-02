@@ -112,9 +112,11 @@ fn main() {
     // Never use this style in your real-world projects.
     let mut source_template = File::open(&"./examples/render_file/template.hbs").unwrap();
     let mut output_file = File::create("target/table.html").unwrap();
-    if let Ok(_) = handlebars.template_renderw2(&mut source_template, &data, &mut output_file) {
-        println!("target/table.html generated");
+    if let Err(e) =
+        handlebars.render_template_source_to_write(&mut source_template, &data, &mut output_file)
+    {
+        println!("Failed to generate target/table.html: {}", e);
     } else {
-        println!("Failed to generate target/table.html");
+        println!("target/table.html generated");
     };
 }

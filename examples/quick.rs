@@ -9,7 +9,7 @@ fn main() {
     // render without register
     println!(
         "{}",
-        reg.template_render("Hello {{name}}", &json!({"name": "foo"}))
+        reg.render_template("Hello {{name}}", &json!({"name": "foo"}))
             .unwrap()
     );
 

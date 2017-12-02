@@ -864,7 +864,7 @@ fn test_render_subexpression() {
 
     {
         if let Err(e) =
-            r.template_renderw("<h1>{{#if (const)}}{{(hello)}}{{/if}}</h1>", &m, &mut sw)
+            r.render_template_to_write("<h1>{{#if (const)}}{{(hello)}}{{/if}}</h1>", &m, &mut sw)
         {
             panic!("{}", e);
         }
@@ -897,7 +897,7 @@ fn test_render_subexpression_issue_115() {
     m.insert("a".to_string(), "123".to_string());
 
     {
-        if let Err(e) = r.template_renderw("{{format (format a)}}", &m, &mut sw) {
+        if let Err(e) = r.render_template_to_write("{{format (format a)}}", &m, &mut sw) {
             panic!("{}", e);
         }
     }

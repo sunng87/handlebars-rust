@@ -120,7 +120,7 @@
 //! that involves template reference requires you to register those template first with
 //! a name so the registry can find it.
 //!
-//! If you template is small or just to expirement, you can use `template_render` API
+//! If you template is small or just to expirement, you can use `render_template` API
 //! without registration.
 //!
 //! ```
@@ -133,7 +133,7 @@
 //!
 //!   let mut data = BTreeMap::new();
 //!   data.insert("world".to_string(), "世界!".to_string());
-//!   assert_eq!(handlebars.template_render(source, &data).unwrap(),"hello 世界!".to_owned());
+//!   assert_eq!(handlebars.render_template(source, &data).unwrap(),"hello 世界!".to_owned());
 //! }
 //! ```
 //!
@@ -184,7 +184,7 @@
 //!       name: "Ning Sun".to_string(),
 //!       age: 27
 //!   };
-//!   assert_eq!(handlebars.template_render("Hello, {{name}}", &data).unwrap(),
+//!   assert_eq!(handlebars.render_template("Hello, {{name}}", &data).unwrap(),
 //!       "Hello, Ning Sun".to_owned());
 //! }
 //! ```
@@ -240,7 +240,7 @@
 //!       }));
 //!
 //!   let tpl = "{{simple-helper 1}}\n{{another-simple-helper 2}}\n{{closure-helper 3}}";
-//!   assert_eq!(handlebars.template_render(tpl, &()).unwrap(),
+//!   assert_eq!(handlebars.render_template(tpl, &()).unwrap(),
 //!       "1st helper: 1\n2nd helper: 2\n3rd helper: 3".to_owned());
 //! }
 //! ```
