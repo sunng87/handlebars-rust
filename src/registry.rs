@@ -92,7 +92,7 @@ impl Registry {
     /// more memory to maintain the data.
     ///
     /// Default is true.
-    pub fn source_map_enable(&mut self, enable: bool) {
+    pub fn source_map_enabled(&mut self, enable: bool) {
         self.source_map = enable;
     }
 
@@ -235,14 +235,19 @@ impl Registry {
     {
         let mut writer = StringWriter::new();
         {
-            try!(self.renderw(name, data, &mut writer));
+            try!(self.render_to_write(name, data, &mut writer));
         }
         Ok(writer.to_string())
     }
 
 
     /// Render a registered template and write some data to the `std::io::Write`
-    pub fn renderw<T>(&self, name: &str, data: &T, writer: &mut Write) -> Result<(), RenderError>
+    pub fn render_to_write<T>(
+        &self,
+        name: &str,
+        data: &T,
+        writer: &mut Write,
+    ) -> Result<(), RenderError>
     where
         T: Serialize,
     {
@@ -258,7 +263,7 @@ impl Registry {
     }
 
     /// render a template string using current registry without register it
-    pub fn template_render<T>(
+    pub fn render_template<T>(
         &self,
         template_string: &str,
         data: &T,
@@ -268,13 +273,17 @@ impl Registry {
     {
         let mut writer = StringWriter::new();
         {
-            try!(self.template_renderw(template_string, data, &mut writer));
+            try!(self.render_template_to_write(
+                template_string,
+                data,
+                &mut writer
+            ));
         }
         Ok(writer.to_string())
     }
 
     /// render a template string using current registry without register it
-    pub fn template_renderw<T>(
+    pub fn render_template_to_write<T>(
         &self,
         template_string: &str,
         data: &T,
@@ -292,7 +301,7 @@ impl Registry {
     }
 
     /// render a template source using current registry without register it
-    pub fn template_renderw2<T>(
+    pub fn render_template_source_to_write<T>(
         &self,
         template_source: &mut Read,
         data: &T,
@@ -305,7 +314,53 @@ impl Registry {
         try!(template_source.read_to_string(&mut tpl_str).map_err(|e| {
             TemplateRenderError::IOError(e, "Unamed template source".to_owned())
         }));
-        self.template_renderw(&tpl_str, data, writer)
+        self.render_template_to_write(&tpl_str, data, writer)
+    }
+
+    #[deprecated(since = "0.30.0", note = "Please use render_to_write instead.")]
+    pub fn renderw<T>(&self, name: &str, data: &T, writer: &mut Write) -> Result<(), RenderError>
+    where
+        T: Serialize,
+    {
+        self.render_to_write(name, data, writer)
+    }
+
+    #[deprecated(since = "0.30.0", note = "Please use render_template instead.")]
+    pub fn template_render<T>(
+        &self,
+        template_string: &str,
+        data: &T,
+    ) -> Result<String, TemplateRenderError>
+    where
+        T: Serialize,
+    {
+        self.render_template(template_string, data)
+    }
+
+    #[deprecated(since = "0.30.0", note = "Please use render_template_to_write instead.")]
+    pub fn template_renderw<T>(
+        &self,
+        template_string: &str,
+        data: &T,
+        writer: &mut Write,
+    ) -> Result<(), TemplateRenderError>
+    where
+        T: Serialize,
+    {
+        self.render_template_to_write(template_string, data, writer)
+    }
+
+    #[deprecated(since = "0.30.0", note = "Please use render_template_source_to_write instead.")]
+    pub fn template_renderw2<T>(
+        &self,
+        template_source: &mut Read,
+        data: &T,
+        writer: &mut Write,
+    ) -> Result<(), TemplateRenderError>
+    where
+        T: Serialize,
+    {
+        self.render_template_source_to_write(template_source, data, writer)
     }
 }
 
