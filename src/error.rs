@@ -131,12 +131,7 @@ impl TemplateError {
     pub fn at(mut self, template_str: &str, line_no: usize, column_no: usize) -> TemplateError {
         self.line_no = Some(line_no);
         self.column_no = Some(column_no);
-        self.segment = Some(template_segment(
-            template_str,
-            self.reason.description(),
-            line_no,
-            column_no,
-        ));
+        self.segment = Some(template_segment(template_str, line_no, column_no));
         self
     }
 
@@ -152,7 +147,7 @@ impl Error for TemplateError {
     }
 }
 
-fn template_segment(template_str: &str, reason: &str, line: usize, col: usize) -> String {
+fn template_segment(template_str: &str, line: usize, col: usize) -> String {
     let range = 3;
     let line_start = if line >= range { line - range } else { 0 };
     let line_end = line + range;
@@ -160,9 +155,9 @@ fn template_segment(template_str: &str, reason: &str, line: usize, col: usize) -
     let mut buf = String::new();
     for (line_count, line_content) in template_str.lines().enumerate() {
         if line_count >= line_start && line_count <= line_end {
-            buf.push_str(&format!("{:4} {}\n", line_count, line_content));
+            buf.push_str(&format!("{:4} | {}\n", line_count, line_content));
             if line_count == line - 1 {
-                buf.push_str("     ");
+                buf.push_str("     |");
                 for c in 0..line_content.len() {
                     if c != col {
                         buf.push_str("-");
@@ -170,9 +165,6 @@ fn template_segment(template_str: &str, reason: &str, line: usize, col: usize) -
                         buf.push_str("^");
                     }
                 }
-                buf.push_str("\n");
-                buf.push_str("     ");
-                buf.push_str(reason);
                 buf.push_str("\n");
             }
         }
@@ -186,14 +178,15 @@ impl fmt::Display for TemplateError {
         match (self.line_no, self.column_no, &self.segment) {
             (Some(line), Some(col), &Some(ref seg)) => write!(
                 f,
-                "Template \"{}\" line {}, col {}:\nReason: {}\n\n{}",
+                "Template error: {}\n    --> Template error in \"{}\":{}:{}\n     |\n{}     |\n     = reason: {}\n",
+                self.reason,
                 self.template_name
                     .as_ref()
-                    .unwrap_or(&"Unnamed template".to_owned(),),
+                    .unwrap_or(&"Unnamed template".to_owned()),
                 line,
                 col,
-                self.reason,
-                seg
+                seg,
+                self.reason
             ),
             _ => write!(f, "{}", self.reason),
         }
