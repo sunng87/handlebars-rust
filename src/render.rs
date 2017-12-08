@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
 use std::io::Write;
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 
 use serde::Serialize;
 use serde_json::value::Value as Json;
@@ -259,12 +259,12 @@ impl<'a> fmt::Debug for RenderContext<'a> {
 /// Json wrapper that holds the Json value and reference path information
 ///
 #[derive(Debug)]
-pub struct ContextJson {
+pub struct ContextJson<'a> {
     path: Option<String>,
-    value: Json,
+    value: Cow<'a, Json>,
 }
 
-impl ContextJson {
+impl<'a> ContextJson<'a> {
     /// Returns relative path when the value is referenced
     /// If the value is from a literal, the path is `None`
     pub fn path(&self) -> Option<&String> {
@@ -280,27 +280,27 @@ impl ContextJson {
 
     /// Returns the value
     pub fn value(&self) -> &Json {
-        &self.value
+        self.value.as_ref()
     }
 }
 
 /// Render-time Helper data when using in a helper definition
-pub struct Helper<'a> {
+pub struct Helper<'a, 'b> {
     name: &'a str,
-    params: Vec<ContextJson>,
-    hash: BTreeMap<String, ContextJson>,
+    params: Vec<ContextJson<'b>>,
+    hash: BTreeMap<String, ContextJson<'b>>,
     block_param: &'a Option<BlockParam>,
     template: Option<&'a Template>,
     inverse: Option<&'a Template>,
     block: bool,
 }
 
-impl<'a, 'b> Helper<'a> {
+impl<'a, 'b> Helper<'a, 'b> {
     fn from_template(
         ht: &'a HelperTemplate,
-        registry: &Registry,
+        registry: &'a Registry,
         rc: &'b mut RenderContext,
-    ) -> Result<Helper<'a>, RenderError> {
+    ) -> Result<Helper<'a, 'b>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in ht.params.iter() {
             let r = try!(p.expand(registry, rc));
@@ -421,19 +421,19 @@ impl<'a, 'b> Helper<'a> {
 }
 
 /// Render-time Decorator data when using in a decorator definition
-pub struct Directive<'a> {
+pub struct Directive<'a, 'b> {
     name: String,
-    params: Vec<ContextJson>,
-    hash: BTreeMap<String, ContextJson>,
+    params: Vec<ContextJson<'b>>,
+    hash: BTreeMap<String, ContextJson<'b>>,
     template: Option<&'a Template>,
 }
 
-impl<'a, 'b> Directive<'a> {
+impl<'a, 'b> Directive<'a, 'b> {
     fn from_template(
         dt: &'a DirectiveTemplate,
         registry: &Registry,
         rc: &'b mut RenderContext,
-    ) -> Result<Directive<'a>, RenderError> {
+    ) -> Result<Directive<'a, 'b>, RenderError> {
         let name = try!(dt.name.expand_as_name(registry, rc));
 
         let mut evaluated_params = Vec::new();
@@ -511,17 +511,17 @@ pub trait Evaluable {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
 
-fn call_helper_for_value(
+fn call_helper_for_value<'b>(
     hd: &Box<HelperDef>,
     ht: &Helper,
     registry: &Registry,
     rc: &mut RenderContext,
-) -> Result<ContextJson, RenderError> {
+) -> Result<ContextJson<'b>, RenderError> {
     // test if helperDef has json result
     if let Some(inner_value) = hd.call_inner(ht, registry, rc)? {
         Ok(ContextJson {
             path: None,
-            value: inner_value,
+            value: Cow::Owned(inner_value),
         })
     } else {
         // parse value from output
@@ -536,7 +536,7 @@ fn call_helper_for_value(
         }
         Ok(ContextJson {
             path: None,
-            value: Json::String(local_writer.to_string()),
+            value: Cow::Owned(Json::String(local_writer.to_string())),
         })
     }
 }
@@ -555,18 +555,18 @@ impl Parameter {
         }
     }
 
-    pub fn expand(
+    pub fn expand<'b>(
         &self,
         registry: &Registry,
         rc: &mut RenderContext,
-    ) -> Result<ContextJson, RenderError> {
+    ) -> Result<ContextJson<'b>, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
                 let local_value = rc.get_local_var(&name);
                 if let Some(value) = local_value {
                     Ok(ContextJson {
                         path: Some(name.to_owned()),
-                        value: value.clone(),
+                        value: Cow::Borrowed(value),
                     })
                 } else {
                     let block_context_value = rc.evaluate_in_block_context(name)?;
@@ -577,13 +577,13 @@ impl Parameter {
                     };
                     Ok(ContextJson {
                         path: Some(name.to_owned()),
-                        value: value.clone(),
+                        value: Cow::Borrowed(value),
                     })
                 }
             }
             &Parameter::Literal(ref j) => Ok(ContextJson {
                 path: None,
-                value: j.clone(),
+                value: Cow::Owned(j.clone()),
             }),
             &Parameter::Subexpression(ref t) => match t.into_element() {
                 Expression(ref expr) => expr.expand(registry, rc),
