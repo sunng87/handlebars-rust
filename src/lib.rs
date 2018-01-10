@@ -284,6 +284,7 @@
 //!
 //!
 
+#![feature(nll)]
 #![allow(dead_code)]
 #![recursion_limit = "200"]
 
@@ -329,3 +330,4 @@ mod context;
 mod support;
 mod directives;
 mod partial;
+mod output;

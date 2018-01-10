@@ -5,12 +5,19 @@ use registry::Registry;
 use context::{to_json, JsonTruthy};
 use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
+use output::Output;
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call(
+        &self,
+        h: &Helper,
+        r: &Registry,
+        rc: &mut RenderContext,
+        out: &mut Output,
+    ) -> HelperResult {
         let param = try!(
             h.param(0)
                 .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))
@@ -46,7 +53,7 @@ impl HelperDef for WithHelper {
             }
 
             let result = match template {
-                Some(t) => t.render(r, &mut local_rc),
+                Some(t) => t.render(r, &mut local_rc, out),
                 None => Ok(()),
             };
 

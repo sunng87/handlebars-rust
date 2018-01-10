@@ -13,7 +13,7 @@ pub mod str {
             }
         }
 
-        pub fn to_string(self) -> String {
+        pub fn to_string(&self) -> String {
             if let Ok(s) = String::from_utf8(self.buf) {
                 s
             } else {

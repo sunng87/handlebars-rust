@@ -5,12 +5,19 @@ use registry::Registry;
 use context::JsonRender;
 use render::{Helper, RenderContext};
 use error::RenderError;
+use output::Output;
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call(&self, h: &Helper, _: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call(
+        &self,
+        h: &Helper,
+        _: &Registry,
+        rc: &mut RenderContext,
+        out: &mut Output,
+    ) -> HelperResult {
         let collection_value = try!(
             h.param(0)
                 .ok_or_else(|| RenderError::new("Param not found for helper \"lookup\""))
@@ -36,7 +43,7 @@ impl HelperDef for LookupHelper {
             _ => &null,
         };
         let r = value.render();
-        try!(rc.writer.write(r.into_bytes().as_ref()));
+        try!(out.write(r.as_ref()));
         Ok(())
     }
 }

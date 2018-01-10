@@ -7,12 +7,19 @@ use registry::Registry;
 use context::{to_json, JsonTruthy};
 use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
+use output::Output;
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;
 
 impl HelperDef for EachHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call(
+        &self,
+        h: &Helper,
+        r: &Registry,
+        rc: &mut RenderContext,
+        out: &mut Output,
+    ) -> HelperResult {
         let value = try!(
             h.param(0)
                 .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))
@@ -54,7 +61,7 @@ impl HelperDef for EachHelper {
                                 local_rc.push_block_context(&map)?;
                             }
 
-                            try!(t.render(r, &mut local_rc));
+                            try!(t.render(r, &mut local_rc, out));
 
                             if h.block_param().is_some() {
                                 local_rc.pop_block_context();
@@ -93,7 +100,7 @@ impl HelperDef for EachHelper {
                                 local_rc.push_block_context(&map)?;
                             }
 
-                            try!(t.render(r, &mut local_rc));
+                            try!(t.render(r, &mut local_rc, out));
 
                             if h.block_param().is_some() {
                                 local_rc.pop_block_context();
@@ -108,7 +115,7 @@ impl HelperDef for EachHelper {
                     }
                     (false, _) => {
                         if let Some(else_template) = h.inverse() {
-                            try!(else_template.render(r, rc));
+                            try!(else_template.render(r, rc, out));
                         }
                         Ok(())
                     }
@@ -377,13 +384,7 @@ mod test {
                 .register_template_string("t0", "{{#each this}}{{@key}}: {{this}}\n{{/each}}")
                 .is_ok()
         );
-        let data = json!({
-            "normal": 1,
-            "你好": 2,
-            "#special key": 3,
-            "😂": 4,
-            "me.dot.key": 5
-        });
+        let data = json!({});
         let r0 = handlebars.render("t0", &data).ok().unwrap();
         assert!(r0.contains("normal: 1"));
         assert!(r0.contains("你好: 2"));
