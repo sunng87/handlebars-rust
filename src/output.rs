@@ -33,7 +33,6 @@ impl Output for StringOutput {
         for b in seg.as_bytes() {
             self.buf.push(*b);
         }
-
         Ok(())
     }
 }

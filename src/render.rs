@@ -702,6 +702,7 @@ impl Renderable for TemplateElement {
                 out.write("<!--")?;
                 out.write(v)?;
                 out.write("-->")?;
+                Ok(())
             }
             Expression(ref v) => {
                 let context_json = try!(v.expand(registry, rc));

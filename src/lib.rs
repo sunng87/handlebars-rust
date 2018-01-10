@@ -284,6 +284,7 @@
 //!
 //!
 
+#![feature(nll)]
 #![allow(dead_code)]
 #![recursion_limit = "200"]
 

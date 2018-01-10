@@ -317,7 +317,7 @@ impl Registry {
         T: Serialize,
     {
         let mut writer = StringWriter::new();
-        self.render_template_to_write(template_string, data, &mut writer)?;;
+        self.render_template_to_write(template_string, data, &mut writer)?;
         Ok(writer.to_string())
     }
 
