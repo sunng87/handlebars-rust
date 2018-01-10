@@ -2,6 +2,7 @@ use render::{Helper, RenderContext};
 use context::JsonRender;
 use registry::Registry;
 use error::RenderError;
+use output::Output;
 use serde_json::Value as Json;
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
@@ -48,7 +49,6 @@ pub use self::helper_log::LOG_HELPER;
 ///
 ///
 
-
 pub type HelperResult = Result<(), RenderError>;
 
 pub trait HelperDef: Send + Sync {
@@ -61,9 +61,15 @@ pub trait HelperDef: Send + Sync {
         Ok(None)
     }
 
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
+    fn call(
+        &self,
+        h: &Helper,
+        r: &Registry,
+        rc: &mut RenderContext,
+        out: &mut Output,
+    ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, rc)? {
-            rc.writer.write(result.render().into_bytes().as_ref())?;
+            out.write(result.render().as_ref())?;
         }
 
         Ok(())
@@ -74,10 +80,17 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd> Fn(&'b Helper, &'c Registry, &'d mut RenderContext) -> HelperResult,
+        + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext, &'e mut Output)
+        -> HelperResult,
 > HelperDef for F {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
-        (*self)(h, r, rc)
+    fn call(
+        &self,
+        h: &Helper,
+        r: &Registry,
+        rc: &mut RenderContext,
+        out: &mut Output,
+    ) -> HelperResult {
+        (*self)(h, r, rc, out)
     }
 }
 

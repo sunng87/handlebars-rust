@@ -14,7 +14,7 @@ use helpers::{self, HelperDef};
 use directives::{self, DirectiveDef};
 use support::str::StringWriter;
 use error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
-
+use output::{Output, WriteOutput};
 
 lazy_static!{
     static ref DEFAULT_REPLACE: Regex = Regex::new(">|<|\"|&").unwrap();
@@ -134,9 +134,8 @@ impl Registry {
     where
         P: AsRef<Path>,
     {
-        let mut file = try!(
-            File::open(tpl_path).map_err(|e| { TemplateFileError::IOError(e, name.to_owned()) })
-        );
+        let mut file =
+            try!(File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         self.register_template_source(name, &mut file)
     }
 
@@ -150,7 +149,7 @@ impl Registry {
         try!(
             tpl_source
                 .read_to_string(&mut buf)
-                .map_err(|e| { TemplateFileError::IOError(e, name.to_owned()) })
+                .map_err(|e| TemplateFileError::IOError(e, name.to_owned()))
         );
         try!(self.register_template_string(name, buf));
         Ok(())
@@ -222,7 +221,6 @@ impl Registry {
         self.templates.clear();
     }
 
-
     /// Render a registered template with some data into a string
     ///
     /// * `name` is the template name you registred previously
@@ -235,30 +233,26 @@ impl Registry {
     {
         let mut writer = StringWriter::new();
         {
-            try!(self.render_to_write(name, data, &mut writer));
+            self.render_to_write(name, data, writer)?;
         }
         Ok(writer.to_string())
     }
 
-
     /// Render a registered template and write some data to the `std::io::Write`
-    pub fn render_to_write<T>(
-        &self,
-        name: &str,
-        data: &T,
-        writer: &mut Write,
-    ) -> Result<(), RenderError>
+    pub fn render_to_write<T, W>(&self, name: &str, data: &T, writer: W) -> Result<(), RenderError>
     where
         T: Serialize,
+        W: Write,
     {
         self.get_template(&name.to_string())
             .ok_or(RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
                 let ctx = try!(Context::wraps(data));
                 let mut local_helpers = HashMap::new();
-                let mut render_context = RenderContext::new(ctx, &mut local_helpers, writer);
+                let mut render_context = RenderContext::new(ctx, &mut local_helpers);
                 render_context.root_template = t.name.clone();
-                t.render(self, &mut render_context)
+                let mut output = WriteOutput::new(writer);
+                t.render(self, &mut render_context, &mut output)
             })
     }
 
@@ -272,31 +266,27 @@ impl Registry {
         T: Serialize,
     {
         let mut writer = StringWriter::new();
-        {
-            try!(self.render_template_to_write(
-                template_string,
-                data,
-                &mut writer
-            ));
-        }
+        try!(self.render_template_to_write(template_string, data, &mut writer));
         Ok(writer.to_string())
     }
 
     /// render a template string using current registry without register it
-    pub fn render_template_to_write<T>(
+    pub fn render_template_to_write<T, W>(
         &self,
         template_string: &str,
         data: &T,
-        writer: &mut Write,
+        writer: W,
     ) -> Result<(), TemplateRenderError>
     where
         T: Serialize,
+        W: Write,
     {
         let tpl = try!(Template::compile2(template_string, self.source_map));
         let ctx = try!(Context::wraps(data));
         let mut local_helpers = HashMap::new();
-        let mut render_context = RenderContext::new(ctx, &mut local_helpers, writer);
-        tpl.render(self, &mut render_context)
+        let mut render_context = RenderContext::new(ctx, &mut local_helpers);
+        let mut out = WriteOutput::new(writer);
+        tpl.render(self, &mut render_context, &mut out)
             .map_err(TemplateRenderError::from)
     }
 
@@ -311,9 +301,11 @@ impl Registry {
         T: Serialize,
     {
         let mut tpl_str = String::new();
-        try!(template_source.read_to_string(&mut tpl_str).map_err(|e| {
-            TemplateRenderError::IOError(e, "Unamed template source".to_owned())
-        }));
+        try!(
+            template_source
+                .read_to_string(&mut tpl_str)
+                .map_err(|e| TemplateRenderError::IOError(e, "Unamed template source".to_owned()))
+        );
         self.render_template_to_write(&tpl_str, data, writer)
     }
 
@@ -447,9 +439,7 @@ mod test {
     #[test]
     fn test_escape() {
         let r = Registry::new();
-        let data = json!({
-            "hello": "world"
-        });
+        let data = json!({});
 
         assert_eq!(
             "{{hello}}",
