@@ -1,30 +1,31 @@
-use std::io::{Write, Error as IOError};
+use std::io::{Error as IOError, Write};
 use std::string::FromUtf8Error;
 
 pub trait Output {
     fn write(&mut self, seg: &str) -> Result<(), IOError>;
 }
 
-pub struct WriteOutput {
-    write: Box<Write>
+pub struct WriteOutput<'a, W: 'a + Write> {
+    write: &'a mut W,
 }
 
-impl Output for WriteOutput {
+impl<'a, W: 'a + Write> Output for WriteOutput<'a, W> {
     fn write(&mut self, seg: &str) -> Result<(), IOError> {
-        self.write.write(seg.as_bytes()).map(|_| ())
+        self.write.write_all(seg.as_bytes())
     }
 }
 
-impl WriteOutput {
-    pub fn new<W>(w: W) -> WriteOutput where W: Write + 'static {
-        WriteOutput {
-            write: Box::new(w)
-        }
+impl<'a, W: 'a + Write> WriteOutput<'a, W> {
+    pub fn new(write: &'a mut W) -> WriteOutput<'a, W>
+    where
+        W: Write + 'a,
+    {
+        WriteOutput { write }
     }
 }
 
 pub struct StringOutput {
-    buf: Vec<u8>
+    buf: Vec<u8>,
 }
 
 impl Output for StringOutput {
@@ -32,7 +33,7 @@ impl Output for StringOutput {
         for b in seg.as_bytes() {
             self.buf.push(*b);
         }
-        
+
         Ok(())
     }
 }
@@ -40,7 +41,7 @@ impl Output for StringOutput {
 impl StringOutput {
     pub fn new() -> StringOutput {
         StringOutput {
-            buf: Vec::with_capacity(8 * 1024)
+            buf: Vec::with_capacity(8 * 1024),
         }
     }
 
