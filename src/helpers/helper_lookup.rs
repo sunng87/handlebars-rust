@@ -15,7 +15,7 @@ impl HelperDef for LookupHelper {
         &self,
         h: &Helper,
         _: &Registry,
-        rc: &mut RenderContext,
+        _: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
         let collection_value = try!(

@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
-use std::io::Write;
 use std::borrow::Borrow;
 
 use serde::Serialize;
@@ -13,7 +12,6 @@ use template::TemplateElement::*;
 use registry::Registry;
 use context::{Context, JsonRender};
 use helpers::HelperDef;
-use support::str::StringWriter;
 use error::RenderError;
 use partial;
 use output::{Output, StringOutput};
@@ -517,7 +515,7 @@ fn call_helper_for_value(
         // parse value from output
         let mut so = StringOutput::new();
         rc.disable_escape = true;
-        hd.call(ht, registry, &mut rc, &mut so)?;
+        hd.call(ht, registry, rc, &mut so)?;
         rc.disable_escape = false;
         let string = so.to_string().map_err(RenderError::from)?;
         Ok(ContextJson {
