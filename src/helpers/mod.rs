@@ -5,12 +5,12 @@ use error::RenderError;
 use output::Output;
 use serde_json::Value as Json;
 
-pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
-pub use self::helper_each::EACH_HELPER;
-pub use self::helper_with::WITH_HELPER;
-pub use self::helper_lookup::LOOKUP_HELPER;
-pub use self::helper_raw::RAW_HELPER;
-pub use self::helper_log::LOG_HELPER;
+// pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
+// pub use self::helper_each::EACH_HELPER;
+// pub use self::helper_with::WITH_HELPER;
+// pub use self::helper_lookup::LOOKUP_HELPER;
+// pub use self::helper_raw::RAW_HELPER;
+// pub use self::helper_log::LOG_HELPER;
 
 /// Helper Definition
 ///
@@ -54,7 +54,7 @@ pub type HelperResult = Result<(), RenderError>;
 pub trait HelperDef: Send + Sync {
     fn call_inner(
         &self,
-        _: &Helper,
+        _: &mut Helper,
         _: &Registry,
         _: &mut RenderContext,
     ) -> Result<Option<Json>, RenderError> {
@@ -63,7 +63,7 @@ pub trait HelperDef: Send + Sync {
 
     fn call(
         &self,
-        h: &Helper,
+        h: &mut Helper,
         r: &Registry,
         rc: &mut RenderContext,
         out: &mut Output,
@@ -80,12 +80,12 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext, &'e mut Output)
+        + for<'b, 'c, 'd> Fn(&'b mut Helper, &'c Registry, &'b mut RenderContext, &'d mut Output)
         -> HelperResult,
 > HelperDef for F {
     fn call(
         &self,
-        h: &Helper,
+        h: &mut Helper,
         r: &Registry,
         rc: &mut RenderContext,
         out: &mut Output,
@@ -94,12 +94,12 @@ impl<
     }
 }
 
-mod helper_if;
-mod helper_each;
-mod helper_with;
-mod helper_lookup;
-mod helper_raw;
-mod helper_log;
+// mod helper_if;
+// mod helper_each;
+// mod helper_with;
+// mod helper_lookup;
+// mod helper_raw;
+// mod helper_log;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
