@@ -194,4 +194,4 @@ This library (handlebars-rust) is open sourced under MIT License.
 
 ## Contact
 
-[Ning Sun](https://github.com/sunng87) (sunng@about.me)
+[Ning Sun](https://github.com/sunng87) (sunng@protonmail.com)
