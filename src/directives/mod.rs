@@ -2,7 +2,7 @@ use render::{Directive, RenderContext};
 use registry::Registry;
 use error::RenderError;
 
-pub use self::inline::INLINE_DIRECTIVE;
+// pub use self::inline::INLINE_DIRECTIVE;
 
 /// Decorator Definition
 ///
@@ -50,22 +50,32 @@ pub use self::inline::INLINE_DIRECTIVE;
 /// ```
 ///
 pub trait DirectiveDef: Send + Sync {
-    fn call(&self, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
+    fn call(
+        &self,
+        d: &mut Directive,
+        r: &Registry,
+        rc: &mut RenderContext,
+    ) -> Result<(), RenderError>;
 }
 
 /// implement DirectiveDef for bare function so we can use function as directive
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd, 'e> Fn(&'b Directive, &'c Registry, &'d mut RenderContext)
+        + for<'b, 'c> Fn(&'b mut Directive, &'c Registry, &'b mut RenderContext)
         -> Result<(), RenderError>,
 > DirectiveDef for F {
-    fn call(&self, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call(
+        &self,
+        d: &mut Directive,
+        r: &Registry,
+        rc: &mut RenderContext,
+    ) -> Result<(), RenderError> {
         (*self)(d, r, rc)
     }
 }
 
-mod inline;
+// mod inline;
 
 #[cfg(test)]
 mod test {

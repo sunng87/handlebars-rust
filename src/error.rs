@@ -1,6 +1,7 @@
 use std::io::Error as IOError;
 use std::error::Error;
 use std::fmt;
+use std::string::FromUtf8Error;
 
 use serde_json::error::Error as SerdeError;
 
@@ -52,6 +53,12 @@ impl From<IOError> for RenderError {
 
 impl From<SerdeError> for RenderError {
     fn from(e: SerdeError) -> RenderError {
+        RenderError::with(e)
+    }
+}
+
+impl From<FromUtf8Error> for RenderError {
+    fn from(e: FromUtf8Error) -> RenderError {
         RenderError::with(e)
     }
 }
