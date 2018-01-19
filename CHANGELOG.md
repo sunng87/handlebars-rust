@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.4...Unreleased) - ReleaseDate
+## [0.30.0-beta.5](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.4...0.30.0-beta.5) - 2018-01-19
 
 * [Changed] Improve `TemplateError` display. Now includes a segment of
   template string.
