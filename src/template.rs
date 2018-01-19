@@ -3,9 +3,9 @@ use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
 
 use pest::Parser;
+use pest::position::Position;
 use pest::Error as PestError;
 use pest::iterators::FlatPairs;
-use pest::inputs::{Position, StrInput};
 use grammar::{HandlebarsParser, Rule};
 
 use serde_json::value::Value as Json;
@@ -113,7 +113,7 @@ impl Parameter {
     }
 
     pub fn parse(s: &str) -> Result<Parameter, TemplateError> {
-        let parser = HandlebarsParser::parse_str(Rule::parameter, s).map_err(|_| {
+        let parser = HandlebarsParser::parse(Rule::parameter, s).map_err(|_| {
             TemplateError::of(TemplateErrorReason::InvalidParam(s.to_owned()))
         })?;
 
@@ -149,7 +149,7 @@ impl Template {
     #[inline]
     fn parse_subexpression<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule, StrInput>>,
+        it: &mut Peekable<FlatPairs<Rule>>,
         limit: usize,
     ) -> Result<Parameter, TemplateError> {
         let espec = try!(Template::parse_expression(source, it.by_ref(), limit));
@@ -168,7 +168,7 @@ impl Template {
     #[inline]
     fn parse_name<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule, StrInput>>,
+        it: &mut Peekable<FlatPairs<Rule>>,
         _: usize,
     ) -> Result<Parameter, TemplateError> {
         let name_node = it.next().unwrap();
@@ -188,7 +188,7 @@ impl Template {
     #[inline]
     fn parse_param<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule, StrInput>>,
+        it: &mut Peekable<FlatPairs<Rule>>,
         _: usize,
     ) -> Result<Parameter, TemplateError> {
         let mut param = it.next().unwrap();
@@ -234,7 +234,7 @@ impl Template {
     #[inline]
     fn parse_hash<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule, StrInput>>,
+        it: &mut Peekable<FlatPairs<Rule>>,
         limit: usize,
     ) -> Result<(String, Parameter), TemplateError> {
         let name = it.next().unwrap();
@@ -249,7 +249,7 @@ impl Template {
     #[inline]
     fn parse_block_param<'a>(
         _: &'a str,
-        it: &mut Peekable<FlatPairs<Rule, StrInput>>,
+        it: &mut Peekable<FlatPairs<Rule>>,
         limit: usize,
     ) -> Result<BlockParam, TemplateError> {
         let p1_name = it.next().unwrap();
@@ -279,7 +279,7 @@ impl Template {
     #[inline]
     fn parse_expression<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule, StrInput>>,
+        it: &mut Peekable<FlatPairs<Rule>>,
         limit: usize,
     ) -> Result<ExpressionSpec, TemplateError> {
         let mut params: Vec<Parameter> = Vec::new();
@@ -360,7 +360,7 @@ impl Template {
         let mut omit_pro_ws = false;
 
         let parser_queue =
-            HandlebarsParser::parse_str(Rule::handlebars, source).map_err(|e| match e {
+            HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| match e {
                 PestError::ParsingError {
                     pos,
                     positives: _,
@@ -392,7 +392,7 @@ impl Template {
             })?;
 
         let mut it = parser_queue.flatten().peekable();
-        let mut end_pos: Option<Position<StrInput>> = None;
+        let mut end_pos: Option<Position> = None;
         loop {
             if let Some(pair) = it.next() {
                 let prev_end = end_pos.as_ref().map(|p| p.pos()).unwrap_or(0);

@@ -10,7 +10,7 @@ use pest::Parser;
 #[cfg(test)]
 macro_rules! assert_rule {
     ($rule: expr, $in: expr) => {
-        assert_eq!(HandlebarsParser::parse_str($rule, $in).unwrap()
+        assert_eq!(HandlebarsParser::parse($rule, $in).unwrap()
                    .last()
                    .unwrap()
                    .into_span()
@@ -23,7 +23,7 @@ macro_rules! assert_rule {
 #[cfg(test)]
 macro_rules! assert_rule_match {
     ($rule: expr, $in: expr) => {
-        assert!(HandlebarsParser::parse_str($rule, $in).is_ok());
+        assert!(HandlebarsParser::parse($rule, $in).is_ok());
     }
 }
 
@@ -302,7 +302,7 @@ fn test_partial_expression() {
 fn test_partial_block() {
     let s = vec!["{{#> hello}}nice{{/hello}}"];
     for i in s.iter() {
-        let h = HandlebarsParser::parse_str(Rule::partial_block, i).unwrap();
+        let h = HandlebarsParser::parse(Rule::partial_block, i).unwrap();
         for i in h {
             println!("{:?}", i);
         }

@@ -7,7 +7,6 @@ use std::collections::{BTreeMap, VecDeque};
 
 use pest::Parser;
 use pest::iterators::Pair;
-use pest::inputs::StrInput;
 use grammar::{HandlebarsParser, Rule};
 use error::RenderError;
 
@@ -27,11 +26,11 @@ fn parse_json_visitor_inner<'a>(
     path_stack: &mut VecDeque<&'a str>,
     path: &'a str,
 ) -> Result<(), RenderError> {
-    let parsed_path = HandlebarsParser::parse_str(Rule::path, path)
+    let parsed_path = HandlebarsParser::parse(Rule::path, path)
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new("Invalid JSON path"))?;
 
-    let mut seg_stack: VecDeque<Pair<Rule, StrInput>> = VecDeque::new();
+    let mut seg_stack: VecDeque<Pair<Rule>> = VecDeque::new();
     for seg in parsed_path {
         if seg.as_str() == "@root" {
             seg_stack.clear();
@@ -70,7 +69,7 @@ fn parse_json_visitor<'a>(
     path_context: &'a VecDeque<String>,
     relative_path: &'a str,
 ) -> Result<(), RenderError> {
-    let mut parser = HandlebarsParser::parse_str(Rule::path, relative_path)
+    let mut parser = HandlebarsParser::parse(Rule::path, relative_path)
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new("Invalid JSON path."))?;
 

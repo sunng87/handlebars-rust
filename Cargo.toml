@@ -19,10 +19,10 @@ path = "src/lib.rs"
 
 [dependencies]
 
-log = "^0.3.1"
+log = "^0.4.0"
 quick-error = "^1.0.0"
-pest = "^1.0.0-beta"
-pest_derive = "^1.0.0-beta"
+pest = "^1.0.0-rc"
+pest_derive = "^1.0.0-rc"
 serde = "^1.0.0"
 serde_json = "^1.0.0"
 regex = "^0.2.0"
