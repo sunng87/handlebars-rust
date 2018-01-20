@@ -2,8 +2,7 @@ use std::iter::Peekable;
 use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
 
-use pest::Parser;
-use pest::position::Position;
+use pest::{Parser, Position};
 use pest::Error as PestError;
 use pest::iterators::FlatPairs;
 use grammar::{HandlebarsParser, Rule};
