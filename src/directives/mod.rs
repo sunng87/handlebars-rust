@@ -59,7 +59,8 @@ impl<
         + Sync
         + for<'b, 'c, 'd, 'e> Fn(&'b Directive, &'c Registry, &'d mut RenderContext)
         -> Result<(), RenderError>,
-> DirectiveDef for F {
+> DirectiveDef for F
+{
     fn call(&self, d: &Directive, r: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         (*self)(d, r, rc)
     }

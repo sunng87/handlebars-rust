@@ -13,7 +13,7 @@ impl HelperDef for IfHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         let param = try!(
             h.param(0)
-                .ok_or_else(|| { RenderError::new("Param not found for helper \"if\"") })
+                .ok_or_else(|| RenderError::new("Param not found for helper \"if\""))
         );
 
         let mut value = param.value().is_truthy();
@@ -22,7 +22,8 @@ impl HelperDef for IfHelper {
             value = !value;
         }
 
-        let tmpl = if value { h.template() } else { h.inverse() };
+        let tmpl =
+            if value { h.template() } else { h.inverse() };
         match tmpl {
             Some(ref t) => t.render(r, rc),
             None => Ok(()),

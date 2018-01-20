@@ -48,7 +48,6 @@ pub use self::helper_log::LOG_HELPER;
 ///
 ///
 
-
 pub type HelperResult = Result<(), RenderError>;
 
 pub trait HelperDef: Send + Sync {
@@ -75,7 +74,8 @@ impl<
     F: Send
         + Sync
         + for<'b, 'c, 'd> Fn(&'b Helper, &'c Registry, &'d mut RenderContext) -> HelperResult,
-> HelperDef for F {
+> HelperDef for F
+{
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
         (*self)(h, r, rc)
     }

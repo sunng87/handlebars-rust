@@ -15,7 +15,6 @@ use directives::{self, DirectiveDef};
 use support::str::StringWriter;
 use error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 
-
 lazy_static!{
     static ref DEFAULT_REPLACE: Regex = Regex::new(">|<|\"|&").unwrap();
 }
@@ -134,9 +133,8 @@ impl Registry {
     where
         P: AsRef<Path>,
     {
-        let mut file = try!(
-            File::open(tpl_path).map_err(|e| { TemplateFileError::IOError(e, name.to_owned()) })
-        );
+        let mut file =
+            try!(File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         self.register_template_source(name, &mut file)
     }
 
@@ -150,7 +148,7 @@ impl Registry {
         try!(
             tpl_source
                 .read_to_string(&mut buf)
-                .map_err(|e| { TemplateFileError::IOError(e, name.to_owned()) })
+                .map_err(|e| TemplateFileError::IOError(e, name.to_owned()))
         );
         try!(self.register_template_string(name, buf));
         Ok(())
@@ -222,7 +220,6 @@ impl Registry {
         self.templates.clear();
     }
 
-
     /// Render a registered template with some data into a string
     ///
     /// * `name` is the template name you registred previously
@@ -239,7 +236,6 @@ impl Registry {
         }
         Ok(writer.to_string())
     }
-
 
     /// Render a registered template and write some data to the `std::io::Write`
     pub fn render_to_write<T>(
@@ -273,11 +269,7 @@ impl Registry {
     {
         let mut writer = StringWriter::new();
         {
-            try!(self.render_template_to_write(
-                template_string,
-                data,
-                &mut writer
-            ));
+            try!(self.render_template_to_write(template_string, data, &mut writer));
         }
         Ok(writer.to_string())
     }
@@ -311,9 +303,11 @@ impl Registry {
         T: Serialize,
     {
         let mut tpl_str = String::new();
-        try!(template_source.read_to_string(&mut tpl_str).map_err(|e| {
-            TemplateRenderError::IOError(e, "Unamed template source".to_owned())
-        }));
+        try!(
+            template_source
+                .read_to_string(&mut tpl_str)
+                .map_err(|e| TemplateRenderError::IOError(e, "Unamed template source".to_owned()))
+        );
         self.render_template_to_write(&tpl_str, data, writer)
     }
 

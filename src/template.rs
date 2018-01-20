@@ -113,9 +113,8 @@ impl Parameter {
     }
 
     pub fn parse(s: &str) -> Result<Parameter, TemplateError> {
-        let parser = HandlebarsParser::parse(Rule::parameter, s).map_err(|_| {
-            TemplateError::of(TemplateErrorReason::InvalidParam(s.to_owned()))
-        })?;
+        let parser = HandlebarsParser::parse(Rule::parameter, s)
+            .map_err(|_| TemplateError::of(TemplateErrorReason::InvalidParam(s.to_owned())))?;
 
         let mut it = parser.flatten().peekable();
         Template::parse_param(s, &mut it, s.len() - 1)
@@ -268,9 +267,10 @@ impl Template {
 
         if p2.is_some() {
             it.next();
-            Ok(BlockParam::Pair(
-                (Parameter::Name(p1), Parameter::Name(p2.unwrap())),
-            ))
+            Ok(BlockParam::Pair((
+                Parameter::Name(p1),
+                Parameter::Name(p2.unwrap()),
+            )))
         } else {
             Ok(BlockParam::Single(Parameter::Name(p1)))
         }
@@ -578,18 +578,16 @@ impl Template {
                                     let t = template_stack.front_mut().unwrap();
                                     t.elements.push(HelperBlock(h));
                                 } else {
-                                    return Err(
-                                        TemplateError::of(
-                                            TemplateErrorReason::MismatchingClosedHelper(
-                                                h.name,
-                                                close_tag_name,
-                                            ),
-                                        ).at(
-                                            source,
-                                            line_no,
-                                            col_no,
+                                    return Err(TemplateError::of(
+                                        TemplateErrorReason::MismatchingClosedHelper(
+                                            h.name,
+                                            close_tag_name,
                                         ),
-                                    );
+                                    ).at(
+                                        source,
+                                        line_no,
+                                        col_no,
+                                    ));
                                 }
                             }
                             Rule::directive_block_end | Rule::partial_block_end => {
@@ -605,18 +603,16 @@ impl Template {
                                         t.elements.push(PartialBlock(d));
                                     }
                                 } else {
-                                    return Err(
-                                        TemplateError::of(
-                                            TemplateErrorReason::MismatchingClosedDirective(
-                                                d.name,
-                                                close_tag_name,
-                                            ),
-                                        ).at(
-                                            source,
-                                            line_no,
-                                            col_no,
+                                    return Err(TemplateError::of(
+                                        TemplateErrorReason::MismatchingClosedDirective(
+                                            d.name,
+                                            close_tag_name,
                                         ),
-                                    );
+                                    ).at(
+                                        source,
+                                        line_no,
+                                        col_no,
+                                    ));
                                 }
                             }
                             _ => unreachable!(),

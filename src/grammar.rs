@@ -155,7 +155,6 @@ fn test_helper_expression() {
     }
 }
 
-
 #[test]
 fn test_identifier_with_dash() {
     let s = vec!["{{exp-foo}}"];
@@ -163,7 +162,6 @@ fn test_identifier_with_dash() {
         assert_rule!(Rule::expression, i);
     }
 }
-
 
 #[test]
 fn test_html_expression() {

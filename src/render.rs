@@ -541,7 +541,6 @@ fn call_helper_for_value(
     }
 }
 
-
 impl Parameter {
     pub fn expand_as_name(
         &self,
@@ -599,9 +598,10 @@ impl Parameter {
                             } else {
                                 "helperMissing"
                             }))
-                            .ok_or(RenderError::new(
-                                format!("Helper not defined: {:?}", ht.name),
-                            ))
+                            .ok_or(RenderError::new(format!(
+                                "Helper not defined: {:?}",
+                                ht.name
+                            )))
                             .and_then(|d| call_helper_for_value(d, &helper, registry, rc))
                     }
                 }
@@ -701,9 +701,10 @@ impl Renderable for TemplateElement {
                         } else {
                             "helperMissing"
                         }))
-                        .ok_or(RenderError::new(
-                            format!("Helper not defined: {:?}", ht.name),
-                        ))
+                        .ok_or(RenderError::new(format!(
+                            "Helper not defined: {:?}",
+                            ht.name
+                        )))
                         .and_then(|d| d.call(&helper, registry, rc))
                 }
             }
@@ -721,14 +722,15 @@ impl Evaluable for TemplateElement {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
-                Directive::from_template(dt, registry, rc).and_then(
-                    |di| match registry.get_decorator(&di.name) {
+                Directive::from_template(dt, registry, rc).and_then(|di| {
+                    match registry.get_decorator(&di.name) {
                         Some(d) => (**d).call(&di, registry, rc),
-                        None => Err(RenderError::new(
-                            format!("Directive not defined: {:?}", dt.name),
-                        )),
-                    },
-                )
+                        None => Err(RenderError::new(format!(
+                            "Directive not defined: {:?}",
+                            dt.name
+                        ))),
+                    }
+                })
             }
             _ => Ok(()),
         }
@@ -933,12 +935,10 @@ fn test_partial_failback_render() {
         r.register_template_string("parent", "<html>{{> layout}}</html>")
             .is_ok()
     );
-    assert!(
-        r.register_template_string(
-            "child",
-            "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}"
-        ).is_ok()
-    );
+    assert!(r.register_template_string(
+        "child",
+        "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}"
+    ).is_ok());
     assert!(r.register_template_string("seg", "1234").is_ok());
 
     let r = r.render("child", &true).expect("should work");

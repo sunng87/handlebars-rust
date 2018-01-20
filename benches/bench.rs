@@ -90,18 +90,14 @@ fn large_loop_helper(b: &mut test::Bencher) {
 
     let real: Vec<DataWrapper> = (1..1000)
         .into_iter()
-        .map(|i| {
-            DataWrapper {
-                v: format!("n={}", i),
-            }
+        .map(|i| DataWrapper {
+            v: format!("n={}", i),
         })
         .collect();
     let dummy: Vec<DataWrapper> = (1..1000)
         .into_iter()
-        .map(|i| {
-            DataWrapper {
-                v: format!("n={}", i),
-            }
+        .map(|i| DataWrapper {
+            v: format!("n={}", i),
         })
         .collect();
     let rows = RowWrapper { real, dummy };

@@ -54,7 +54,6 @@ pub fn expand_partial(
         return Err(RenderError::new("Cannot include self in >"));
     }
 
-
     let tname = d.name();
     let partial = rc.get_partial(tname);
 

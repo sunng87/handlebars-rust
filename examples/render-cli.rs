@@ -11,7 +11,6 @@ use serde_json::value::Value as Json;
 
 use handlebars::Handlebars;
 
-
 fn usage() -> ! {
     writeln!(
         &mut io::stderr(),

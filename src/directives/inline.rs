@@ -10,9 +10,7 @@ pub struct InlineDirective;
 
 fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
     d.param(0)
-        .ok_or_else(|| {
-            RenderError::new("Param required for directive \"inline\"")
-        })
+        .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
         .and_then(|v| {
             v.value()
                 .as_str()
@@ -26,9 +24,8 @@ impl DirectiveDef for InlineDirective {
 
         let template = try!(
             d.template()
-                .ok_or_else(|| { RenderError::new("inline should have a block") })
+                .ok_or_else(|| RenderError::new("inline should have a block"))
         );
-
 
         rc.set_partial(name.to_owned(), Rc::new(template.clone()));
         Ok(())

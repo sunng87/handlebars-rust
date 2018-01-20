@@ -11,12 +11,14 @@ pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
     fn call(&self, h: &Helper, _: &Registry, rc: &mut RenderContext) -> HelperResult {
-        let collection_value = try!(h.param(0).ok_or_else(|| {
-            RenderError::new("Param not found for helper \"lookup\"")
-        }));
-        let index = try!(h.param(1).ok_or_else(|| {
-            RenderError::new("Insufficient params for helper \"lookup\"")
-        }));
+        let collection_value = try!(
+            h.param(0)
+                .ok_or_else(|| RenderError::new("Param not found for helper \"lookup\""))
+        );
+        let index = try!(
+            h.param(1)
+                .ok_or_else(|| RenderError::new("Insufficient params for helper \"lookup\""))
+        );
 
         let null = Json::Null;
         let value = match collection_value.value() {

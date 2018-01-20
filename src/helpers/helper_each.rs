@@ -13,9 +13,10 @@ pub struct EachHelper;
 
 impl HelperDef for EachHelper {
     fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
-        let value = try!(h.param(0).ok_or_else(|| {
-            RenderError::new("Param not found for helper \"each\"")
-        }));
+        let value = try!(
+            h.param(0)
+                .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))
+        );
 
         let template = h.template();
 
@@ -111,9 +112,10 @@ impl HelperDef for EachHelper {
                         }
                         Ok(())
                     }
-                    _ => Err(RenderError::new(
-                        format!("Param type is not iterable: {:?}", template),
-                    )),
+                    _ => Err(RenderError::new(format!(
+                        "Param type is not iterable: {:?}",
+                        template
+                    ))),
                 };
 
                 rc.demote_local_vars();
@@ -227,7 +229,6 @@ mod test {
         let r1 = handlebars.render("t0", &data);
         assert_eq!(r1.ok().unwrap(), "12345".to_string());
     }
-
 
     #[test]
     fn test_nested_array() {
