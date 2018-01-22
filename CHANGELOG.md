@@ -1,5 +1,11 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.30.0...{{version}}) - {{date}}
+
+
+## [0.30.0](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.5...0.30.0) - 2018-01-21
+* [Changed] Use pest 1.0
+
 ## [0.30.0-beta.5](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.4...0.30.0-beta.5) - 2018-01-19
 
 * [Changed] Improve `TemplateError` display. Now includes a segment of
