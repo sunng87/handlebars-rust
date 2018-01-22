@@ -7,7 +7,7 @@ Rust templating with [Handlebars templating language](https://handlebarsjs.com).
 [![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Docs](https://docs.rs/handlebars/badge.svg)](https://docs.rs/handlebars/)
+[![Docs](https://docs.rs/handlebars/badge.svg)](https://docs.rs/crate/handlebars/)
 
 ## Getting Started
 

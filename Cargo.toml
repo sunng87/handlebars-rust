@@ -9,7 +9,7 @@ keywords = ["handlebars", "templating", "web"]
 categories = ["template-engine"]
 homepage = "https://github.com/sunng87/handlebars-rust"
 repository = "https://github.com/sunng87/handlebars-rust"
-documentation = "https://docs.rs/handlebars/"
+documentation = "https://docs.rs/crate/handlebars/"
 readme = "README.md"
 
 [lib]
