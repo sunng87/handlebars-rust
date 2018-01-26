@@ -11,10 +11,16 @@ use serde_json::value::{self, Map, Value as Json};
 use std::io::{Read, Write};
 use std::fs::File;
 
-use handlebars::{to_json, Context, Handlebars, Helper, JsonRender, RenderContext, RenderError, Output};
+use handlebars::{to_json, Context, Handlebars, Helper, JsonRender, Output, RenderContext,
+                 RenderError};
 
 // define a custom helper
-fn format_helper(h: &Helper, _: &Handlebars, _: &mut RenderContext, out: &mut Output) -> Result<(), RenderError> {
+fn format_helper(
+    h: &Helper,
+    _: &Handlebars,
+    _: &mut RenderContext,
+    out: &mut Output,
+) -> Result<(), RenderError> {
     let param = try!(
         h.param(0,)
             .ok_or(RenderError::new("Param 0 is required for format helper.",),)
@@ -25,7 +31,12 @@ fn format_helper(h: &Helper, _: &Handlebars, _: &mut RenderContext, out: &mut Ou
 }
 
 // another custom helper
-fn rank_helper(h: &Helper, _: &Handlebars, _: &mut RenderContext, out: &mut Output) -> Result<(), RenderError> {
+fn rank_helper(
+    h: &Helper,
+    _: &Handlebars,
+    _: &mut RenderContext,
+    out: &mut Output,
+) -> Result<(), RenderError> {
     let rank = try!(
         h.param(0,)
             .and_then(|v| v.value().as_u64(),)

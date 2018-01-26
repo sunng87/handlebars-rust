@@ -82,7 +82,8 @@ impl<
         + Sync
         + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext, &'e mut Output)
         -> HelperResult,
-> HelperDef for F {
+> HelperDef for F
+{
     fn call(
         &self,
         h: &Helper,
@@ -182,7 +183,11 @@ mod test {
         handlebars.register_helper(
             "helperMissing",
             Box::new(
-                |h: &Helper, _: &Registry, _: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
+                |h: &Helper,
+                 _: &Registry,
+                 _: &mut RenderContext,
+                 out: &mut Output|
+                 -> Result<(), RenderError> {
                     let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
                     out.write(output.as_ref())?;
                     Ok(())
@@ -192,7 +197,11 @@ mod test {
         handlebars.register_helper(
             "foo",
             Box::new(
-                |h: &Helper, _: &Registry, _: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
+                |h: &Helper,
+                 _: &Registry,
+                 _: &mut RenderContext,
+                 out: &mut Output|
+                 -> Result<(), RenderError> {
                     let output = format!("{}", h.hash_get("value").unwrap().value().render());
                     out.write(output.as_ref())?;
                     Ok(())

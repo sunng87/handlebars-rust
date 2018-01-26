@@ -189,7 +189,11 @@ mod test {
         handlebars.register_helper(
             "distance",
             Box::new(
-                |h: &Helper, _: &Registry, _: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
+                |h: &Helper,
+                 _: &Registry,
+                 _: &mut RenderContext,
+                 out: &mut Output|
+                 -> Result<(), RenderError> {
                     let s = format!(
                         "{}m",
                         h.param(0,)
