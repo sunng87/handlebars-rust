@@ -387,7 +387,13 @@ mod test {
                 .register_template_string("t0", "{{#each this}}{{@key}}: {{this}}\n{{/each}}")
                 .is_ok()
         );
-        let data = json!({});
+        let data = json!({
+            "normal": 1,
+            "你好": 2,
+            "#special key": 3,
+            "😂": 4,
+            "me.dot.key": 5
+        });
         let r0 = handlebars.render("t0", &data).ok().unwrap();
         assert!(r0.contains("normal: 1"));
         assert!(r0.contains("你好: 2"));
