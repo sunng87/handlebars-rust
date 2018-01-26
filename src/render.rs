@@ -755,59 +755,59 @@ impl Evaluable for TemplateElement {
 #[test]
 fn test_raw_string() {
     let r = Registry::new();
-    let mut sw = StringWriter::new();
+    let mut out = StringOutput::new();
     let ctx = Context::null();
     let mut hlps = HashMap::new();
     {
-        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps);
         let raw_string = RawString("<h1>hello world</h1>".to_string());
 
-        raw_string.render(&r, &mut rc).ok().unwrap();
+        raw_string.render(&r, &mut rc, &mut out).ok().unwrap();
     }
-    assert_eq!(sw.to_string(), "<h1>hello world</h1>".to_string());
+    assert_eq!(out.to_string().unwrap(), "<h1>hello world</h1>".to_string());
 }
 
 #[test]
 fn test_expression() {
     let r = Registry::new();
-    let mut sw = StringWriter::new();
+    let mut out = StringOutput::new();
     let mut hlps = HashMap::new();
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "<p></p>".to_string();
     m.insert("hello".to_string(), value);
     let ctx = Context::wraps(&m).unwrap();
     {
-        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps);
         let element = Expression(Parameter::Name("hello".into()));
 
-        element.render(&r, &mut rc).ok().unwrap();
+        element.render(&r, &mut rc, &mut out).ok().unwrap();
     }
 
-    assert_eq!(sw.to_string(), "&lt;p&gt;&lt;/p&gt;".to_string());
+    assert_eq!(out.to_string().unwrap(), "&lt;p&gt;&lt;/p&gt;".to_string());
 }
 
 #[test]
 fn test_html_expression() {
     let r = Registry::new();
-    let mut sw = StringWriter::new();
+    let mut out = StringOutput::new();
     let mut hlps = HashMap::new();
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "world";
     m.insert("hello".to_string(), value.to_string());
     let ctx = Context::wraps(&m).unwrap();
     {
-        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps);
         let element = HTMLExpression(Parameter::Name("hello".into()));
-        element.render(&r, &mut rc).ok().unwrap();
+        element.render(&r, &mut rc, &mut out).ok().unwrap();
     }
 
-    assert_eq!(sw.to_string(), value.to_string());
+    assert_eq!(out.to_string().unwrap(), value.to_string());
 }
 
 #[test]
 fn test_template() {
     let r = Registry::new();
-    let mut sw = StringWriter::new();
+    let mut out = StringOutput::new();
     let mut hlps = HashMap::new();
     let mut m: HashMap<String, String> = HashMap::new();
     let value = "world".to_string();
@@ -815,7 +815,7 @@ fn test_template() {
     let ctx = Context::wraps(&m).unwrap();
 
     {
-        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps);
         let mut elements: Vec<TemplateElement> = Vec::new();
 
         let e1 = RawString("<h1>".to_string());
@@ -835,20 +835,19 @@ fn test_template() {
             name: None,
             mapping: None,
         };
-        template.render(&r, &mut rc).ok().unwrap();
+        template.render(&r, &mut rc, &mut out).ok().unwrap();
     }
 
-    assert_eq!(sw.to_string(), "<h1>world</h1>".to_string());
+    assert_eq!(out.to_string().unwrap(), "<h1>world</h1>".to_string());
 }
 
 #[test]
 fn test_render_context_promotion_and_demotion() {
     use context::to_json;
-    let mut sw = StringWriter::new();
     let ctx = Context::null();
     let mut hlps = HashMap::new();
 
-    let mut render_context = RenderContext::new(ctx, &mut hlps, &mut sw);
+    let mut render_context = RenderContext::new(ctx, &mut hlps);
 
     render_context.set_local_var("@index".to_string(), to_json(&0));
 
@@ -871,6 +870,8 @@ fn test_render_context_promotion_and_demotion() {
 
 #[test]
 fn test_render_subexpression() {
+    use ::support::str::StringWriter;
+    
     let r = Registry::new();
     let mut sw = StringWriter::new();
 
@@ -892,17 +893,16 @@ fn test_render_subexpression() {
 
 #[test]
 fn test_render_subexpression_issue_115() {
+    use ::support::str::StringWriter;
+    
     let mut r = Registry::new();
     r.register_helper(
         "format",
         Box::new(
-            |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
-                rc.writer
+            |h: &Helper, _: &Registry, rc: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
+                out
                     .write(
-                        format!("{}", h.param(0).unwrap().value().render())
-                            .into_bytes()
-                            .as_ref(),
-                    )
+                        format!("{}", h.param(0).unwrap().value().render()).as_ref())
                     .map(|_| ())
                     .map_err(RenderError::from)
             },

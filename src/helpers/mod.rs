@@ -117,6 +117,7 @@ mod test {
     use registry::Registry;
     use render::{Helper, RenderContext, Renderable};
     use error::RenderError;
+    use output::Output;
 
     #[derive(Clone, Copy)]
     struct MetaHelper;
@@ -127,17 +128,18 @@ mod test {
             h: &Helper,
             r: &Registry,
             rc: &mut RenderContext,
+            out: &mut Output,
         ) -> Result<(), RenderError> {
             let v = h.param(0).unwrap();
 
             if !h.is_block() {
                 let output = format!("{}:{}", h.name(), v.value().render());
-                try!(rc.writer.write(output.into_bytes().as_ref()));
+                out.write(output.as_ref())?;
             } else {
                 let output = format!("{}:{}", h.name(), v.value().render());
-                try!(rc.writer.write(output.into_bytes().as_ref()));
-                try!(rc.writer.write("->".as_bytes()));
-                try!(h.template().unwrap().render(r, rc));
+                out.write(output.as_ref())?;
+                out.write("->")?;
+                h.template().unwrap().render(r, rc, out)?;
             };
             Ok(())
         }
@@ -180,9 +182,9 @@ mod test {
         handlebars.register_helper(
             "helperMissing",
             Box::new(
-                |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
+                |h: &Helper, _: &Registry, rc: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
                     let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
-                    try!(rc.writer.write(output.into_bytes().as_ref()));
+                    out.write(output.as_ref())?;
                     Ok(())
                 },
             ),
@@ -190,9 +192,9 @@ mod test {
         handlebars.register_helper(
             "foo",
             Box::new(
-                |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
+                |h: &Helper, _: &Registry, rc: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
                     let output = format!("{}", h.hash_get("value").unwrap().value().render());
-                    try!(rc.writer.write(output.into_bytes().as_ref()));
+                    out.write(output.as_ref())?;
                     Ok(())
                 },
             ),

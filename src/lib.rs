@@ -318,6 +318,7 @@ pub use self::helpers::{HelperDef, HelperResult};
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::context::{to_json, Context, JsonRender};
 pub use self::support::str::StringWriter;
+pub use self::output::Output;
 
 mod grammar;
 mod template;

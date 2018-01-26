@@ -40,7 +40,6 @@ mod test {
     use registry::Registry;
     use context::Context;
     use render::{Evaluable, RenderContext};
-    use support::str::StringWriter;
     use std::collections::HashMap;
 
     #[test]
@@ -52,11 +51,10 @@ mod test {
 
         let hbs = Registry::new();
 
-        let mut sw = StringWriter::new();
         let ctx = Context::null();
         let mut hlps = HashMap::new();
 
-        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
+        let mut rc = RenderContext::new(ctx, &mut hlps);
         t0.elements[0].eval(&hbs, &mut rc).unwrap();
 
         assert!(rc.get_partial(&"hello".to_owned()).is_some());

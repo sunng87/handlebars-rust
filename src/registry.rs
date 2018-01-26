@@ -415,6 +415,7 @@ mod test {
     use render::{Helper, RenderContext, Renderable};
     use helpers::HelperDef;
     use support::str::StringWriter;
+    use output::{Output, StringOutput};
     use error::RenderError;
 
     #[derive(Clone, Copy)]
@@ -426,8 +427,9 @@ mod test {
             h: &Helper,
             r: &Registry,
             rc: &mut RenderContext,
+            out: &mut Output,
         ) -> Result<(), RenderError> {
-            try!(h.template().unwrap().render(r, rc));
+            try!(h.template().unwrap().render(r, rc, out));
             Ok(())
         }
     }

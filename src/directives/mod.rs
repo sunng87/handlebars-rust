@@ -73,6 +73,7 @@ mod test {
     use registry::Registry;
     use context::{self, as_string, Context};
     use render::{Directive, Helper, RenderContext};
+    use output::Output;
     use error::RenderError;
 
     #[test]
@@ -188,14 +189,14 @@ mod test {
         handlebars.register_helper(
             "distance",
             Box::new(
-                |h: &Helper, _: &Registry, rc: &mut RenderContext| -> Result<(), RenderError> {
+                |h: &Helper, _: &Registry, rc: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
                     let s = format!(
                         "{}m",
                         h.param(0,)
                             .map(|v| v.value(),)
                             .unwrap_or(&context::to_json(&0),)
                     );
-                    try!(rc.writer().write(s.into_bytes().as_ref()));
+                    out.write(s.as_ref())?;
                     Ok(())
                 },
             ),
@@ -210,7 +211,8 @@ mod test {
                         .to_owned();
                     let new_helper = move |h: &Helper,
                                            _: &Registry,
-                                           rc: &mut RenderContext|
+                                           rc: &mut RenderContext,
+                                           out: &mut Output|
                           -> Result<(), RenderError> {
                         let s = format!(
                             "{}{}",
@@ -219,7 +221,7 @@ mod test {
                                 .unwrap_or(&context::to_json(&0),),
                             new_unit
                         );
-                        try!(rc.writer().write(s.into_bytes().as_ref()));
+                        out.write(s.as_ref())?;
                         Ok(())
                     };
 

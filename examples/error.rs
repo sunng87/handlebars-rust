@@ -6,19 +6,19 @@ extern crate serde_json;
 
 use serde_json::value::{Map, Value as Json};
 
-use handlebars::{to_json, Handlebars, Helper, JsonRender, RenderContext, RenderError};
+use handlebars::{to_json, Handlebars, Helper, JsonRender, RenderContext, RenderError, Output};
 
-fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> Result<(), RenderError> {
     let param = try!(
         h.param(0,)
             .ok_or(RenderError::new("Param 0 is required for format helper.",),)
     );
     let rendered = format!("{} pts", param.value().render());
-    try!(rc.writer.write(rendered.into_bytes().as_ref()));
+    out.write(rendered.as_ref())?;
     Ok(())
 }
 
-fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> Result<(), RenderError> {
     let rank = try!(
         h.param(0,)
             .and_then(|v| v.value().as_u64(),)
@@ -35,11 +35,11 @@ fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(),
     );
     let total = teams.len();
     if rank == 0 {
-        try!(rc.writer.write("champion".as_bytes()));
+        out.write("champion")?;
     } else if rank >= total - 2 {
-        try!(rc.writer.write("relegation".as_bytes()));
+        out.write("relegation")?;
     } else if rank <= 2 {
-        try!(rc.writer.write("acl".as_bytes()));
+        out.write("acl")?;
     }
     Ok(())
 }
