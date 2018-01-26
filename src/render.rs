@@ -969,7 +969,7 @@ fn test_key_with_slash() {
             .is_ok()
     );
 
-    let r = r.render("t", &json!({})).expect("should work");
+    let r = r.render("t", &json!({"/foo": "bar"})).expect("should work");
 
     assert_eq!(r, "/foo: bar\n");
 }
