@@ -899,7 +899,7 @@ fn test_render_subexpression_issue_115() {
     r.register_helper(
         "format",
         Box::new(
-            |h: &Helper, _: &Registry, rc: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
+            |h: &Helper, _: &Registry, _: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
                 out
                     .write(
                         format!("{}", h.param(0).unwrap().value().render()).as_ref())

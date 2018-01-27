@@ -415,7 +415,7 @@ mod test {
     use render::{Helper, RenderContext, Renderable};
     use helpers::HelperDef;
     use support::str::StringWriter;
-    use output::{Output, StringOutput};
+    use output::Output;
     use error::RenderError;
 
     #[derive(Clone, Copy)]

@@ -8,7 +8,7 @@ use serde_json::value::{Map, Value as Json};
 
 use handlebars::{to_json, Handlebars, Helper, JsonRender, RenderContext, RenderError, Output};
 
-fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> Result<(), RenderError> {
+fn format_helper(h: &Helper, _: &Handlebars, _: &mut RenderContext, out: &mut Output) -> Result<(), RenderError> {
     let param = try!(
         h.param(0,)
             .ok_or(RenderError::new("Param 0 is required for format helper.",),)
@@ -18,7 +18,7 @@ fn format_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut O
     Ok(())
 }
 
-fn rank_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> Result<(), RenderError> {
+fn rank_helper(h: &Helper, _: &Handlebars, _: &mut RenderContext, out: &mut Output) -> Result<(), RenderError> {
     let rank = try!(
         h.param(0,)
             .and_then(|v| v.value().as_u64(),)
