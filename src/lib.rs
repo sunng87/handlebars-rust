@@ -216,28 +216,28 @@
 //!
 //! ```
 //! use std::io::Write;
-//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult};
+//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult, Output};
 //!
 //! // implement by a structure impls HelperDef
 //! #[derive(Clone, Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
+//!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
-//!     try!(rc.writer.write("1st helper: ".as_bytes()));
-//!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
+//!     out.write("1st helper: ")?;
+//!     out.write(param.value().render().as_ref())?;
 //!     Ok(())
 //!   }
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
+//! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
-//!     try!(rc.writer.write("2nd helper: ".as_bytes()));
-//!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
+//!     out.write("2nd helper: ")?;
+//!     out.write(param.value().render().as_ref())?;
 //!     Ok(())
 //! }
 //!
@@ -248,11 +248,11 @@
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
-//!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> HelperResult {
+//!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext, out: &mut Output| -> HelperResult {
 //!           let param = h.param(0).unwrap();
 //!
-//!           try!(rc.writer.write("3rd helper: ".as_bytes()));
-//!           try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
+//!           out.write("3rd helper: ")?;
+//!           out.write(param.value().render().as_ref())?;
 //!           Ok(())
 //!       }));
 //!

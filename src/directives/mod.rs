@@ -39,7 +39,7 @@ pub use self::inline::INLINE_DIRECTIVE;
 ///
 /// fn override_helper(_: &Decorator, _: &Handlebars, rc: &mut RenderContext)
 ///         -> Result<(), RenderError> {
-///     let new_helper = |h: &Helper, _: &Handlebars, rc: &mut RenderContext|
+///     let new_helper = |h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output|
 ///             -> Result<(), RenderError> {
 ///         // your helper logic
 ///         Ok(())

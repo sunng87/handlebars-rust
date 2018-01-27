@@ -27,10 +27,10 @@ pub use self::helper_log::LOG_HELPER;
 /// ```ignore
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
+/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
 ///    // get parameter from helper or throw an error
 ///    let param = h.param(0).and_then(|v| v.value().as_string()).unwrap_or("");
-///    try!(rc.writer.write(param.to_uppercase().into_bytes().as_ref()));
+///    out.write(param.to_uppercase().as_ref())?;
 ///    Ok(())
 /// }
 /// ```
@@ -42,8 +42,8 @@ pub use self::helper_log::LOG_HELPER;
 /// ```
 /// use handlebars::*;
 ///
-/// fn dummy_block(h: &Helper, r: &Handlebars, rc: &mut RenderContext) -> HelperResult {
-///     h.template().map(|t| t.render(r, rc)).unwrap_or(Ok(()))
+/// fn dummy_block(h: &Helper, r: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
+///     h.template().map(|t| t.render(r, rc, out)).unwrap_or(Ok(()))
 /// }
 /// ```
 ///
