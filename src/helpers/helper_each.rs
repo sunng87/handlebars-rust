@@ -52,7 +52,7 @@ impl HelperDef for EachHelper {
                                 let new_path =
                                     format!("{}/{}/[{}]", local_rc.get_path(), inner_path, i);
                                 debug!("each path {:?}", new_path);
-                                local_rc.set_path(new_path.clone());
+                                local_rc.set_path(new_path);
                             }
 
                             if let Some(block_param) = h.block_param() {
@@ -63,13 +63,16 @@ impl HelperDef for EachHelper {
 
                             try!(t.render(r, &mut local_rc, out));
 
-                            if h.block_param().is_some() {
-                                local_rc.pop_block_context();
-                            }
+                            // local_rc is dropped at the end of each iteration
+                            // so we don't need to cleanup
+                            // 
+                            // if h.block_param().is_some() {
+                            //     local_rc.pop_block_context();
+                            // }
 
-                            if local_path_root.is_some() {
-                                local_rc.pop_local_path_root();
-                            }
+                            // if local_path_root.is_some() {
+                            //     local_rc.pop_local_path_root();
+                            // }
                         }
                         Ok(())
                     }
@@ -102,13 +105,13 @@ impl HelperDef for EachHelper {
 
                             try!(t.render(r, &mut local_rc, out));
 
-                            if h.block_param().is_some() {
-                                local_rc.pop_block_context();
-                            }
+                            // if h.block_param().is_some() {
+                            //     local_rc.pop_block_context();
+                            // }
 
-                            if local_path_root.is_some() {
-                                local_rc.pop_local_path_root();
-                            }
+                            // if local_path_root.is_some() {
+                            //     local_rc.pop_local_path_root();
+                            // }
                         }
 
                         Ok(())
@@ -121,7 +124,7 @@ impl HelperDef for EachHelper {
                     }
                     _ => Err(RenderError::new(format!(
                         "Param type is not iterable: {:?}",
-                        template
+                        value.value()
                     ))),
                 };
 
