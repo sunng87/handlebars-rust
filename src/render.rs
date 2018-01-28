@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 
 use serde::Serialize;
 use serde_json::value::Value as Json;
@@ -24,19 +24,19 @@ static DEFAULT_VALUE: Json = Json::Null;
 /// content is written to.
 ///
 pub struct RenderContext<'a> {
-    partials: HashMap<String, Rc<Template>>,
-    path: String,
-    local_path_root: VecDeque<String>,
-    local_variables: HashMap<String, Json>,
+    partials: Cow<'a, HashMap<String, Rc<Template>>>,
+    path: Cow<'a, String>,
+    local_path_root: Cow<'a, VecDeque<String>>,
+    local_variables: Cow<'a, HashMap<String, Json>>,
     local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
     default_var: Json,
-    block_context: VecDeque<Context>,
+    block_context: Cow<'a, VecDeque<Context>>,
     /// the context
     context: Context,
     /// current template name
-    pub current_template: Option<String>,
+    pub current_template: Cow<'a, Option<String>>,
     /// root template name
-    pub root_template: Option<String>,
+    pub root_template: Cow<'a, Option<String>>,
     pub disable_escape: bool,
 }
 
@@ -47,30 +47,30 @@ impl<'a> RenderContext<'a> {
         local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
     ) -> RenderContext<'a> {
         RenderContext {
-            partials: HashMap::new(),
-            path: ".".to_string(),
-            local_path_root: VecDeque::new(),
-            local_variables: HashMap::new(),
+            partials: Cow::from(HashMap::new()),
+            path: Cow::from(".".to_string()),
+            local_path_root: Cow::from(VecDeque::new()),
+            local_variables: Cow::from(HashMap::new()),
             local_helpers: local_helpers,
             default_var: Json::Null,
-            block_context: VecDeque::new(),
+            block_context: Cow::from(VecDeque::new()),
             context: ctx,
-            current_template: None,
-            root_template: None,
+            current_template: Cow::from(None),
+            root_template: Cow::from(None),
             disable_escape: false,
         }
     }
 
     pub fn derive(&mut self) -> RenderContext {
         RenderContext {
-            partials: self.partials.clone(),
-            path: self.path.clone(),
-            local_path_root: self.local_path_root.clone(),
-            local_variables: self.local_variables.clone(),
-            current_template: self.current_template.clone(),
-            root_template: self.root_template.clone(),
+            partials: Cow::Borrowed(&*self.partials),
+            path: Cow::Borrowed(&*self.path),
+            local_path_root: Cow::Borrowed(&*self.local_path_root),
+            local_variables: Cow::Borrowed(&*self.local_variables),
+            current_template: Cow::Borrowed(&*self.current_template),
+            root_template: Cow::Borrowed(&*self.root_template),
             default_var: self.default_var.clone(),
-            block_context: self.block_context.clone(),
+            block_context: Cow::Borrowed(&*self.block_context),
 
             disable_escape: self.disable_escape,
             local_helpers: self.local_helpers,
@@ -80,14 +80,14 @@ impl<'a> RenderContext<'a> {
 
     pub fn with_context(&mut self, ctx: Context) -> RenderContext {
         RenderContext {
-            partials: self.partials.clone(),
-            path: ".".to_owned(),
-            local_path_root: VecDeque::new(),
-            local_variables: self.local_variables.clone(),
-            current_template: self.current_template.clone(),
-            root_template: self.root_template.clone(),
+            partials: Cow::Borrowed(&*self.partials),
+            path: Cow::from(".".to_owned()),
+            local_path_root: Cow::from(VecDeque::new()),
+            local_variables: Cow::Borrowed(&*self.local_variables),
+            current_template: Cow::Borrowed(&*self.current_template),
+            root_template: Cow::Borrowed(&*self.root_template),
             default_var: self.default_var.clone(),
-            block_context: VecDeque::new(),
+            block_context: Cow::from(VecDeque::new()),
 
             disable_escape: self.disable_escape,
             local_helpers: self.local_helpers,
@@ -100,7 +100,7 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn set_partial(&mut self, name: String, result: Rc<Template>) {
-        self.partials.insert(name, result);
+        self.partials.to_mut().insert(name, result);
     }
 
     pub fn get_path(&self) -> &String {
@@ -108,7 +108,7 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn set_path(&mut self, path: String) {
-        self.path = path;
+        self.path = Cow::from(path)
     }
 
     pub fn get_local_path_root(&self) -> &VecDeque<String> {
@@ -116,19 +116,19 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn push_local_path_root(&mut self, path: String) {
-        self.local_path_root.push_front(path)
+        self.local_path_root.to_mut().push_front(path)
     }
 
     pub fn pop_local_path_root(&mut self) {
-        self.local_path_root.pop_front();
+        self.local_path_root.to_mut().pop_front();
     }
 
     pub fn set_local_var(&mut self, name: String, value: Json) {
-        self.local_variables.insert(name, value);
+        self.local_variables.to_mut().insert(name, value);
     }
 
     pub fn clear_local_vars(&mut self) {
-        self.local_variables.clear();
+        self.local_variables.to_mut().clear();
     }
 
     pub fn promote_local_vars(&mut self) {
