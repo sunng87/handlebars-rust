@@ -258,6 +258,22 @@ impl<'a> RenderContext<'a> {
     pub fn set_root_template_name(&mut self, name: Option<String>) {
         *self.root_template.to_mut() = name;
     }
+
+    pub fn get_current_template_name(&self) -> Option<&String> {
+        (&*self.current_template).as_ref()
+    }
+
+    pub fn set_current_template_name(&mut self, name: Option<String>) {
+        *self.current_template.to_mut() = name;
+    }
+
+    pub fn get_root_template_name(&self) -> Option<&String> {
+        (&*self.root_template).as_ref()
+    }
+
+    pub fn set_root_template_name(&mut self, name: Option<String>) {
+        *self.root_template.to_mut() = name;
+    }
 }
 
 impl<'a> fmt::Debug for RenderContext<'a> {
