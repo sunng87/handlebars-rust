@@ -54,7 +54,7 @@ mod test {
         let ctx = Context::null();
         let mut hlps = HashMap::new();
 
-        let mut rc = RenderContext::new(ctx, &mut hlps);
+        let mut rc = RenderContext::new(ctx, &mut hlps, None);
         t0.elements[0].eval(&hbs, &mut rc).unwrap();
 
         assert!(rc.get_partial(&"hello".to_owned()).is_some());

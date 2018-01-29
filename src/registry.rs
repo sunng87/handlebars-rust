@@ -271,8 +271,8 @@ impl Registry {
             .and_then(|t| {
                 let ctx = try!(Context::wraps(data));
                 let mut local_helpers = HashMap::new();
-                let mut render_context = RenderContext::new(ctx, &mut local_helpers);
-                render_context.root_template = t.name.clone();
+                let mut render_context =
+                    RenderContext::new(ctx, &mut local_helpers, t.name.clone());
                 t.render(self, &mut render_context, output)
             })
     }
@@ -335,7 +335,7 @@ impl Registry {
         let tpl = try!(Template::compile2(template_string, self.source_map));
         let ctx = try!(Context::wraps(data));
         let mut local_helpers = HashMap::new();
-        let mut render_context = RenderContext::new(ctx, &mut local_helpers);
+        let mut render_context = RenderContext::new(ctx, &mut local_helpers, None);
         let mut out = WriteOutput::new(writer);
         tpl.render(self, &mut render_context, &mut out)
             .map_err(TemplateRenderError::from)

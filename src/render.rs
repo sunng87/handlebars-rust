@@ -34,9 +34,9 @@ pub struct RenderContext<'a> {
     /// the context
     context: Context,
     /// current template name
-    pub current_template: Cow<'a, Option<String>>,
+    current_template: Cow<'a, Option<String>>,
     /// root template name
-    pub root_template: Cow<'a, Option<String>>,
+    root_template: Cow<'a, Option<String>>,
     pub disable_escape: bool,
 }
 
@@ -45,18 +45,19 @@ impl<'a> RenderContext<'a> {
     pub fn new(
         ctx: Context,
         local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+        root_template: Option<String>,
     ) -> RenderContext<'a> {
         RenderContext {
-            partials: Cow::from(HashMap::new()),
-            path: Cow::from(".".to_string()),
-            local_path_root: Cow::from(VecDeque::new()),
-            local_variables: Cow::from(HashMap::new()),
+            partials: Cow::Owned(HashMap::new()),
+            path: Cow::Owned(".".to_string()),
+            local_path_root: Cow::Owned(VecDeque::new()),
+            local_variables: Cow::Owned(HashMap::new()),
             local_helpers: local_helpers,
             default_var: Json::Null,
-            block_context: Cow::from(VecDeque::new()),
+            block_context: Cow::Owned(VecDeque::new()),
             context: ctx,
-            current_template: Cow::from(None),
-            root_template: Cow::from(None),
+            current_template: Cow::Owned(None),
+            root_template: Cow::Owned(root_template),
             disable_escape: false,
         }
     }
@@ -81,13 +82,13 @@ impl<'a> RenderContext<'a> {
     pub fn with_context(&mut self, ctx: Context) -> RenderContext {
         RenderContext {
             partials: Cow::Borrowed(&*self.partials),
-            path: Cow::from(".".to_owned()),
-            local_path_root: Cow::from(VecDeque::new()),
+            path: Cow::Owned(".".to_owned()),
+            local_path_root: Cow::Owned(VecDeque::new()),
             local_variables: Cow::Borrowed(&*self.local_variables),
             current_template: Cow::Borrowed(&*self.current_template),
             root_template: Cow::Borrowed(&*self.root_template),
             default_var: self.default_var.clone(),
-            block_context: Cow::from(VecDeque::new()),
+            block_context: Cow::Owned(VecDeque::new()),
 
             disable_escape: self.disable_escape,
             local_helpers: self.local_helpers,
@@ -108,7 +109,7 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn set_path(&mut self, path: String) {
-        self.path = Cow::from(path)
+        self.path = Cow::Owned(path)
     }
 
     pub fn get_local_path_root(&self) -> &VecDeque<String> {
@@ -141,7 +142,7 @@ impl<'a> RenderContext<'a> {
             let v = self.local_variables.get(key).unwrap().clone();
             new_map.insert(new_key, v);
         }
-        self.local_variables = new_map;
+        *self.local_variables.to_mut() = new_map;
     }
 
     pub fn demote_local_vars(&mut self) {
@@ -156,7 +157,7 @@ impl<'a> RenderContext<'a> {
                 new_map.insert(new_key, v);
             }
         }
-        self.local_variables = new_map;
+        *self.local_variables.to_mut() = new_map;
     }
 
     pub fn get_local_var(&self, name: &String) -> Option<&Json> {
@@ -167,12 +168,12 @@ impl<'a> RenderContext<'a> {
     where
         T: Serialize,
     {
-        let r = self.block_context.push_front(Context::wraps(ctx)?);
+        let r = self.block_context.to_mut().push_front(Context::wraps(ctx)?);
         Ok(r)
     }
 
     pub fn pop_block_context(&mut self) {
-        self.block_context.pop_front();
+        self.block_context.to_mut().pop_front();
     }
 
     pub fn evaluate_in_block_context(
@@ -190,7 +191,7 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn is_current_template(&self, p: &str) -> bool {
-        self.current_template
+        (&*self.current_template)
             .as_ref()
             .map(|s| s == p)
             .unwrap_or(false)
@@ -240,6 +241,22 @@ impl<'a> RenderContext<'a> {
         } else {
             value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
         }
+    }
+
+    pub fn get_current_template_name(&self) -> Option<&String> {
+        (&*self.current_template).as_ref()
+    }
+
+    pub fn set_current_template_name(&mut self, name: Option<String>) {
+        *self.current_template.to_mut() = name;
+    }
+
+    pub fn get_root_template_name(&self) -> Option<&String> {
+        (&*self.root_template).as_ref()
+    }
+
+    pub fn set_root_template_name(&mut self, name: Option<String>) {
+        *self.root_template.to_mut() = name;
     }
 }
 
@@ -618,7 +635,7 @@ impl Renderable for Template {
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
-        rc.current_template = self.name.clone();
+        rc.set_current_template_name(self.name.as_ref().map(|s| s.clone()));
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
@@ -759,7 +776,7 @@ fn test_raw_string() {
     let ctx = Context::null();
     let mut hlps = HashMap::new();
     {
-        let mut rc = RenderContext::new(ctx, &mut hlps);
+        let mut rc = RenderContext::new(ctx, &mut hlps, None);
         let raw_string = RawString("<h1>hello world</h1>".to_string());
 
         raw_string.render(&r, &mut rc, &mut out).ok().unwrap();
@@ -777,7 +794,7 @@ fn test_expression() {
     m.insert("hello".to_string(), value);
     let ctx = Context::wraps(&m).unwrap();
     {
-        let mut rc = RenderContext::new(ctx, &mut hlps);
+        let mut rc = RenderContext::new(ctx, &mut hlps, None);
         let element = Expression(Parameter::Name("hello".into()));
 
         element.render(&r, &mut rc, &mut out).ok().unwrap();
@@ -796,7 +813,7 @@ fn test_html_expression() {
     m.insert("hello".to_string(), value.to_string());
     let ctx = Context::wraps(&m).unwrap();
     {
-        let mut rc = RenderContext::new(ctx, &mut hlps);
+        let mut rc = RenderContext::new(ctx, &mut hlps, None);
         let element = HTMLExpression(Parameter::Name("hello".into()));
         element.render(&r, &mut rc, &mut out).ok().unwrap();
     }
@@ -815,7 +832,7 @@ fn test_template() {
     let ctx = Context::wraps(&m).unwrap();
 
     {
-        let mut rc = RenderContext::new(ctx, &mut hlps);
+        let mut rc = RenderContext::new(ctx, &mut hlps, None);
         let mut elements: Vec<TemplateElement> = Vec::new();
 
         let e1 = RawString("<h1>".to_string());
@@ -847,7 +864,7 @@ fn test_render_context_promotion_and_demotion() {
     let ctx = Context::null();
     let mut hlps = HashMap::new();
 
-    let mut render_context = RenderContext::new(ctx, &mut hlps);
+    let mut render_context = RenderContext::new(ctx, &mut hlps, None);
 
     render_context.set_local_var("@index".to_string(), to_json(&0));
 
@@ -870,8 +887,8 @@ fn test_render_context_promotion_and_demotion() {
 
 #[test]
 fn test_render_subexpression() {
-    use ::support::str::StringWriter;
-    
+    use support::str::StringWriter;
+
     let r = Registry::new();
     let mut sw = StringWriter::new();
 
@@ -893,16 +910,18 @@ fn test_render_subexpression() {
 
 #[test]
 fn test_render_subexpression_issue_115() {
-    use ::support::str::StringWriter;
-    
+    use support::str::StringWriter;
+
     let mut r = Registry::new();
     r.register_helper(
         "format",
         Box::new(
-            |h: &Helper, _: &Registry, _: &mut RenderContext, out: &mut Output| -> Result<(), RenderError> {
-                out
-                    .write(
-                        format!("{}", h.param(0).unwrap().value().render()).as_ref())
+            |h: &Helper,
+             _: &Registry,
+             _: &mut RenderContext,
+             out: &mut Output|
+             -> Result<(), RenderError> {
+                out.write(format!("{}", h.param(0).unwrap().value().render()).as_ref())
                     .map(|_| ())
                     .map_err(RenderError::from)
             },
