@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.30.1](https://github.com/sunng87/handlebars-rust/compare/0.30.0...{{version}}) - {{date}}
+## [0.30.1](https://github.com/sunng87/handlebars-rust/compare/0.30.0...0.30.1) - 2018-01-31
 * [Changed] Added `Debug` for public types
 
 ## [0.30.0](https://github.com/sunng87/handlebars-rust/compare/0.30.0-beta.5...0.30.0) - 2018-01-21
