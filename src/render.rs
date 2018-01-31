@@ -285,6 +285,7 @@ impl ContextJson {
 }
 
 /// Render-time Helper data when using in a helper definition
+#[derive(Debug)]
 pub struct Helper<'a> {
     name: &'a str,
     params: Vec<ContextJson>,
@@ -421,6 +422,7 @@ impl<'a, 'b> Helper<'a> {
 }
 
 /// Render-time Decorator data when using in a decorator definition
+#[derive(Debug)]
 pub struct Directive<'a> {
     name: String,
     params: Vec<ContextJson>,

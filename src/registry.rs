@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
+use std::fmt::{self, Debug, Formatter};
 
 use serde::Serialize;
 
@@ -57,6 +58,19 @@ pub struct Registry {
     directives: HashMap<String, Box<DirectiveDef + 'static>>,
     escape_fn: EscapeFn,
     source_map: bool,
+}
+
+impl Debug for Registry {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        write!(
+            f,
+            "templates: {:?}, helpers: {:?}, directives: {:?}, escape_fn: fn, source_map: {:?}",
+            self.templates,
+            self.helpers.keys(),
+            self.directives.keys(),
+            self.source_map
+        )
+    }
 }
 
 impl Registry {

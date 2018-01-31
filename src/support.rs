@@ -1,6 +1,7 @@
 pub mod str {
     use std::io::{Result, Write};
 
+    #[derive(Debug)]
     pub struct StringWriter {
         buf: Vec<u8>,
     }
