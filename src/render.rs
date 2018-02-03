@@ -241,18 +241,17 @@ impl<'a> RenderContext<'a> {
 
 impl<'a> fmt::Debug for RenderContext<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "partials: {:?}, path: {:?}, local_variables: {:?}, current_template: {:?}, \
-             root_template: {:?}, disable_escape: {:?}, local_path_root: {:?}",
-            self.partials,
-            self.path,
-            self.local_variables,
-            self.current_template,
-            self.root_template,
-            self.disable_escape,
-            self.local_path_root
-        )
+        f.debug_struct("RenderContext")
+            .field("context", &self.context)
+            .field("path", &self.path)
+            .field("partials", &self.partials)
+            .field("local_variables", &self.local_variables)
+            .field("root_template", &self.root_template)
+            .field("current_template", &self.current_template)
+            .field("block_context", &self.block_context)
+            .field("local_path_root", &self.local_path_root)
+            .field("disable_eacape", &self.disable_escape)
+            .finish()
     }
 }
 

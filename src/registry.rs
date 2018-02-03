@@ -62,14 +62,12 @@ pub struct Registry {
 
 impl Debug for Registry {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "templates: {:?}, helpers: {:?}, directives: {:?}, escape_fn: fn, source_map: {:?}",
-            self.templates,
-            self.helpers.keys(),
-            self.directives.keys(),
-            self.source_map
-        )
+        f.debug_struct("Handlebars")
+            .field("templates", &self.templates)
+            .field("helpers", &self.helpers.keys())
+            .field("directives", &self.directives.keys())
+            .field("source_map", &self.source_map)
+            .finish()
     }
 }
 
