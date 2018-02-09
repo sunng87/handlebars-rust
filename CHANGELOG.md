@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.30.1...Unreleased) - ReleaseDate
+## [0.31.0](https://github.com/sunng87/handlebars-rust/compare/0.30.1...0.31.0) - 2018-02-09
 * [Changed] Fixed handlebars comment support, added html comment output
 * [Changed] Removed some wasted string clones
 
