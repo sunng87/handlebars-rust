@@ -617,10 +617,17 @@ impl Template {
                             _ => unreachable!(),
                         }
                     }
+                    Rule::hbs_html_comment => {
+                        let text = span.as_str()
+                            .trim_left_matches("{{!")
+                            .trim_right_matches("}}");
+                        let t = template_stack.front_mut().unwrap();
+                        t.push_element(HtmlComment(text.to_owned()), line_no, col_no);
+                    }
                     Rule::hbs_comment => {
-                        // let text = parser.input().slice(token.start + 3, token.end - 2);
-                        // TODO: slice
-                        let text = span.as_str();
+                        let text = span.as_str()
+                            .trim_left_matches("{{!--")
+                            .trim_right_matches("--}}");
                         let t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
@@ -671,6 +678,7 @@ pub enum TemplateElement {
     PartialExpression(Directive),
     PartialBlock(Directive),
     Comment(String),
+    HtmlComment(String),
 }
 
 #[test]

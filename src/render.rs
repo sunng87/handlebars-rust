@@ -669,7 +669,13 @@ impl Renderable for TemplateElement {
     fn render(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
         match *self {
             RawString(ref v) => {
-                try!(rc.writer.write(v.clone().into_bytes().as_ref()));
+                try!(rc.writer.write(v.as_bytes()));
+                Ok(())
+            }
+            HtmlComment(ref v) => {
+                rc.writer.write("<!--".as_bytes())?;
+                rc.writer.write(v.as_bytes())?;
+                rc.writer.write("-->".as_bytes())?;
                 Ok(())
             }
             Expression(ref v) => {
@@ -963,4 +969,15 @@ fn test_key_with_slash() {
     ).expect("should work");
 
     assert_eq!(r, "/foo: bar\n");
+}
+
+#[test]
+fn test_html_comment() {
+    let r = Registry::new();
+
+    assert_eq!(
+        r.render_template("Hello {{this}} {{! test me }}", &0)
+            .unwrap(),
+        "Hello 0 <!-- test me -->"
+    );
 }
