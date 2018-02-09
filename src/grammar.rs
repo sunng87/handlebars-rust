@@ -113,7 +113,10 @@ fn test_json_literal() {
 
 #[test]
 fn test_comment() {
-    let s = vec!["{{!-- <hello {{ a-b c-d}} {{d-c}} ok --}}"];
+    let s = vec!["{{!-- <hello {{ a-b c-d}} {{d-c}} ok --}}",
+                 "{{!--
+                    <li><a href=\"{{up-dir nest-count}}{{base-url}}index.html\">{{this.title}}</a></li>
+                --}}"];
     for i in s.iter() {
         assert_rule!(Rule::hbs_comment, i);
     }
