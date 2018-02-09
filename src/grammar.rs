@@ -113,9 +113,13 @@ fn test_json_literal() {
 
 #[test]
 fn test_comment() {
-    let s = vec!["{{! hello }}"];
+    let s = vec!["{{!-- <hello {{ a-b c-d}} {{d-c}} ok --}}"];
     for i in s.iter() {
         assert_rule!(Rule::hbs_comment, i);
+    }
+    let s2 = vec!["{{! hello }}", "{{! test me }}"];
+    for i in s2.iter() {
+        assert_rule!(Rule::hbs_html_comment, i);
     }
 }
 
@@ -300,10 +304,6 @@ fn test_partial_expression() {
 fn test_partial_block() {
     let s = vec!["{{#> hello}}nice{{/hello}}"];
     for i in s.iter() {
-        let h = HandlebarsParser::parse(Rule::partial_block, i).unwrap();
-        for i in h {
-            println!("{:?}", i);
-        }
         assert_rule!(Rule::partial_block, i);
     }
 }

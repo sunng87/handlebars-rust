@@ -81,7 +81,8 @@ raw_block_end = { !escape ~ "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
                   pro_whitespace_omitter? ~ "}}}}" }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-hbs_comment = { !escape ~ "{{!" ~ (!"}}" ~ any)* ~ "}}" }
+hbs_comment = { !escape ~ "{{!--" ~ (!"--}}" ~ any)* ~ "--}}" }
+hbs_html_comment = { !escape ~ "{{!" ~ (!"}}" ~ any)* ~ "}}" }
 
 template = { (
             raw_text |
@@ -91,6 +92,7 @@ template = { (
             helper_block |
             raw_block |
             hbs_comment |
+            hbs_html_comment |
             directive_expression |
             directive_block |
             partial_expression |
