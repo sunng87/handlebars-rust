@@ -687,13 +687,13 @@ impl Renderable for TemplateElement {
                 } else {
                     rendered
                 };
-                try!(rc.writer.write(output.into_bytes().as_ref()));
+                try!(rc.writer.write(output.as_ref()));
                 Ok(())
             }
             HTMLExpression(ref v) => {
                 let context_json = try!(v.expand(registry, rc));
                 let rendered = context_json.value.render();
-                try!(rc.writer.write(rendered.into_bytes().as_ref()));
+                try!(rc.writer.write(rendered.as_ref()));
                 Ok(())
             }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
