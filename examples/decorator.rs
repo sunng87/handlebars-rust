@@ -3,6 +3,8 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+use std::error::Error;
+
 use serde_json::value::{Map, Value as Json};
 
 use handlebars::{to_json, Decorator, Handlebars, Helper, JsonRender, Output, RenderContext,
@@ -138,17 +140,14 @@ pub fn make_data() -> Map<String, Json> {
     data
 }
 
-fn main() {
-    env_logger::init().unwrap();
+fn _main() -> Result<(), Box<Error>> {
+    env_logger::init()?;
     // create the handlebars registry
     let mut handlebars = Handlebars::new();
 
     // register template from a file and assign a name to it
     // deal with errors
-    if let Err(e) = handlebars.register_template_file("table", "./examples/decorator/template.hbs")
-    {
-        panic!("{}", e);
-    }
+    handlebars.register_template_file("table", "./examples/decorator/template.hbs")?;
 
     // register some custom helpers
     handlebars.register_helper("format", Box::new(format_helper));
@@ -157,10 +156,10 @@ fn main() {
 
     // make data and render it
     let data = make_data();
-    println!(
-        "{}",
-        handlebars
-            .render("table", &data,)
-            .unwrap_or_else(|e| format!("{}", e),)
-    );
+    println!("{}", handlebars.render("table", &data)?);
+    Ok(())
+}
+
+fn main() {
+    _main().unwrap();
 }

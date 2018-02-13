@@ -8,6 +8,7 @@ extern crate serde_json;
 use serde::Serialize;
 use serde_json::value::{self, Map, Value as Json};
 
+use std::error::Error;
 use std::io::{Read, Write};
 use std::fs::File;
 
@@ -117,8 +118,8 @@ pub fn make_data() -> Map<String, Json> {
     data
 }
 
-fn main() {
-    env_logger::init().unwrap();
+fn _main() -> Result<(), Box<Error>> {
+    env_logger::init()?;
     let mut handlebars = Handlebars::new();
 
     handlebars.register_helper("format", Box::new(format_helper));
@@ -127,15 +128,13 @@ fn main() {
 
     let data = make_data();
 
-    // I'm using unwrap directly here to demostration.
-    // Never use this style in your real-world projects.
-    let mut source_template = File::open(&"./examples/render_file/template.hbs").unwrap();
-    let mut output_file = File::create("target/table.html").unwrap();
-    if let Err(e) =
-        handlebars.render_template_source_to_write(&mut source_template, &data, &mut output_file)
-    {
-        println!("Failed to generate target/table.html: {}", e);
-    } else {
-        println!("target/table.html generated");
-    };
+    let mut source_template = File::open(&"./examples/render_file/template.hbs")?;
+    let mut output_file = File::create("target/table.html")?;
+    handlebars.render_template_source_to_write(&mut source_template, &data, &mut output_file)?;
+    println!("target/table.html generated");
+    Ok(())
+}
+
+fn main() {
+    _main().unwrap();
 }

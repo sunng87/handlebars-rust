@@ -54,6 +54,3 @@ fn main() {
         }
     }
 }
-
-#[cfg(feature = "serde_type")]
-fn main() {}
