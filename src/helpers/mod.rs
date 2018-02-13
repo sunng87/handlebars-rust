@@ -12,6 +12,8 @@ pub use self::helper_lookup::LOOKUP_HELPER;
 pub use self::helper_raw::RAW_HELPER;
 pub use self::helper_log::LOG_HELPER;
 
+pub type HelperResult = Result<(), RenderError>;
+
 /// Helper Definition
 ///
 /// Implement `HelperDef` to create custom helper. You can retrieve useful information from these arguments.
@@ -24,12 +26,13 @@ pub use self::helper_log::LOG_HELPER;
 ///
 /// ## Define an inline helper
 ///
-/// ```ignore
+/// ```
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
+/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output)
+///     -> HelperResult {
 ///    // get parameter from helper or throw an error
-///    let param = h.param(0).and_then(|v| v.value().as_string()).unwrap_or("");
+///    let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
 ///    out.write(param.to_uppercase().as_ref())?;
 ///    Ok(())
 /// }
@@ -48,8 +51,6 @@ pub use self::helper_log::LOG_HELPER;
 /// ```
 ///
 ///
-
-pub type HelperResult = Result<(), RenderError>;
 
 pub trait HelperDef: Send + Sync {
     fn call_inner(

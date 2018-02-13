@@ -367,7 +367,8 @@ impl<'a, 'b> Helper<'a> {
     /// use handlebars::*;
     ///
     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
-    ///     let v = h.param(0).map(|v| v.value()).unwrap();
+    ///     let v = h.param(0).map(|v| v.value())
+    ///         .ok_or(RenderError::new("param not found"));
     ///     // ..
     ///     Ok(())
     /// }
@@ -393,7 +394,8 @@ impl<'a, 'b> Helper<'a> {
     /// use handlebars::*;
     ///
     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
-    ///     let v = h.hash_get("v").map(|v| v.value()).unwrap();
+    ///     let v = h.hash_get("v").map(|v| v.value())
+    ///         .ok_or(RenderError::new("param not found"));
     ///     // ..
     ///     Ok(())
     /// }
