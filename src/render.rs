@@ -29,7 +29,6 @@ pub struct RenderContext<'a> {
     local_path_root: Cow<'a, VecDeque<String>>,
     local_variables: Cow<'a, HashMap<String, Json>>,
     local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
-    default_var: Json,
     block_context: Cow<'a, VecDeque<Context>>,
     /// the context
     context: Context,
@@ -53,7 +52,6 @@ impl<'a> RenderContext<'a> {
             local_path_root: Cow::Owned(VecDeque::new()),
             local_variables: Cow::Owned(HashMap::new()),
             local_helpers: local_helpers,
-            default_var: Json::Null,
             block_context: Cow::Owned(VecDeque::new()),
             context: ctx,
             current_template: Cow::Owned(None),
@@ -70,7 +68,6 @@ impl<'a> RenderContext<'a> {
             local_variables: Cow::Borrowed(&*self.local_variables),
             current_template: Cow::Borrowed(&*self.current_template),
             root_template: Cow::Borrowed(&*self.root_template),
-            default_var: self.default_var.clone(),
             block_context: Cow::Borrowed(&*self.block_context),
 
             disable_escape: self.disable_escape,
@@ -87,7 +84,6 @@ impl<'a> RenderContext<'a> {
             local_variables: Cow::Borrowed(&*self.local_variables),
             current_template: Cow::Borrowed(&*self.current_template),
             root_template: Cow::Borrowed(&*self.root_template),
-            default_var: self.default_var.clone(),
             block_context: Cow::Owned(VecDeque::new()),
 
             disable_escape: self.disable_escape,
