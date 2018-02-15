@@ -486,4 +486,36 @@ mod test {
             r.render_template(r"\\{{hello}}", &data).unwrap()
         );
     }
+
+    #[test]
+    fn test_strict_mode() {
+        use error::TemplateRenderError;
+        let mut r = Registry::new();
+        assert!(!r.strict_mode());
+
+        r.set_strict_mode(true);
+        assert!(r.strict_mode());
+
+        let data = json!({
+            "the_only_key": "the_only_value"
+        });
+
+        assert!(
+            r.render_template("accessing the_only_key {{the_only_key}}", &data)
+                .is_ok()
+        );
+        assert!(
+            r.render_template("accessing non-exists key {{the_key_never_exists}}", &data)
+                .is_err()
+        );
+
+        let render_error =
+            r.render_template("accessing non-exists key {{the_key_never_exists}}", &data)
+                .unwrap_err();
+        if let TemplateRenderError::RenderError(e) = render_error {
+            assert_eq!(e.column_no.unwrap(), 26);
+        } else {
+            unreachable!();
+        }
+    }
 }
