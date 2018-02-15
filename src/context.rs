@@ -10,8 +10,6 @@ use pest::iterators::Pair;
 use grammar::{HandlebarsParser, Rule};
 use error::RenderError;
 
-static DEFAULT_VALUE: Json = Json::Null;
-
 pub type Object = BTreeMap<String, Json>;
 
 /// The context wrap data you render on your templates.
@@ -139,22 +137,23 @@ impl Context {
         base_path: &str,
         path_context: &VecDeque<String>,
         relative_path: &str,
-    ) -> Result<&Json, RenderError> {
+    ) -> Result<Option<&Json>, RenderError> {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
 
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
-        let mut data: &Json = self.data.as_ref();
+        let mut data: Option<&Json> = Some(self.data.as_ref());
         for p in paths.iter() {
             if *p == "this" {
                 continue;
             }
-            data = match *data {
-                Json::Array(ref l) => p.parse::<usize>()
-                    .and_then(|idx_u| Ok(l.get(idx_u).unwrap_or(&DEFAULT_VALUE)))
-                    .unwrap_or(&DEFAULT_VALUE),
-                Json::Object(ref m) => m.get(*p).unwrap_or(&DEFAULT_VALUE),
-                _ => &DEFAULT_VALUE,
+            data = match data {
+                Some(&Json::Array(ref l)) => p.parse::<usize>()
+                    .map_err(|e| RenderError::with(e))
+                    .map(|idx_u| l.get(idx_u))?,
+                Some(&Json::Object(ref m)) => m.get(*p),
+                Some(_) => None,
+                None => break,
             }
         }
         Ok(data)
@@ -259,6 +258,7 @@ mod test {
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "this")
                 .unwrap()
+                .unwrap()
                 .render(),
             v.to_string()
         );
@@ -282,11 +282,13 @@ mod test {
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "./name/../addr/country")
                 .unwrap()
+                .unwrap()
                 .render(),
             "China".to_string()
         );
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "addr.[country]")
+                .unwrap()
                 .unwrap()
                 .render(),
             "China".to_string()
@@ -297,12 +299,14 @@ mod test {
         assert_eq!(
             ctx2.navigate(".", &VecDeque::new(), "this")
                 .unwrap()
+                .unwrap()
                 .render(),
             "true".to_string()
         );
 
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "titles.[0]")
+                .unwrap()
                 .unwrap()
                 .render(),
             "programmer".to_string()
@@ -311,11 +315,13 @@ mod test {
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "titles.[0]/../../age")
                 .unwrap()
+                .unwrap()
                 .render(),
             "27".to_string()
         );
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "this.titles.[0]/../../age")
+                .unwrap()
                 .unwrap()
                 .render(),
             "27".to_string()
@@ -336,11 +342,13 @@ mod test {
         assert_eq!(
             ctx1.navigate(".", &VecDeque::new(), "this")
                 .unwrap()
+                .unwrap()
                 .render(),
             "[object]".to_owned()
         );
         assert_eq!(
             ctx2.navigate(".", &VecDeque::new(), "age")
+                .unwrap()
                 .unwrap()
                 .render(),
             "4".to_owned()
@@ -360,12 +368,14 @@ mod test {
             ctx_a1
                 .navigate(".", &VecDeque::new(), "age")
                 .unwrap()
+                .unwrap()
                 .render(),
             "4".to_owned()
         );
         assert_eq!(
             ctx_a1
                 .navigate(".", &VecDeque::new(), "tag")
+                .unwrap()
                 .unwrap()
                 .render(),
             "h1".to_owned()
@@ -376,12 +386,14 @@ mod test {
             ctx_a2
                 .navigate(".", &VecDeque::new(), "this")
                 .unwrap()
+                .unwrap()
                 .render(),
             "[object]".to_owned()
         );
         assert_eq!(
             ctx_a2
                 .navigate(".", &VecDeque::new(), "tag")
+                .unwrap()
                 .unwrap()
                 .render(),
             "h1".to_owned()
@@ -396,6 +408,7 @@ mod test {
         let ctx = Context::wraps(&m).unwrap();
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "this_name")
+                .unwrap()
                 .unwrap()
                 .render(),
             "the_value".to_string()
@@ -437,6 +450,7 @@ mod test {
         let ctx = Context::wraps(&m).unwrap();
         assert_eq!(
             ctx.navigate("a/b", &VecDeque::new(), "@root/b")
+                .unwrap()
                 .unwrap()
                 .render(),
             "2".to_string()

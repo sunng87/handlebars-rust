@@ -58,6 +58,7 @@ pub struct Registry {
     directives: HashMap<String, Box<DirectiveDef + 'static>>,
     escape_fn: EscapeFn,
     source_map: bool,
+    strict_mode: bool,
 }
 
 impl Debug for Registry {
@@ -79,6 +80,7 @@ impl Registry {
             directives: HashMap::new(),
             escape_fn: Box::new(html_escape),
             source_map: true,
+            strict_mode: false,
         };
 
         r.setup_builtins()
@@ -105,6 +107,28 @@ impl Registry {
     /// Default is true.
     pub fn source_map_enabled(&mut self, enable: bool) {
         self.source_map = enable;
+    }
+
+    /// Enable handlebars strict mode
+    ///
+    /// By default, handlebars renders empty string for value that
+    /// undefined or never exists. Since rust is a static type
+    /// language, we offer strict mode in handlebars-rust.  In strict
+    /// mode, if you were access a value that doesn't exist, a
+    /// `RenderError` will be raised.
+    pub fn set_strict_mode(&mut self, enable: bool) {
+        self.strict_mode = enable;
+    }
+
+    /// Return strict mode state, default is false.
+    ///
+    /// By default, handlebars renders empty string for value that
+    /// undefined or never exists. Since rust is a static type
+    /// language, we offer strict mode in handlebars-rust.  In strict
+    /// mode, if you were access a value that doesn't exist, a
+    /// `RenderError` will be raised.
+    pub fn strict_mode(&self) -> bool {
+        self.strict_mode
     }
 
     /// Register a template string

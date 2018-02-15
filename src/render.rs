@@ -17,6 +17,8 @@ use support::str::StringWriter;
 use error::RenderError;
 use partial;
 
+static DEFAULT_VALUE: Json = Json::Null;
+
 /// The context of a render call
 ///
 /// this context stores information of a render and a writer where generated
@@ -190,8 +192,8 @@ impl<'a> RenderContext<'a> {
     ) -> Result<Option<&Json>, RenderError> {
         for bc in self.block_context.iter() {
             let v = bc.navigate(".", &self.local_path_root, local_path)?;
-            if !v.is_null() {
-                return Ok(Some(v));
+            if v.is_some() {
+                return Ok(v);
             }
         }
 
@@ -229,13 +231,26 @@ impl<'a> RenderContext<'a> {
         self.local_helpers.get(name).map(|r| r.clone())
     }
 
-    pub fn evaluate(&self, path: &str) -> Result<&Json, RenderError> {
-        self.context
-            .navigate(self.get_path(), self.get_local_path_root(), path)
+    pub fn evaluate(&self, path: &str, strict: bool) -> Result<&Json, RenderError> {
+        let value_container =
+            self.context
+                .navigate(self.get_path(), self.get_local_path_root(), path);
+        if strict {
+            value_container
+                .and_then(|v| v.ok_or(RenderError::new("Value not found in strict mode.")))
+        } else {
+            value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
+        }
     }
 
-    pub fn evaluate_absolute(&self, path: &str) -> Result<&Json, RenderError> {
-        self.context.navigate(".", &VecDeque::new(), path)
+    pub fn evaluate_absolute(&self, path: &str, strict: bool) -> Result<&Json, RenderError> {
+        let value_container = self.context.navigate(".", &VecDeque::new(), path);
+        if strict {
+            value_container
+                .and_then(|v| v.ok_or(RenderError::new("Value not found in strict mode.")))
+        } else {
+            value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
+        }
     }
 }
 
@@ -571,7 +586,7 @@ impl Parameter {
                 } else {
                     let block_context_value = rc.evaluate_in_block_context(name)?;
                     let value = if block_context_value.is_none() {
-                        rc.evaluate(name)?
+                        rc.evaluate(name, registry.strict_mode())?
                     } else {
                         block_context_value.unwrap()
                     };

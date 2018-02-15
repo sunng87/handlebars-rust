@@ -34,7 +34,7 @@ fn render_partial(
     } else {
         let hash_ctx =
             BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
-        let partial_context = merge_json(local_rc.evaluate(".")?, &hash_ctx);
+        let partial_context = merge_json(local_rc.evaluate(".", r.strict_mode())?, &hash_ctx);
         let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
         t.render(r, &mut partial_rc)
     }
