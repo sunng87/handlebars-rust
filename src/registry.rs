@@ -517,5 +517,22 @@ mod test {
         } else {
             unreachable!();
         }
+
+        let data2 = json!([1, 2, 3]);
+        assert!(
+            r.render_template("accessing valid array index {{this.[2]}}", &data2)
+                .is_ok()
+        );
+        assert!(
+            r.render_template("accessing invalid array index {{this.[3]}}", &data2)
+                .is_err()
+        );
+        let render_error2 = r.render_template("accessing invalid array index {{this.[3]}}", &data2)
+            .unwrap_err();
+        if let TemplateRenderError::RenderError(e) = render_error2 {
+            assert_eq!(e.column_no.unwrap(), 31);
+        } else {
+            unreachable!();
+        }
     }
 }
