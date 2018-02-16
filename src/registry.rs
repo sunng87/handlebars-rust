@@ -58,6 +58,7 @@ pub struct Registry {
     directives: HashMap<String, Box<DirectiveDef + 'static>>,
     escape_fn: EscapeFn,
     source_map: bool,
+    strict_mode: bool,
 }
 
 impl Debug for Registry {
@@ -79,6 +80,7 @@ impl Registry {
             directives: HashMap::new(),
             escape_fn: Box::new(html_escape),
             source_map: true,
+            strict_mode: false,
         };
 
         r.setup_builtins()
@@ -105,6 +107,28 @@ impl Registry {
     /// Default is true.
     pub fn source_map_enabled(&mut self, enable: bool) {
         self.source_map = enable;
+    }
+
+    /// Enable handlebars strict mode
+    ///
+    /// By default, handlebars renders empty string for value that
+    /// undefined or never exists. Since rust is a static type
+    /// language, we offer strict mode in handlebars-rust.  In strict
+    /// mode, if you were access a value that doesn't exist, a
+    /// `RenderError` will be raised.
+    pub fn set_strict_mode(&mut self, enable: bool) {
+        self.strict_mode = enable;
+    }
+
+    /// Return strict mode state, default is false.
+    ///
+    /// By default, handlebars renders empty string for value that
+    /// undefined or never exists. Since rust is a static type
+    /// language, we offer strict mode in handlebars-rust.  In strict
+    /// mode, if you were access a value that doesn't exist, a
+    /// `RenderError` will be raised.
+    pub fn strict_mode(&self) -> bool {
+        self.strict_mode
     }
 
     /// Register a template string
@@ -461,5 +485,54 @@ mod test {
             "{{hello}}",
             r.render_template(r"\\{{hello}}", &data).unwrap()
         );
+    }
+
+    #[test]
+    fn test_strict_mode() {
+        use error::TemplateRenderError;
+        let mut r = Registry::new();
+        assert!(!r.strict_mode());
+
+        r.set_strict_mode(true);
+        assert!(r.strict_mode());
+
+        let data = json!({
+            "the_only_key": "the_only_value"
+        });
+
+        assert!(
+            r.render_template("accessing the_only_key {{the_only_key}}", &data)
+                .is_ok()
+        );
+        assert!(
+            r.render_template("accessing non-exists key {{the_key_never_exists}}", &data)
+                .is_err()
+        );
+
+        let render_error =
+            r.render_template("accessing non-exists key {{the_key_never_exists}}", &data)
+                .unwrap_err();
+        if let TemplateRenderError::RenderError(e) = render_error {
+            assert_eq!(e.column_no.unwrap(), 26);
+        } else {
+            unreachable!();
+        }
+
+        let data2 = json!([1, 2, 3]);
+        assert!(
+            r.render_template("accessing valid array index {{this.[2]}}", &data2)
+                .is_ok()
+        );
+        assert!(
+            r.render_template("accessing invalid array index {{this.[3]}}", &data2)
+                .is_err()
+        );
+        let render_error2 = r.render_template("accessing invalid array index {{this.[3]}}", &data2)
+            .unwrap_err();
+        if let TemplateRenderError::RenderError(e) = render_error2 {
+            assert_eq!(e.column_no.unwrap(), 31);
+        } else {
+            unreachable!();
+        }
     }
 }
