@@ -72,6 +72,23 @@
 //! You can find a real example for template inheritance in
 //! `examples/partials.rs`, and templates used by this file.
 //!
+//! #### Strict mode
+//!
+//! Handlebars, the language designed to work with JavaScript, has no
+//! strict restriction on accessing non-existed fields or index. It
+//! generates empty string for such case. However, in Rust we want a
+//! little bit strict sometime.
+//!
+//! By enabling `strcit_mode` on handlebars:
+//!
+//! ```
+//! # use handlebars::Handlebars;
+//! # let mut handlebars = Handlebars::new();
+//! handlebars.set_strict_mode(true);
+//! ```
+//!
+//! You will get a `RenderError` when accessing fields that not exists.
+//!
 //! ### Limitations
 //!
 //! #### Compatibility with JavaScript version
