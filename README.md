@@ -141,6 +141,21 @@ You can use this handlebars implementation in your rust project that
 compiles to WebAssembly. Checkout my fork of
 [todomvc](https://github.com/sunng87/rust-todomvc) demo.
 
+#### Strict mode
+
+Handlebars, the language designed to work with JavaScript, has no
+strict restriction on accessing non-existed fields or index. It
+generates empty string for such case. However, in Rust we want a
+little bit strict sometime.
+
+By enabling `strcit_mode` on handlebars:
+
+```rust
+handlebars.set_strict_mode(true);
+```
+
+You will get a `RenderError` when accessing fields that not exists.
+
 ### Limitations
 
 * This implementation is **not fully compatible** with the original
