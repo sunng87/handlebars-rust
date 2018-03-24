@@ -77,6 +77,18 @@ doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html).
 
 Change log is available in the source tree named as `CHANGELOG.md`.
 
+## Contributor Guide
+
+Any contribution to this library is welcomed. To get started into
+development, I have several [Helper
+Wanted](https://github.com/sunng87/handlebars-rust/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+issue, with difficult level labeled. When running into any problem,
+feel free to contact me on github.
+
+I'm always looking for maintainers to work together on this library,
+also let me know (via email or anywhere in the issue tracker) if you
+want to join.
+
 ## Why (this) Handlebars?
 
 Handlebars is a real-world templating system that you can use to build
