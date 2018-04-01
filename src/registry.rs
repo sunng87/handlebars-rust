@@ -489,7 +489,6 @@ mod test {
 
     #[test]
     fn test_strict_mode() {
-        use error::TemplateRenderError;
         let mut r = Registry::new();
         assert!(!r.strict_mode());
 
