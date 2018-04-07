@@ -160,7 +160,7 @@ strict restriction on accessing non-existed fields or index. It
 generates empty string for such case. However, in Rust we want a
 little bit strict sometime.
 
-By enabling `strcit_mode` on handlebars:
+By enabling `strict_mode` on handlebars:
 
 ```rust
 handlebars.set_strict_mode(true);
