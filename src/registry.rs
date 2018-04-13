@@ -143,10 +143,8 @@ impl Registry {
     where
         S: AsRef<str>,
     {
-        try!(
-            Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)
-                .and_then(|t| Ok(self.templates.insert(name.to_string(), t)))
-        );
+        Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)
+            .and_then(|t| Ok(self.templates.insert(name.to_string(), t)))?;
         Ok(())
     }
 
@@ -171,7 +169,7 @@ impl Registry {
         P: AsRef<Path>,
     {
         let mut file =
-            try!(File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
+            File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned()))?;
         self.register_template_source(name, &mut file)
     }
 
@@ -182,12 +180,10 @@ impl Registry {
         tpl_source: &mut Read,
     ) -> Result<(), TemplateFileError> {
         let mut buf = String::new();
-        try!(
-            tpl_source
-                .read_to_string(&mut buf)
-                .map_err(|e| TemplateFileError::IOError(e, name.to_owned()))
-        );
-        try!(self.register_template_string(name, buf));
+        tpl_source
+            .read_to_string(&mut buf)
+            .map_err(|e| TemplateFileError::IOError(e, name.to_owned()))?;
+        self.register_template_string(name, buf)?;
         Ok(())
     }
 
@@ -269,7 +265,7 @@ impl Registry {
         self.get_template(&name.to_string())
             .ok_or(RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
-                let ctx = try!(Context::wraps(data));
+                let ctx = Context::wraps(data)?;
                 let mut local_helpers = HashMap::new();
                 let mut render_context =
                     RenderContext::new(ctx, &mut local_helpers, t.name.clone());
@@ -332,8 +328,8 @@ impl Registry {
         T: Serialize,
         W: Write,
     {
-        let tpl = try!(Template::compile2(template_string, self.source_map));
-        let ctx = try!(Context::wraps(data));
+        let tpl = Template::compile2(template_string, self.source_map)?;
+        let ctx = Context::wraps(data)?;
         let mut local_helpers = HashMap::new();
         let mut render_context = RenderContext::new(ctx, &mut local_helpers, None);
         let mut out = WriteOutput::new(writer);
@@ -353,11 +349,9 @@ impl Registry {
         W: Write,
     {
         let mut tpl_str = String::new();
-        try!(
-            template_source
-                .read_to_string(&mut tpl_str)
-                .map_err(|e| TemplateRenderError::IOError(e, "Unamed template source".to_owned()))
-        );
+        template_source
+            .read_to_string(&mut tpl_str)
+            .map_err(|e| TemplateRenderError::IOError(e, "Unamed template source".to_owned()))?;
         self.render_template_to_write(&tpl_str, data, writer)
     }
 
@@ -429,7 +423,7 @@ mod test {
             rc: &mut RenderContext,
             out: &mut Output,
         ) -> Result<(), RenderError> {
-            try!(h.template().unwrap().render(r, rc, out));
+            h.template().unwrap().render(r, rc, out)?;
             Ok(())
         }
     }

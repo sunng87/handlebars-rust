@@ -20,12 +20,10 @@ fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
 
 impl DirectiveDef for InlineDirective {
     fn call(&self, d: &Directive, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let name = try!(get_name(d));
+        let name = get_name(d)?;
 
-        let template = try!(
-            d.template()
-                .ok_or_else(|| RenderError::new("inline should have a block"))
-        );
+        let template = d.template()
+            .ok_or_else(|| RenderError::new("inline should have a block"))?;
 
         rc.set_partial(name.to_owned(), Rc::new(template.clone()));
         Ok(())

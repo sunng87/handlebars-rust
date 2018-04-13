@@ -18,10 +18,8 @@ impl HelperDef for WithHelper {
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
-        let param = try!(
-            h.param(0)
-                .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))
-        );
+        let param = h.param(0)
+            .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
         rc.promote_local_vars();
 
