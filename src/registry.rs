@@ -293,13 +293,13 @@ impl Registry {
         &self,
         name: &str,
         data: &T,
-        mut writer: W,
+        writer: W,
     ) -> Result<(), RenderError>
     where
         T: Serialize,
         W: Write,
     {
-        let mut output = WriteOutput::new(&mut writer);
+        let mut output = WriteOutput::new(writer);
         self.render_to_output(name, data, &mut output)
     }
 
@@ -322,7 +322,7 @@ impl Registry {
         &self,
         template_string: &str,
         data: &T,
-        mut writer: W,
+        writer: W,
     ) -> Result<(), TemplateRenderError>
     where
         T: Serialize,
@@ -332,7 +332,7 @@ impl Registry {
         let ctx = Context::wraps(data)?;
         let mut local_helpers = HashMap::new();
         let mut render_context = RenderContext::new(ctx, &mut local_helpers, None);
-        let mut out = WriteOutput::new(&mut writer);
+        let mut out = WriteOutput::new(writer);
         tpl.render(self, &mut render_context, &mut out)
             .map_err(TemplateRenderError::from)
     }
