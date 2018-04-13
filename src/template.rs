@@ -150,7 +150,7 @@ impl Template {
         it: &mut Peekable<FlatPairs<Rule>>,
         limit: usize,
     ) -> Result<Parameter, TemplateError> {
-        let espec = try!(Template::parse_expression(source, it.by_ref(), limit));
+        let espec = Template::parse_expression(source, it.by_ref(), limit)?;
         if let Parameter::Name(name) = espec.name {
             Ok(Parameter::Subexpression(Subexpression {
                 name: name,
@@ -205,11 +205,9 @@ impl Template {
                     Parameter::Name(s.to_owned())
                 }
             }
-            Rule::subexpression => try!(Template::parse_subexpression(
-                source,
-                it.by_ref(),
-                param_span.end(),
-            )),
+            Rule::subexpression => {
+                Template::parse_subexpression(source, it.by_ref(), param_span.end())?
+            }
             _ => unreachable!(),
         };
 
@@ -240,7 +238,7 @@ impl Template {
         // identifier
         let key = name_node.as_str().to_owned();
 
-        let value = try!(Template::parse_param(source, it.by_ref(), limit));
+        let value = Template::parse_param(source, it.by_ref(), limit)?;
         Ok((key, value))
     }
 
@@ -292,7 +290,7 @@ impl Template {
             it.next();
         }
 
-        let name = try!(Template::parse_name(source, it.by_ref(), limit));
+        let name = Template::parse_name(source, it.by_ref(), limit)?;
 
         loop {
             let rule;
@@ -313,14 +311,14 @@ impl Template {
 
             match rule {
                 Rule::param => {
-                    params.push(try!(Template::parse_param(source, it.by_ref(), end)));
+                    params.push(Template::parse_param(source, it.by_ref(), end)?);
                 }
                 Rule::hash => {
-                    let (key, value) = try!(Template::parse_hash(source, it.by_ref(), end));
+                    let (key, value) = Template::parse_hash(source, it.by_ref(), end)?;
                     hashes.insert(key, value);
                 }
                 Rule::block_param => {
-                    block_param = Some(try!(Template::parse_block_param(source, it.by_ref(), end)));
+                    block_param = Some(Template::parse_block_param(source, it.by_ref(), end)?);
                 }
                 Rule::pro_whitespace_omitter => {
                     omit_pro_ws = true;
@@ -448,7 +446,7 @@ impl Template {
                     | Rule::raw_block_start
                     | Rule::directive_block_start
                     | Rule::partial_block_start => {
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), span.end()));
+                        let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
 
                         match rule {
                             Rule::helper_block_start | Rule::raw_block_start => {
@@ -488,7 +486,7 @@ impl Template {
                     Rule::invert_tag => {
                         // hack: invert_tag structure is similar to ExpressionSpec, so I
                         // use it here to represent the data
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), span.end()));
+                        let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
 
                         if exp.omit_pre_ws {
                             Template::remove_previous_whitespace(&mut template_stack);
@@ -517,7 +515,7 @@ impl Template {
                     | Rule::raw_block_end
                     | Rule::directive_block_end
                     | Rule::partial_block_end => {
-                        let exp = try!(Template::parse_expression(source, it.by_ref(), span.end()));
+                        let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
                         if exp.omit_pre_ws {
                             Template::remove_previous_whitespace(&mut template_stack);
                         }

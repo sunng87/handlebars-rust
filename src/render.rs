@@ -320,13 +320,13 @@ impl<'a, 'b> Helper<'a> {
     ) -> Result<Helper<'a>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in ht.params.iter() {
-            let r = try!(p.expand(registry, rc));
+            let r = p.expand(registry, rc)?;
             evaluated_params.push(r);
         }
 
         let mut evaluated_hash = BTreeMap::new();
         for (k, p) in ht.hash.iter() {
-            let r = try!(p.expand(registry, rc));
+            let r = p.expand(registry, rc)?;
             evaluated_hash.insert(k.clone(), r);
         }
 
@@ -454,17 +454,17 @@ impl<'a, 'b> Directive<'a> {
         registry: &Registry,
         rc: &'b mut RenderContext,
     ) -> Result<Directive<'a>, RenderError> {
-        let name = try!(dt.name.expand_as_name(registry, rc));
+        let name = dt.name.expand_as_name(registry, rc)?;
 
         let mut evaluated_params = Vec::new();
         for p in dt.params.iter() {
-            let r = try!(p.expand(registry, rc));
+            let r = p.expand(registry, rc)?;
             evaluated_params.push(r);
         }
 
         let mut evaluated_hash = BTreeMap::new();
         for (k, p) in dt.hash.iter() {
-            let r = try!(p.expand(registry, rc));
+            let r = p.expand(registry, rc)?;
             evaluated_hash.insert(k.clone(), r);
         }
 
@@ -520,7 +520,7 @@ pub trait Renderable {
     /// render into string
     fn renders(&self, registry: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
-        try!(self.render(registry, rc, &mut so));
+        self.render(registry, rc, &mut so)?;
         so.to_string().map_err(RenderError::from)
     }
 }
@@ -637,7 +637,7 @@ impl Renderable for Template {
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
-            try!(t.render(registry, rc, out).map_err(|mut e| {
+            t.render(registry, rc, out).map_err(|mut e| {
                 // add line/col number if the template has mapping data
                 if e.line_no.is_none() {
                     if let Some(ref mapping) = self.mapping {
@@ -653,7 +653,7 @@ impl Renderable for Template {
                 }
 
                 e
-            }));
+            })?;
             idx = idx + 1;
         }
         Ok(())
@@ -665,7 +665,7 @@ impl Evaluable for Template {
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
-            try!(t.eval(registry, rc).map_err(|mut e| {
+            t.eval(registry, rc).map_err(|mut e| {
                 if e.line_no.is_none() {
                     if let Some(ref mapping) = self.mapping {
                         if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
@@ -677,7 +677,7 @@ impl Evaluable for Template {
 
                 e.template_name = self.name.clone();
                 e
-            }));
+            })?;
             idx = idx + 1;
         }
         Ok(())
@@ -693,7 +693,7 @@ impl Renderable for TemplateElement {
     ) -> Result<(), RenderError> {
         match *self {
             RawString(ref v) => {
-                try!(out.write(v.as_ref()));
+                out.write(v.as_ref())?;
                 Ok(())
             }
             HtmlComment(ref v) => {
@@ -703,7 +703,7 @@ impl Renderable for TemplateElement {
                 Ok(())
             }
             Expression(ref v) => {
-                let context_json = try!(v.expand(registry, rc));
+                let context_json = v.expand(registry, rc)?;
                 let rendered = context_json.value.render();
 
                 let output = if !rc.disable_escape {
@@ -711,17 +711,17 @@ impl Renderable for TemplateElement {
                 } else {
                     rendered
                 };
-                try!(out.write(output.as_ref()));
+                out.write(output.as_ref())?;
                 Ok(())
             }
             HTMLExpression(ref v) => {
-                let context_json = try!(v.expand(registry, rc));
+                let context_json = v.expand(registry, rc)?;
                 let rendered = context_json.value.render();
-                try!(out.write(rendered.as_ref()));
+                out.write(rendered.as_ref())?;
                 Ok(())
             }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
-                let helper = try!(Helper::from_template(ht, registry, rc));
+                let helper = Helper::from_template(ht, registry, rc)?;
                 if let Some(ref d) = rc.get_local_helper(&ht.name) {
                     d.call(&helper, registry, rc, out)
                 } else {

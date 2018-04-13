@@ -50,7 +50,7 @@ pub fn expand_partial(
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {
-        try!(t.eval(r, rc));
+        t.eval(r, rc)?;
     }
 
     if rc.is_current_template(d.name()) {

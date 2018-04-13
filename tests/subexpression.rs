@@ -14,20 +14,16 @@ impl HelperDef for GtHelper {
         _: &Handlebars,
         _: &mut RenderContext,
     ) -> Result<Option<Value>, RenderError> {
-        let p1 = try!(
-            h.param(0,)
-                .and_then(|v| v.value().as_i64(),)
-                .ok_or(RenderError::new(
-                    "Param 0 with i64 type is required for gt helper."
-                ),)
-        );
-        let p2 = try!(
-            h.param(1,)
-                .and_then(|v| v.value().as_i64(),)
-                .ok_or(RenderError::new(
-                    "Param 1 with i64 type is required for gt helper."
-                ),)
-        );
+        let p1 = h.param(0)
+            .and_then(|v| v.value().as_i64())
+            .ok_or(RenderError::new(
+                "Param 0 with i64 type is required for gt helper.",
+            ))?;
+        let p2 = h.param(1)
+            .and_then(|v| v.value().as_i64())
+            .ok_or(RenderError::new(
+                "Param 1 with i64 type is required for gt helper.",
+            ))?;
 
         Ok(Some(Value::Bool(p1 > p2)))
     }
@@ -42,13 +38,11 @@ impl HelperDef for NotHelper {
         _: &Handlebars,
         _: &mut RenderContext,
     ) -> Result<Option<Value>, RenderError> {
-        let p1 = try!(
-            h.param(0,)
-                .and_then(|v| v.value().as_bool(),)
-                .ok_or(RenderError::new(
-                    "Param 0 with bool type is required for not helper."
-                ),)
-        );
+        let p1 = h.param(0)
+            .and_then(|v| v.value().as_bool())
+            .ok_or(RenderError::new(
+                "Param 0 with bool type is required for not helper.",
+            ))?;
 
         Ok(Some(Value::Bool(!p1)))
     }

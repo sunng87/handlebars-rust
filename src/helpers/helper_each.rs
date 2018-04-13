@@ -20,10 +20,8 @@ impl HelperDef for EachHelper {
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
-        let value = try!(
-            h.param(0)
-                .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))
-        );
+        let value = h.param(0)
+            .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
 
         let template = h.template();
 
@@ -61,11 +59,11 @@ impl HelperDef for EachHelper {
                                 local_rc.push_block_context(&map)?;
                             }
 
-                            try!(t.render(r, &mut local_rc, out));
+                            t.render(r, &mut local_rc, out)?;
 
                             // local_rc is dropped at the end of each iteration
                             // so we don't need to cleanup
-                            // 
+                            //
                             // if h.block_param().is_some() {
                             //     local_rc.pop_block_context();
                             // }
@@ -103,7 +101,7 @@ impl HelperDef for EachHelper {
                                 local_rc.push_block_context(&map)?;
                             }
 
-                            try!(t.render(r, &mut local_rc, out));
+                            t.render(r, &mut local_rc, out)?;
 
                             // if h.block_param().is_some() {
                             //     local_rc.pop_block_context();
@@ -118,7 +116,7 @@ impl HelperDef for EachHelper {
                     }
                     (false, _) => {
                         if let Some(else_template) = h.inverse() {
-                            try!(else_template.render(r, rc, out));
+                            else_template.render(r, rc, out)?;
                         }
                         Ok(())
                     }

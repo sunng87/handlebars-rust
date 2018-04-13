@@ -16,10 +16,8 @@ impl HelperDef for LogHelper {
         _: &mut RenderContext,
         _: &mut Output,
     ) -> HelperResult {
-        let param = try!(
-            h.param(0)
-                .ok_or_else(|| RenderError::new("Param not found for helper \"log\""))
-        );
+        let param = h.param(0)
+            .ok_or_else(|| RenderError::new("Param not found for helper \"log\""))?;
 
         info!(
             "{}: {}",
