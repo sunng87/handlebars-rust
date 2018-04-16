@@ -293,7 +293,7 @@ impl Registry {
         &self,
         name: &str,
         data: &T,
-        writer: &mut W,
+        writer: W,
     ) -> Result<(), RenderError>
     where
         T: Serialize,
@@ -322,7 +322,7 @@ impl Registry {
         &self,
         template_string: &str,
         data: &T,
-        writer: &mut W,
+        writer: W,
     ) -> Result<(), TemplateRenderError>
     where
         T: Serialize,
@@ -342,7 +342,7 @@ impl Registry {
         &self,
         template_source: &mut Read,
         data: &T,
-        writer: &mut W,
+        writer: W,
     ) -> Result<(), TemplateRenderError>
     where
         T: Serialize,

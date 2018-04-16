@@ -5,21 +5,18 @@ pub trait Output {
     fn write(&mut self, seg: &str) -> Result<(), IOError>;
 }
 
-pub struct WriteOutput<'a, W: 'a + Write> {
-    write: &'a mut W,
+pub struct WriteOutput<W: Write> {
+    write: W,
 }
 
-impl<'a, W: 'a + Write> Output for WriteOutput<'a, W> {
+impl<W: Write> Output for WriteOutput<W> {
     fn write(&mut self, seg: &str) -> Result<(), IOError> {
         self.write.write_all(seg.as_bytes())
     }
 }
 
-impl<'a, W: 'a + Write> WriteOutput<'a, W> {
-    pub fn new(write: &'a mut W) -> WriteOutput<'a, W>
-    where
-        W: Write + 'a,
-    {
+impl<W: Write> WriteOutput<W> {
+    pub fn new(write: W) -> WriteOutput<W> {
         WriteOutput { write }
     }
 }
