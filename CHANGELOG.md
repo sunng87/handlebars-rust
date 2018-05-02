@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.32.0...Unreleased) - ReleaseDate
+## [0.32.1](https://github.com/sunng87/handlebars-rust/compare/0.32.0...0.32.1) - 2018-05-02
 
 * [Changed] Regex 1.0 
 
