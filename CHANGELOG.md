@@ -1,6 +1,10 @@
 # Change Log
 
-## [0.32.0] (https://github.com/sunng87/handlebars-rust/compare/0.30.1...0.32.0) - 2018-02-16
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.32.0...Unreleased) - ReleaseDate
+
+* [Changed] Regex 1.0 
+
+## [0.32.0](https://github.com/sunng87/handlebars-rust/compare/0.30.1...0.32.0) - 2018-02-16
 
 * [Added] Strict mode that raises `RenderError` on accessing
   non-existed field or array index.
