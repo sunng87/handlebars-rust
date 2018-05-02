@@ -1,0 +1,4 @@
+sign-commit = true
+upload-doc = true
+pre-release-replacements = [ {file="CHANGELOG.md", search="Unreleased", replace="{{version}}"}, {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}"} ]
+
