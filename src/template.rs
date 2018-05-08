@@ -1,11 +1,11 @@
-use std::iter::Peekable;
-use std::convert::From;
 use std::collections::{BTreeMap, VecDeque};
+use std::convert::From;
+use std::iter::Peekable;
 
-use pest::{Parser, Position};
-use pest::Error as PestError;
-use pest::iterators::FlatPairs;
 use grammar::{HandlebarsParser, Rule};
+use pest::iterators::FlatPairs;
+use pest::Error as PestError;
+use pest::{Parser, Position};
 
 use serde_json::value::Value as Json;
 use std::str::FromStr;
@@ -364,27 +364,18 @@ impl Template {
                     negatives: _,
                 } => {
                     let (line_no, col_no) = pos.line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(
-                        source,
-                        line_no,
-                        col_no,
-                    )
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                        .at(source, line_no, col_no)
                 }
                 PestError::CustomErrorPos { pos, message: _ } => {
                     let (line_no, col_no) = pos.line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(
-                        source,
-                        line_no,
-                        col_no,
-                    )
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                        .at(source, line_no, col_no)
                 }
                 PestError::CustomErrorSpan { span, message: _ } => {
                     let (line_no, col_no) = span.start_pos().line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax).at(
-                        source,
-                        line_no,
-                        col_no,
-                    )
+                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                        .at(source, line_no, col_no)
                 }
             })?;
 
@@ -580,11 +571,7 @@ impl Template {
                                             h.name,
                                             close_tag_name,
                                         ),
-                                    ).at(
-                                        source,
-                                        line_no,
-                                        col_no,
-                                    ));
+                                    ).at(source, line_no, col_no));
                                 }
                             }
                             Rule::directive_block_end | Rule::partial_block_end => {
@@ -605,22 +592,18 @@ impl Template {
                                             d.name,
                                             close_tag_name,
                                         ),
-                                    ).at(
-                                        source,
-                                        line_no,
-                                        col_no,
-                                    ));
+                                    ).at(source, line_no, col_no));
                                 }
                             }
                             _ => unreachable!(),
                         }
                     }
-                    Rule::hbs_html_comment => {
+                    Rule::hbs_comment_compact => {
                         let text = span.as_str()
                             .trim_left_matches("{{!")
                             .trim_right_matches("}}");
                         let t = template_stack.front_mut().unwrap();
-                        t.push_element(HtmlComment(text.to_owned()), line_no, col_no);
+                        t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     Rule::hbs_comment => {
                         let text = span.as_str()
@@ -676,7 +659,6 @@ pub enum TemplateElement {
     PartialExpression(Directive),
     PartialBlock(Directive),
     Comment(String),
-    HtmlComment(String),
 }
 
 #[test]

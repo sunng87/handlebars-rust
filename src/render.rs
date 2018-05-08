@@ -1,20 +1,22 @@
+use std::borrow::{Borrow, Cow};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
-use std::borrow::{Borrow, Cow};
 
 use serde::Serialize;
 use serde_json::value::Value as Json;
 
-use template::{BlockParam, Directive as DirectiveTemplate, HelperTemplate, Parameter, Template,
-               TemplateElement, TemplateMapping};
-use template::TemplateElement::*;
-use registry::Registry;
 use context::{Context, JsonRender};
-use helpers::HelperDef;
 use error::RenderError;
-use partial;
+use helpers::HelperDef;
 use output::{Output, StringOutput};
+use partial;
+use registry::Registry;
+use template::TemplateElement::*;
+use template::{
+    BlockParam, Directive as DirectiveTemplate, HelperTemplate, Parameter, Template,
+    TemplateElement, TemplateMapping,
+};
 
 static DEFAULT_VALUE: Json = Json::Null;
 
@@ -696,12 +698,6 @@ impl Renderable for TemplateElement {
                 out.write(v.as_ref())?;
                 Ok(())
             }
-            HtmlComment(ref v) => {
-                out.write("<!--")?;
-                out.write(v)?;
-                out.write("-->")?;
-                Ok(())
-            }
             Expression(ref v) => {
                 let context_json = v.expand(registry, rc)?;
                 let rendered = context_json.value.render();
@@ -999,6 +995,6 @@ fn test_html_comment() {
     assert_eq!(
         r.render_template("Hello {{this}} {{! test me }}", &0)
             .unwrap(),
-        "Hello 0 <!-- test me -->"
+        "Hello 0 "
     );
 }
