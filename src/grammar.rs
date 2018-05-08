@@ -9,22 +9,24 @@ use pest::Parser;
 
 #[cfg(test)]
 macro_rules! assert_rule {
-    ($rule: expr, $in: expr) => {
-        assert_eq!(HandlebarsParser::parse($rule, $in).unwrap()
-                   .last()
-                   .unwrap()
-                   .into_span()
-                   .end(),
+    ($rule:expr, $in:expr) => {
+        assert_eq!(
+            HandlebarsParser::parse($rule, $in)
+                .unwrap()
+                .last()
+                .unwrap()
+                .into_span()
+                .end(),
             $in.len()
         );
-    }
+    };
 }
 
 #[cfg(test)]
 macro_rules! assert_rule_match {
-    ($rule: expr, $in: expr) => {
+    ($rule:expr, $in:expr) => {
         assert!(HandlebarsParser::parse($rule, $in).is_ok());
-    }
+    };
 }
 
 #[test]
@@ -122,7 +124,7 @@ fn test_comment() {
     }
     let s2 = vec!["{{! hello }}", "{{! test me }}"];
     for i in s2.iter() {
-        assert_rule!(Rule::hbs_html_comment, i);
+        assert_rule!(Rule::hbs_comment_compact, i);
     }
 }
 
