@@ -1,7 +1,11 @@
 whitespace = _{ " "|"\t"|"\n"|"\r" }
 keywords = @{ "as" | "else" }
 
-raw_text = @{ ( "\\{{{{"? ~ "\\{{"? ~ !"{{" ~ any )+ }
+escape = @{ "\\" }
+escape_slash = @{ "\\" ~ ("\\"+ | "{{" ~ "{{"?) }
+//escape_quote = @{ "\\" ~ "{{" ~ "{{"? }
+//raw_text = @{ (!("\\" | "{{") ~ any )* ~ (escape_slash ~ raw_text)? }
+raw_text = @{ ( escape_slash? ~ !"{{" ~ any )+ }
 raw_block_text = @{ ( !"{{{{" ~ any )* }
 
 literal = { string_literal |
@@ -37,52 +41,51 @@ subexpression = { "(" ~ name ~ (hash|param)* ~ ")" }
 
 pre_whitespace_omitter = { "~" }
 pro_whitespace_omitter = { "~" }
-escape = { "\\" }
 
-expression = { !escape ~ !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~ name ~
+expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~ name ~
 pro_whitespace_omitter? ~ "}}" }
 
-html_expression = { !escape ~ "{{{" ~ pre_whitespace_omitter? ~ name ~
+html_expression = { "{{{" ~ pre_whitespace_omitter? ~ name ~
 pro_whitespace_omitter? ~ "}}}" }
 
 helper_expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~ exp_line ~
 pro_whitespace_omitter? ~ "}}" }
 
-directive_expression = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
+directive_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
 pro_whitespace_omitter? ~ "}}" }
-partial_expression = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
+partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
                      ~ pro_whitespace_omitter? ~ "}}" }
 invert_tag_item = { "else"|"^" }
 invert_tag = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
              ~ pro_whitespace_omitter? ~ "}}"}
-helper_block_start = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
+helper_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
                      pro_whitespace_omitter? ~ "}}" }
-helper_block_end = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
+helper_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
                    pro_whitespace_omitter? ~ "}}" }
 helper_block = _{ helper_block_start ~ template ~
                   (invert_tag ~ template)? ~ helper_block_end }
 
-directive_block_start = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ "*"
+directive_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ "*"
                         ~ exp_line ~ pro_whitespace_omitter? ~ "}}" }
-directive_block_end = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
+directive_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
                         pro_whitespace_omitter? ~ "}}" }
 directive_block = _{ directive_block_start ~ template ~
                      directive_block_end }
 
-partial_block_start = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ ">"
+partial_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ ">"
                         ~ partial_exp_line ~ pro_whitespace_omitter? ~ "}}" }
-partial_block_end = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
+partial_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
                       pro_whitespace_omitter? ~ "}}" }
 partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
-raw_block_start = { !escape ~ "{{{{" ~ pre_whitespace_omitter? ~ exp_line ~
+raw_block_start = { "{{{{" ~ pre_whitespace_omitter? ~ exp_line ~
                     pro_whitespace_omitter? ~ "}}}}" }
-raw_block_end = { !escape ~ "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
+raw_block_end = { "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
                   pro_whitespace_omitter? ~ "}}}}" }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-hbs_comment = { !escape ~ "{{!--" ~ (!"--}}" ~ any)* ~ "--}}" }
-hbs_comment_compact = { !escape ~ "{{!" ~ (!"}}" ~ any)* ~ "}}" }
+hbs_comment = { "{{!--" ~ (!"--}}" ~ any)* ~ "--}}" }
+hbs_comment_compact = { "{{!" ~ (!"}}" ~ any)* ~ "}}" }
 
 template = { (
             raw_text |

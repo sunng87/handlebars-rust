@@ -1,4 +1,4 @@
-//const _GRAMMAR: &'static str = include_str!("grammar.pest");
+const _GRAMMAR: &'static str = include_str!("grammar.pest");
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -25,13 +25,13 @@ macro_rules! assert_rule {
 #[cfg(test)]
 macro_rules! assert_not_rule {
     ($rule:expr, $in:expr) => {
-        assert!(!
+        assert!(
             HandlebarsParser::parse($rule, $in)
                 .unwrap()
                 .last()
                 .unwrap()
                 .into_span()
-                .end() ==
+                .end() !=
             $in.len()
         );
     };
@@ -48,9 +48,9 @@ macro_rules! assert_rule_match {
 fn test_raw_text() {
     let s = vec![
         "<h1> helloworld </h1>    ",
-        r"hello\{{world}}",
-        r"hello\{{#if world}}nice\{{/if}}",
-        r"hello \{{{{raw}}}}hello\{{{{/raw}}}}",
+        // r"hello\{{world}}",
+        // r"hello\{{#if world}}nice\{{/if}}",
+        // r"hello \{{{{raw}}}}hello\{{{{/raw}}}}",
     ];
     for i in s.iter() {
         assert_rule!(Rule::raw_text, i);
