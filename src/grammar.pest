@@ -1,12 +1,9 @@
 whitespace = _{ " "|"\t"|"\n"|"\r" }
 keywords = @{ "as" | "else" }
 
-escape = @{ "\\" }
-escape_slash = @{ "\\" ~ ("\\"+ | "{{" ~ "{{"?) }
-//escape_quote = @{ "\\" ~ "{{" ~ "{{"? }
-//raw_text = @{ (!("\\" | "{{") ~ any )* ~ (escape_slash ~ raw_text)? }
-raw_text = @{ ( escape_slash? ~ !"{{" ~ any )+ }
-raw_block_text = @{ ( !"{{{{" ~ any )* }
+escape = @{ "\\" ~ ("\\"+ | "{{" ~ "{{"?) }
+raw_text = ${ ( escape | (!"{{" ~ any) )+ }
+raw_block_text = ${ ( escape | (!"{{{{" ~ any) )* }
 
 literal = { string_literal |
             array_literal |

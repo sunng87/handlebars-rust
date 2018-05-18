@@ -26,13 +26,13 @@ macro_rules! assert_rule {
 macro_rules! assert_not_rule {
     ($rule:expr, $in:expr) => {
         assert!(
-            HandlebarsParser::parse($rule, $in)
-                .unwrap()
-                .last()
-                .unwrap()
-                .into_span()
-                .end() !=
-            $in.len()
+            HandlebarsParser::parse($rule, $in).is_err()
+                || HandlebarsParser::parse($rule, $in)
+                    .unwrap()
+                    .last()
+                    .unwrap()
+                    .into_span()
+                    .end() != $in.len()
         );
     };
 }
@@ -48,17 +48,15 @@ macro_rules! assert_rule_match {
 fn test_raw_text() {
     let s = vec![
         "<h1> helloworld </h1>    ",
-        // r"hello\{{world}}",
-        // r"hello\{{#if world}}nice\{{/if}}",
-        // r"hello \{{{{raw}}}}hello\{{{{/raw}}}}",
+        r"hello\{{world}}",
+        r"hello\{{#if world}}nice\{{/if}}",
+        r"hello \{{{{raw}}}}hello\{{{{/raw}}}}",
     ];
     for i in s.iter() {
         assert_rule!(Rule::raw_text, i);
     }
 
-    let s_not_escape = vec![
-        r"\\{{hello}}"
-    ];
+    let s_not_escape = vec![r"\\{{hello}}"];
     for i in s_not_escape.iter() {
         assert_not_rule!(Rule::raw_text, i);
     }

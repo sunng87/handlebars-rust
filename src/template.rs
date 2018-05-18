@@ -3,7 +3,7 @@ use std::convert::From;
 use std::iter::Peekable;
 
 use grammar::{HandlebarsParser, Rule};
-use pest::iterators::FlatPairs;
+use pest::iterators::{Pair, Pairs};
 use pest::Error as PestError;
 use pest::{Parser, Position};
 
@@ -129,10 +129,6 @@ impl Template {
         }
     }
 
-    fn unescape_tags(txt: &str) -> String {
-        txt.replace(r"\\{{", "{{")
-    }
-
     fn push_element(&mut self, e: TemplateElement, line: usize, col: usize) {
         self.elements.push(e);
         if let Some(ref mut maps) = self.mapping {
@@ -147,7 +143,7 @@ impl Template {
     #[inline]
     fn parse_subexpression<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule>>,
+        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
         limit: usize,
     ) -> Result<Parameter, TemplateError> {
         let espec = try!(Template::parse_expression(source, it.by_ref(), limit));
@@ -166,7 +162,7 @@ impl Template {
     #[inline]
     fn parse_name<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule>>,
+        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
         _: usize,
     ) -> Result<Parameter, TemplateError> {
         let name_node = it.next().unwrap();
@@ -186,7 +182,7 @@ impl Template {
     #[inline]
     fn parse_param<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule>>,
+        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
         _: usize,
     ) -> Result<Parameter, TemplateError> {
         let mut param = it.next().unwrap();
@@ -232,7 +228,7 @@ impl Template {
     #[inline]
     fn parse_hash<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule>>,
+        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
         limit: usize,
     ) -> Result<(String, Parameter), TemplateError> {
         let name = it.next().unwrap();
@@ -247,7 +243,7 @@ impl Template {
     #[inline]
     fn parse_block_param<'a>(
         _: &'a str,
-        it: &mut Peekable<FlatPairs<Rule>>,
+        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
         limit: usize,
     ) -> Result<BlockParam, TemplateError> {
         let p1_name = it.next().unwrap();
@@ -278,7 +274,7 @@ impl Template {
     #[inline]
     fn parse_expression<'a>(
         source: &'a str,
-        it: &mut Peekable<FlatPairs<Rule>>,
+        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
         limit: usize,
     ) -> Result<ExpressionSpec, TemplateError> {
         let mut params: Vec<Parameter> = Vec::new();
@@ -350,6 +346,29 @@ impl Template {
         }
     }
 
+    fn raw_string<'a>(
+        source: &'a str,
+        pairs: Option<Pairs<'a, Rule>>,
+        trim_left: bool,
+    ) -> TemplateElement {
+        let mut s = String::from(source);
+        if let Some(pairs) = pairs {
+            for sub_pair in pairs {
+                // remove escaped backslash
+                if sub_pair.as_rule() == Rule::escape {
+                    let backslash_pos = sub_pair.into_span().start();
+                    s.remove(backslash_pos);
+                }
+            }
+        }
+
+        if trim_left {
+            RawString(s.trim_left().to_owned())
+        } else {
+            RawString(s)
+        }
+    }
+
     pub fn compile2<S: AsRef<str>>(source: S, mapping: bool) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
@@ -381,13 +400,17 @@ impl Template {
                 }
             })?;
 
-        let mut it = parser_queue.flatten().peekable();
+        // remove escape from our pair queue
+        let mut it = parser_queue
+            .flatten()
+            .filter(|p| p.as_rule() != Rule::escape)
+            .peekable();
         let mut end_pos: Option<Position> = None;
         loop {
             if let Some(pair) = it.next() {
                 let prev_end = end_pos.as_ref().map(|p| p.pos()).unwrap_or(0);
                 let rule = pair.as_rule();
-                let span = pair.into_span();
+                let span = pair.clone().into_span();
 
                 if rule != Rule::template {
                     // trailing string check
@@ -396,19 +419,17 @@ impl Template {
                     {
                         let (line_no, col_no) = span.start_pos().line_col();
                         if rule == Rule::raw_block_end {
-                            let text = &source[prev_end..span.start()];
                             let mut t = Template::new(mapping);
                             t.push_element(
-                                RawString(Template::unescape_tags(text)),
+                                Template::raw_string(&source[prev_end..span.start()], None, false),
                                 line_no,
                                 col_no,
                             );
                             template_stack.push_front(t);
                         } else {
-                            let text = &source[prev_end..span.start()];
                             let t = template_stack.front_mut().unwrap();
                             t.push_element(
-                                RawString(Template::unescape_tags(text)),
+                                Template::raw_string(&source[prev_end..span.start()], None, false),
                                 line_no,
                                 col_no,
                             );
@@ -428,12 +449,17 @@ impl Template {
                         } else {
                             span.start()
                         };
-                        let mut text = &source[start..span.end()];
-                        if omit_pro_ws {
-                            text = text.trim_left();
-                        }
+
                         let t = template_stack.front_mut().unwrap();
-                        t.push_element(RawString(Template::unescape_tags(text)), line_no, col_no);
+                        t.push_element(
+                            Template::raw_string(
+                                &source[start..span.end()],
+                                Some(pair.clone().into_inner()),
+                                omit_pro_ws,
+                            ),
+                            line_no,
+                            col_no,
+                        );
                     }
                     Rule::helper_block_start
                     | Rule::raw_block_start
@@ -491,12 +517,16 @@ impl Template {
                         h.template = Some(t);
                     }
                     Rule::raw_block_text => {
-                        let mut text = span.as_str();
-                        if omit_pro_ws {
-                            text = text.trim_left();
-                        }
                         let mut t = Template::new(mapping);
-                        t.push_element(RawString(Template::unescape_tags(text)), line_no, col_no);
+                        t.push_element(
+                            Template::raw_string(
+                                span.as_str(),
+                                Some(pair.clone().into_inner()),
+                                omit_pro_ws,
+                            ),
+                            line_no,
+                            col_no,
+                        );
                         template_stack.push_front(t);
                     }
                     Rule::expression
@@ -665,7 +695,7 @@ pub enum TemplateElement {
 
 #[test]
 fn test_parse_escaped_tag_raw_string() {
-    let source = r"foo \\{{bar}}";
+    let source = r"foo \{{bar}}";
     let t = Template::compile(source.to_string()).ok().unwrap();
     assert_eq!(t.elements.len(), 1);
     assert_eq!(
@@ -676,7 +706,7 @@ fn test_parse_escaped_tag_raw_string() {
 
 #[test]
 fn test_parse_escaped_block_raw_string() {
-    let source = r"\\{{{{foo}}}} bar";
+    let source = r"\{{{{foo}}}} bar";
     let t = Template::compile(source.to_string()).ok().unwrap();
     assert_eq!(t.elements.len(), 1);
     assert_eq!(
