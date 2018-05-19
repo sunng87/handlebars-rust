@@ -705,6 +705,17 @@ fn test_parse_escaped_tag_raw_string() {
 }
 
 #[test]
+fn test_pure_backslash_raw_string() {
+    let source = r"\\\\";
+    let t = Template::compile(source).ok().unwrap();
+    assert_eq!(t.elements.len(), 1);
+    assert_eq!(
+        *t.elements.get(0).unwrap(),
+        RawString(source.to_string())
+    );
+}
+
+#[test]
 fn test_parse_escaped_block_raw_string() {
     let source = r"\{{{{foo}}}} bar";
     let t = Template::compile(source.to_string()).ok().unwrap();

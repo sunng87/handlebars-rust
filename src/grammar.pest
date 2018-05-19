@@ -1,7 +1,7 @@
 whitespace = _{ " "|"\t"|"\n"|"\r" }
 keywords = @{ "as" | "else" }
 
-escape = @{ "\\" ~ ("\\"+ | "{{" ~ "{{"?) }
+escape = @{ ("\\" ~ "{{" ~ "{{"?) | ("\\" ~ "\\"+ ~ &"{{") }
 raw_text = ${ ( escape | (!"{{" ~ any) )+ }
 raw_block_text = ${ ( escape | (!"{{{{" ~ any) )* }
 
