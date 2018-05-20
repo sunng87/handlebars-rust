@@ -3,7 +3,7 @@ use std::convert::From;
 use std::iter::Peekable;
 
 use grammar::{HandlebarsParser, Rule};
-use pest::iterators::{Pair, Pairs};
+use pest::iterators::Pair;
 use pest::Error as PestError;
 use pest::{Parser, Position};
 
@@ -348,16 +348,32 @@ impl Template {
 
     fn raw_string<'a>(
         source: &'a str,
-        pairs: Option<Pairs<'a, Rule>>,
+        pair: Option<Pair<'a, Rule>>,
         trim_left: bool,
     ) -> TemplateElement {
         let mut s = String::from(source);
-        if let Some(pairs) = pairs {
-            for sub_pair in pairs {
+
+        if let Some(pair) = pair {
+            // the source may contains leading space because of pest's limitation
+            // we calculate none space start here in order to correct the offset
+            let pair_span = pair.clone().into_span();
+
+            let current_start = pair_span.start();
+            let span_length = pair_span.end() - current_start;
+            let leading_space_offset = s.len() - span_length;
+
+            // we would like to iterate pair reversely in order to remove certain
+            // index from our string buffer so here we convert the inner pairs to
+            // a vector.
+            let pairs: Vec<Pair<'a, Rule>> = pair.into_inner().collect();
+            for sub_pair in pairs.into_iter().rev() {
                 // remove escaped backslash
                 if sub_pair.as_rule() == Rule::escape {
-                    let backslash_pos = sub_pair.into_span().start();
-                    s.remove(backslash_pos);
+                    let escape_span = sub_pair.into_span();
+
+                    let backslash_pos = escape_span.start();
+                    let backslash_rel_pos = leading_space_offset + backslash_pos - current_start;
+                    s.remove(backslash_rel_pos);
                 }
             }
         }
@@ -399,6 +415,8 @@ impl Template {
                         .at(source, line_no, col_no)
                 }
             })?;
+
+        // println!("{:?}", parser_queue.clone());
 
         // remove escape from our pair queue
         let mut it = parser_queue
@@ -454,7 +472,7 @@ impl Template {
                         t.push_element(
                             Template::raw_string(
                                 &source[start..span.end()],
-                                Some(pair.clone().into_inner()),
+                                Some(pair.clone()),
                                 omit_pro_ws,
                             ),
                             line_no,
@@ -519,11 +537,7 @@ impl Template {
                     Rule::raw_block_text => {
                         let mut t = Template::new(mapping);
                         t.push_element(
-                            Template::raw_string(
-                                span.as_str(),
-                                Some(pair.clone().into_inner()),
-                                omit_pro_ws,
-                            ),
+                            Template::raw_string(span.as_str(), Some(pair.clone()), omit_pro_ws),
                             line_no,
                             col_no,
                         );
@@ -709,10 +723,7 @@ fn test_pure_backslash_raw_string() {
     let source = r"\\\\";
     let t = Template::compile(source).ok().unwrap();
     assert_eq!(t.elements.len(), 1);
-    assert_eq!(
-        *t.elements.get(0).unwrap(),
-        RawString(source.to_string())
-    );
+    assert_eq!(*t.elements.get(0).unwrap(), RawString(source.to_string()));
 }
 
 #[test]
