@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.32.3](https://github.com/sunng87/handlebars-rust/compare/0.32.2...0.32.3) - 2018-05-21
+
+* [Changed] Fixed escape syntax
+
+## [0.32.2](https://github.com/sunng87/handlebars-rust/compare/0.32.1...0.32.2) - 2018-05-09
+
+* [Changed] Fixed issue with processing handlebars comment 
+
 ## [0.32.1](https://github.com/sunng87/handlebars-rust/compare/0.32.0...0.32.1) - 2018-05-02
 
 * [Changed] Regex 1.0 
