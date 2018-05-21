@@ -483,6 +483,16 @@ mod test {
 
         assert_eq!(
             "{{hello}}",
+            r.render_template(r"\{{hello}}", &data).unwrap()
+        );
+
+        assert_eq!(
+            " {{hello}}",
+            r.render_template(r" \{{hello}}", &data).unwrap()
+        );
+
+        assert_eq!(
+            r"\world",
             r.render_template(r"\\{{hello}}", &data).unwrap()
         );
     }
