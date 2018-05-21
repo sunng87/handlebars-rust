@@ -989,7 +989,7 @@ fn test_key_with_slash() {
 }
 
 #[test]
-fn test_html_comment() {
+fn test_comment() {
     let r = Registry::new();
 
     assert_eq!(

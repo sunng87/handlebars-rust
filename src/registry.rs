@@ -488,17 +488,26 @@ mod test {
     #[test]
     fn test_escape() {
         let r = Registry::new();
-        let data = json!({});
+        let data = json!({"hello": "world"});
 
         assert_eq!(
             "{{hello}}",
+            r.render_template(r"\{{hello}}", &data).unwrap()
+        );
+
+        assert_eq!(
+            " {{hello}}",
+            r.render_template(r" \{{hello}}", &data).unwrap()
+        );
+
+        assert_eq!(
+            r"\world",
             r.render_template(r"\\{{hello}}", &data).unwrap()
         );
     }
 
     #[test]
     fn test_strict_mode() {
-        use error::TemplateRenderError;
         let mut r = Registry::new();
         assert!(!r.strict_mode());
 
