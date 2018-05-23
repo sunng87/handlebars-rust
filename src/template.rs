@@ -141,11 +141,14 @@ impl Template {
     }
 
     #[inline]
-    fn parse_subexpression<'a>(
+    fn parse_subexpression<'a, I>(
         source: &'a str,
-        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
+        it: &mut Peekable<I>,
         limit: usize,
-    ) -> Result<Parameter, TemplateError> {
+    ) -> Result<Parameter, TemplateError>
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
         let espec = try!(Template::parse_expression(source, it.by_ref(), limit));
         if let Parameter::Name(name) = espec.name {
             Ok(Parameter::Subexpression(Subexpression {
@@ -160,11 +163,14 @@ impl Template {
     }
 
     #[inline]
-    fn parse_name<'a>(
+    fn parse_name<'a, I>(
         source: &'a str,
-        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
+        it: &mut Peekable<I>,
         _: usize,
-    ) -> Result<Parameter, TemplateError> {
+    ) -> Result<Parameter, TemplateError>
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
         let name_node = it.next().unwrap();
         let rule = name_node.as_rule();
         let name_span = name_node.into_span();
@@ -180,11 +186,14 @@ impl Template {
     }
 
     #[inline]
-    fn parse_param<'a>(
+    fn parse_param<'a, I>(
         source: &'a str,
-        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
+        it: &mut Peekable<I>,
         _: usize,
-    ) -> Result<Parameter, TemplateError> {
+    ) -> Result<Parameter, TemplateError>
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
         let mut param = it.next().unwrap();
         if param.as_rule() == Rule::param {
             param = it.next().unwrap();
@@ -226,11 +235,14 @@ impl Template {
     }
 
     #[inline]
-    fn parse_hash<'a>(
+    fn parse_hash<'a, I>(
         source: &'a str,
-        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
+        it: &mut Peekable<I>,
         limit: usize,
-    ) -> Result<(String, Parameter), TemplateError> {
+    ) -> Result<(String, Parameter), TemplateError>
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
         let name = it.next().unwrap();
         let name_node = name.into_span();
         // identifier
@@ -241,11 +253,14 @@ impl Template {
     }
 
     #[inline]
-    fn parse_block_param<'a>(
+    fn parse_block_param<'a, I>(
         _: &'a str,
-        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
+        it: &mut Peekable<I>,
         limit: usize,
-    ) -> Result<BlockParam, TemplateError> {
+    ) -> Result<BlockParam, TemplateError>
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
         let p1_name = it.next().unwrap();
         let p1_name_span = p1_name.into_span();
         // identifier
@@ -272,11 +287,14 @@ impl Template {
     }
 
     #[inline]
-    fn parse_expression<'a>(
+    fn parse_expression<'a, I>(
         source: &'a str,
-        it: &mut Peekable<impl Iterator<Item = Pair<'a, Rule>>>,
+        it: &mut Peekable<I>,
         limit: usize,
-    ) -> Result<ExpressionSpec, TemplateError> {
+    ) -> Result<ExpressionSpec, TemplateError>
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
         let mut params: Vec<Parameter> = Vec::new();
         let mut hashes: BTreeMap<String, Parameter> = BTreeMap::new();
         let mut omit_pre_ws = false;

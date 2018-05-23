@@ -1,16 +1,21 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.32.3...Unreleased) - ReleaseDate
+
+* [Changed] Keep compatibility with pre-1.26 rust by removing `impl
+  Trait` on parameters
+
 ## [0.32.3](https://github.com/sunng87/handlebars-rust/compare/0.32.2...0.32.3) - 2018-05-21
 
 * [Changed] Fixed escape syntax
 
 ## [0.32.2](https://github.com/sunng87/handlebars-rust/compare/0.32.1...0.32.2) - 2018-05-09
 
-* [Changed] Fixed issue with processing handlebars comment 
+* [Changed] Fixed issue with processing handlebars comment
 
 ## [0.32.1](https://github.com/sunng87/handlebars-rust/compare/0.32.0...0.32.1) - 2018-05-02
 
-* [Changed] Regex 1.0 
+* [Changed] Regex 1.0
 
 ## [0.32.0](https://github.com/sunng87/handlebars-rust/compare/0.30.1...0.32.0) - 2018-02-16
 
