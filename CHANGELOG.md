@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/0.32.3...Unreleased) - ReleaseDate
+## [0.32.4](https://github.com/sunng87/handlebars-rust/compare/0.32.3...0.32.4) - 2018-05-23
 
 * [Changed] Keep compatibility with pre-1.26 rust by removing `impl
   Trait` on parameters
