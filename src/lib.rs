@@ -341,13 +341,14 @@ extern crate serde_json;
 pub use self::template::Template;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
-pub use self::render::{ContextJson, Directive as Decorator, Evaluable, Helper, RenderContext,
+pub use self::render::{Directive as Decorator, Evaluable, Helper, RenderContext,
                        Renderable};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::directives::DirectiveDef as DecoratorDef;
-pub use self::context::{to_json, Context, JsonRender};
+pub use self::context::Context;
 pub use self::support::str::StringWriter;
 pub use self::output::Output;
+pub use self::value::{ScopedJson, PathAndJson, to_json, JsonRender};
 
 mod grammar;
 mod template;
@@ -360,3 +361,4 @@ mod support;
 mod directives;
 mod partial;
 mod output;
+mod value;

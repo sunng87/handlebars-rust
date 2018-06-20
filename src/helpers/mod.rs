@@ -1,16 +1,17 @@
 use render::{Helper, RenderContext};
-use context::JsonRender;
 use registry::Registry;
 use error::RenderError;
 use output::Output;
+use value::{JsonRender, ScopedJson};
+
 use serde_json::Value as Json;
 
-pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
-pub use self::helper_each::EACH_HELPER;
-pub use self::helper_with::WITH_HELPER;
-pub use self::helper_lookup::LOOKUP_HELPER;
-pub use self::helper_raw::RAW_HELPER;
-pub use self::helper_log::LOG_HELPER;
+// pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
+// pub use self::helper_each::EACH_HELPER;
+// pub use self::helper_with::WITH_HELPER;
+// pub use self::helper_lookup::LOOKUP_HELPER;
+// pub use self::helper_raw::RAW_HELPER;
+// pub use self::helper_log::LOG_HELPER;
 
 pub type HelperResult = Result<(), RenderError>;
 
@@ -53,12 +54,12 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 
 pub trait HelperDef: Send + Sync {
-    fn call_inner(
+    fn call_inner<'reg, 'rc>(
         &self,
         _: &Helper,
-        _: &Registry,
-        _: &mut RenderContext,
-    ) -> Result<Option<Json>, RenderError> {
+        _: &'reg Registry,
+        _: &'rc mut RenderContext,
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
 
@@ -96,12 +97,12 @@ impl<
     }
 }
 
-mod helper_if;
-mod helper_each;
-mod helper_with;
-mod helper_lookup;
-mod helper_raw;
-mod helper_log;
+// mod helper_if;
+// mod helper_each;
+// mod helper_with;
+// mod helper_lookup;
+// mod helper_raw;
+// mod helper_log;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
@@ -114,7 +115,7 @@ mod helper_log;
 mod test {
     use std::collections::BTreeMap;
 
-    use context::JsonRender;
+    use value::JsonRender;
     use helpers::HelperDef;
     use registry::Registry;
     use render::{Helper, RenderContext, Renderable};

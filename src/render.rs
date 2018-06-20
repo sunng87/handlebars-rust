@@ -6,7 +6,7 @@ use std::rc::Rc;
 use serde::Serialize;
 use serde_json::value::Value as Json;
 
-use context::{Context, JsonRender};
+use context::{Context};
 use error::RenderError;
 use helpers::HelperDef;
 use output::{Output, StringOutput};
@@ -17,6 +17,7 @@ use template::{
     BlockParam, Directive as DirectiveTemplate, HelperTemplate, Parameter, Template,
     TemplateElement, TemplateMapping,
 };
+use value::{ScopedJson, PathAndJson, JsonRender};
 
 static DEFAULT_VALUE: Json = Json::Null;
 
@@ -274,52 +275,24 @@ impl<'a> fmt::Debug for RenderContext<'a> {
     }
 }
 
-/// Json wrapper that holds the Json value and reference path information
-///
-#[derive(Debug)]
-pub struct ContextJson {
-    path: Option<String>,
-    value: Json,
-}
-
-impl ContextJson {
-    /// Returns relative path when the value is referenced
-    /// If the value is from a literal, the path is `None`
-    pub fn path(&self) -> Option<&String> {
-        self.path.as_ref()
-    }
-
-    /// Return root level of this path if any
-    pub fn path_root(&self) -> Option<&str> {
-        self.path
-            .as_ref()
-            .and_then(|p| p.split(|c| c == '.' || c == '/').nth(0))
-    }
-
-    /// Returns the value
-    pub fn value(&self) -> &Json {
-        &self.value
-    }
-}
-
 /// Render-time Helper data when using in a helper definition
 #[derive(Debug)]
-pub struct Helper<'a> {
-    name: &'a str,
-    params: Vec<ContextJson>,
-    hash: BTreeMap<String, ContextJson>,
-    block_param: &'a Option<BlockParam>,
-    template: Option<&'a Template>,
-    inverse: Option<&'a Template>,
+pub struct Helper<'reg, 'rc> {
+    name: &'reg str,
+    params: Vec<PathAndJson<'reg, 'rc>>,
+    hash: BTreeMap<String, PathAndJson<'reg, 'rc>>,
+    block_param: &'reg Option<BlockParam>,
+    template: Option<&'reg Template>,
+    inverse: Option<&'reg Template>,
     block: bool,
 }
 
-impl<'a, 'b> Helper<'a> {
+impl<'reg, 'rc> Helper<'reg, 'rc> {
     fn from_template(
-        ht: &'a HelperTemplate,
-        registry: &Registry,
-        rc: &'b mut RenderContext,
-    ) -> Result<Helper<'a>, RenderError> {
+        ht: &'reg HelperTemplate,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext,
+    ) -> Result<Helper<'reg, 'rc>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in ht.params.iter() {
             let r = p.expand(registry, rc)?;
@@ -349,7 +322,7 @@ impl<'a, 'b> Helper<'a> {
     }
 
     /// Returns all helper params, resolved within the context
-    pub fn params(&self) -> &Vec<ContextJson> {
+    pub fn params(&self) -> &Vec<PathAndJson<'reg, 'rc>> {
         &self.params
     }
 
@@ -371,12 +344,12 @@ impl<'a, 'b> Helper<'a> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn param(&self, idx: usize) -> Option<&ContextJson> {
+    pub fn param(&self, idx: usize) -> Option<&PathAndJson<'reg, 'rc>> {
         self.params.get(idx)
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &BTreeMap<String, ContextJson> {
+    pub fn hash(&self) -> &BTreeMap<String, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
@@ -398,7 +371,7 @@ impl<'a, 'b> Helper<'a> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn hash_get(&self, key: &str) -> Option<&ContextJson> {
+    pub fn hash_get(&self, key: &str) -> Option<&PathAndJson<'reg, 'rc>> {
         self.hash.get(key)
     }
 
@@ -443,19 +416,19 @@ impl<'a, 'b> Helper<'a> {
 
 /// Render-time Decorator data when using in a decorator definition
 #[derive(Debug)]
-pub struct Directive<'a> {
+pub struct Directive<'reg, 'rc> {
     name: String,
-    params: Vec<ContextJson>,
-    hash: BTreeMap<String, ContextJson>,
-    template: Option<&'a Template>,
+    params: Vec<PathAndJson<'reg, 'rc>>,
+    hash: BTreeMap<String, PathAndJson<'reg, 'rc>>,
+    template: Option<&'reg Template>,
 }
 
-impl<'a, 'b> Directive<'a> {
+impl<'reg, 'rc> Directive<'reg, 'rc> {
     fn from_template(
-        dt: &'a DirectiveTemplate,
-        registry: &Registry,
-        rc: &'b mut RenderContext,
-    ) -> Result<Directive<'a>, RenderError> {
+        dt: &'reg DirectiveTemplate,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext,
+    ) -> Result<Directive<'reg, 'rc>, RenderError> {
         let name = dt.name.expand_as_name(registry, rc)?;
 
         let mut evaluated_params = Vec::new();
@@ -484,22 +457,22 @@ impl<'a, 'b> Directive<'a> {
     }
 
     /// Returns all helper params, resolved within the context
-    pub fn params(&self) -> &Vec<ContextJson> {
+    pub fn params(&self) -> &Vec<PathAndJson<'reg, 'rc>> {
         &self.params
     }
 
     /// Returns nth helper param, resolved within the context
-    pub fn param(&self, idx: usize) -> Option<&ContextJson> {
+    pub fn param(&self, idx: usize) -> Option<&PathAndJson<'reg, 'rc>> {
         self.params.get(idx)
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &BTreeMap<String, ContextJson> {
+    pub fn hash(&self) -> &BTreeMap<String, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
     /// Return hash value of a given key, resolved within the context
-    pub fn hash_get(&self, key: &str) -> Option<&ContextJson> {
+    pub fn hash_get(&self, key: &str) -> Option<&PathAndJson<'reg, 'rc>> {
         self.hash.get(key)
     }
 
@@ -532,18 +505,15 @@ pub trait Evaluable {
     fn eval(&self, registry: &Registry, rc: &mut RenderContext) -> Result<(), RenderError>;
 }
 
-fn call_helper_for_value(
-    hd: &Box<HelperDef>,
+fn call_helper_for_value<'reg, 'rc>(
+    hd: &'reg Box<HelperDef>,
     ht: &Helper,
-    registry: &Registry,
-    rc: &mut RenderContext,
-) -> Result<ContextJson, RenderError> {
+    registry: &'reg Registry,
+    rc: &'rc mut RenderContext,
+) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
     // test if helperDef has json result
     if let Some(inner_value) = hd.call_inner(ht, registry, rc)? {
-        Ok(ContextJson {
-            path: None,
-            value: inner_value,
-        })
+        Ok(PathAndJson::new(None, inner_value))
     } else {
         // parse value from output
         let mut so = StringOutput::new();
@@ -551,10 +521,7 @@ fn call_helper_for_value(
         hd.call(ht, registry, rc, &mut so)?;
         rc.disable_escape = false;
         let string = so.to_string().map_err(RenderError::from)?;
-        Ok(ContextJson {
-            path: None,
-            value: Json::String(string),
-        })
+        Ok(PathAndJson::new(None, ScopedJson::Derived(Json::String(string))))
     }
 }
 
@@ -566,47 +533,45 @@ impl Parameter {
     ) -> Result<String, RenderError> {
         match self {
             &Parameter::Name(ref name) => Ok(name.to_owned()),
-            &Parameter::Subexpression(_) => self.expand(registry, rc).map(|v| v.value.render()),
+            &Parameter::Subexpression(_) => self.expand(registry, rc).map(|v| v.value().render()),
             &Parameter::Literal(ref j) => Ok(j.render()),
         }
     }
 
-    pub fn expand(
-        &self,
-        registry: &Registry,
-        rc: &mut RenderContext,
-    ) -> Result<ContextJson, RenderError> {
+    pub fn expand<'reg, 'rc>(
+        &'reg self,
+        registry: &'reg Registry,
+        rc: &'rc mut RenderContext,
+    ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
                 let local_value = rc.get_local_var(&name);
                 if let Some(value) = local_value {
-                    Ok(ContextJson {
-                        path: Some(name.to_owned()),
-                        value: value.clone(),
-                    })
+                    // local var, @first, @last for example
+                    // here we count it as derived value, and simply clone it
+                    // to bypass lifetime issue
+                    Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived(value.clone())))
                 } else {
+                    // try to evaluate using block context if any
                     let block_context_value = rc.evaluate_in_block_context(name)?;
                     let value = if block_context_value.is_none() {
+                        // failback to normal evaluation
                         rc.evaluate(name, registry.strict_mode())?
                     } else {
                         block_context_value.unwrap()
                     };
-                    Ok(ContextJson {
-                        path: Some(name.to_owned()),
-                        value: value.clone(),
-                    })
+                    // value borrowed from context data
+                    Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Context(value)))
                 }
             }
-            &Parameter::Literal(ref j) => Ok(ContextJson {
-                path: None,
-                value: j.clone(),
-            }),
+            &Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
             &Parameter::Subexpression(ref t) => match t.into_element() {
                 Expression(ref expr) => expr.expand(registry, rc),
                 HelperExpression(ref ht) => {
                     let helper = Helper::from_template(ht, registry, rc)?;
                     if let Some(ref d) = rc.get_local_helper(&ht.name) {
-                        call_helper_for_value(d.borrow(), &helper, registry, rc)
+                        call_helper_for_value(
+                            d.borrow(), &helper, registry, rc)
                     } else {
                         registry
                             .get_helper(&ht.name)
@@ -700,7 +665,7 @@ impl Renderable for TemplateElement {
             }
             Expression(ref v) => {
                 let context_json = v.expand(registry, rc)?;
-                let rendered = context_json.value.render();
+                let rendered = context_json.value().render();
 
                 let output = if !rc.disable_escape {
                     registry.get_escape_fn()(&rendered)
@@ -712,7 +677,7 @@ impl Renderable for TemplateElement {
             }
             HTMLExpression(ref v) => {
                 let context_json = v.expand(registry, rc)?;
-                let rendered = context_json.value.render();
+                let rendered = context_json.value().render();
                 out.write(rendered.as_ref())?;
                 Ok(())
             }
