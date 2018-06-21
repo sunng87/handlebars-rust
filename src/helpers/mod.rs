@@ -54,7 +54,7 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 
 pub trait HelperDef: Send + Sync {
-    fn call_inner<'reg, 'rc>(
+    fn call_inner<'reg: 'rc, 'rc>(
         &self,
         _: &Helper,
         _: &'reg Registry,

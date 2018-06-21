@@ -1,14 +1,14 @@
 use serde::Serialize;
-use serde_json::value::{to_value, Map, Value as Json};
+use serde_json::value::{to_value, Value as Json};
 
 #[derive(Debug)]
-pub enum ScopedJson<'reg, 'rc> {
+pub enum ScopedJson<'reg: 'rc, 'rc> {
     Constant(&'reg Json),
     Derived(Json),
     Context(&'rc Json),
 }
 
-impl<'reg, 'rc> ScopedJson<'reg, 'rc> {
+impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
     pub fn as_ref(&self) -> &Json {
         match self {
             ScopedJson::Constant(j) => j,
@@ -25,12 +25,12 @@ impl<'reg, 'rc> ScopedJson<'reg, 'rc> {
 /// Json wrapper that holds the Json value and reference path information
 ///
 #[derive(Debug)]
-pub struct PathAndJson<'reg, 'rc> {
+pub struct PathAndJson<'reg: 'rc, 'rc> {
     path: Option<String>,
     value: ScopedJson<'reg, 'rc>,
 }
 
-impl<'reg, 'rc> PathAndJson<'reg, 'rc> {
+impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
     pub fn new(path: Option<String>, value: ScopedJson<'reg, 'rc>) -> PathAndJson<'reg, 'rc> {
         PathAndJson { path, value }
     }

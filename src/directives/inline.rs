@@ -8,24 +8,25 @@ use error::RenderError;
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
 
-fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
-    d.param(0)
+fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg, 'rc>) -> Result<String, RenderError> {
+    d.param(0)?
         .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
         .and_then(|v| {
             v.value()
                 .as_str()
+                .map(|s| s.to_owned())
                 .ok_or_else(|| RenderError::new("inline name must be string"))
         })
 }
 
 impl DirectiveDef for InlineDirective {
-    fn call(&self, d: &Directive, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call<'reg: 'rc, 'rc>(&self, d: &'rc Directive<'reg, 'rc>, _: &'reg Registry, rc: &'rc mut RenderContext<'rc>) -> Result<(), RenderError> {
         let name = get_name(d)?;
 
         let template = d.template()
             .ok_or_else(|| RenderError::new("inline should have a block"))?;
 
-        rc.set_partial(name.to_owned(), Rc::new(template.clone()));
+        rc.set_partial(name, Rc::new(template.clone()));
         Ok(())
     }
 }
