@@ -12,12 +12,12 @@ use output::Output;
 
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
-    d: &'rc Directive<'reg, 'rc>,
+    d: &'rc Directive<'reg>,
     r: &'reg Registry,
     local_rc: &'rc mut RenderContext<'rc>,
-    out: &'rc mut Output,
+    out: &mut Output,
 ) -> Result<(), RenderError> {
-    let context_param = d.param(0)?.and_then(|p| p.path());
+    let context_param = d.param(0, r, local_rc)?.and_then(|p| p.path());
     if let Some(p) = context_param {
         let old_path = local_rc.get_path().clone();
         local_rc.promote_local_vars();
@@ -30,7 +30,7 @@ fn render_partial<'reg: 'rc, 'rc>(
         local_rc.set_partial("@partial-block".to_string(), Rc::new(t.clone()));
     }
 
-    let hash = d.hash()?;
+    let hash = d.hash(r, local_rc)?;
     if hash.is_empty() {
         t.render(r, local_rc, out)
     } else {
@@ -43,17 +43,17 @@ fn render_partial<'reg: 'rc, 'rc>(
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
-    d: &'rc Directive<'reg, 'rc>,
+    d: &'rc Directive<'reg>,
     r: &'reg Registry,
     rc: &'rc mut RenderContext<'rc>,
-    out: &'rc mut Output,
+    out: &mut Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {
         t.eval(r, rc)?;
     }
 
-    let tname = d.name()?;
+    let tname = d.name(r, rc)?;
     if rc.is_current_template(tname.as_ref()) {
         return Err(RenderError::new("Cannot include self in >"));
     }
