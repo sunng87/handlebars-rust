@@ -329,3 +329,4 @@ mod context;
 mod support;
 mod directives;
 mod partial;
+mod ext;
