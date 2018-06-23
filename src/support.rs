@@ -52,3 +52,22 @@ pub mod str {
         }
     }
 }
+
+use std::cell::Ref;
+use std::ops::Deref;
+
+pub enum RefWrapper<'a, T: 'a + ?Sized> {
+    CellRef(Ref<'a, T>),
+    Ref(&'a T)
+}
+
+impl<'a, T: 'a + ?Sized> Deref for RefWrapper<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            RefWrapper::CellRef(cell_ref) => cell_ref.deref(),
+            RefWrapper::Ref(normal_ref) => normal_ref.deref()
+        }
+    }
+}
