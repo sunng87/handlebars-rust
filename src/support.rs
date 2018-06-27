@@ -71,3 +71,15 @@ impl<'a, T: 'a + ?Sized> Deref for RefWrapper<'a, T> {
         }
     }
 }
+
+impl<'a, T: 'a + ?Sized> From<Ref<'a, T>> for RefWrapper<'a, T> {
+    fn from(cell_ref: Ref<'a, T>) -> RefWrapper<'a, T> {
+        RefWrapper::CellRef(cell_ref)
+    }
+}
+
+impl<'a, T: 'a + ?Sized> From<&'a T> for RefWrapper<'a, T> {
+    fn from(normal_ref: &'a T) -> RefWrapper<'a, T> {
+        RefWrapper::Ref(normal_ref)
+    }
+}

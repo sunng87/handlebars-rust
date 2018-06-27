@@ -8,7 +8,7 @@ use error::RenderError;
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
 
-fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg>, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<String, RenderError> {
+fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg>, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<String, RenderError> {
     d.param(0, registry, render_context)?
         .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
         .and_then(|v| {
@@ -20,13 +20,13 @@ fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg>, registry: &'reg Registry, r
 }
 
 impl DirectiveDef for InlineDirective {
-    fn call<'reg: 'rc, 'rc>(&self, d: &'rc Directive<'reg>, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<(), RenderError> {
+    fn call<'reg: 'rc, 'rc>(&self, d: &'rc Directive<'reg>, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<(), RenderError> {
         let name = get_name(d, registry, render_context)?;
 
         let template = d.template()
             .ok_or_else(|| RenderError::new("inline should have a block"))?;
 
-        render_context.set_partial(name, Rc::new(template.clone()));
+        render_context.inner_mut().set_partial(name, Rc::new(template.clone()));
         Ok(())
     }
 }

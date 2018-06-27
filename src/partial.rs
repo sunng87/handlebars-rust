@@ -14,20 +14,23 @@ fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
     d: &'rc Directive<'reg>,
     r: &'reg Registry,
-    local_rc: &'rc mut RenderContext<'rc>,
+    local_rc: &'rc RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
     let context_param = d.param(0, r, local_rc)?.and_then(|p| p.path());
     if let Some(p) = context_param {
-        let old_path = local_rc.get_path().clone();
-        local_rc.promote_local_vars();
+        let block = local_rc.block_mut();
+        let inner = local_rc.inner_mut();
+
+        let old_path = block.get_path();
+        inner.promote_local_vars();
         let new_path = format!("{}/{}", old_path, p);
-        local_rc.set_path(new_path);
+        block.set_path(new_path);
     };
 
     // @partial-block
     if let Some(t) = d.template() {
-        local_rc.set_partial("@partial-block".to_string(), Rc::new(t.clone()));
+        local_rc.inner().set_partial("@partial-block".to_string(), Rc::new(t.clone()));
     }
 
     let hash = d.hash(r, local_rc)?;
@@ -45,7 +48,7 @@ fn render_partial<'reg: 'rc, 'rc>(
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &'rc Directive<'reg>,
     r: &'reg Registry,
-    rc: &'rc mut RenderContext<'rc>,
+    rc: &'rc RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
@@ -54,11 +57,12 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     }
 
     let tname = d.name(r, rc)?;
-    if rc.is_current_template(tname.as_ref()) {
+    let rc_inner = rc.inner();
+    if rc_inner.is_current_template(tname.as_ref()) {
         return Err(RenderError::new("Cannot include self in >"));
     }
 
-    let partial = rc.get_partial(tname.as_ref());
+    let partial = rc_inner.get_partial(tname.as_ref());
 
     match partial {
         Some(t) => {

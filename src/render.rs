@@ -2,6 +2,7 @@ use std::borrow::{Borrow, Cow};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
+use std::cell::{RefCell, Ref, RefMut};
 
 use serde::Serialize;
 use serde_json::value::Value as Json;
@@ -26,174 +27,89 @@ static DEFAULT_VALUE: Json = Json::Null;
 /// this context stores information of a render and a writer where generated
 /// content is written to.
 ///
-pub struct RenderContext<'a> {
-    partials: Cow<'a, HashMap<String, Rc<Template>>>,
-    path: Cow<'a, String>,
-    local_path_root: Cow<'a, VecDeque<String>>,
-    local_variables: Cow<'a, HashMap<String, Json>>,
-    local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
-    block_context: Cow<'a, VecDeque<Context>>,
-    /// the context
+#[derive(Clone, Debug)]
+pub struct RenderContext {
     context: Context,
-    /// current template name
-    current_template: Cow<'a, Option<String>>,
-    /// root template name
-    root_template: Cow<'a, Option<String>>,
-    pub disable_escape: bool,
+    inner: Rc<RefCell<RenderContextInner>>,
+    block: Rc<RefCell<BlockRenderContext>>,
 }
 
-impl<'a> RenderContext<'a> {
+pub struct RenderContextInner {
+    partials: HashMap<String, Rc<Template>>,
+    local_helpers: HashMap<String, Rc<Box<HelperDef + 'static>>>,
+    local_variables: HashMap<String, Json>,
+    /// current template name
+    current_template: Option<String>,
+    /// root template name
+    root_template: Option<String>,
+    disable_escape: bool,
+}
+
+#[derive(Debug)]
+pub struct BlockRenderContext {
+    path: String,
+    local_path_root: VecDeque<String>,
+    block_context: VecDeque<Context>,
+}
+
+impl Default for BlockRenderContext {
+    fn default() -> BlockRenderContext {
+        BlockRenderContext {
+            path: ".".to_owned(),
+            local_path_root: VecDeque::new(),
+            block_context: VecDeque::new(),
+        }
+    }
+}
+
+impl RenderContext {
     /// Create a render context from a `Write`
     pub fn new(
-        ctx: Context,
-        local_helpers: &'a mut HashMap<String, Rc<Box<HelperDef + 'static>>>,
+        context: Context,
         root_template: Option<String>,
-    ) -> RenderContext<'a> {
-        RenderContext {
-            partials: Cow::Owned(HashMap::new()),
-            path: Cow::Owned(".".to_string()),
-            local_path_root: Cow::Owned(VecDeque::new()),
-            local_variables: Cow::Owned(HashMap::new()),
-            local_helpers: local_helpers,
-            block_context: Cow::Owned(VecDeque::new()),
-            context: ctx,
-            current_template: Cow::Owned(None),
-            root_template: Cow::Owned(root_template),
+    ) -> RenderContext {
+        let inner = Rc::new(RefCell::new(RenderContextInner {
+            partials: HashMap::new(),
+            local_variables: HashMap::new(),
+            local_helpers: HashMap::new(),
+            current_template: None,
+            root_template: root_template,
             disable_escape: false,
-        }
+        }));
+
+        let block = Rc::new(RefCell::new(BlockRenderContext::default()));
+        RenderContext { context, inner, block }
     }
 
-    pub fn derive(&mut self) -> RenderContext {
-        RenderContext {
-            partials: Cow::Borrowed(&*self.partials),
-            path: Cow::Borrowed(&*self.path),
-            local_path_root: Cow::Borrowed(&*self.local_path_root),
-            local_variables: Cow::Borrowed(&*self.local_variables),
-            current_template: Cow::Borrowed(&*self.current_template),
-            root_template: Cow::Borrowed(&*self.root_template),
-            block_context: Cow::Borrowed(&*self.block_context),
+    pub fn derive(&self) -> RenderContext {
+        let inner = self.inner.clone();
+        let block = Rc::new(RefCell::new(BlockRenderContext::default()));
+        let context = self.context.clone();
 
-            disable_escape: self.disable_escape,
-            local_helpers: self.local_helpers,
-            context: self.context.clone(),
-        }
+        RenderContext { context, inner, block }
     }
 
-    pub fn with_context(&mut self, ctx: Context) -> RenderContext {
-        RenderContext {
-            partials: Cow::Borrowed(&*self.partials),
-            path: Cow::Owned(".".to_owned()),
-            local_path_root: Cow::Owned(VecDeque::new()),
-            local_variables: Cow::Borrowed(&*self.local_variables),
-            current_template: Cow::Borrowed(&*self.current_template),
-            root_template: Cow::Borrowed(&*self.root_template),
-            block_context: Cow::Owned(VecDeque::new()),
+    pub fn with_context(&self, context: Context) -> RenderContext {
+        let inner = self.inner.clone();
+        let block = Rc::new(RefCell::new(BlockRenderContext::default()));
 
-            disable_escape: self.disable_escape,
-            local_helpers: self.local_helpers,
-            context: ctx,
-        }
+        RenderContext { context, inner, block }
     }
 
-    pub fn get_partial(&self, name: &str) -> Option<Rc<Template>> {
-        self.partials.get(name).map(|t| t.clone())
+    pub fn inner<'a>(&'a self) -> Ref<'a, RenderContextInner> {
+        (*self.inner).borrow()
     }
 
-    pub fn set_partial(&mut self, name: String, result: Rc<Template>) {
-        self.partials.to_mut().insert(name, result);
+    pub fn inner_mut<'a>(&'a self) -> RefMut<'a, RenderContextInner> {
+        (*self.inner).borrow_mut()
     }
 
-    pub fn get_path(&self) -> &String {
-        &self.path
+    pub fn block<'a>(&'a self) -> Ref<'a, BlockRenderContext> {
+        (*self.block).borrow()
     }
 
-    pub fn set_path(&mut self, path: String) {
-        self.path = Cow::Owned(path)
-    }
-
-    pub fn get_local_path_root(&self) -> &VecDeque<String> {
-        &self.local_path_root
-    }
-
-    pub fn push_local_path_root(&mut self, path: String) {
-        self.local_path_root.to_mut().push_front(path)
-    }
-
-    pub fn pop_local_path_root(&mut self) {
-        self.local_path_root.to_mut().pop_front();
-    }
-
-    pub fn set_local_var(&mut self, name: String, value: Json) {
-        self.local_variables.to_mut().insert(name, value);
-    }
-
-    pub fn clear_local_vars(&mut self) {
-        self.local_variables.to_mut().clear();
-    }
-
-    pub fn promote_local_vars(&mut self) {
-        let mut new_map: HashMap<String, Json> = HashMap::new();
-        for key in self.local_variables.keys() {
-            let mut new_key = String::new();
-            new_key.push_str("@../");
-            new_key.push_str(&key[1..]);
-
-            let v = self.local_variables.get(key).unwrap().clone();
-            new_map.insert(new_key, v);
-        }
-        *self.local_variables.to_mut() = new_map;
-    }
-
-    pub fn demote_local_vars(&mut self) {
-        let mut new_map: HashMap<String, Json> = HashMap::new();
-        for key in self.local_variables.keys() {
-            if key.starts_with("@../") {
-                let mut new_key = String::new();
-                new_key.push('@');
-                new_key.push_str(&key[4..]);
-
-                let v = self.local_variables.get(key).unwrap().clone();
-                new_map.insert(new_key, v);
-            }
-        }
-        *self.local_variables.to_mut() = new_map;
-    }
-
-    pub fn get_local_var(&self, name: &String) -> Option<&Json> {
-        self.local_variables.get(name)
-    }
-
-    pub fn push_block_context<T>(&mut self, ctx: &T) -> Result<(), RenderError>
-    where
-        T: Serialize,
-    {
-        let r = self.block_context.to_mut().push_front(Context::wraps(ctx)?);
-        Ok(r)
-    }
-
-    pub fn pop_block_context(&mut self) {
-        self.block_context.to_mut().pop_front();
-    }
-
-    pub fn evaluate_in_block_context(
-        &self,
-        local_path: &str,
-    ) -> Result<Option<&Json>, RenderError> {
-        for bc in self.block_context.iter() {
-            let v = bc.navigate(".", &self.local_path_root, local_path)?;
-            if v.is_some() {
-                return Ok(v);
-            }
-        }
-
-        Ok(None)
-    }
-
-    pub fn is_current_template(&self, p: &str) -> bool {
-        (&*self.current_template)
-            .as_ref()
-            .map(|s| s == p)
-            .unwrap_or(false)
+    pub fn block_mut<'a>(&'a self) -> RefMut<'a, BlockRenderContext> {
+        (*self.block).borrow_mut()
     }
 
     pub fn context(&self) -> &Context {
@@ -204,26 +120,10 @@ impl<'a> RenderContext<'a> {
         &mut self.context
     }
 
-    pub fn register_local_helper(
-        &mut self,
-        name: &str,
-        def: Box<HelperDef + 'static>,
-    ) -> Option<Rc<Box<HelperDef + 'static>>> {
-        self.local_helpers.insert(name.to_string(), Rc::new(def))
-    }
-
-    pub fn unregister_local_helper(&mut self, name: &str) {
-        self.local_helpers.remove(name);
-    }
-
-    pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<HelperDef + 'static>>> {
-        self.local_helpers.get(name).map(|r| r.clone())
-    }
-
     pub fn evaluate(&self, path: &str, strict: bool) -> Result<&Json, RenderError> {
         let value_container =
             self.context
-                .navigate(self.get_path(), self.get_local_path_root(), path);
+                .navigate(self.block().get_path(), self.block().get_local_path_root(), path);
         if strict {
             value_container
                 .and_then(|v| v.ok_or(RenderError::new("Value not found in strict mode.")))
@@ -242,34 +142,160 @@ impl<'a> RenderContext<'a> {
         }
     }
 
+}
+
+impl RenderContextInner {
+    pub fn get_partial(&self, name: &str) -> Option<Rc<Template>> {
+        self.partials.get(name).map(|t| t.clone())
+    }
+
+    pub fn set_partial(&mut self, name: String, result: Rc<Template>) {
+        self.partials.insert(name, result);
+    }
+
+    pub fn set_local_var(&mut self, name: String, value: Json) {
+        self.local_variables.insert(name, value);
+    }
+
+    pub fn clear_local_vars(&mut self) {
+        self.local_variables.clear();
+    }
+
+    pub fn promote_local_vars(&mut self) {
+        let mut new_map: HashMap<String, Json> = HashMap::new();
+        for key in self.local_variables.keys() {
+            let mut new_key = String::new();
+            new_key.push_str("@../");
+            new_key.push_str(&key[1..]);
+
+            let v = self.local_varsiables.get(key).unwrap().clone();
+            new_map.insert(new_key, v);
+        }
+        self.local_variables = new_map;
+    }
+
+    pub fn demote_local_vars(&mut self) {
+        let mut new_map: HashMap<String, Json> = HashMap::new();
+        for key in self.local_variables.keys() {
+            if key.starts_with("@../") {
+                let mut new_key = String::new();
+                new_key.push('@');
+                new_key.push_str(&key[4..]);
+
+                let v = self.local_variables.get(key).unwrap().clone();
+                new_map.insert(new_key, v);
+            }
+        }
+        self.local_variables = new_map;
+    }
+
+    pub fn get_local_var(&self, name: &String) -> Option<&Json> {
+        self.local_variables.get(name)
+    }
+
+    pub fn is_current_template(&self, p: &str) -> bool {
+        self.current_template
+            .as_ref()
+            .map(|s| s == p)
+            .unwrap_or(false)
+    }
+
+    pub fn register_local_helper(
+        &mut self,
+        name: &str,
+        def: Box<HelperDef + 'static>,
+    ) -> Option<Rc<Box<HelperDef + 'static>>> {
+        self.local_helpers.insert(name.to_string(), Rc::new(def))
+    }
+
+    pub fn unregister_local_helper(&mut self, name: &str) {
+        self.local_helpers.remove(name);
+    }
+
+    pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<HelperDef + 'static>>> {
+        self.local_helpers.get(name).map(|r| r.clone())
+    }
+
     pub fn get_current_template_name(&self) -> Option<&String> {
-        (&*self.current_template).as_ref()
+        self.current_template.as_ref()
     }
 
     pub fn set_current_template_name(&mut self, name: Option<String>) {
-        *self.current_template.to_mut() = name;
+        self.current_template = name;
     }
 
     pub fn get_root_template_name(&self) -> Option<&String> {
-        (&*self.root_template).as_ref()
+        self.root_template.as_ref()
     }
 
     pub fn set_root_template_name(&mut self, name: Option<String>) {
-        *self.root_template.to_mut() = name;
+        self.root_template = name;
+    }
+
+    pub fn is_disable_escape(&self) -> bool {
+        self.disable_escape
+    }
+
+    pub fn set_disable_escape(&mut self, disable: bool) {
+        self.disable_escape = disable
     }
 }
 
-impl<'a> fmt::Debug for RenderContext<'a> {
+impl BlockRenderContext {
+    pub fn get_path(&self) -> &String {
+        &self.path
+    }
+
+    pub fn set_path(&mut self, path: String) {
+        self.path = path;
+    }
+
+    pub fn get_local_path_root(& self) -> &VecDeque<String> {
+        &self.local_path_root
+    }
+
+    pub fn push_local_path_root(&mut self, path: String) {
+        self.local_path_root.push_front(path)
+    }
+
+    pub fn pop_local_path_root(&mut self) {
+        self.local_path_root.pop_front();
+    }
+
+    pub fn push_block_context<T>(&mut self, ctx: &T) -> Result<(), RenderError>
+    where
+        T: Serialize,
+    {
+        let r = self.block_context.push_front(Context::wraps(ctx)?);
+        Ok(r)
+    }
+
+    pub fn pop_block_context(&mut self) {
+        self.block_context.pop_front();
+    }
+
+    pub fn evaluate_in_block_context(
+        &self,
+        local_path: &str,
+    ) -> Result<Option<&Json>, RenderError> {
+        for bc in self.block_context.iter() {
+            let v = bc.navigate(".", &self.local_path_root, local_path)?;
+            if v.is_some() {
+                return Ok(v);
+            }
+        }
+
+        Ok(None)
+    }
+}
+
+impl fmt::Debug for RenderContextInner {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        f.debug_struct("RenderContext")
-            .field("context", &self.context)
-            .field("path", &self.path)
+        f.debug_struct("RenderContextInner")
             .field("partials", &self.partials)
             .field("local_variables", &self.local_variables)
             .field("root_template", &self.root_template)
             .field("current_template", &self.current_template)
-            .field("block_context", &self.block_context)
-            .field("local_path_root", &self.local_path_root)
             .field("disable_eacape", &self.disable_escape)
             .finish()
     }
@@ -294,7 +320,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg> {
     }
 
     /// Returns all helper params, resolved within the context
-    pub fn params(&'rc self, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<Vec<PathAndJson<'reg, 'rc>>, RenderError> {
+    pub fn params(&'rc self, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<Vec<PathAndJson<'reg, 'rc>>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in self.template.params.iter() {
             let r = p.expand(registry, render_context)?;
@@ -321,7 +347,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn param(&'rc self, idx: usize, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
+    pub fn param(&'rc self, idx: usize, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
         if let Some(p) = self.template.params.get(idx) {
             let r = p.expand(registry, render_context)?;
             Ok(Some(r))
@@ -331,7 +357,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&'rc self, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<BTreeMap<String, PathAndJson<'reg, 'rc>>, RenderError> {
+    pub fn hash(&'rc self, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<BTreeMap<String, PathAndJson<'reg, 'rc>>, RenderError> {
         let mut evaluated_hash = BTreeMap::new();
         for (k, p) in self.template.hash.iter() {
             let r = p.expand(registry, render_context)?;
@@ -358,7 +384,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn hash_get(&'rc self, key: &str, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
+    pub fn hash_get(&'rc self, key: &str, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
         if let Some(p) = self.template.hash.get(key) {
             let r = p.expand(registry, render_context)?;
             Ok(Some(r))
@@ -420,12 +446,12 @@ impl<'reg: 'rc, 'rc> Directive<'reg> {
     }
 
     /// Returns helper name
-    pub fn name(&'rc self, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<String, RenderError> {
+    pub fn name(&'rc self, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<String, RenderError> {
         self.template.name.expand_as_name(registry, render_context)
     }
 
     /// Returns all helper params, resolved within the context
-    pub fn params(&'rc self, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<Vec<PathAndJson<'reg, 'rc>>, RenderError> {
+    pub fn params(&'rc self, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<Vec<PathAndJson<'reg, 'rc>>, RenderError> {
         let mut evaluated_params = Vec::new();
         for p in self.template.params.iter() {
             let r = p.expand(registry, render_context)?;
@@ -435,7 +461,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg> {
     }
 
     /// Returns nth helper param, resolved within the context
-    pub fn param(&'rc self, idx: usize, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
+    pub fn param(&'rc self, idx: usize, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
         if let Some(p) = self.template.params.get(idx) {
             let r = p.expand(registry, render_context)?;
             Ok(Some(r))
@@ -445,7 +471,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&'rc self, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<BTreeMap<String, PathAndJson<'reg, 'rc>>, RenderError> {
+    pub fn hash(&'rc self, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<BTreeMap<String, PathAndJson<'reg, 'rc>>, RenderError> {
         let mut evaluated_hash = BTreeMap::new();
         for (k, p) in self.template.hash.iter() {
             let r = p.expand(registry, render_context)?;
@@ -455,7 +481,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg> {
     }
 
     /// Return hash value of a given key, resolved within the context
-    pub fn hash_get(&'rc self, key: &str, registry: &'reg Registry, render_context: &'rc mut RenderContext<'rc>) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
+    pub fn hash_get(&'rc self, key: &str, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
         if let Some(p) = self.template.hash.get(key) {
             let r = p.expand(registry, render_context)?;
             Ok(Some(r))
@@ -476,12 +502,12 @@ pub trait Renderable {
     fn render<'reg: 'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
-        rc: &'rc mut RenderContext<'rc>,
+        rc: &'rc RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError>;
 
     /// render into string
-    fn renders<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc mut RenderContext<'rc>) -> Result<String, RenderError> {
+    fn renders<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc RenderContext) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
         self.render(registry, rc, &mut so)?;
         so.to_string().map_err(RenderError::from)
@@ -490,14 +516,14 @@ pub trait Renderable {
 
 /// Evaluate directive or decorator
 pub trait Evaluable {
-    fn eval<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc mut RenderContext<'rc>) -> Result<(), RenderError>;
+    fn eval<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc RenderContext) -> Result<(), RenderError>;
 }
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
     hd: &'reg Box<HelperDef>,
     ht: &Helper,
     registry: &'reg Registry,
-    rc: &'rc mut RenderContext,
+    rc: &'rc RenderContext,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
     // test if helperDef has json result
     if let Some(inner_value) = hd.call_inner(ht, registry, rc)? {
@@ -505,9 +531,9 @@ fn call_helper_for_value<'reg: 'rc, 'rc>(
     } else {
         // parse value from output
         let mut so = StringOutput::new();
-        rc.disable_escape = true;
+        rc.inner_mut().set_disable_escape(true);
         hd.call(ht, registry, rc, &mut so)?;
-        rc.disable_escape = false;
+        rc.inner_mut().set_disable_escape(false);
         let string = so.to_string().map_err(RenderError::from)?;
         Ok(PathAndJson::new(None, ScopedJson::Derived(Json::String(string))))
     }
@@ -517,7 +543,7 @@ impl Parameter {
     pub fn expand_as_name<'reg: 'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
-        rc: &'rc mut RenderContext<'rc>,
+        rc: &'rc RenderContext,
     ) -> Result<String, RenderError> {
         match self {
             &Parameter::Name(ref name) => Ok(name.to_owned()),
@@ -529,11 +555,13 @@ impl Parameter {
     pub fn expand<'reg: 'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
-        rc: &'rc mut RenderContext<'rc>,
+        rc: &'rc RenderContext,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
-                let local_value = rc.get_local_var(&name);
+                let inner = rc.inner_mut();
+                let block = rc.block();
+                let local_value = inner.get_local_var(&name);
                 if let Some(value) = local_value {
                     // local var, @first, @last for example
                     // here we count it as derived value, and simply clone it
@@ -541,7 +569,7 @@ impl Parameter {
                     Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived(value.clone())))
                 } else {
                     // try to evaluate using block context if any
-                    let block_context_value = rc.evaluate_in_block_context(name)?;
+                    let block_context_value = block.evaluate_in_block_context(name)?;
                     let value = if block_context_value.is_none() {
                         // failback to normal evaluation
                         rc.evaluate(name, registry.strict_mode())?
@@ -557,7 +585,8 @@ impl Parameter {
                 Expression(ref expr) => expr.expand(registry, rc),
                 HelperExpression(ref ht) => {
                     let helper = Helper::from_template(ht);
-                    if let Some(ref d) = rc.get_local_helper(&ht.name) {
+                    let inner = rc.inner();
+                    if let Some(ref d) = inner.get_local_helper(&ht.name) {
                         call_helper_for_value(
                             d.borrow(), &helper, registry, rc)
                     } else {
@@ -585,10 +614,10 @@ impl Renderable for Template {
     fn render<'reg: 'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
-        rc: &'rc mut RenderContext<'rc>,
+        rc: &'rc RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
-        rc.set_current_template_name(self.name.as_ref().map(|s| s.clone()));
+        rc.inner_mut().set_current_template_name(self.name.map(|s| s.clone()));
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
@@ -616,7 +645,7 @@ impl Renderable for Template {
 }
 
 impl Evaluable for Template {
-    fn eval<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc mut RenderContext<'rc>) -> Result<(), RenderError> {
+    fn eval<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc RenderContext) -> Result<(), RenderError> {
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
@@ -643,7 +672,7 @@ impl Renderable for TemplateElement {
     fn render<'reg: 'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
-        rc: &'rc mut RenderContext<'rc>,
+        rc: &'rc RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
         match *self {
@@ -655,7 +684,7 @@ impl Renderable for TemplateElement {
                 let context_json = v.expand(registry, rc)?;
                 let rendered = context_json.value().render();
 
-                let output = if !rc.disable_escape {
+                let output = if !rc.inner().is_disable_escape() {
                     registry.get_escape_fn()(&rendered)
                 } else {
                     rendered
@@ -671,7 +700,8 @@ impl Renderable for TemplateElement {
             }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
                 let helper = Helper::from_template(ht);
-                if let Some(ref d) = rc.get_local_helper(&ht.name) {
+                let inner = rc.inner();
+                if let Some(ref d) = inner.get_local_helper(&ht.name) {
                     d.call(&helper, registry, rc, out)
                 } else {
                     registry
@@ -699,7 +729,7 @@ impl Renderable for TemplateElement {
 }
 
 impl Evaluable for TemplateElement {
-    fn eval<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc mut RenderContext<'rc>) -> Result<(), RenderError> {
+    fn eval<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc RenderContext) -> Result<(), RenderError> {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
                 let di = Directive::from_template(dt);
