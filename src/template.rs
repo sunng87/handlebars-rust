@@ -37,7 +37,7 @@ impl Subexpression {
         !(self.params.is_empty() && self.hash.is_empty())
     }
 
-    pub fn into_element(&self) -> TemplateElement {
+    pub fn as_element(&self) -> TemplateElement {
         if self.is_helper() {
             HelperExpression(HelperTemplate::from(self))
         } else {

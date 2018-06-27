@@ -56,7 +56,7 @@ pub type HelperResult = Result<(), RenderError>;
 pub trait HelperDef: Send + Sync {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper,
+        _: &Helper<'reg, 'rc>,
         _: &'reg Registry,
         _: &'rc RenderContext,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
@@ -65,7 +65,7 @@ pub trait HelperDef: Send + Sync {
 
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
-        h: &'rc Helper<'reg>,
+        h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry,
         rc: &'rc RenderContext,
         out: &mut Output,
@@ -82,13 +82,13 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'reg, 'rc> Fn(&'rc Helper<'reg>, &'reg Registry, &'rc RenderContext, &mut Output)
+        + for<'reg, 'rc> Fn(&'rc Helper<'reg, 'rc>, &'reg Registry, &'rc RenderContext, &mut Output)
         -> HelperResult,
 > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
-        h: &'rc Helper<'reg>,
+        h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry,
         rc: &'rc RenderContext,
         out: &mut Output,

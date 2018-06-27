@@ -50,18 +50,18 @@ use error::RenderError;
 /// ```
 ///
 pub trait DirectiveDef: Send + Sync {
-    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'rc Directive<'reg>, r: &'reg Registry, rc: &'rc RenderContext) -> Result<(), RenderError>;
+    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'rc Directive<'reg, 'rc>, r: &'reg Registry, rc: &'rc RenderContext) -> Result<(), RenderError>;
 }
 
 /// implement DirectiveDef for bare function so we can use function as directive
 impl<
     F: Send
         + Sync
-        + for<'reg, 'rc> Fn(&'rc Directive<'reg>, &'reg Registry, &'rc RenderContext)
+        + for<'reg, 'rc> Fn(&'rc Directive<'reg, 'rc>, &'reg Registry, &'rc RenderContext)
         -> Result<(), RenderError>,
 > DirectiveDef for F
 {
-    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'rc Directive<'reg>, r: &'reg Registry, rc: &'rc RenderContext) -> Result<(), RenderError> {
+    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'rc Directive<'reg, 'rc>, r: &'reg Registry, rc: &'rc RenderContext) -> Result<(), RenderError> {
         (*self)(d, r, rc)
     }
 }
