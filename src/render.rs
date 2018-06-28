@@ -528,8 +528,8 @@ pub trait Evaluable {
 }
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
-    hd: &'reg Box<HelperDef>,
-    ht: &'rc Helper<'reg, 'rc>,
+    hd: &Box<HelperDef>,
+    ht: &Helper<'reg, 'rc>,
     registry: &'reg Registry,
     rc: &'rc RenderContext,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
@@ -596,10 +596,11 @@ impl Parameter {
                 Expression(ref expr) => expr.expand(registry, rc),
                 HelperExpression(ref ht) => {
                     let inner = rc.inner();
-                    let helper = Helper::from_template(ht, registry, rc);
+                    let helper = Helper::from_template(&ht, registry, rc);
                     if let Some(ref d) = inner.get_local_helper(&ht.name) {
+                        let helper_def = d.borrow();
                         call_helper_for_value(
-                            d.borrow(), &helper, registry, rc)
+                            helper_def, &helper, registry, rc)
                     } else {
                         registry
                             .get_helper(&ht.name)
@@ -628,7 +629,9 @@ impl Renderable for Template {
         rc: &'rc RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
-        rc.inner_mut().set_current_template_name(self.name.map(|s| s.clone()));
+        let template_name = self.name.clone();
+        let mut inner = rc.inner_mut();
+        (*inner).set_current_template_name(template_name);
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {

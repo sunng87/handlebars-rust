@@ -27,22 +27,41 @@ pub struct Template {
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Subexpression {
-    pub name: String,
-    pub params: Vec<Parameter>,
-    pub hash: BTreeMap<String, Parameter>,
+    // we use box here avoid resursive struct definition
+    pub element: Box<TemplateElement>,
 }
 
 impl Subexpression {
-    pub fn is_helper(&self) -> bool {
-        !(self.params.is_empty() && self.hash.is_empty())
+    pub fn new(name: String, params: Vec<Parameter>, hash: BTreeMap<String, Parameter>) -> Subexpression {
+        if params.is_empty() && hash.is_empty() {
+            Subexpression {
+                element: Box::new(Expression(Parameter::Name(name.clone()))),
+            }
+        } else {
+            Subexpression {
+                element: Box::new(HelperExpression(
+                    HelperTemplate {
+                        name: name.clone(),
+                        params: params.clone(),
+                        hash: hash.clone(),
+                        template: None,
+                        inverse: None,
+                        block_param: None,
+                        block: false,
+                })),
+            }
+        }
     }
 
-    pub fn as_element(&self) -> TemplateElement {
-        if self.is_helper() {
-            HelperExpression(HelperTemplate::from(self))
-        } else {
-            Expression(Parameter::Name(self.name.clone()))
+    pub fn is_helper(&self) -> bool {
+        match self.element.as_ref() {
+            TemplateElement::HelperExpression(_) => true,
+            _ => false,
         }
+    }
+
+    pub fn as_element(&self) -> &TemplateElement {
+        self.element.as_ref()
     }
 }
 
@@ -78,20 +97,6 @@ pub struct HelperTemplate {
     pub template: Option<Template>,
     pub inverse: Option<Template>,
     pub block: bool,
-}
-
-impl<'a> From<&'a Subexpression> for HelperTemplate {
-    fn from(s: &Subexpression) -> HelperTemplate {
-        HelperTemplate {
-            name: s.name.clone(),
-            params: s.params.clone(),
-            hash: s.hash.clone(),
-            block_param: None,
-            template: None,
-            inverse: None,
-            block: false,
-        }
-    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -148,11 +153,7 @@ impl Template {
     ) -> Result<Parameter, TemplateError> {
         let espec = Template::parse_expression(source, it.by_ref(), limit)?;
         if let Parameter::Name(name) = espec.name {
-            Ok(Parameter::Subexpression(Subexpression {
-                name: name,
-                params: espec.params,
-                hash: espec.hash,
-            }))
+            Ok(Parameter::Subexpression(Subexpression::new(name, espec.params, espec.hash)))
         } else {
             // line/col no
             Err(TemplateError::of(TemplateErrorReason::NestedSubexpression))

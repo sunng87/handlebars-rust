@@ -17,15 +17,17 @@ fn render_partial<'reg: 'rc, 'rc>(
     local_rc: &'rc RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
-    let context_param = d.param(0)?.and_then(|p| p.path());
+    let context_param = d.param(0)?;
     if let Some(p) = context_param {
-        let block = local_rc.block_mut();
-        let inner = local_rc.inner_mut();
+        if let Some(ref param_path) = p.path() {
+            let mut block = local_rc.block_mut();
+            let mut inner = local_rc.inner_mut();
 
-        let old_path = block.get_path();
-        inner.promote_local_vars();
-        let new_path = format!("{}/{}", old_path, p);
-        block.set_path(new_path);
+            let old_path = block.get_path().clone();
+            inner.promote_local_vars();
+            let new_path = format!("{}/{}", old_path, param_path);
+            block.set_path(new_path);
+        }
     };
 
     // @partial-block
