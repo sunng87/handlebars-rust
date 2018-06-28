@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::prelude::*;
 use std::io;
-use std::fs::{File, read_dir};
+use std::fs::File;
 use std::path::Path;
 use std::fmt::{self, Debug, Formatter};
 
@@ -17,7 +17,7 @@ use directives::{self, DirectiveDef};
 use support::str::StringWriter;
 use error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 
-use walkdir::{WalkDir, DirEntry};
+use walkdir::WalkDir;
 
 lazy_static!{
     static ref DEFAULT_REPLACE: Regex = Regex::new(">|<|\"|&").unwrap();
