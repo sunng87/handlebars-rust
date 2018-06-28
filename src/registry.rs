@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::prelude::*;
-use std::fs::File;
+use std::io;
+use std::fs::{File, read_dir};
 use std::path::Path;
 use std::fmt::{self, Debug, Formatter};
 
@@ -15,6 +16,8 @@ use helpers::{self, HelperDef};
 use directives::{self, DirectiveDef};
 use support::str::StringWriter;
 use error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
+
+use walkdir::{WalkDir, DirEntry};
 
 lazy_static!{
     static ref DEFAULT_REPLACE: Regex = Regex::new(">|<|\"|&").unwrap();
@@ -172,6 +175,43 @@ impl Registry {
         let mut file =
             try!(File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned())));
         self.register_template_source(name, &mut file)
+    }
+
+    /// Register a template from a directory
+    pub fn register_templates_directory<P>(
+        &mut self,
+        tpl_extension: &'static str,
+        dir_path: P,
+    ) -> Result<(), TemplateFileError>
+    where
+        P: AsRef<Path>,
+    {
+        let dir_path = dir_path.as_ref();
+        let prefix_len = if dir_path.to_string_lossy().ends_with("/") {
+            dir_path.to_string_lossy().len()
+        } else {
+            dir_path.to_string_lossy().len() + 1
+        };
+
+        let walker = WalkDir::new(dir_path);
+        let mut dir_iter = walker.min_depth(1).into_iter();
+        match dir_iter.find(|e| e.is_err())  {
+            Some(Err(err)) => {
+                let path_string: String = dir_path.to_string_lossy().to_owned().to_string();
+                Err(TemplateFileError::IOError(io::Error::from(err), path_string))
+            },
+            _ => {
+                for p in dir_iter.filter_map(|e| e.ok()) {
+                    let tpl_path = p.path();
+                    let tpl_file_path = p.path().to_string_lossy();
+                    let tpl_name = &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
+                    let tpl_canonical_name = tpl_name.replace("\\", "/");
+                    self.register_template_file(&tpl_canonical_name, &tpl_path)?;
+                }
+
+                 Ok(())
+            },
+        }
     }
 
     /// Register a template from `std::io::Read` source
