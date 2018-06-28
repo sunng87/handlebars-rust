@@ -1,3 +1,4 @@
+use std::convert::From;
 use std::io::Error as IOError;
 use std::error::Error;
 use std::fmt;
@@ -242,3 +243,4 @@ impl TemplateRenderError {
         }
     }
 }
+

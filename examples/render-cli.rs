@@ -41,9 +41,10 @@ fn main() {
     let mut handlebars = Handlebars::new();
 
     handlebars
-        .register_template_file(&filename, &filename)
+        .register_templates_directory()
         .ok()
         .unwrap();
+
     match handlebars.render(&filename, &data) {
         Ok(data) => {
             println!("{}", data);
