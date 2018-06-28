@@ -2,7 +2,7 @@ use render::{Directive, RenderContext};
 use registry::Registry;
 use error::RenderError;
 
-// pub use self::inline::INLINE_DIRECTIVE;
+pub use self::inline::INLINE_DIRECTIVE;
 
 /// Decorator Definition
 ///

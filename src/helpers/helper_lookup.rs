@@ -2,7 +2,7 @@ use serde_json::value::Value as Json;
 
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::JsonRender;
+use value::JsonRender;
 use render::{Helper, RenderContext};
 use error::RenderError;
 use output::Output;
@@ -11,16 +11,16 @@ use output::Output;
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         _: &Registry,
-        _: &mut RenderContext,
+        _: &RenderContext,
         out: &mut Output,
     ) -> HelperResult {
-        let collection_value = h.param(0)
+        let collection_value = h.param(0)?
             .ok_or_else(|| RenderError::new("Param not found for helper \"lookup\""))?;
-        let index = h.param(1)
+        let index = h.param(1)?
             .ok_or_else(|| RenderError::new("Insufficient params for helper \"lookup\""))?;
 
         let null = Json::Null;

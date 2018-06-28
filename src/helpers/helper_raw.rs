@@ -7,11 +7,11 @@ use output::Output;
 pub struct RawHelper;
 
 impl HelperDef for RawHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         r: &Registry,
-        rc: &mut RenderContext,
+        rc: &RenderContext,
         out: &mut Output,
     ) -> HelperResult {
         let tpl = h.template();

@@ -4,7 +4,7 @@ use serde_json::value::Value as Json;
 
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::{to_json, JsonTruthy};
+use value::{to_json, JsonTruthy};
 use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
 use output::Output;
@@ -13,53 +13,55 @@ use output::Output;
 pub struct EachHelper;
 
 impl HelperDef for EachHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         r: &Registry,
-        rc: &mut RenderContext,
+        rc: &RenderContext,
         out: &mut Output,
     ) -> HelperResult {
-        let value = h.param(0)
+        let value = h.param(0)?
             .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
 
         let template = h.template();
 
         match template {
             Some(t) => {
-                rc.promote_local_vars();
+                rc.inner_mut().promote_local_vars();
                 let local_path_root = value
                     .path_root()
-                    .map(|p| format!("{}/{}", rc.get_path(), p));
+                    .map(|p| format!("{}/{}", rc.block().get_path(), p));
 
                 debug!("each value {:?}", value.value());
                 let rendered = match (value.value().is_truthy(), value.value()) {
                     (true, &Json::Array(ref list)) => {
                         let len = list.len();
                         for i in 0..len {
-                            let mut local_rc = rc.derive();
+                            let local_rc = rc.derive();
+                            let mut local_rc_inner = local_rc.inner_mut();
+                            let mut block_rc = local_rc.block_mut();
                             if let Some(ref p) = local_path_root {
-                                local_rc.push_local_path_root(p.clone());
+                                block_rc.push_local_path_root(p.clone());
                             }
 
-                            local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize)));
-                            local_rc.set_local_var("@last".to_string(), to_json(&(i == len - 1)));
-                            local_rc.set_local_var("@index".to_string(), to_json(&i));
+                            local_rc_inner.set_local_var("@first".to_string(), to_json(&(i == 0usize)));
+                            local_rc_inner.set_local_var("@last".to_string(), to_json(&(i == len - 1)));
+                            local_rc_inner.set_local_var("@index".to_string(), to_json(&i));
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
-                                    format!("{}/{}/[{}]", local_rc.get_path(), inner_path, i);
+                                    format!("{}/{}/[{}]", block_rc.get_path(), inner_path, i);
                                 debug!("each path {:?}", new_path);
-                                local_rc.set_path(new_path);
+                                block_rc.set_path(new_path);
                             }
 
                             if let Some(block_param) = h.block_param() {
                                 let mut map = BTreeMap::new();
                                 map.insert(block_param.to_string(), to_json(&list[i]));
-                                local_rc.push_block_context(&map)?;
+                                block_rc.push_block_context(&map)?;
                             }
 
-                            t.render(r, &mut local_rc, out)?;
+                            t.render(r, &local_rc, out)?;
 
                             // local_rc is dropped at the end of each iteration
                             // so we don't need to cleanup
@@ -77,31 +79,34 @@ impl HelperDef for EachHelper {
                     (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
                         for k in obj.keys() {
-                            let mut local_rc = rc.derive();
+                            let local_rc = rc.derive();
+                            let mut local_rc_inner = local_rc.inner_mut();
+                            let mut block_rc = local_rc.block_mut();
+
                             if let Some(ref p) = local_path_root {
-                                local_rc.push_local_path_root(p.clone());
+                                block_rc.push_local_path_root(p.clone());
                             }
-                            local_rc.set_local_var("@first".to_string(), to_json(&first));
+                            local_rc_inner.set_local_var("@first".to_string(), to_json(&first));
                             if first {
                                 first = false;
                             }
 
-                            local_rc.set_local_var("@key".to_string(), to_json(k));
+                            local_rc_inner.set_local_var("@key".to_string(), to_json(k));
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
-                                    format!("{}/{}/[{}]", local_rc.get_path(), inner_path, k);
-                                local_rc.set_path(new_path);
+                                    format!("{}/{}/[{}]", block_rc.get_path(), inner_path, k);
+                                block_rc.set_path(new_path);
                             }
 
                             if let Some((bp_key, bp_val)) = h.block_param_pair() {
                                 let mut map = BTreeMap::new();
                                 map.insert(bp_key.to_string(), to_json(k));
                                 map.insert(bp_val.to_string(), to_json(obj.get(k).unwrap()));
-                                local_rc.push_block_context(&map)?;
+                                block_rc.push_block_context(&map)?;
                             }
 
-                            t.render(r, &mut local_rc, out)?;
+                            t.render(r, &local_rc, out)?;
 
                             // if h.block_param().is_some() {
                             //     local_rc.pop_block_context();
@@ -126,7 +131,7 @@ impl HelperDef for EachHelper {
                     ))),
                 };
 
-                rc.demote_local_vars();
+                rc.inner_mut().demote_local_vars();
                 rendered
             }
             None => Ok(()),

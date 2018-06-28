@@ -1,6 +1,6 @@
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::JsonRender;
+use value::JsonRender;
 use render::{Helper, RenderContext};
 use error::RenderError;
 use output::Output;
@@ -9,14 +9,14 @@ use output::Output;
 pub struct LogHelper;
 
 impl HelperDef for LogHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         _: &Registry,
-        _: &mut RenderContext,
+        _: &RenderContext,
         _: &mut Output,
     ) -> HelperResult {
-        let param = h.param(0)
+        let param = h.param(0)?
             .ok_or_else(|| RenderError::new("Param not found for helper \"log\""))?;
 
         info!(

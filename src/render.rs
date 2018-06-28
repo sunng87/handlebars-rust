@@ -630,8 +630,7 @@ impl Renderable for Template {
         out: &mut Output,
     ) -> Result<(), RenderError> {
         let template_name = self.name.clone();
-        let mut inner = rc.inner_mut();
-        (*inner).set_current_template_name(template_name);
+        rc.inner_mut().set_current_template_name(template_name);
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {

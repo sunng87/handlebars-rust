@@ -32,6 +32,7 @@ fn render_partial<'reg: 'rc, 'rc>(
 
     // @partial-block
     if let Some(t) = d.template() {
+        // FIXME: avoid clone here possibly
         local_rc.inner_mut().set_partial("@partial-block".to_string(), Rc::new(t.clone()));
     }
 

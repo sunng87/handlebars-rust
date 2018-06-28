@@ -6,12 +6,12 @@ use value::{JsonRender, ScopedJson};
 
 use serde_json::Value as Json;
 
-// pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
-// pub use self::helper_each::EACH_HELPER;
-// pub use self::helper_with::WITH_HELPER;
-// pub use self::helper_lookup::LOOKUP_HELPER;
-// pub use self::helper_raw::RAW_HELPER;
-// pub use self::helper_log::LOG_HELPER;
+pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
+pub use self::helper_each::EACH_HELPER;
+pub use self::helper_with::WITH_HELPER;
+pub use self::helper_lookup::LOOKUP_HELPER;
+pub use self::helper_raw::RAW_HELPER;
+pub use self::helper_log::LOG_HELPER;
 
 pub type HelperResult = Result<(), RenderError>;
 
@@ -64,7 +64,7 @@ pub trait HelperDef: Send + Sync {
     }
 
     fn call<'reg: 'rc, 'rc>(
-        &'reg self,
+        &self,
         h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry,
         rc: &'rc RenderContext,
@@ -87,7 +87,7 @@ impl<
 > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
-        &'reg self,
+        &self,
         h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry,
         rc: &'rc RenderContext,
@@ -97,12 +97,12 @@ impl<
     }
 }
 
-// mod helper_if;
-// mod helper_each;
-// mod helper_with;
-// mod helper_lookup;
-// mod helper_raw;
-// mod helper_log;
+mod helper_if;
+mod helper_each;
+mod helper_with;
+mod helper_lookup;
+mod helper_raw;
+mod helper_log;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
