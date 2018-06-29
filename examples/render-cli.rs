@@ -44,7 +44,6 @@ fn main() {
         .register_template_file(&filename, &filename)
         .ok()
         .unwrap();
-
     match handlebars.render(&filename, &data) {
         Ok(data) => {
             println!("{}", data);

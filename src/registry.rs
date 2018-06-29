@@ -209,7 +209,7 @@ impl Registry {
                     self.register_template_file(&tpl_canonical_name, &tpl_path)?;
                 }
 
-                 Ok(())
+                Ok(())
             },
         }
     }
