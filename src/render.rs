@@ -765,7 +765,7 @@ fn test_raw_string() {
     let mut out = StringOutput::new();
     let ctx = Context::null();
     {
-        let mut rc = RenderContext::new(ctx, None);
+        let rc = RenderContext::new(ctx, None);
         let raw_string = RawString("<h1>hello world</h1>".to_string());
 
         raw_string.render(&r, &rc, &mut out).ok().unwrap();
@@ -782,7 +782,7 @@ fn test_expression() {
     m.insert("hello".to_string(), value);
     let ctx = Context::wraps(&m).unwrap();
     {
-        let mut rc = RenderContext::new(ctx, None);
+        let rc = RenderContext::new(ctx, None);
         let element = Expression(Parameter::Name("hello".into()));
 
         element.render(&r, &rc, &mut out).ok().unwrap();
@@ -800,7 +800,7 @@ fn test_html_expression() {
     m.insert("hello".to_string(), value.to_string());
     let ctx = Context::wraps(&m).unwrap();
     {
-        let mut rc = RenderContext::new(ctx, None);
+        let rc = RenderContext::new(ctx, None);
         let element = HTMLExpression(Parameter::Name("hello".into()));
         element.render(&r, &rc, &mut out).ok().unwrap();
     }
@@ -818,7 +818,7 @@ fn test_template() {
     let ctx = Context::wraps(&m).unwrap();
 
     {
-        let mut rc = RenderContext::new(ctx, None);
+        let rc = RenderContext::new(ctx, None);
         let mut elements: Vec<TemplateElement> = Vec::new();
 
         let e1 = RawString("<h1>".to_string());
@@ -849,7 +849,7 @@ fn test_render_context_promotion_and_demotion() {
     use value::to_json;
     let ctx = Context::null();
 
-    let mut render_context = RenderContext::new(ctx, None);
+    let render_context = RenderContext::new(ctx, None);
 
     render_context.inner_mut().set_local_var("@index".to_string(), to_json(&0));
 

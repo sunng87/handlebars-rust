@@ -39,7 +39,6 @@ mod test {
     use registry::Registry;
     use context::Context;
     use render::{Evaluable, RenderContext};
-    use std::collections::HashMap;
 
     #[test]
     fn test_inline() {

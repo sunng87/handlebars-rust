@@ -173,7 +173,7 @@ mod test {
     use context::{self, Context};
     use value::{self, JsonRender};
     use std::collections::VecDeque;
-    use serde_json::value::{Map, Value as Json};
+    use serde_json::value::Map;
 
     #[derive(Serialize)]
     struct Address {
