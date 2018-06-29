@@ -78,7 +78,7 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use context::to_json;
+    use value::to_json;
 
     #[derive(Serialize)]
     struct Address {

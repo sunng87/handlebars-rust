@@ -63,6 +63,33 @@ impl Subexpression {
     pub fn as_element(&self) -> &TemplateElement {
         self.element.as_ref()
     }
+
+    pub fn name(&self) -> &str {
+        match self.as_element() {
+            HelperExpression(ref ht) => &ht.name,
+            Expression(p) => {
+                match p {
+                    Parameter::Name(ref s) => s,
+                    _ => unreachable!()
+                }
+            },
+            _ => unreachable!()
+        }
+    }
+
+    pub fn params(&self) -> Option<&Vec<Parameter>> {
+        match self.as_element() {
+            HelperExpression(ref ht) => Some(&ht.params),
+            _ => None
+        }
+    }
+
+    pub fn hash(&self) -> Option<&BTreeMap<String, Parameter>> {
+        match self.as_element() {
+            HelperExpression(ref ht) => Some(&ht.hash),
+            _ => None
+        }
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -108,7 +135,7 @@ pub struct Directive {
 }
 
 impl Parameter {
-    pub fn as_name(self) -> Option<String> {
+    pub fn into_name(self) -> Option<String> {
         if let Parameter::Name(n) = self {
             Some(n)
         } else {
@@ -487,7 +514,7 @@ impl Template {
                         match rule {
                             Rule::helper_block_start | Rule::raw_block_start => {
                                 let helper_template = HelperTemplate {
-                                    name: exp.name.as_name().unwrap(),
+                                    name: exp.name.into_name().unwrap(),
                                     params: exp.params,
                                     hash: exp.hash,
                                     block_param: exp.block_param,
@@ -571,7 +598,7 @@ impl Template {
                             }
                             Rule::helper_expression => {
                                 let helper_template = HelperTemplate {
-                                    name: exp.name.as_name().unwrap(),
+                                    name: exp.name.into_name().unwrap(),
                                     params: exp.params,
                                     hash: exp.hash,
                                     block_param: exp.block_param,
@@ -600,7 +627,7 @@ impl Template {
                             }
                             Rule::helper_block_end | Rule::raw_block_end => {
                                 let mut h = helper_stack.pop_front().unwrap();
-                                let close_tag_name = exp.name.as_name().unwrap();
+                                let close_tag_name = exp.name.into_name().unwrap();
                                 if h.name == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     if h.template.is_some() {
@@ -813,7 +840,7 @@ fn test_subexpression() {
             assert_eq!(h.name, "foo".to_owned());
             assert_eq!(h.params.len(), 1);
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
-                assert_eq!(t.name, "bar".to_owned());
+                assert_eq!(t.name(), "bar".to_owned());
             } else {
                 panic!("Subexpression expected");
             }
@@ -828,8 +855,8 @@ fn test_subexpression() {
             assert_eq!(h.name, "foo".to_string());
             assert_eq!(h.params.len(), 1);
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
-                assert_eq!(t.name, "bar".to_owned());
-                if let Some(&Parameter::Name(ref n)) = t.params.get(0) {
+                assert_eq!(t.name(), "bar".to_owned());
+                if let Some(&Parameter::Name(ref n)) = t.params().unwrap().get(0) {
                     assert_eq!(n, "baz");
                 } else {
                     panic!("non-empty param expected ");
@@ -850,8 +877,8 @@ fn test_subexpression() {
             assert_eq!(h.hash.len(), 1);
 
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
-                assert_eq!(t.name, "baz".to_owned());
-                if let Some(&Parameter::Name(ref n)) = t.params.get(0) {
+                assert_eq!(t.name(), "baz".to_owned());
+                if let Some(&Parameter::Name(ref n)) = t.params().unwrap().get(0) {
                     assert_eq!(n, "bar");
                 } else {
                     panic!("non-empty param expected ");
@@ -861,7 +888,7 @@ fn test_subexpression() {
             }
 
             if let &Parameter::Subexpression(ref t) = h.hash.get("then").unwrap() {
-                assert_eq!(t.name, "bar".to_owned());
+                assert_eq!(t.name(), "bar".to_owned());
             } else {
                 panic!("Subexpression expected (bar)");
             }

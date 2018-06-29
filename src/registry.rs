@@ -413,11 +413,11 @@ mod test {
     struct DummyHelper;
 
     impl HelperDef for DummyHelper {
-        fn call(
+        fn call<'reg: 'rc, 'rc>(
             &self,
             h: &Helper,
             r: &Registry,
-            rc: &mut RenderContext,
+            rc: &RenderContext,
             out: &mut Output,
         ) -> Result<(), RenderError> {
             h.template().unwrap().render(r, rc, out)?;

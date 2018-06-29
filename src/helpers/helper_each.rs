@@ -144,7 +144,7 @@ pub static EACH_HELPER: EachHelper = EachHelper;
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use context::to_json;
+    use value::to_json;
 
     use std::collections::BTreeMap;
     use std::str::FromStr;

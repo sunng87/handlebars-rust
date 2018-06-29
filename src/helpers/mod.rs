@@ -126,14 +126,14 @@ mod test {
     struct MetaHelper;
 
     impl HelperDef for MetaHelper {
-        fn call(
+        fn call<'reg: 'rc, 'rc>(
             &self,
             h: &Helper,
             r: &Registry,
-            rc: &mut RenderContext,
+            rc: &RenderContext,
             out: &mut Output,
         ) -> Result<(), RenderError> {
-            let v = h.param(0).unwrap();
+            let v = h.param(0)?.unwrap();
 
             if !h.is_block() {
                 let output = format!("{}:{}", h.name(), v.value().render());
@@ -187,10 +187,10 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
-                 _: &mut RenderContext,
+                 _: &RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
+                    let output = format!("{}{}", h.name(), h.param(0)?.unwrap().value());
                     out.write(output.as_ref())?;
                     Ok(())
                 },
@@ -201,10 +201,10 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
-                 _: &mut RenderContext,
+                 _: &RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}", h.hash_get("value").unwrap().value().render());
+                    let output = format!("{}", h.hash_get("value")?.unwrap().value().render());
                     out.write(output.as_ref())?;
                     Ok(())
                 },

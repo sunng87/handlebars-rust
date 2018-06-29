@@ -9,7 +9,7 @@ pub enum ScopedJson<'reg: 'rc, 'rc> {
 }
 
 impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
-    pub fn as_ref(&self) -> &Json {
+    pub fn as_json(&self) -> &Json {
         match self {
             ScopedJson::Constant(j) => j,
             ScopedJson::Derived(ref j) => j,
@@ -18,7 +18,13 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
     }
 
     pub fn render(&self) -> String {
-        self.as_ref().render()
+        self.as_json().render()
+    }
+}
+
+impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'reg, 'rc> {
+    fn from(v: Json) -> ScopedJson<'reg, 'rc> {
+        ScopedJson::Derived(v)
     }
 }
 
@@ -49,9 +55,8 @@ impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
     }
 
     /// Returns the value
-    #[inline]
     pub fn value(&self) -> &Json {
-        self.value.as_ref()
+        self.value.as_json()
     }
 }
 
