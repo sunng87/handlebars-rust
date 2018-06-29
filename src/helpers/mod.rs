@@ -2,9 +2,7 @@ use render::{Helper, RenderContext};
 use registry::Registry;
 use error::RenderError;
 use output::Output;
-use value::{JsonRender, ScopedJson};
-
-use serde_json::Value as Json;
+use value::ScopedJson;
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::EACH_HELPER;

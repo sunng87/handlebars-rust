@@ -20,7 +20,7 @@ fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg, 'rc>) -> Result<String, Rend
 }
 
 impl DirectiveDef for InlineDirective {
-    fn call<'reg: 'rc, 'rc>(&self, d: &'rc Directive<'reg, 'rc>, registry: &'reg Registry, render_context: &'rc RenderContext) -> Result<(), RenderError> {
+    fn call<'reg: 'rc, 'rc>(&self, d: &'rc Directive<'reg, 'rc>, _: &'reg Registry, render_context: &'rc RenderContext) -> Result<(), RenderError> {
         let name = get_name(d)?;
 
         let template = d.template()

@@ -1,4 +1,4 @@
-use std::borrow::{Borrow, Cow};
+use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
@@ -745,8 +745,6 @@ impl Evaluable for TemplateElement {
     fn eval<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc RenderContext) -> Result<(), RenderError> {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
-                let inner = rc.inner_mut();
-                let block = rc.block();
                 let di = Directive::from_template(dt, registry, rc);
                 match registry.get_decorator(di.name()?.as_ref()) {
                     Some(d) => (**d).call(&di, registry, rc),
