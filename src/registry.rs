@@ -187,6 +187,7 @@ impl Registry {
         P: AsRef<Path>,
     {
         let dir_path = dir_path.as_ref();
+
         let prefix_len = if dir_path.to_string_lossy().ends_with("/") {
             dir_path.to_string_lossy().len()
         } else {
@@ -194,24 +195,21 @@ impl Registry {
         };
 
         let walker = WalkDir::new(dir_path);
-        let mut dir_iter = walker.min_depth(1).into_iter();
-        match dir_iter.find(|e| e.is_err())  {
-            Some(Err(err)) => {
-                let path_string: String = dir_path.to_string_lossy().to_owned().to_string();
-                Err(TemplateFileError::IOError(io::Error::from(err), path_string))
-            },
-            _ => {
-                for p in dir_iter.filter_map(|e| e.ok()) {
-                    let tpl_path = p.path();
-                    let tpl_file_path = p.path().to_string_lossy();
-                    let tpl_name = &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
-                    let tpl_canonical_name = tpl_name.replace("\\", "/");
-                    self.register_template_file(&tpl_canonical_name, &tpl_path)?;
-                }
+        let dir_iter = walker.min_depth(1).into_iter();
 
-                Ok(())
-            },
+        for entry in dir_iter {
+            let entry = entry?;
+
+            let tpl_path = entry.path();
+            let tpl_file_path = entry.path().to_string_lossy();
+            if entry.metadata()?.is_file() && tpl_file_path.ends_with(tpl_extension) {
+                let tpl_name = &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
+                let tpl_canonical_name = tpl_name.replace("\\", "/");
+                self.register_template_file(&tpl_canonical_name, &tpl_path)?;
+            }
         }
+
+        Ok(())
     }
 
     /// Register a template from `std::io::Read` source
@@ -227,6 +225,7 @@ impl Registry {
                 .map_err(|e| TemplateFileError::IOError(e, name.to_owned()))
         );
         try!(self.register_template_string(name, buf));
+
         Ok(())
     }
 
@@ -441,6 +440,9 @@ mod test {
     use helpers::HelperDef;
     use support::str::StringWriter;
     use error::RenderError;
+    use tempfile::tempdir;
+    use std::io::Write;
+    use std::fs::{File, DirBuilder};
 
     #[derive(Clone, Copy)]
     struct DummyHelper;
@@ -478,6 +480,101 @@ mod test {
 
         // built-in helpers plus 1
         assert_eq!(r.helpers.len(), 7 + 1);
+    }
+
+    #[test]
+    fn test_register_templates_directory() {
+        let mut r = Registry::new();
+        {
+            let dir = tempdir().unwrap();
+
+            assert_eq!(r.templates.len(), 0);
+
+            let file1_path = dir.path().join("t1.hbs");
+            let mut file1: File = File::create(&file1_path).unwrap();
+            writeln!(file1, "<h1>Hello {{world}}!</h1>").unwrap();
+
+            let file2_path = dir.path().join("t2.hbs");
+            let mut file2: File = File::create(&file2_path).unwrap();
+            writeln!(file2, "<h1>Hola {{world}}!</h1>").unwrap();
+
+            let file3_path = dir.path().join("t3.hbs");
+            let mut file3: File = File::create(&file3_path).unwrap();
+            writeln!(file3, "<h1>Hallo {{world}}!</h1>").unwrap();
+
+            r.register_templates_directory(".hbs", dir.path()).unwrap();
+
+            assert_eq!(r.templates.len(), 3);
+            assert_eq!(r.templates.contains_key("t1"), true);
+            assert_eq!(r.templates.contains_key("t2"), true);
+            assert_eq!(r.templates.contains_key("t3"), true);
+
+            drop(file1);
+            drop(file2);
+            drop(file3);
+
+            dir.close().unwrap();
+        }
+
+        {
+            let dir = tempdir().unwrap();
+
+            let file1_path = dir.path().join("t4.hbs");
+            let mut file1: File = File::create(&file1_path).unwrap();
+            writeln!(file1, "<h1>Hello {{world}}!</h1>").unwrap();
+
+            let file2_path = dir.path().join("t5.erb");
+            let mut file2: File = File::create(&file2_path).unwrap();
+            writeln!(file2, "<h1>Hello {{% world %}}!</h1>").unwrap();
+
+            let file3_path = dir.path().join("t6.html");
+            let mut file3: File = File::create(&file3_path).unwrap();
+            writeln!(file3, "<h1>Hello world!</h1>").unwrap();
+
+            r.register_templates_directory(".hbs", dir.path()).unwrap();
+
+            assert_eq!(r.templates.len(), 4);
+            assert_eq!(r.templates.contains_key("t4"), true);
+
+            drop(file1);
+            drop(file2);
+            drop(file3);
+
+            dir.close().unwrap();
+        }
+
+        {
+            let dir = tempdir().unwrap();
+
+            let _ = DirBuilder::new().create(dir.path().join("french")).unwrap();
+            let _ = DirBuilder::new().create(dir.path().join("portugese")).unwrap();
+            let _ = DirBuilder::new().create(dir.path().join("italian")).unwrap();
+
+            let file1_path = dir.path().join("french/t7.hbs");
+            let mut file1: File = File::create(&file1_path).unwrap();
+            writeln!(file1, "<h1>Bonjour {{world}}!</h1>").unwrap();
+
+            let file2_path = dir.path().join("portugese/t8.hbs");
+            let mut file2: File = File::create(&file2_path).unwrap();
+            writeln!(file2, "<h1>Ola {{world}}!</h1>").unwrap();
+
+            let file3_path = dir.path().join("italian/t9.hbs");
+            let mut file3: File = File::create(&file3_path).unwrap();
+            writeln!(file3, "<h1>Ciao {{world}}!</h1>").unwrap();
+
+            r.register_templates_directory(".hbs", dir.path()).unwrap();
+
+            assert_eq!(r.templates.len(), 7);
+            assert_eq!(r.templates.contains_key("french/t7"), true);
+            assert_eq!(r.templates.contains_key("portugese/t8"), true);
+            assert_eq!(r.templates.contains_key("italian/t9"), true);
+
+            drop(file1);
+            drop(file2);
+            drop(file3);
+
+            dir.close().unwrap();
+        }
     }
 
     #[test]

@@ -302,6 +302,8 @@ extern crate quick_error;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_derive;
+#[cfg(test)]
+extern crate tempfile;
 
 extern crate regex;
 extern crate serde;

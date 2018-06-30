@@ -3,6 +3,7 @@ use std::error::Error;
 use std::fmt;
 
 use serde_json::error::Error as SerdeError;
+use walkdir::Error as WalkdirError;
 
 use template::Parameter;
 
@@ -207,6 +208,13 @@ quick_error! {
             description(err.description())
             display("Template \"{}\": {}", name, err)
         }
+    }
+}
+
+impl From<WalkdirError> for TemplateFileError {
+    fn from(error: WalkdirError) -> TemplateFileError {
+        let path_string: String = error.path().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+        TemplateFileError::IOError(IOError::from(error), path_string)
     }
 }
 
