@@ -88,13 +88,13 @@ impl Registry {
     }
 
     fn setup_builtins(mut self) -> Registry {
-        self.register_helper("if", Box::new(helpers::IF_HELPER));
-        self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
-        self.register_helper("each", Box::new(helpers::EACH_HELPER));
-        self.register_helper("with", Box::new(helpers::WITH_HELPER));
-        self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
-        self.register_helper("raw", Box::new(helpers::RAW_HELPER));
-        self.register_helper("log", Box::new(helpers::LOG_HELPER));
+        // self.register_helper("if", Box::new(helpers::IF_HELPER));
+        // self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
+        // self.register_helper("each", Box::new(helpers::EACH_HELPER));
+        // self.register_helper("with", Box::new(helpers::WITH_HELPER));
+        // self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
+        // self.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        // self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
         self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
         self
@@ -267,8 +267,9 @@ impl Registry {
             .and_then(|t| {
                 let ctx = Context::wraps(data)?;
                 let render_context = RenderContext::new(ctx, t.name.clone());
-                t.render(self, &render_context, output)
+                t.render(self, render_context, output)
             })
+            .map(|_| ())
     }
 
     /// Render a registered template with some data into a string
@@ -330,7 +331,8 @@ impl Registry {
         let ctx = Context::wraps(data)?;
         let render_context = RenderContext::new(ctx, None);
         let mut out = WriteOutput::new(writer);
-        tpl.render(self, &render_context, &mut out)
+        tpl.render(self, render_context, &mut out)
+            .map(|_| ())
             .map_err(TemplateRenderError::from)
     }
 

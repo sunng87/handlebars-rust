@@ -4,14 +4,14 @@ use error::RenderError;
 use output::Output;
 use value::ScopedJson;
 
-pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
-pub use self::helper_each::EACH_HELPER;
-pub use self::helper_with::WITH_HELPER;
-pub use self::helper_lookup::LOOKUP_HELPER;
-pub use self::helper_raw::RAW_HELPER;
-pub use self::helper_log::LOG_HELPER;
+// pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
+// pub use self::helper_each::EACH_HELPER;
+// pub use self::helper_with::WITH_HELPER;
+// pub use self::helper_lookup::LOOKUP_HELPER;
+// pub use self::helper_raw::RAW_HELPER;
+// pub use self::helper_log::LOG_HELPER;
 
-pub type HelperResult = Result<(), RenderError>;
+pub type HelperResult = Result<RenderContext, RenderError>;
 
 /// Helper Definition
 ///
@@ -54,25 +54,21 @@ pub type HelperResult = Result<(), RenderError>;
 pub trait HelperDef: Send + Sync {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper<'reg, 'rc>,
-        _: &'reg Registry,
-        _: &'rc RenderContext,
+        _: Helper<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
 
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &'rc Helper<'reg, 'rc>,
-        r: &'reg Registry,
-        rc: &'rc RenderContext,
+        h: Helper<'reg, 'rc>,
         out: &mut Output,
     ) -> HelperResult {
-        if let Some(result) = self.call_inner(h, r, rc)? {
+        if let Some(result) = self.call_inner(h)? {
             out.write(result.render().as_ref())?;
         }
 
-        Ok(())
+        Ok(h.into_render_context())
     }
 }
 
@@ -80,27 +76,25 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'reg, 'rc> Fn(&'rc Helper<'reg, 'rc>, &'reg Registry, &'rc RenderContext, &mut Output)
+        + for<'reg, 'rc> Fn(Helper<'reg, 'rc>, &mut Output)
         -> HelperResult,
 > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &'rc Helper<'reg, 'rc>,
-        r: &'reg Registry,
-        rc: &'rc RenderContext,
+        h: Helper<'reg, 'rc>,
         out: &mut Output,
     ) -> HelperResult {
-        (*self)(h, r, rc, out)
+        (*self)(h, out)
     }
 }
 
-mod helper_if;
-mod helper_each;
-mod helper_with;
-mod helper_lookup;
-mod helper_raw;
-mod helper_log;
+// mod helper_if;
+// mod helper_each;
+// mod helper_with;
+// mod helper_lookup;
+// mod helper_raw;
+// mod helper_log;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
