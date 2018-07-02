@@ -567,27 +567,20 @@ impl Parameter {
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
-                let inner = rc.inner_mut();
-                let block = rc.block();
-
-                let local_value = inner.get_local_var(&name);
-                if let Some(value) = local_value {
+                if let Some(ref value) = rc.inner().get_local_var(&name) {
                     // local var, @first, @last for example
                     // here we count it as derived value, and simply clone it
                     // to bypass lifetime issue
-                    Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived(value.clone())))
+                    Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived((*value).clone())))
                 } else {
                     // try to evaluate using block context if any
-                    let block_context_value = block.evaluate_in_block_context(name)?;
-                    if block_context_value.is_none() {
+                    if let Some(ref block_context_value) = rc.block().evaluate_in_block_context(name)?{
+                        Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived((*block_context_value).clone())))
+                    } else {
                         // failback to normal evaluation
                         let context_value = rc.evaluate(name, registry.strict_mode())?;
                         // value borrowed from context data
                         Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Context(context_value)))
-                    } else {
-                        let block_context_value = block_context_value.unwrap();
-                        // also we do clone for block context
-                        Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived(block_context_value.clone())))
                     }
                 }
             }
@@ -595,9 +588,8 @@ impl Parameter {
             &Parameter::Subexpression(ref t) => match t.as_element() {
                 Expression(ref expr) => expr.expand(registry, rc),
                 HelperExpression(ref ht) => {
-                    let inner = rc.inner();
                     let helper = Helper::from_template(&ht, registry, rc);
-                    if let Some(ref d) = inner.get_local_helper(&ht.name) {
+                    if let Some(ref d) = rc.inner().get_local_helper(&ht.name) {
                         let helper_def = d.borrow();
                         call_helper_for_value(
                             helper_def, &helper, registry, rc)
@@ -629,8 +621,10 @@ impl Renderable for Template {
         rc: &'rc RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
-        let template_name = self.name.clone();
-        rc.inner_mut().set_current_template_name(template_name);
+        if let Some(ref template_name) = self.name {
+            rc.inner_mut().set_current_template_name(Some(template_name.clone()));
+        }
+
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
@@ -712,9 +706,8 @@ impl Renderable for TemplateElement {
                 Ok(())
             }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
-                let inner = rc.inner();
                 let helper = Helper::from_template(ht, registry, rc);
-                if let Some(ref d) = inner.get_local_helper(&ht.name) {
+                if let Some(ref d) = rc.inner().get_local_helper(&ht.name) {
                     d.call(&helper, registry, rc, out)
                 } else {
                     registry
