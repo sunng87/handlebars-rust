@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::{to_json, JsonTruthy};
+use value::{to_json, JsonTruthy};
 use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
 use output::Output;
@@ -11,20 +11,22 @@ use output::Output;
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         r: &Registry,
-        rc: &mut RenderContext,
+        rc: &RenderContext,
         out: &mut Output,
     ) -> HelperResult {
-        let param = h.param(0)
+        let param = h.param(0)?
             .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
-        rc.promote_local_vars();
+        rc.inner_mut().promote_local_vars();
 
         let result = {
-            let mut local_rc = rc.derive();
+            let local_rc = rc.derive();
+            // let mut inner_rc = local_rc.inner_mut();
+            let mut block_rc = local_rc.block_mut();
 
             let not_empty = param.value().is_truthy();
             let template = if not_empty {
@@ -34,39 +36,39 @@ impl HelperDef for WithHelper {
             };
 
             if let Some(path_root) = param.path_root() {
-                let local_path_root = format!("{}/{}", local_rc.get_path(), path_root);
-                local_rc.push_local_path_root(local_path_root);
+                let local_path_root = format!("{}/{}", block_rc.get_path(), path_root);
+                block_rc.push_local_path_root(local_path_root);
             }
             if not_empty {
                 if let Some(inner_path) = param.path() {
-                    let new_path = format!("{}/{}", local_rc.get_path(), inner_path);
-                    local_rc.set_path(new_path);
+                    let new_path = format!("{}/{}", block_rc.get_path(), inner_path);
+                    block_rc.set_path(new_path);
                 }
 
                 if let Some(block_param) = h.block_param() {
                     let mut map = BTreeMap::new();
                     map.insert(block_param.to_string(), to_json(param.value()));
-                    local_rc.push_block_context(&map)?;
+                    block_rc.push_block_context(&map)?;
                 }
             }
 
             let result = match template {
-                Some(t) => t.render(r, &mut local_rc, out),
+                Some(t) => t.render(r, &local_rc, out),
                 None => Ok(()),
             };
 
             if h.block_param().is_some() {
-                local_rc.pop_block_context();
+                block_rc.pop_block_context();
             }
 
             if param.path_root().is_some() {
-                local_rc.pop_local_path_root();
+                block_rc.pop_local_path_root();
             }
 
             result
         };
 
-        rc.demote_local_vars();
+        rc.inner_mut().demote_local_vars();
         result
     }
 }
@@ -76,7 +78,7 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use context::to_json;
+    use value::to_json;
 
     #[derive(Serialize)]
     struct Address {

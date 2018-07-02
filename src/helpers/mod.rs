@@ -1,9 +1,8 @@
 use render::{Helper, RenderContext};
-use context::JsonRender;
 use registry::Registry;
 use error::RenderError;
 use output::Output;
-use serde_json::Value as Json;
+use value::ScopedJson;
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::EACH_HELPER;
@@ -53,20 +52,20 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 
 pub trait HelperDef: Send + Sync {
-    fn call_inner(
+    fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper,
-        _: &Registry,
-        _: &mut RenderContext,
-    ) -> Result<Option<Json>, RenderError> {
+        _: &Helper<'reg, 'rc>,
+        _: &'reg Registry,
+        _: &'rc RenderContext,
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
 
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        r: &Registry,
-        rc: &mut RenderContext,
+        h: &'rc Helper<'reg, 'rc>,
+        r: &'reg Registry,
+        rc: &'rc RenderContext,
         out: &mut Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, rc)? {
@@ -81,15 +80,15 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext, &'e mut Output)
+        + for<'reg, 'rc> Fn(&'rc Helper<'reg, 'rc>, &'reg Registry, &'rc RenderContext, &mut Output)
         -> HelperResult,
 > HelperDef for F
 {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        r: &Registry,
-        rc: &mut RenderContext,
+        h: &'rc Helper<'reg, 'rc>,
+        r: &'reg Registry,
+        rc: &'rc RenderContext,
         out: &mut Output,
     ) -> HelperResult {
         (*self)(h, r, rc, out)
@@ -114,7 +113,7 @@ mod helper_log;
 mod test {
     use std::collections::BTreeMap;
 
-    use context::JsonRender;
+    use value::JsonRender;
     use helpers::HelperDef;
     use registry::Registry;
     use render::{Helper, RenderContext, Renderable};
@@ -125,14 +124,14 @@ mod test {
     struct MetaHelper;
 
     impl HelperDef for MetaHelper {
-        fn call(
+        fn call<'reg: 'rc, 'rc>(
             &self,
             h: &Helper,
             r: &Registry,
-            rc: &mut RenderContext,
+            rc: &RenderContext,
             out: &mut Output,
         ) -> Result<(), RenderError> {
-            let v = h.param(0).unwrap();
+            let v = h.param(0)?.unwrap();
 
             if !h.is_block() {
                 let output = format!("{}:{}", h.name(), v.value().render());
@@ -186,10 +185,10 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
-                 _: &mut RenderContext,
+                 _: &RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
+                    let output = format!("{}{}", h.name(), h.param(0)?.unwrap().value());
                     out.write(output.as_ref())?;
                     Ok(())
                 },
@@ -200,10 +199,10 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
-                 _: &mut RenderContext,
+                 _: &RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}", h.hash_get("value").unwrap().value().render());
+                    let output = format!("{}", h.hash_get("value")?.unwrap().value().render());
                     out.write(output.as_ref())?;
                     Ok(())
                 },

@@ -8,24 +8,25 @@ use error::RenderError;
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
 
-fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
-    d.param(0)
+fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg, 'rc>) -> Result<String, RenderError> {
+    d.param(0)?
         .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
         .and_then(|v| {
             v.value()
                 .as_str()
+                .map(|s| s.to_owned())
                 .ok_or_else(|| RenderError::new("inline name must be string"))
         })
 }
 
 impl DirectiveDef for InlineDirective {
-    fn call(&self, d: &Directive, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
+    fn call<'reg: 'rc, 'rc>(&self, d: &'rc Directive<'reg, 'rc>, _: &'reg Registry, render_context: &'rc RenderContext) -> Result<(), RenderError> {
         let name = get_name(d)?;
 
         let template = d.template()
             .ok_or_else(|| RenderError::new("inline should have a block"))?;
 
-        rc.set_partial(name.to_owned(), Rc::new(template.clone()));
+        render_context.inner_mut().set_partial(name, Rc::new(template.clone()));
         Ok(())
     }
 }
@@ -38,7 +39,6 @@ mod test {
     use registry::Registry;
     use context::Context;
     use render::{Evaluable, RenderContext};
-    use std::collections::HashMap;
 
     #[test]
     fn test_inline() {
@@ -50,11 +50,9 @@ mod test {
         let hbs = Registry::new();
 
         let ctx = Context::null();
-        let mut hlps = HashMap::new();
-
-        let mut rc = RenderContext::new(ctx, &mut hlps, None);
+        let mut rc = RenderContext::new(ctx, None);
         t0.elements[0].eval(&hbs, &mut rc).unwrap();
 
-        assert!(rc.get_partial(&"hello".to_owned()).is_some());
+        assert!(rc.inner_mut().get_partial(&"hello".to_owned()).is_some());
     }
 }
