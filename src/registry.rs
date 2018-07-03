@@ -266,11 +266,10 @@ impl Registry {
             .ok_or(RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
                 let ctx = Context::wraps(data)?;
-                let mut local_helpers = HashMap::new();
-                let mut render_context =
-                    RenderContext::new(ctx, &mut local_helpers, t.name.clone());
-                t.render(self, &mut render_context, output)
+                let mut render_context = RenderContext::new(t.name.clone());
+                t.render(self, &ctx, &mut render_context, output)
             })
+            .map(|_| ())
     }
 
     /// Render a registered template with some data into a string
@@ -330,10 +329,10 @@ impl Registry {
     {
         let tpl = Template::compile2(template_string, self.source_map)?;
         let ctx = Context::wraps(data)?;
-        let mut local_helpers = HashMap::new();
-        let mut render_context = RenderContext::new(ctx, &mut local_helpers, None);
+        let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
-        tpl.render(self, &mut render_context, &mut out)
+        tpl.render(self, &ctx, &mut render_context, &mut out)
+            .map(|_| ())
             .map_err(TemplateRenderError::from)
     }
 
@@ -406,6 +405,7 @@ impl Registry {
 #[cfg(test)]
 mod test {
     use registry::Registry;
+    use context::Context;
     use render::{Helper, RenderContext, Renderable};
     use helpers::HelperDef;
     use support::str::StringWriter;
@@ -416,15 +416,15 @@ mod test {
     struct DummyHelper;
 
     impl HelperDef for DummyHelper {
-        fn call(
+        fn call<'reg: 'rc, 'rc>(
             &self,
             h: &Helper,
             r: &Registry,
+            ctx: &Context,
             rc: &mut RenderContext,
             out: &mut Output,
         ) -> Result<(), RenderError> {
-            h.template().unwrap().render(r, rc, out)?;
-            Ok(())
+            h.template().unwrap().render(r, ctx, rc, out)
         }
     }
 

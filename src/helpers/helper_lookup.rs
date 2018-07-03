@@ -2,7 +2,8 @@ use serde_json::value::Value as Json;
 
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::JsonRender;
+use context::Context;
+use value::JsonRender;
 use render::{Helper, RenderContext};
 use error::RenderError;
 use output::Output;
@@ -11,10 +12,11 @@ use output::Output;
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         _: &Registry,
+        _: &Context,
         _: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {

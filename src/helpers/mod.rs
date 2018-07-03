@@ -1,9 +1,9 @@
 use render::{Helper, RenderContext};
-use context::JsonRender;
+use context::Context;
 use registry::Registry;
 use error::RenderError;
 use output::Output;
-use serde_json::Value as Json;
+use value::ScopedJson;
 
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::EACH_HELPER;
@@ -29,7 +29,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output)
+/// fn upper(h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output)
 ///     -> HelperResult {
 ///    // get parameter from helper or throw an error
 ///    let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
@@ -45,31 +45,33 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn dummy_block(h: &Helper, r: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
-///     h.template().map(|t| t.render(r, rc, out)).unwrap_or(Ok(()))
+/// fn dummy_block(h: &Helper, r: &Handlebars, ctx: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
+///     h.template().map(|t| t.render(r, ctx, rc, out)).unwrap_or(Ok(()))
 /// }
 /// ```
 ///
 ///
 
 pub trait HelperDef: Send + Sync {
-    fn call_inner(
+    fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper,
-        _: &Registry,
+        _: &Helper<'reg, 'rc>,
+        _: &'reg Registry,
+        _: &'rc Context,
         _: &mut RenderContext,
-    ) -> Result<Option<Json>, RenderError> {
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
 
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        r: &Registry,
+        h: &Helper<'reg, 'rc>,
+        r: &'reg Registry,
+        ctx: &'rc Context,
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
-        if let Some(result) = self.call_inner(h, r, rc)? {
+        if let Some(result) = self.call_inner(h, r, ctx, rc)? {
             out.write(result.render().as_ref())?;
         }
 
@@ -81,18 +83,19 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'b, 'c, 'd, 'e> Fn(&'b Helper, &'c Registry, &'d mut RenderContext, &'e mut Output)
+        + for<'reg, 'rc> Fn(&Helper<'reg, 'rc>, &'reg Registry, &'rc Context, &mut RenderContext, &mut Output)
         -> HelperResult,
 > HelperDef for F
 {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        r: &Registry,
+        h: &Helper<'reg, 'rc>,
+        r: &'reg Registry,
+        ctx: &'rc Context,
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
-        (*self)(h, r, rc, out)
+        (*self)(h, r, ctx, rc, out)
     }
 }
 
@@ -114,8 +117,9 @@ mod helper_log;
 mod test {
     use std::collections::BTreeMap;
 
-    use context::JsonRender;
+    use value::JsonRender;
     use helpers::HelperDef;
+    use context::Context;
     use registry::Registry;
     use render::{Helper, RenderContext, Renderable};
     use error::RenderError;
@@ -125,10 +129,11 @@ mod test {
     struct MetaHelper;
 
     impl HelperDef for MetaHelper {
-        fn call(
+        fn call<'reg: 'rc, 'rc>(
             &self,
             h: &Helper,
             r: &Registry,
+            ctx: &Context,
             rc: &mut RenderContext,
             out: &mut Output,
         ) -> Result<(), RenderError> {
@@ -141,7 +146,7 @@ mod test {
                 let output = format!("{}:{}", h.name(), v.value().render());
                 out.write(output.as_ref())?;
                 out.write("->")?;
-                h.template().unwrap().render(r, rc, out)?;
+                h.template().unwrap().render(r, ctx, rc, out)?;
             };
             Ok(())
         }
@@ -186,6 +191,7 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
+                 _: &Context,
                  _: &mut RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {
@@ -200,6 +206,7 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
+                 _: &Context,
                  _: &mut RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {

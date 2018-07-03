@@ -2,7 +2,8 @@ use std::collections::BTreeMap;
 
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::{to_json, JsonTruthy};
+use context::Context;
+use value::{to_json, JsonTruthy};
 use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
 use output::Output;
@@ -11,10 +12,11 @@ use output::Output;
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         r: &Registry,
+        ctx: &Context,
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
@@ -51,7 +53,7 @@ impl HelperDef for WithHelper {
             }
 
             let result = match template {
-                Some(t) => t.render(r, &mut local_rc, out),
+                Some(t) => t.render(r, ctx, &mut local_rc, out),
                 None => Ok(()),
             };
 
@@ -76,7 +78,7 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use context::to_json;
+    use value::to_json;
 
     #[derive(Serialize)]
     struct Address {

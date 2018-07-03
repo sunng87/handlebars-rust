@@ -4,7 +4,8 @@ use serde_json::value::Value as Json;
 
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::{to_json, JsonTruthy};
+use context::Context;
+use value::{to_json, JsonTruthy};
 use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
 use output::Output;
@@ -13,10 +14,11 @@ use output::Output;
 pub struct EachHelper;
 
 impl HelperDef for EachHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         r: &Registry,
+        ctx: &Context,
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
@@ -59,18 +61,15 @@ impl HelperDef for EachHelper {
                                 local_rc.push_block_context(&map)?;
                             }
 
-                            t.render(r, &mut local_rc, out)?;
+                            t.render(r, ctx, &mut local_rc, out)?;
 
-                            // local_rc is dropped at the end of each iteration
-                            // so we don't need to cleanup
-                            //
-                            // if h.block_param().is_some() {
-                            //     local_rc.pop_block_context();
-                            // }
+                            if h.block_param().is_some() {
+                                local_rc.pop_block_context();
+                            }
 
-                            // if local_path_root.is_some() {
-                            //     local_rc.pop_local_path_root();
-                            // }
+                            if local_path_root.is_some() {
+                                local_rc.pop_local_path_root();
+                            }
                         }
                         Ok(())
                     }
@@ -78,6 +77,7 @@ impl HelperDef for EachHelper {
                         let mut first: bool = true;
                         for k in obj.keys() {
                             let mut local_rc = rc.derive();
+
                             if let Some(ref p) = local_path_root {
                                 local_rc.push_local_path_root(p.clone());
                             }
@@ -101,22 +101,22 @@ impl HelperDef for EachHelper {
                                 local_rc.push_block_context(&map)?;
                             }
 
-                            t.render(r, &mut local_rc, out)?;
+                            t.render(r, ctx, &mut local_rc, out)?;
 
-                            // if h.block_param().is_some() {
-                            //     local_rc.pop_block_context();
-                            // }
+                            if h.block_param().is_some() {
+                                local_rc.pop_block_context();
+                            }
 
-                            // if local_path_root.is_some() {
-                            //     local_rc.pop_local_path_root();
-                            // }
+                            if local_path_root.is_some() {
+                                local_rc.pop_local_path_root();
+                            }
                         }
 
                         Ok(())
                     }
                     (false, _) => {
                         if let Some(else_template) = h.inverse() {
-                            else_template.render(r, rc, out)?;
+                            else_template.render(r, ctx, rc, out)?;
                         }
                         Ok(())
                     }
@@ -139,7 +139,7 @@ pub static EACH_HELPER: EachHelper = EachHelper;
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use context::to_json;
+    use value::to_json;
 
     use std::collections::BTreeMap;
     use std::str::FromStr;

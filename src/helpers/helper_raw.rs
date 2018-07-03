@@ -1,5 +1,6 @@
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
+use context::Context;
 use render::{Helper, RenderContext, Renderable};
 use output::Output;
 
@@ -7,16 +8,17 @@ use output::Output;
 pub struct RawHelper;
 
 impl HelperDef for RawHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         r: &Registry,
+        ctx: &Context,
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
         let tpl = h.template();
         if let Some(t) = tpl {
-            t.render(r, rc, out)
+            t.render(r, ctx, rc, out)
         } else {
             Ok(())
         }

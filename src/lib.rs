@@ -249,7 +249,7 @@
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
+//!   fn call<'reg: 'rc, 'rc>(&self, h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
 //!     out.write("1st helper: ")?;
@@ -259,7 +259,7 @@
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
+//! fn another_simple_helper (h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
 //!     out.write("2nd helper: ")?;
@@ -274,7 +274,7 @@
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
-//!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext, out: &mut Output| -> HelperResult {
+//!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output| -> HelperResult {
 //!           let param = h.param(0).ok_or(RenderError::new("param not found"))?;
 //!
 //!           out.write("3rd helper: ")?;
@@ -341,13 +341,13 @@ extern crate serde_json;
 pub use self::template::Template;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
-pub use self::render::{ContextJson, Directive as Decorator, Evaluable, Helper, RenderContext,
-                       Renderable};
+pub use self::render::{Directive as Decorator, Helper, Evaluable, RenderContext, Renderable};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::directives::DirectiveDef as DecoratorDef;
-pub use self::context::{to_json, Context, JsonRender};
+pub use self::context::Context;
 pub use self::support::str::StringWriter;
 pub use self::output::Output;
+pub use self::value::{ScopedJson, PathAndJson, to_json, JsonRender};
 
 mod grammar;
 mod template;
@@ -360,3 +360,4 @@ mod support;
 mod directives;
 mod partial;
 mod output;
+mod value;

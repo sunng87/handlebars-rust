@@ -1,6 +1,7 @@
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::JsonTruthy;
+use context::Context;
+use value::JsonTruthy;
 use render::{Helper, RenderContext, Renderable};
 use error::RenderError;
 use output::Output;
@@ -11,10 +12,11 @@ pub struct IfHelper {
 }
 
 impl HelperDef for IfHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         r: &Registry,
+        ctx: &Context,
         rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
@@ -30,7 +32,7 @@ impl HelperDef for IfHelper {
         let tmpl =
             if value { h.template() } else { h.inverse() };
         match tmpl {
-            Some(ref t) => t.render(r, rc, out),
+            Some(ref t) => t.render(r, ctx, rc, out),
             None => Ok(()),
         }
     }

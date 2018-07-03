@@ -8,12 +8,13 @@ extern crate serde_json;
 use std::error::Error;
 use serde_json::value::{Map, Value as Json};
 
-use handlebars::{to_json, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError};
+use handlebars::{to_json, Context, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError};
 
 // define a custom helper
 fn format_helper(
     h: &Helper,
     _: &Handlebars,
+    _: &Context,
     _: &mut RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
@@ -29,6 +30,7 @@ fn format_helper(
 fn rank_helper(
     h: &Helper,
     _: &Handlebars,
+    _: &Context,
     _: &mut RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
@@ -37,12 +39,13 @@ fn rank_helper(
         .ok_or(RenderError::new(
             "Param 0 with u64 type is required for rank helper.",
         ))? as usize;
-    let teams = h.param(1)
+    let total = h.param(1)
+        .as_ref()
         .and_then(|v| v.value().as_array())
+        .map(|arr| arr.len())
         .ok_or(RenderError::new(
             "Param 1 with array type is required for rank helper",
         ))?;
-    let total = teams.len();
     if rank == 0 {
         out.write("champion")?;
     } else if rank >= total - 2 {

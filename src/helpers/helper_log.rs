@@ -1,6 +1,7 @@
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
-use context::JsonRender;
+use context::Context;
+use value::JsonRender;
 use render::{Helper, RenderContext};
 use error::RenderError;
 use output::Output;
@@ -9,10 +10,11 @@ use output::Output;
 pub struct LogHelper;
 
 impl HelperDef for LogHelper {
-    fn call(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper,
         _: &Registry,
+        _: &Context,
         _: &mut RenderContext,
         _: &mut Output,
     ) -> HelperResult {
