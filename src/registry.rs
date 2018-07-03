@@ -88,13 +88,13 @@ impl Registry {
     }
 
     fn setup_builtins(mut self) -> Registry {
-        // self.register_helper("if", Box::new(helpers::IF_HELPER));
-        // self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
-        // self.register_helper("each", Box::new(helpers::EACH_HELPER));
-        // self.register_helper("with", Box::new(helpers::WITH_HELPER));
-        // self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
-        // self.register_helper("raw", Box::new(helpers::RAW_HELPER));
-        // self.register_helper("log", Box::new(helpers::LOG_HELPER));
+        self.register_helper("if", Box::new(helpers::IF_HELPER));
+        self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
+        self.register_helper("each", Box::new(helpers::EACH_HELPER));
+        self.register_helper("with", Box::new(helpers::WITH_HELPER));
+        self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
+        self.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
         self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
         self

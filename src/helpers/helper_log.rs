@@ -1,5 +1,6 @@
 use helpers::{HelperDef, HelperResult};
 use registry::Registry;
+use context::Context;
 use value::JsonRender;
 use render::{Helper, RenderContext};
 use error::RenderError;
@@ -13,10 +14,11 @@ impl HelperDef for LogHelper {
         &self,
         h: &Helper,
         _: &Registry,
-        _: &RenderContext,
+        _: &Context,
+        _: &mut RenderContext,
         _: &mut Output,
     ) -> HelperResult {
-        let param = h.param(0)?
+        let param = h.param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"log\""))?;
 
         info!(

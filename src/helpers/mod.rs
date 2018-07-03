@@ -5,12 +5,12 @@ use error::RenderError;
 use output::Output;
 use value::ScopedJson;
 
-// pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
-// pub use self::helper_each::EACH_HELPER;
-// pub use self::helper_with::WITH_HELPER;
-// pub use self::helper_lookup::LOOKUP_HELPER;
-// pub use self::helper_raw::RAW_HELPER;
-// pub use self::helper_log::LOG_HELPER;
+pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
+pub use self::helper_each::EACH_HELPER;
+pub use self::helper_with::WITH_HELPER;
+pub use self::helper_lookup::LOOKUP_HELPER;
+pub use self::helper_raw::RAW_HELPER;
+pub use self::helper_log::LOG_HELPER;
 
 pub type HelperResult = Result<(), RenderError>;
 
@@ -99,12 +99,12 @@ impl<
     }
 }
 
-// mod helper_if;
-// mod helper_each;
-// mod helper_with;
-// mod helper_lookup;
-// mod helper_raw;
-// mod helper_log;
+mod helper_if;
+mod helper_each;
+mod helper_with;
+mod helper_lookup;
+mod helper_raw;
+mod helper_log;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
