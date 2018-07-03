@@ -14,11 +14,12 @@ fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
     d: &'reg DirectiveTemplate,
     r: &'reg Registry,
+    ctx: &'rc Context,
     local_rc: &'rc mut RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
     if let Some(ref param) = d.params.get(0) {
-        let p = param.expand(r, local_rc)?;
+        let p = param.expand(r, ctx, local_rc)?;
         if let Some(ref param_path) = p.path() {
             let old_path = local_rc.get_path().clone();
             local_rc.promote_local_vars();
@@ -34,34 +35,36 @@ fn render_partial<'reg: 'rc, 'rc>(
     }
 
     if d.hash.is_empty() {
-        t.render(r, local_rc, out)?;
+        t.render(r, ctx, local_rc, out)?;
         Ok(())
     } else {
         let mut hash_ctx = BTreeMap::new();
         for (k, p) in d.hash.iter() {
-            let v = p.expand(r, local_rc)?.value().clone();
+            let v = p.expand(r, ctx, local_rc)?.value().clone();
             hash_ctx.insert(k.clone(), v);
         }
 
-        let partial_context = merge_json(local_rc.evaluate(".", r.strict_mode())?, &hash_ctx);
-        let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
-        t.render(r, &mut partial_rc, out)?;
+        let partial_context = merge_json(local_rc.evaluate(ctx, ".", r.strict_mode())?, &hash_ctx);
+        let ctx = Context::wraps(&partial_context)?;
+//        let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
+        t.render(r, &ctx, local_rc, out)?;
         Ok(())
     }
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &'reg DirectiveTemplate,
-    r: &'rc Registry,
+    r: &'reg Registry,
+    ctx: &'rc Context,
     rc: &'rc mut RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template.as_ref() {
-        t.eval(r, rc)?;
+        t.eval(r, ctx, rc)?;
     }
 
-    let tname = d.name.expand_as_name(r, rc)?;
+    let tname = d.name.expand_as_name(r, ctx, rc)?;
     if rc.is_current_template(tname.as_ref()) {
         return Err(RenderError::new("Cannot include self in >"));
     }
@@ -71,11 +74,11 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     match partial {
         Some(t) => {
             let mut local_rc = rc.derive();
-            render_partial(t.borrow(), d, r, &mut local_rc, out)?;
+            render_partial(t.borrow(), d, r, ctx, &mut local_rc, out)?;
         }
         None => if let Some(t) = r.get_template(tname.as_ref()).or(d.template.as_ref()) {
             let mut local_rc = rc.derive();
-            render_partial(t, d, r, &mut local_rc, out)?;
+            render_partial(t, d, r, ctx, &mut local_rc, out)?;
         }
     }
 

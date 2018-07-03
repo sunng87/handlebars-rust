@@ -28,7 +28,6 @@ static DEFAULT_VALUE: Json = Json::Null;
 ///
 #[derive(Clone, Debug)]
 pub struct RenderContext {
-    context: Context,
     inner: Rc<RenderContextInner>,
     block: Rc<BlockRenderContext>,
 }
@@ -65,7 +64,6 @@ impl Default for BlockRenderContext {
 impl RenderContext {
     /// Create a render context from a `Write`
     pub fn new(
-        context: Context,
         root_template: Option<String>,
     ) -> RenderContext {
         let inner = Rc::new(RenderContextInner {
@@ -78,23 +76,22 @@ impl RenderContext {
         });
 
         let block = Rc::new(BlockRenderContext::default());
-        RenderContext { context, inner, block }
+        RenderContext { inner, block }
     }
 
     pub fn derive(&self) -> RenderContext {
         let inner = self.inner.clone();
         let block = Rc::new(BlockRenderContext::default());
-        let context = self.context.clone();
 
-        RenderContext { context, inner, block }
+        RenderContext { inner, block }
     }
 
-    pub fn with_context(&self, context: Context) -> RenderContext {
-        let inner = self.inner.clone();
-        let block = Rc::new(BlockRenderContext::default());
+    // pub fn with_context(&self, context: Context) -> RenderContext {
+    //     let inner = self.inner.clone();
+    //     let block = Rc::new(BlockRenderContext::default());
 
-        RenderContext { context, inner, block }
-    }
+    //     RenderContext { inner, block }
+    // }
 
     fn inner(&self) -> &RenderContextInner {
         self.inner.borrow()
@@ -112,17 +109,17 @@ impl RenderContext {
         Rc::make_mut(&mut self.block)
     }
 
-    pub fn context(&self) -> &Context {
-        &self.context
-    }
+    // pub fn context(&self) -> &Context {
+    //     &self.context
+    // }
 
-    pub fn context_mut(&mut self) -> &mut Context {
-        &mut self.context
-    }
+    // pub fn context_mut(&mut self) -> &mut Context {
+    //     &mut self.context
+    // }
 
-    pub fn evaluate(&self, path: &str, strict: bool) -> Result<&Json, RenderError> {
+    pub fn evaluate<'ctx>(&self, context: &'ctx Context, path: &str, strict: bool) -> Result<&'ctx Json, RenderError> {
         let value_container =
-            self.context
+            context
                 .navigate(self.get_path(), self.get_local_path_root(), path);
         if strict {
             value_container
@@ -132,8 +129,8 @@ impl RenderContext {
         }
     }
 
-    pub fn evaluate_absolute(&self, path: &str, strict: bool) -> Result<&Json, RenderError> {
-        let value_container = self.context.navigate(".", &VecDeque::new(), path);
+    pub fn evaluate_absolute<'ctx>(&self, context: &'ctx Context, path: &str, strict: bool) -> Result<&'ctx Json, RenderError> {
+        let value_container = context.navigate(".", &VecDeque::new(), path);
         if strict {
             value_container
                 .and_then(|v| v.ok_or(RenderError::new("Value not found in strict mode.")))
@@ -552,39 +549,45 @@ pub trait Renderable {
     fn render<'reg: 'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
+        context: &'rc Context,
         rc: &'rc mut RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError>;
 
     /// render into string
-    fn renders<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc mut RenderContext) -> Result<String, RenderError> {
+    fn renders<'reg: 'rc, 'rc>(&'reg self, registry: &'reg Registry, ctx: &'rc Context, rc: &'rc mut RenderContext) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
-        self.render(registry, rc, &mut so)?;
+        self.render(registry, ctx, rc, &mut so)?;
         so.to_string().map_err(RenderError::from)
     }
 }
 
 /// Evaluate directive or decorator
 pub trait Evaluable {
-    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc mut RenderContext) -> Result<(), RenderError>;
+    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, context: &'rc Context, rc: &'rc mut RenderContext) -> Result<(), RenderError>;
 }
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
     hd: &Box<HelperDef>,
     ht: &'reg HelperTemplate,
     r: &'reg Registry,
+    ctx: &'rc Context,
     rc: &'rc mut RenderContext,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
-    if let Some(result) = hd.call_inner(ht, r, rc)? {
+    if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
         Ok(PathAndJson::new(None, result))
     } else {
         // parse value from output
         let mut so = StringOutput::new();
-        let disable_escape = rc.is_disable_escape();
 
+        // here we don't want subexpression result escaped,
+        // so we temporarily disable it
+        let disable_escape = rc.is_disable_escape();
         rc.set_disable_escape(true);
-        hd.call(ht, r, rc, &mut so)?;
+
+        hd.call(ht, r, ctx, rc, &mut so)?;
         rc.set_disable_escape(disable_escape);
+
         let string = so.to_string().map_err(RenderError::from)?;
         Ok(PathAndJson::new(None, ScopedJson::Derived(Json::String(string))))
     }
@@ -594,11 +597,12 @@ impl Parameter {
     pub fn expand_as_name<'reg:'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
+        ctx: &'rc Context,
         rc: &'rc mut RenderContext,
     ) -> Result<String, RenderError> {
         match self {
             &Parameter::Name(ref name) => Ok(name.to_owned()),
-            &Parameter::Subexpression(_) => self.expand(registry, rc).map(|v| v.value().render()),
+            &Parameter::Subexpression(_) => self.expand(registry, ctx, rc).map(|v| v.value().render()),
             &Parameter::Literal(ref j) => Ok(j.render()),
         }
     }
@@ -606,6 +610,7 @@ impl Parameter {
     pub fn expand<'reg: 'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
+        ctx: &'rc Context,
         rc: &'rc mut RenderContext,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
@@ -621,7 +626,8 @@ impl Parameter {
                     let block_context_value = rc.evaluate_in_block_context(name)?;
                     if block_context_value.is_none() {
                         // failback to normal evaluation
-                        let context_value = rc.evaluate(name, registry.strict_mode())?;
+                        // FIXME:
+                        let context_value = rc.evaluate(ctx, name, registry.strict_mode())?;
                         // value borrowed from context data
                         Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Context(context_value)))
                     } else {
@@ -633,11 +639,11 @@ impl Parameter {
             }
             &Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
             &Parameter::Subexpression(ref t) => match t.as_element() {
-                Expression(ref expr) => expr.expand(registry, rc),
+                Expression(ref expr) => expr.expand(registry, ctx, rc),
                 HelperExpression(ref ht) => {
                     if let Some(ref d) = rc.get_local_helper(&ht.name) {
                         let helper_def = d.borrow();
-                        call_helper_for_value(helper_def, ht, registry, rc)
+                        call_helper_for_value(helper_def, ht, registry, ctx, rc)
                     } else {
                         registry
                             .get_helper(&ht.name)
@@ -650,7 +656,7 @@ impl Parameter {
                                 "Helper not defined: {:?}",
                                 ht.name
                             )))
-                            .and_then(move |d| call_helper_for_value(d, ht, registry, rc))
+                            .and_then(move |d| call_helper_for_value(d, ht, registry, ctx, rc))
                     }
                 }
                 _ => unreachable!(),
@@ -663,6 +669,7 @@ impl Renderable for Template {
     fn render<'reg:'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
+        ctx: &'rc Context,
         rc: &'rc mut RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
@@ -671,7 +678,7 @@ impl Renderable for Template {
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
-            t.render(registry, rc, out).map_err(|mut e| {
+            t.render(registry, ctx, rc, out).map_err(|mut e| {
                 // add line/col number if the template has mapping data
                 if e.line_no.is_none() {
                     if let Some(ref mapping) = self.mapping {
@@ -695,11 +702,11 @@ impl Renderable for Template {
 }
 
 impl Evaluable for Template {
-    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc mut RenderContext) -> Result<(), RenderError> {
+    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, ctx: &'rc Context, rc: &'rc mut RenderContext) -> Result<(), RenderError> {
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
-            t.eval(registry, rc).map_err(|mut e| {
+            t.eval(registry, ctx, rc).map_err(|mut e| {
                 if e.line_no.is_none() {
                     if let Some(ref mapping) = self.mapping {
                         if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
@@ -722,6 +729,7 @@ impl Renderable for TemplateElement {
     fn render<'reg:'rc, 'rc>(
         &'reg self,
         registry: &'reg Registry,
+        ctx: &'rc Context,
         rc: &'rc mut RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
@@ -731,7 +739,7 @@ impl Renderable for TemplateElement {
                 Ok(())
             }
             Expression(ref v) => {
-                let context_json = v.expand(registry, rc)?;
+                let context_json = v.expand(registry, ctx, rc)?;
                 let rendered = context_json.value().render();
 
                 let output = if !rc.is_disable_escape() {
@@ -743,14 +751,14 @@ impl Renderable for TemplateElement {
                 Ok(())
             }
             HTMLExpression(ref v) => {
-                let context_json = v.expand(registry, rc)?;
+                let context_json = v.expand(registry, ctx, rc)?;
                 let rendered = context_json.value().render();
                 out.write(rendered.as_ref())?;
                 Ok(())
             }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
                 if let Some(ref d) = rc.get_local_helper(&ht.name) {
-                    d.call(ht, registry, rc, out)
+                    d.call(ht, registry, ctx, rc, out)
                 } else {
                     registry
                         .get_helper(&ht.name)
@@ -763,12 +771,12 @@ impl Renderable for TemplateElement {
                             "Helper not defined: {:?}",
                             ht.name
                         )))
-                        .and_then(move |d| d.call(ht, registry, rc, out))
+                        .and_then(move |d| d.call(ht, registry, ctx, rc, out))
                 }
             }
-            DirectiveExpression(_) | DirectiveBlock(_) => self.eval(registry, rc),
+            DirectiveExpression(_) | DirectiveBlock(_) => self.eval(registry, ctx, rc),
             PartialExpression(ref dt) | PartialBlock(ref dt) => {
-                partial::expand_partial(dt, registry, rc, out)
+                partial::expand_partial(dt, registry, ctx, rc, out)
             }
             _ => Ok(()),
         }
@@ -776,12 +784,12 @@ impl Renderable for TemplateElement {
 }
 
 impl Evaluable for TemplateElement {
-    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, rc: &'rc mut RenderContext) -> Result<(), RenderError> {
+    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, ctx: &'rc Context, rc: &'rc mut RenderContext) -> Result<(), RenderError> {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
-                let name = dt.name.expand_as_name(registry, rc)?;
+                let name = dt.name.expand_as_name(registry, ctx, rc)?;
                 match registry.get_decorator(&name) {
-                    Some(d) => (**d).call(dt, registry, rc),
+                    Some(d) => (**d).call(dt, registry, ctx, rc),
                     None => Err(RenderError::new(format!(
                         "Directive not defined: {:?}",
                         dt.name
