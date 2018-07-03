@@ -2,7 +2,7 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use handlebars::{Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 use serde_json::Value;
 
 struct GtHelper;
@@ -12,14 +12,15 @@ impl HelperDef for GtHelper {
         &self,
         h: &Helper,
         _: &Handlebars,
-        _: &RenderContext,
+        _: &Context,
+        _: &mut RenderContext,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        let p1 = h.param(0)?
+        let p1 = h.param(0)
             .and_then(|v| v.value().as_i64())
             .ok_or(RenderError::new(
                 "Param 0 with i64 type is required for gt helper.",
             ))?;
-        let p2 = h.param(1)?
+        let p2 = h.param(1)
             .and_then(|v| v.value().as_i64())
             .ok_or(RenderError::new(
                 "Param 1 with i64 type is required for gt helper.",
@@ -36,9 +37,10 @@ impl HelperDef for NotHelper {
         &self,
         h: &Helper,
         _: &Handlebars,
-        _: &RenderContext,
+        _: &Context,
+        _: &mut RenderContext,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        let p1 = h.param(0)?
+        let p1 = h.param(0)
             .and_then(|v| v.value().as_bool())
             .ok_or(RenderError::new(
                 "Param 0 with bool type is required for not helper.",

@@ -83,7 +83,7 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'reg, 'rc> Fn(&Helper<'reg, 'rc>, &'reg Registry, &'rc Context, &RenderContext, &mut Output)
+        + for<'reg, 'rc> Fn(&Helper<'reg, 'rc>, &'reg Registry, &'rc Context, &mut RenderContext, &mut Output)
         -> HelperResult,
 > HelperDef for F
 {
@@ -119,6 +119,7 @@ mod test {
 
     use value::JsonRender;
     use helpers::HelperDef;
+    use context::Context;
     use registry::Registry;
     use render::{Helper, RenderContext, Renderable};
     use error::RenderError;
@@ -132,10 +133,11 @@ mod test {
             &self,
             h: &Helper,
             r: &Registry,
-            rc: &RenderContext,
+            ctx: &Context,
+            rc: &mut RenderContext,
             out: &mut Output,
         ) -> Result<(), RenderError> {
-            let v = h.param(0)?.unwrap();
+            let v = h.param(0).unwrap();
 
             if !h.is_block() {
                 let output = format!("{}:{}", h.name(), v.value().render());
@@ -144,7 +146,7 @@ mod test {
                 let output = format!("{}:{}", h.name(), v.value().render());
                 out.write(output.as_ref())?;
                 out.write("->")?;
-                h.template().unwrap().render(r, rc, out)?;
+                h.template().unwrap().render(r, ctx, rc, out)?;
             };
             Ok(())
         }
@@ -189,10 +191,11 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
-                 _: &RenderContext,
+                 _: &Context,
+                 _: &mut RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}{}", h.name(), h.param(0)?.unwrap().value());
+                    let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
                     out.write(output.as_ref())?;
                     Ok(())
                 },
@@ -203,10 +206,11 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
-                 _: &RenderContext,
+                 _: &Context,
+                 _: &mut RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}", h.hash_get("value")?.unwrap().value().render());
+                    let output = format!("{}", h.hash_get("value").unwrap().value().render());
                     out.write(output.as_ref())?;
                     Ok(())
                 },

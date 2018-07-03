@@ -779,10 +779,10 @@ fn test_raw_string() {
     let mut out = StringOutput::new();
     let ctx = Context::null();
     {
-        let rc = RenderContext::new(ctx, None);
+        let mut rc = RenderContext::new(None);
         let raw_string = RawString("<h1>hello world</h1>".to_string());
 
-        raw_string.render(&r, &rc, &mut out).ok().unwrap();
+        raw_string.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
     assert_eq!(out.to_string().unwrap(), "<h1>hello world</h1>".to_string());
 }
@@ -796,10 +796,10 @@ fn test_expression() {
     m.insert("hello".to_string(), value);
     let ctx = Context::wraps(&m).unwrap();
     {
-        let rc = RenderContext::new(ctx, None);
+        let mut rc = RenderContext::new(None);
         let element = Expression(Parameter::Name("hello".into()));
 
-        element.render(&r, &rc, &mut out).ok().unwrap();
+        element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
 
     assert_eq!(out.to_string().unwrap(), "&lt;p&gt;&lt;/p&gt;".to_string());
@@ -814,9 +814,9 @@ fn test_html_expression() {
     m.insert("hello".to_string(), value.to_string());
     let ctx = Context::wraps(&m).unwrap();
     {
-        let rc = RenderContext::new(ctx, None);
+        let mut rc = RenderContext::new(None);
         let element = HTMLExpression(Parameter::Name("hello".into()));
-        element.render(&r, &rc, &mut out).ok().unwrap();
+        element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
 
     assert_eq!(out.to_string().unwrap(), value.to_string());
@@ -832,7 +832,7 @@ fn test_template() {
     let ctx = Context::wraps(&m).unwrap();
 
     {
-        let rc = RenderContext::new(ctx, None);
+        let mut rc = RenderContext::new(None);
         let mut elements: Vec<TemplateElement> = Vec::new();
 
         let e1 = RawString("<h1>".to_string());
@@ -852,7 +852,7 @@ fn test_template() {
             name: None,
             mapping: None,
         };
-        template.render(&r, &rc, &mut out).ok().unwrap();
+        template.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
 
     assert_eq!(out.to_string().unwrap(), "<h1>world</h1>".to_string());
@@ -861,25 +861,23 @@ fn test_template() {
 #[test]
 fn test_render_context_promotion_and_demotion() {
     use value::to_json;
-    let ctx = Context::null();
+    let mut render_context = RenderContext::new(None);
 
-    let render_context = RenderContext::new(ctx, None);
+    render_context.set_local_var("@index".to_string(), to_json(&0));
 
-    render_context.inner_mut().set_local_var("@index".to_string(), to_json(&0));
-
-    render_context.inner_mut().promote_local_vars();
+    render_context.promote_local_vars();
 
     assert_eq!(
-        render_context.inner()
+        render_context
             .get_local_var(&"@../index".to_string())
             .unwrap(),
         &to_json(&0)
     );
 
-    render_context.inner_mut().demote_local_vars();
+    render_context.demote_local_vars();
 
     assert_eq!(
-        render_context.inner().get_local_var(&"@index".to_string()).unwrap(),
+        render_context.get_local_var(&"@index".to_string()).unwrap(),
         &to_json(&0)
     );
 }
@@ -917,10 +915,11 @@ fn test_render_subexpression_issue_115() {
         Box::new(
             |h: &Helper,
              _: &Registry,
-             _: &RenderContext,
+             _: &Context,
+             _: &mut RenderContext,
              out: &mut Output|
              -> Result<(), RenderError> {
-                out.write(format!("{}", h.param(0)?.unwrap().value().render()).as_ref())
+                out.write(format!("{}", h.param(0).unwrap().value().render()).as_ref())
                     .map(|_| ())
                     .map_err(RenderError::from)
             },

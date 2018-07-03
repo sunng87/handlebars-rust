@@ -405,6 +405,7 @@ impl Registry {
 #[cfg(test)]
 mod test {
     use registry::Registry;
+    use context::Context;
     use render::{Helper, RenderContext, Renderable};
     use helpers::HelperDef;
     use support::str::StringWriter;
@@ -419,11 +420,11 @@ mod test {
             &self,
             h: &Helper,
             r: &Registry,
-            rc: &RenderContext,
+            ctx: &Context,
+            rc: &mut RenderContext,
             out: &mut Output,
         ) -> Result<(), RenderError> {
-            h.template().unwrap().render(r, rc, out)?;
-            Ok(())
+            h.template().unwrap().render(r, ctx, rc, out)
         }
     }
 

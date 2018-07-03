@@ -74,6 +74,7 @@ mod inline;
 #[cfg(test)]
 mod test {
     use registry::Registry;
+    use context::Context;
     use value::{to_json, as_string};
     use render::{Directive, Helper, RenderContext};
     use output::Output;
@@ -95,7 +96,7 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |_: &Directive, _: &Registry, _: &RenderContext| -> Result<(), RenderError> {
+                |_: &Directive, _: &Registry, _: &Context, _: &mut RenderContext| -> Result<(), RenderError> {
                     Ok(())
                 },
             ),
@@ -195,12 +196,13 @@ mod test {
             Box::new(
                 |h: &Helper,
                  _: &Registry,
-                 _: &RenderContext,
+                 _: &Context,
+                 _: &mut RenderContext,
                  out: &mut Output|
                  -> Result<(), RenderError> {
                     let s = format!(
                         "{}m",
-                        h.param(0)?
+                        h.param(0)
                             .as_ref()
                             .map(|v| v.value())
                             .unwrap_or(&to_json(&0))
@@ -213,20 +215,21 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |d: &Directive, _: &Registry, rc: &RenderContext| -> Result<(), RenderError> {
-                    let new_unit = d.param(0)?
+                |d: &Directive, _: &Registry, _: &Context, rc: &mut RenderContext| -> Result<(), RenderError> {
+                    let new_unit = d.param(0)
                         .as_ref()
                         .and_then(|v| as_string(v.value()))
                         .unwrap_or("")
                         .to_owned();
                     let new_helper = move |h: &Helper,
                                            _: &Registry,
-                                           _: &RenderContext,
+                                           _: &Context,
+                                           _: &mut RenderContext,
                                            out: &mut Output|
                           -> Result<(), RenderError> {
                         let s = format!(
                             "{}{}",
-                            h.param(0)?
+                            h.param(0)
                                 .as_ref()
                                 .map(|v| v.value())
                                 .unwrap_or(&to_json(&0)),
@@ -236,7 +239,7 @@ mod test {
                         Ok(())
                     };
 
-                    rc.inner_mut().register_local_helper("distance", Box::new(new_helper));
+                    rc.register_local_helper("distance", Box::new(new_helper));
                     Ok(())
                 },
             ),
@@ -244,8 +247,8 @@ mod test {
         handlebars.register_decorator(
             "bar",
             Box::new(
-                |_: &Directive, _: &Registry, rc: &RenderContext| -> Result<(), RenderError> {
-                    rc.inner_mut().unregister_local_helper("distance");
+                |_: &Directive, _: &Registry, _: &Context, rc: &mut RenderContext| -> Result<(), RenderError> {
+                    rc.unregister_local_helper("distance");
                     Ok(())
                 },
             ),

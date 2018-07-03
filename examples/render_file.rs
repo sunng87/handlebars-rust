@@ -19,10 +19,11 @@ use handlebars::{to_json, Context, Handlebars, Helper, JsonRender, Output, Rende
 fn format_helper(
     h: &Helper,
     _: &Handlebars,
-    _: &RenderContext,
+    _: &Context,
+    _: &mut RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
-    let param = h.param(0)?
+    let param = h.param(0)
         .ok_or(RenderError::new("Param 0 is required for format helper."))?;
     let rendered = format!("{} pts", param.value().render());
     out.write(rendered.as_ref())?;
@@ -33,15 +34,16 @@ fn format_helper(
 fn rank_helper(
     h: &Helper,
     _: &Handlebars,
-    _: &RenderContext,
+    _: &Context,
+    _: &mut RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
-    let rank = h.param(0)?
+    let rank = h.param(0)
         .and_then(|ref v| v.value().as_u64())
         .ok_or(RenderError::new(
             "Param 0 with u64 type is required for rank helper.",
         ))? as usize;
-    let total = h.param(1)?
+    let total = h.param(1)
         .as_ref()
         .and_then(|v| v.value().as_array())
         .map(|arr| arr.len())

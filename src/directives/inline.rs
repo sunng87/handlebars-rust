@@ -49,9 +49,9 @@ mod test {
         let hbs = Registry::new();
 
         let ctx = Context::null();
-        let mut rc = RenderContext::new(ctx, None);
-        t0.elements[0].eval(&hbs, &mut rc).unwrap();
+        let mut rc = RenderContext::new(None);
+        t0.elements[0].eval(&hbs, &ctx, &mut rc).unwrap();
 
-        assert!(rc.inner_mut().get_partial(&"hello".to_owned()).is_some());
+        assert!(rc.get_partial(&"hello".to_owned()).is_some());
     }
 }
