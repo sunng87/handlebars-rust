@@ -21,13 +21,13 @@ pub type DirectiveResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn update_data(_: &Decorator, _: &Handlebars, rc: &mut RenderContext)
+/// fn update_data<'reg: 'rc, 'rc>(_: &Decorator, _: &Handlebars, _: &Context, rc: &mut RenderContext)
 ///         -> Result<(), RenderError> {
 ///     // modify json object
-///     let mut data = rc.context_mut().data_mut();
-///     if let Some(ref mut m) = data.as_object_mut() {
-///         m.insert("hello".to_string(), to_json(&"world".to_owned()));
-///     }
+///     // let mut data = rc.context_mut().data_mut();
+///     // if let Some(ref mut m) = data.as_object_mut() {
+///     //    m.insert("hello".to_string(), to_json(&"world".to_owned()));
+///     // }
 ///     Ok(())
 /// }
 ///
@@ -40,9 +40,9 @@ pub type DirectiveResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn override_helper(_: &Decorator, _: &Handlebars, rc: &mut RenderContext)
+/// fn override_helper(_: &Decorator, _: &Handlebars, _: &Context, rc: &mut RenderContext)
 ///         -> Result<(), RenderError> {
-///     let new_helper = |h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output|
+///     let new_helper = |h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output|
 ///             -> Result<(), RenderError> {
 ///         // your helper logic
 ///         Ok(())

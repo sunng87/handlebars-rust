@@ -34,16 +34,14 @@ fn render_partial<'reg: 'rc, 'rc>(
     }
 
     if d.hash().is_empty() {
-        t.render(r, ctx, local_rc, out)?;
-        Ok(())
+        t.render(r, ctx, local_rc, out)
     } else {
         let hash_ctx =
             BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
         let partial_context = merge_json(local_rc.evaluate(ctx, ".", r.strict_mode())?, &hash_ctx);
         let ctx = Context::wraps(&partial_context)?;
-//        let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
-        t.render(r, &ctx, local_rc, out)?;
-        Ok(())
+        let mut partial_rc = local_rc.new_for_block();
+        t.render(r, &ctx, &mut partial_rc, out)
     }
 }
 

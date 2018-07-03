@@ -29,7 +29,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper, _: &Handlebars, rc: &mut RenderContext, out: &mut Output)
+/// fn upper(h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output)
 ///     -> HelperResult {
 ///    // get parameter from helper or throw an error
 ///    let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
@@ -45,8 +45,8 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn dummy_block(h: &Helper, r: &Handlebars, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
-///     h.template().map(|t| t.render(r, rc, out)).unwrap_or(Ok(()))
+/// fn dummy_block(h: &Helper, r: &Handlebars, ctx: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
+///     h.template().map(|t| t.render(r, ctx, rc, out)).unwrap_or(Ok(()))
 /// }
 /// ```
 ///

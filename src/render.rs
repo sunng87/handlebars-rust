@@ -86,12 +86,12 @@ impl RenderContext {
         RenderContext { inner, block }
     }
 
-    // pub fn with_context(&self, context: Context) -> RenderContext {
-    //     let inner = self.inner.clone();
-    //     let block = Rc::new(BlockRenderContext::default());
+    pub fn new_for_block(&self) -> RenderContext {
+        let inner = self.inner.clone();
+        let block = Rc::new(BlockRenderContext::default());
 
-    //     RenderContext { inner, block }
-    // }
+        RenderContext { inner, block }
+    }
 
     fn inner(&self) -> &RenderContextInner {
         self.inner.borrow()
