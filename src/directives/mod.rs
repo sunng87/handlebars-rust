@@ -1,4 +1,5 @@
-use render::{Directive, RenderContext};
+use template::DirectiveTemplate;
+use render::RenderContext;
 use registry::Registry;
 use error::RenderError;
 
@@ -52,19 +53,19 @@ pub type DirectiveResult = Result<(), RenderError>;
 /// ```
 ///
 pub trait DirectiveDef: Send + Sync {
-    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'rc mut Directive<'reg, 'rc>) -> DirectiveResult;
+    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'reg DirectiveTemplate, r: &'reg Registry, rc: &'rc mut RenderContext) -> DirectiveResult;
 }
 
 /// implement DirectiveDef for bare function so we can use function as directive
 impl<
     F: Send
         + Sync
-        + for<'reg, 'rc> Fn(&'rc mut Directive<'reg, 'rc>)
+        + for<'reg, 'rc> Fn(&'reg DirectiveTemplate, &'reg Registry, &'rc mut RenderContext)
         -> DirectiveResult,
 > DirectiveDef for F
 {
-    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'rc mut Directive<'reg, 'rc>) -> DirectiveResult {
-        (*self)(d)
+    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'reg DirectiveTemplate, reg: &'reg Registry, rc: &'rc mut RenderContext) -> DirectiveResult {
+        (*self)(d, reg, rc)
     }
 }
 

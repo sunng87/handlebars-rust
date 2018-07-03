@@ -341,8 +341,7 @@ extern crate serde_json;
 pub use self::template::Template;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
-pub use self::render::{Directive as Decorator, Evaluable, Helper, RenderContext,
-                       Renderable};
+pub use self::render::{Evaluable, RenderContext, Renderable};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::context::Context;

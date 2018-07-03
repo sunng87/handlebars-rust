@@ -127,7 +127,7 @@ pub struct HelperTemplate {
 }
 
 #[derive(PartialEq, Clone, Debug)]
-pub struct Directive {
+pub struct DirectiveTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: BTreeMap<String, Parameter>,
@@ -414,7 +414,7 @@ impl Template {
     pub fn compile2<S: AsRef<str>>(source: S, mapping: bool) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
-        let mut directive_stack: VecDeque<Directive> = VecDeque::new();
+        let mut directive_stack: VecDeque<DirectiveTemplate> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
 
         let mut omit_pro_ws = false;
@@ -525,7 +525,7 @@ impl Template {
                                 helper_stack.push_front(helper_template);
                             }
                             Rule::directive_block_start | Rule::partial_block_start => {
-                                let directive = Directive {
+                                let directive = DirectiveTemplate {
                                     name: exp.name,
                                     params: exp.params,
                                     hash: exp.hash,
@@ -611,7 +611,7 @@ impl Template {
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::directive_expression | Rule::partial_expression => {
-                                let directive = Directive {
+                                let directive = DirectiveTemplate {
                                     name: exp.name,
                                     params: exp.params,
                                     hash: exp.hash,
@@ -726,10 +726,10 @@ pub enum TemplateElement {
     HTMLExpression(Parameter),
     HelperExpression(HelperTemplate),
     HelperBlock(HelperTemplate),
-    DirectiveExpression(Directive),
-    DirectiveBlock(Directive),
-    PartialExpression(Directive),
-    PartialBlock(Directive),
+    DirectiveExpression(DirectiveTemplate),
+    DirectiveBlock(DirectiveTemplate),
+    PartialExpression(DirectiveTemplate),
+    PartialBlock(DirectiveTemplate),
     Comment(String),
 }
 
