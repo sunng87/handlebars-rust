@@ -81,7 +81,7 @@ impl RenderContext {
 
     pub fn derive(&self) -> RenderContext {
         let inner = self.inner.clone();
-        let block = Rc::new(BlockRenderContext::default());
+        let block = self.block.clone();
 
         RenderContext { inner, block }
     }
