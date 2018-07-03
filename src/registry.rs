@@ -266,8 +266,8 @@ impl Registry {
             .ok_or(RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
                 let ctx = Context::wraps(data)?;
-                let render_context = RenderContext::new(ctx, t.name.clone());
-                t.render(self, render_context, output)
+                let mut render_context = RenderContext::new(ctx, t.name.clone());
+                t.render(self, &mut render_context, output)
             })
             .map(|_| ())
     }
@@ -329,9 +329,9 @@ impl Registry {
     {
         let tpl = Template::compile2(template_string, self.source_map)?;
         let ctx = Context::wraps(data)?;
-        let render_context = RenderContext::new(ctx, None);
+        let mut render_context = RenderContext::new(ctx, None);
         let mut out = WriteOutput::new(writer);
-        tpl.render(self, render_context, &mut out)
+        tpl.render(self, &mut render_context, &mut out)
             .map(|_| ())
             .map_err(TemplateRenderError::from)
     }

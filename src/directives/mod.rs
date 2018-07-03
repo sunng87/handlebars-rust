@@ -4,7 +4,7 @@ use error::RenderError;
 
 pub use self::inline::INLINE_DIRECTIVE;
 
-pub type DirectiveResult = Result<RenderContext, RenderError>;
+pub type DirectiveResult = Result<(), RenderError>;
 
 /// Decorator Definition
 ///
@@ -52,18 +52,18 @@ pub type DirectiveResult = Result<RenderContext, RenderError>;
 /// ```
 ///
 pub trait DirectiveDef: Send + Sync {
-    fn call<'reg: 'rc, 'rc>(&'reg self, d: Directive<'reg, 'rc>) -> DirectiveResult;
+    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'rc mut Directive<'reg, 'rc>) -> DirectiveResult;
 }
 
 /// implement DirectiveDef for bare function so we can use function as directive
 impl<
     F: Send
         + Sync
-        + for<'reg, 'rc> Fn(Directive<'reg, 'rc>)
+        + for<'reg, 'rc> Fn(&'rc mut Directive<'reg, 'rc>)
         -> DirectiveResult,
 > DirectiveDef for F
 {
-    fn call<'reg: 'rc, 'rc>(&'reg self, d: Directive<'reg, 'rc>) -> DirectiveResult {
+    fn call<'reg: 'rc, 'rc>(&'reg self, d: &'rc mut Directive<'reg, 'rc>) -> DirectiveResult {
         (*self)(d)
     }
 }

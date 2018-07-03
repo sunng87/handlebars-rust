@@ -13,10 +13,10 @@ use output::Output;
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
     d: Directive<'reg, 'rc>,
-    mut local_rc: RenderContext,
+    local_rc: &'rc mut RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
-    let context_param = d.param(0);
+    let context_param = d.param(0)?;
     let r = d.registry();
     if let Some(p) = context_param {
         if let Some(ref param_path) = p.path() {
@@ -33,7 +33,7 @@ fn render_partial<'reg: 'rc, 'rc>(
         local_rc.set_partial("@partial-block".to_string(), Rc::new(t.clone()));
     }
 
-    let hash = d.hash();
+    let hash = d.hash()?;
     if hash.is_empty() {
         t.render(r, local_rc, out)?;
         Ok(())
@@ -42,7 +42,7 @@ fn render_partial<'reg: 'rc, 'rc>(
             BTreeMap::from_iter(hash.iter().map(|(k, v)| (k.clone(), v.value().clone())));
         let partial_context = merge_json(local_rc.evaluate(".", r.strict_mode())?, &hash_ctx);
         let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
-        t.render(r, partial_rc, out)?;
+        t.render(r, &mut partial_rc, out)?;
         Ok(())
     }
 }
@@ -50,13 +50,13 @@ fn render_partial<'reg: 'rc, 'rc>(
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: Directive<'reg, 'rc>,
     out: &mut Output,
-) -> Result<RenderContext, RenderError> {
+) -> Result<(), RenderError> {
     let r = d.registry();
-    let mut rc = d.into_render_context();
+    let rc = d.render_context();
 
     // try eval inline partials first
     if let Some(t) = d.template() {
-        rc = t.eval(r, rc)?;
+        t.eval(r, rc)?;
     }
 
     let tname = d.name();
@@ -69,16 +69,16 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     match partial {
         Some(t) => {
             let mut local_rc = rc.derive();
-            render_partial(t.borrow(), d, local_rc, out)?;
+            render_partial(t.borrow(), d, &mut local_rc, out)?;
         }
         None => if let Some(t) = r.get_template(tname.as_ref()).or(d.template()) {
             let mut local_rc = rc.derive();
-            render_partial(t, d, local_rc, out)?;
+            render_partial(t, d, &mut local_rc, out)?;
 
         }
     }
 
-    Ok(rc)
+    Ok(())
 }
 
 #[cfg(test)]

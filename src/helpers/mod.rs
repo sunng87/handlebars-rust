@@ -11,7 +11,7 @@ use value::ScopedJson;
 // pub use self::helper_raw::RAW_HELPER;
 // pub use self::helper_log::LOG_HELPER;
 
-pub type HelperResult = Result<RenderContext, RenderError>;
+pub type HelperResult = Result<(), RenderError>;
 
 /// Helper Definition
 ///
@@ -54,21 +54,21 @@ pub type HelperResult = Result<RenderContext, RenderError>;
 pub trait HelperDef: Send + Sync {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: Helper<'reg, 'rc>,
+        _: &'rc mut Helper<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
 
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: Helper<'reg, 'rc>,
+        h: &'rc mut Helper<'reg, 'rc>,
         out: &mut Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h)? {
             out.write(result.render().as_ref())?;
         }
 
-        Ok(h.into_render_context())
+        Ok(())
     }
 }
 
@@ -76,13 +76,13 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'reg, 'rc> Fn(Helper<'reg, 'rc>, &mut Output)
+        + for<'reg, 'rc> Fn(&'rc mut Helper<'reg, 'rc>, &mut Output)
         -> HelperResult,
 > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: Helper<'reg, 'rc>,
+        h: &'rc mut Helper<'reg, 'rc>,
         out: &mut Output,
     ) -> HelperResult {
         (*self)(h, out)
