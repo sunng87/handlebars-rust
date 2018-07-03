@@ -302,246 +302,215 @@ impl fmt::Debug for RenderContextInner {
     }
 }
 
-/// Render-time Helper data when using in a helper definition
-// #[derive(Debug)]
-// pub struct Helper<'reg: 'rc, 'rc> {
-//     // name: &'reg String,
-//     // params: Vec<PathAndJson<'reg, 'rc>>,
-//     // hash: BTreeMap<String, PathAndJson<'reg, 'rc>>,
-//     // template: Option<&'reg Template>,
-//     // inverse: Option<&'reg Template>,
-//     // block_param: Option<&'reg BlockParam>,
-//     // block: bool,
+// Render-time Helper data when using in a helper definition
+#[derive(Debug)]
+pub struct Helper<'reg: 'rc, 'rc> {
+    name: &'reg String,
+    params: Vec<PathAndJson<'reg, 'rc>>,
+    hash: BTreeMap<String, PathAndJson<'reg, 'rc>>,
+    template: Option<&'reg Template>,
+    inverse: Option<&'reg Template>,
+    block_param: Option<&'reg BlockParam>,
+    block: bool,
+}
 
-//     helper_template: &'reg HelperTemplate,
-//     render_context: &'rc mut RenderContext,
-//     registry: &'reg Registry,
-// }
+impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
+    fn try_from_template(
+        ht: &'reg HelperTemplate,
+        registry: &'reg Registry,
+        context: &'rc Context,
+        render_context: &mut RenderContext,
+    ) -> Result<Helper<'reg, 'rc>, RenderError> {
+        let mut pv = Vec::new();
+        for p in ht.params.iter() {
+            let r = p.expand(registry, context, render_context)?;
+            pv.push(r);
+        }
 
-// impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
-//     fn new(
-//         ht: &'reg HelperTemplate,
-//         registry: &'reg Registry,
-//         render_context: &'rc mut RenderContext,
-//     ) -> Helper<'reg, 'rc> {
-//         Helper {
-//             helper_template: ht,
-//             render_context,
-//             registry,
-//         }
-//     }
+        let mut hm = BTreeMap::new();
+        for (k, p) in ht.hash.iter() {
+            let r = p.expand(registry, context, render_context)?;
+            hm.insert(k.clone(), r);
+        }
 
-//     /// Returns helper name
-//     pub fn name(&self) -> &'reg str {
-//         &self.helper_template.name
-//     }
+        Ok(Helper {
+            name: &ht.name,
+            params: pv,
+            hash: hm,
+            template: ht.template.as_ref(),
+            inverse: ht.inverse.as_ref(),
+            block_param: ht.block_param.as_ref(),
+            block: ht.block,
+        })
+    }
 
-//     /// Returns all helper params, resolved within the context
-//     pub fn params(&'rc mut self) -> Result<Vec<PathAndJson<'reg, 'rc>>, RenderError> {
-//         let mut pv = Vec::new();
-//         for p in self.helper_template.params.iter() {
-//             let r = p.expand(self.registry, self.render_context)?;
-//             pv.push(r);
-//         }
-//         Ok(pv)
-//     }
+    /// Returns helper name
+    pub fn name(&self) -> &'reg str {
+        self.name
+    }
 
-//     /// Returns nth helper param, resolved within the context.
-//     ///
-//     /// ## Example
-//     ///
-//     /// To get the first param in `{{my_helper abc}}` or `{{my_helper 2}}`,
-//     /// use `h.param(0)` in helper definition.
-//     /// Variable `abc` is auto resolved in current context.
-//     ///
-//     /// ```
-//     /// use handlebars::*;
-//     ///
-//     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
-//     ///     let v = h.param(0).map(|v| v.value())
-//     ///         .ok_or(RenderError::new("param not found"));
-//     ///     // ..
-//     ///     Ok(())
-//     /// }
-//     /// ```
-//     pub fn param(&'rc mut self, idx: usize) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
-//         if let Some(p) = self.helper_template.params.get(idx) {
-//             let r = p.expand(self.registry, self.render_context)?;
-//             Ok(Some(r))
-//         } else {
-//             Ok(None)
-//         }
-//     }
+    /// Returns all helper params, resolved within the context
+    pub fn params(&self) -> &Vec<PathAndJson<'reg, 'rc>> {
+        &self.params
+    }
 
-//     /// Returns hash, resolved within the context
-//     pub fn hash(&'rc mut self) -> Result<BTreeMap<String, PathAndJson<'reg, 'rc>>, RenderError> {
-//         let mut hm = BTreeMap::new();
-//         for (k, p) in self.helper_template.hash.iter() {
-//             let r = try!(p.expand(self.registry, self.render_context));
-//             hm.insert(k.clone(), r);
-//         }
-//         Ok(hm)
-//     }
+    /// Returns nth helper param, resolved within the context.
+    ///
+    /// ## Example
+    ///
+    /// To get the first param in `{{my_helper abc}}` or `{{my_helper 2}}`,
+    /// use `h.param(0)` in helper definition.
+    /// Variable `abc` is auto resolved in current context.
+    ///
+    /// ```
+    /// use handlebars::*;
+    ///
+    /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
+    ///     let v = h.param(0).map(|v| v.value())
+    ///         .ok_or(RenderError::new("param not found"));
+    ///     // ..
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn param(&self, idx: usize) -> Option<&PathAndJson<'reg, 'rc>> {
+        self.params.get(idx)
+    }
 
-//     /// Return hash value of a given key, resolved within the context
-//     ///
-//     /// ## Example
-//     ///
-//     /// To get the first param in `{{my_helper v=abc}}` or `{{my_helper v=2}}`,
-//     /// use `h.hash_get("v")` in helper definition.
-//     /// Variable `abc` is auto resolved in current context.
-//     ///
-//     /// ```
-//     /// use handlebars::*;
-//     ///
-//     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
-//     ///     let v = h.hash_get("v").map(|v| v.value())
-//     ///         .ok_or(RenderError::new("param not found"));
-//     ///     // ..
-//     ///     Ok(())
-//     /// }
-//     /// ```
-//     pub fn hash_get(&'rc mut self, key: &str) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
-//         if let Some(p) = self.helper_template.hash.get(key) {
-//             let r = p.expand(self.registry, self.render_context)?;
-//             Ok(Some(r))
-//         } else {
-//             Ok(None)
-//         }
-//     }
+    /// Returns hash, resolved within the context
+    pub fn hash(&self) -> &BTreeMap<String, PathAndJson<'reg, 'rc>> {
+        &self.hash
+    }
 
-//     /// Returns the default inner template if the helper is a block helper.
-//     ///
-//     /// Typically you will render the template via: `template.render(registry, render_context)`
-//     ///
-//     pub fn template(&self) -> Option<&'reg Template> {
-//         self.helper_template.template.as_ref()
-//     }
+    /// Return hash value of a given key, resolved within the context
+    ///
+    /// ## Example
+    ///
+    /// To get the first param in `{{my_helper v=abc}}` or `{{my_helper v=2}}`,
+    /// use `h.hash_get("v")` in helper definition.
+    /// Variable `abc` is auto resolved in current context.
+    ///
+    /// ```
+    /// use handlebars::*;
+    ///
+    /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
+    ///     let v = h.hash_get("v").map(|v| v.value())
+    ///         .ok_or(RenderError::new("param not found"));
+    ///     // ..
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn hash_get(&self, key: &str) -> Option<&PathAndJson<'reg, 'rc>> {
+        self.hash.get(key)
+    }
 
-//     /// Returns the template of `else` branch if any
-//     pub fn inverse(&self) -> Option<&'reg Template> {
-//         self.helper_template.inverse.as_ref()
-//     }
+    /// Returns the default inner template if the helper is a block helper.
+    ///
+    /// Typically you will render the template via: `template.render(registry, render_context)`
+    ///
+    pub fn template(&self) -> Option<&'reg Template> {
+        self.template
+    }
 
-//     /// Returns if the helper is a block one `{{#helper}}{{/helper}}` or not `{{helper 123}}`
-//     pub fn is_block(&self) -> bool {
-//         self.helper_template.block
-//     }
+    /// Returns the template of `else` branch if any
+    pub fn inverse(&self) -> Option<&'reg Template> {
+        self.inverse
+    }
 
-//     /// Returns block param if any
-//     pub fn block_param(&self) -> Option<&str> {
-//         if let Some(BlockParam::Single(Parameter::Name(ref s))) = self.helper_template.block_param {
-//             Some(s)
-//         } else {
-//             None
-//         }
-//     }
+    /// Returns if the helper is a block one `{{#helper}}{{/helper}}` or not `{{helper 123}}`
+    pub fn is_block(&self) -> bool {
+        self.block
+    }
 
-//     /// Return block param pair (for example |key, val|) if any
-//     pub fn block_param_pair(&self) -> Option<(&str, &str)> {
-//         if let Some(BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
-//             self.helper_template.block_param
-//         {
-//             Some((s1, s2))
-//         } else {
-//             None
-//         }
-//     }
+    /// Returns block param if any
+    pub fn block_param(&self) -> Option<&str> {
+        if let Some(BlockParam::Single(Parameter::Name(ref s))) = self.block_param {
+            Some(s)
+        } else {
+            None
+        }
+    }
 
-//     pub fn render_context(&mut self) -> &mut RenderContext {
-//         self.render_context
-//     }
+    /// Return block param pair (for example |key, val|) if any
+    pub fn block_param_pair(&self) -> Option<(&str, &str)> {
+        if let Some(BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
+            self.block_param
+        {
+            Some((s1, s2))
+        } else {
+            None
+        }
+    }
+}
 
-//     pub fn registry(&self) -> &Registry {
-//         self.registry
-//     }
-// }
+// Render-time Directive data when using in a directive definition
+#[derive(Debug)]
+pub struct Directive<'reg: 'rc, 'rc> {
+    name: String,
+    params: Vec<PathAndJson<'reg, 'rc>>,
+    hash: BTreeMap<String, PathAndJson<'reg, 'rc>>,
+    template: Option<&'reg Template>,
+}
 
-/// Render-time Decorator data when using in a decorator definition
-// #[derive(Debug)]
-// pub struct Directive<'reg: 'rc, 'rc> {
-//     name: String,
-//     directive_template: &'reg DirectiveTemplate,
-//     render_context: &'rc mut RenderContext,
-//     registry: &'reg Registry,
-// }
+impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
+    fn try_from_template(
+        dt: &'reg DirectiveTemplate,
+        registry: &'reg Registry,
+        context: &'rc Context,
+        render_context: &mut RenderContext,
+    ) -> Result<Directive<'reg, 'rc>, RenderError> {
+        let name = try!(dt.name.expand_as_name(registry, context, render_context));
 
-// impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
-//     fn try_from_template(
-//         dt: &'reg DirectiveTemplate,
-//         registry: &'reg Registry,
-//         render_context: &'rc mut RenderContext,
-//     ) -> Result<Directive<'reg, 'rc>, RenderError> {
-//         let name = try!(dt.name.expand_as_name(registry, render_context));
+        let mut pv = Vec::new();
+        for p in dt.params.iter() {
+            let r = p.expand(registry, context, render_context)?;
+            pv.push(r);
+        }
+
+        let mut hm = BTreeMap::new();
+        for (k, p) in dt.hash.iter() {
+            let r = p.expand(registry, context, render_context)?;
+            hm.insert(k.clone(), r);
+        }
 
 
-//         Ok(Directive {
-//             name: name,
-//             directive_template: dt,
-//             render_context,
-//             registry,
-//         })
-//     }
+        Ok(Directive {
+            name: name,
+            params: pv,
+            hash: hm,
+            template: dt.template.as_ref(),
+        })
+    }
 
-//     /// Returns helper name
-//     pub fn name(&self) -> &String {
-//         &self.name
-//     }
+    /// Returns helper name
+    pub fn name(&self) -> &String {
+        &self.name
+    }
 
-//     /// Returns all helper params, resolved within the context
-//     pub fn params(&'rc mut self) -> Result<Vec<PathAndJson<'reg, 'rc>>, RenderError> {
-//         let mut evaluated_params = Vec::new();
-//         for p in self.directive_template.params.iter() {
-//             let r = p.expand(self.registry, self.render_context)?;
-//             evaluated_params.push(r);
-//         }
-//         Ok(evaluated_params)
-//     }
+    /// Returns all helper params, resolved within the context
+    pub fn params(&self) -> &Vec<PathAndJson<'reg, 'rc>> {
+        &self.params
+    }
 
-//     /// Returns nth helper param, resolved within the context
-//     pub fn param(&'rc mut self, idx: usize) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
-//         if let Some(ref p) = self.directive_template.params.get(idx) {
-//             let r = p.expand(self.registry, self.render_context)?;
-//             Ok(Some(r))
-//         } else {
-//             Ok(None)
-//         }
-//     }
+    /// Returns nth helper param, resolved within the context
+    pub fn param(&self, idx: usize) -> Option<&PathAndJson<'reg, 'rc>> {
+        self.params.get(idx)
+    }
 
-//     /// Returns hash, resolved within the context
-//     pub fn hash(&'rc mut self) -> Result<BTreeMap<String, PathAndJson<'reg, 'rc>>, RenderError> {
-//         let mut evaluated_hash = BTreeMap::new();
-//         for (k, p) in self.directive_template.hash.iter() {
-//             let r = p.expand(self.registry, self.render_context)?;
-//             evaluated_hash.insert(k.clone(), r);
-//         }
+    /// Returns hash, resolved within the context
+    pub fn hash(&self) -> &BTreeMap<String, PathAndJson<'reg, 'rc>> {
+        &self.hash
+    }
 
-//         Ok(evaluated_hash)
-//     }
+    /// Return hash value of a given key, resolved within the context
+    pub fn hash_get(&self, key: &str) -> Option<&PathAndJson<'reg, 'rc>> {
+        self.hash.get(key)
+    }
 
-//     /// Return hash value of a given key, resolved within the context
-//     pub fn hash_get(&'rc mut self, key: &str) -> Result<Option<PathAndJson<'reg, 'rc>>, RenderError> {
-//         if let Some(ref p) = self.directive_template.hash.get(key) {
-//             let r = p.expand(self.registry, self.render_context)?;
-//             Ok(Some(r))
-//         } else {
-//             Ok(None)
-//         }
-//     }
-
-//     /// Returns the default inner template if any
-//     pub fn template(&self) -> Option<&'reg Template> {
-//         self.directive_template.template.as_ref()
-//     }
-
-//     pub fn render_context(&mut self) -> &mut RenderContext {
-//         self.render_context
-//     }
-
-//     pub fn registry(&self) -> &Registry {
-//         self.registry
-//     }
-// }
+    /// Returns the default inner template if any
+    pub fn template(&self) -> Option<&'reg Template> {
+        self.template
+    }
+}
 
 /// Render trait
 pub trait Renderable {
@@ -569,10 +538,10 @@ pub trait Evaluable {
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
     hd: &Box<HelperDef>,
-    ht: &'reg HelperTemplate,
+    ht: &Helper<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &'rc mut RenderContext,
+    rc: &mut RenderContext,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
     if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
         Ok(PathAndJson::new(None, result))
@@ -598,7 +567,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext,
+        rc: &mut RenderContext,
     ) -> Result<String, RenderError> {
         match self {
             &Parameter::Name(ref name) => Ok(name.to_owned()),
@@ -611,7 +580,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext,
+        rc: &mut RenderContext,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
@@ -641,9 +610,10 @@ impl Parameter {
             &Parameter::Subexpression(ref t) => match t.as_element() {
                 Expression(ref expr) => expr.expand(registry, ctx, rc),
                 HelperExpression(ref ht) => {
+                    let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                     if let Some(ref d) = rc.get_local_helper(&ht.name) {
                         let helper_def = d.borrow();
-                        call_helper_for_value(helper_def, ht, registry, ctx, rc)
+                        call_helper_for_value(helper_def, &h, registry, ctx, rc)
                     } else {
                         registry
                             .get_helper(&ht.name)
@@ -656,7 +626,7 @@ impl Parameter {
                                 "Helper not defined: {:?}",
                                 ht.name
                             )))
-                            .and_then(move |d| call_helper_for_value(d, ht, registry, ctx, rc))
+                            .and_then(move |d| call_helper_for_value(d, &h, registry, ctx, rc))
                     }
                 }
                 _ => unreachable!(),
@@ -670,7 +640,7 @@ impl Renderable for Template {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext,
+        rc: &mut RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
         let template_name = self.name.clone();
@@ -702,7 +672,7 @@ impl Renderable for Template {
 }
 
 impl Evaluable for Template {
-    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, ctx: &'rc Context, rc: &'rc mut RenderContext) -> Result<(), RenderError> {
+    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, ctx: &'rc Context, rc: &mut RenderContext) -> Result<(), RenderError> {
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
@@ -730,7 +700,7 @@ impl Renderable for TemplateElement {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext,
+        rc: &mut RenderContext,
         out: &mut Output,
     ) -> Result<(), RenderError> {
         match *self {
@@ -757,8 +727,9 @@ impl Renderable for TemplateElement {
                 Ok(())
             }
             HelperExpression(ref ht) | HelperBlock(ref ht) => {
+                let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                 if let Some(ref d) = rc.get_local_helper(&ht.name) {
-                    d.call(ht, registry, ctx, rc, out)
+                    d.call(&h, registry, ctx, rc, out)
                 } else {
                     registry
                         .get_helper(&ht.name)
@@ -771,12 +742,13 @@ impl Renderable for TemplateElement {
                             "Helper not defined: {:?}",
                             ht.name
                         )))
-                        .and_then(move |d| d.call(ht, registry, ctx, rc, out))
+                        .and_then(move |d| d.call(&h, registry, ctx, rc, out))
                 }
             }
             DirectiveExpression(_) | DirectiveBlock(_) => self.eval(registry, ctx, rc),
             PartialExpression(ref dt) | PartialBlock(ref dt) => {
-                partial::expand_partial(dt, registry, ctx, rc, out)
+                let di = Directive::try_from_template(dt, registry, ctx, rc)?;
+                partial::expand_partial(&di, registry, ctx, rc, out)
             }
             _ => Ok(()),
         }
@@ -784,12 +756,12 @@ impl Renderable for TemplateElement {
 }
 
 impl Evaluable for TemplateElement {
-    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, ctx: &'rc Context, rc: &'rc mut RenderContext) -> Result<(), RenderError> {
+    fn eval<'reg:'rc, 'rc>(&'reg self, registry: &'reg Registry, ctx: &'rc Context, rc: & mut RenderContext) -> Result<(), RenderError> {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
-                let name = dt.name.expand_as_name(registry, ctx, rc)?;
-                match registry.get_decorator(&name) {
-                    Some(d) => (**d).call(dt, registry, ctx, rc),
+                let di = Directive::try_from_template(dt, registry, ctx, rc)?;
+                match registry.get_decorator(di.name()) {
+                    Some(d) => (**d).call(&di, registry, ctx, rc),
                     None => Err(RenderError::new(format!(
                         "Directive not defined: {:?}",
                         dt.name

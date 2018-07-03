@@ -1,5 +1,4 @@
-use template::HelperTemplate;
-use render::RenderContext;
+use render::{Helper, RenderContext};
 use context::Context;
 use registry::Registry;
 use error::RenderError;
@@ -56,20 +55,20 @@ pub type HelperResult = Result<(), RenderError>;
 pub trait HelperDef: Send + Sync {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &'reg HelperTemplate,
+        _: &Helper<'reg, 'rc>,
         _: &'reg Registry,
         _: &'rc Context,
-        _: &'rc mut RenderContext,
+        _: &mut RenderContext,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
 
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &'reg HelperTemplate,
+        h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext,
+        rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, ctx, rc)? {
@@ -84,16 +83,16 @@ pub trait HelperDef: Send + Sync {
 impl<
     F: Send
         + Sync
-        + for<'reg, 'rc> Fn(&'reg HelperTemplate, &'reg Registry, &'rc Context, &'rc RenderContext, &mut Output)
+        + for<'reg, 'rc> Fn(&Helper<'reg, 'rc>, &'reg Registry, &'rc Context, &RenderContext, &mut Output)
         -> HelperResult,
 > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &'reg HelperTemplate,
+        h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext,
+        rc: &mut RenderContext,
         out: &mut Output,
     ) -> HelperResult {
         (*self)(h, r, ctx, rc, out)

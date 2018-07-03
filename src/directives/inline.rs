@@ -1,37 +1,31 @@
 use std::rc::Rc;
 
-use template::DirectiveTemplate;
 use context::Context;
 use directives::{DirectiveDef, DirectiveResult};
 use registry::Registry;
-use render::RenderContext;
+use render::{Directive, RenderContext};
 use error::RenderError;
 
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
 
-fn get_name<'reg: 'rc, 'rc>(d: &'reg DirectiveTemplate, reg: &'reg Registry, ctx: &'rc Context, rc: &'rc mut RenderContext) -> Result<String, RenderError> {
-    if let Some(p) = d.params.get(0) {
-        p.expand(reg, ctx, rc)
-            .and_then(|v| {
-                v.value()
-                    .as_str()
-                    .map(|s| s.to_owned())
-                    .ok_or_else(|| RenderError::new("inline name must be string"))
-            })
-    } else {
-        Err(RenderError::new("Param required for directive \"inline\""))
-    }
+fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg, 'rc>) -> Result<&'rc str, RenderError> {
+    d.param(0)
+        .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
+        .and_then(|v|
+                  v.value()
+                  .as_str()
+                  .ok_or_else(|| RenderError::new("inline name must be string")))
 }
 
 impl DirectiveDef for InlineDirective {
-    fn call<'reg: 'rc, 'rc>(&self, d: &'reg DirectiveTemplate, r: &'reg Registry, ctx: &'rc Context, rc: &'rc mut RenderContext) -> DirectiveResult {
-        let name = get_name(d, r, ctx, rc)?;
+    fn call<'reg: 'rc, 'rc>(&self, d: &Directive<'reg, 'rc>, _: &'reg Registry, _: &'rc Context, rc: &mut RenderContext) -> DirectiveResult {
+        let name = get_name(d)?;
 
-        let template = d.template.as_ref()
+        let template = d.template()
             .ok_or_else(|| RenderError::new("inline should have a block"))?;
 
-        rc.set_partial(name, Rc::new(template.clone()));
+        rc.set_partial(name.to_owned(), Rc::new(template.clone()));
         Ok(())
     }
 }
