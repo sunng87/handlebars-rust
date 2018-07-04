@@ -1,6 +1,12 @@
 use serde::Serialize;
 use serde_json::value::{to_value, Value as Json};
 
+/// A JSON wrapper designed for handlebars internal use case
+///
+/// * Constant: the JSON value hardcoded into template
+/// * Context:  the JSON value referenced in your provided data context
+/// * Derived:  the owned JSON value computed during rendering process
+///
 #[derive(Debug)]
 pub enum ScopedJson<'reg: 'rc, 'rc> {
     Constant(&'reg Json),
@@ -9,6 +15,7 @@ pub enum ScopedJson<'reg: 'rc, 'rc> {
 }
 
 impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
+    /// get the JSON reference
     pub fn as_json(&self) -> &Json {
         match self {
             ScopedJson::Constant(j) => j,
