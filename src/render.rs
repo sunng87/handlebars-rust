@@ -118,7 +118,7 @@ impl RenderContext {
          self.modified_context.clone()
     }
 
-    pub fn context_mut(&mut self, ctx: Context) {
+    pub fn set_context(&mut self, ctx: Context) {
         self.modified_context = Some(Rc::new(ctx))
     }
 
