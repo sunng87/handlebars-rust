@@ -76,7 +76,7 @@ impl HelperDef for EachHelper {
                     }
                     (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
-                        for k in obj.keys() {
+                        for (k, v) in obj.iter() {
                             let mut local_rc = rc.derive();
 
                             if let Some(ref p) = local_path_root {
@@ -98,7 +98,7 @@ impl HelperDef for EachHelper {
                             if let Some((bp_key, bp_val)) = h.block_param_pair() {
                                 let mut map = BTreeMap::new();
                                 map.insert(bp_key.to_string(), to_json(k));
-                                map.insert(bp_val.to_string(), to_json(obj.get(k).unwrap()));
+                                map.insert(bp_val.to_string(), to_json(v));
                                 local_rc.push_block_context(&map)?;
                             }
 
