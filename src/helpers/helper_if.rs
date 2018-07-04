@@ -1,8 +1,10 @@
-use helpers::{HelperDef, HelperResult};
-use registry::Registry;
-use context::JsonTruthy;
-use render::{Helper, RenderContext, Renderable};
+use context::Context;
 use error::RenderError;
+use helpers::{HelperDef, HelperResult};
+use output::Output;
+use registry::Registry;
+use render::{Helper, RenderContext, Renderable};
+use value::JsonTruthy;
 
 #[derive(Clone, Copy)]
 pub struct IfHelper {
@@ -10,11 +12,17 @@ pub struct IfHelper {
 }
 
 impl HelperDef for IfHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
-        let param = try!(
-            h.param(0)
-                .ok_or_else(|| RenderError::new("Param not found for helper \"if\""))
-        );
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper,
+        r: &Registry,
+        ctx: &Context,
+        rc: &mut RenderContext,
+        out: &mut Output,
+    ) -> HelperResult {
+        let param = h
+            .param(0)
+            .ok_or_else(|| RenderError::new("Param not found for helper \"if\""))?;
 
         let mut value = param.value().is_truthy();
 
@@ -25,7 +33,7 @@ impl HelperDef for IfHelper {
         let tmpl =
             if value { h.template() } else { h.inverse() };
         match tmpl {
-            Some(ref t) => t.render(r, rc),
+            Some(ref t) => t.render(r, ctx, rc, out),
             None => Ok(()),
         }
     }
@@ -36,10 +44,10 @@ pub static UNLESS_HELPER: IfHelper = IfHelper { positive: false };
 
 #[cfg(test)]
 mod test {
-    use registry::Registry;
-    use std::str::FromStr;
-    use serde_json::value::Value as Json;
     use helpers::WITH_HELPER;
+    use registry::Registry;
+    use serde_json::value::Value as Json;
+    use std::str::FromStr;
 
     #[test]
     fn test_if() {

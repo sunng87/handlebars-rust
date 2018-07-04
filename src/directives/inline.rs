@@ -1,14 +1,15 @@
 use std::rc::Rc;
 
-use directives::DirectiveDef;
+use context::Context;
+use directives::{DirectiveDef, DirectiveResult};
+use error::RenderError;
 use registry::Registry;
 use render::{Directive, RenderContext};
-use error::RenderError;
 
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
 
-fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
+fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg, 'rc>) -> Result<&'rc str, RenderError> {
     d.param(0)
         .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
         .and_then(|v| {
@@ -19,13 +20,18 @@ fn get_name<'a>(d: &'a Directive) -> Result<&'a str, RenderError> {
 }
 
 impl DirectiveDef for InlineDirective {
-    fn call(&self, d: &Directive, _: &Registry, rc: &mut RenderContext) -> Result<(), RenderError> {
-        let name = try!(get_name(d));
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        d: &Directive<'reg, 'rc>,
+        _: &'reg Registry,
+        _: &'rc Context,
+        rc: &mut RenderContext,
+    ) -> DirectiveResult {
+        let name = get_name(d)?;
 
-        let template = try!(
-            d.template()
-                .ok_or_else(|| RenderError::new("inline should have a block"))
-        );
+        let template = d
+            .template()
+            .ok_or_else(|| RenderError::new("inline should have a block"))?;
 
         rc.set_partial(name.to_owned(), Rc::new(template.clone()));
         Ok(())
@@ -36,12 +42,10 @@ pub static INLINE_DIRECTIVE: InlineDirective = InlineDirective;
 
 #[cfg(test)]
 mod test {
-    use template::Template;
-    use registry::Registry;
     use context::Context;
+    use registry::Registry;
     use render::{Evaluable, RenderContext};
-    use support::str::StringWriter;
-    use std::collections::HashMap;
+    use template::Template;
 
     #[test]
     fn test_inline() {
@@ -52,12 +56,9 @@ mod test {
 
         let hbs = Registry::new();
 
-        let mut sw = StringWriter::new();
         let ctx = Context::null();
-        let mut hlps = HashMap::new();
-
-        let mut rc = RenderContext::new(ctx, &mut hlps, &mut sw);
-        t0.elements[0].eval(&hbs, &mut rc).unwrap();
+        let mut rc = RenderContext::new(None);
+        t0.elements[0].eval(&hbs, &ctx, &mut rc).unwrap();
 
         assert!(rc.get_partial(&"hello".to_owned()).is_some());
     }

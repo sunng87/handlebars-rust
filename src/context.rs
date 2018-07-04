@@ -1,14 +1,12 @@
-use std::sync::Arc;
-
 use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
 
 use std::collections::{BTreeMap, VecDeque};
 
-use pest::Parser;
-use pest::iterators::Pair;
-use grammar::{HandlebarsParser, Rule};
 use error::RenderError;
+use grammar::{HandlebarsParser, Rule};
+use pest::iterators::Pair;
+use pest::Parser;
 
 pub type Object = BTreeMap<String, Json>;
 
@@ -16,7 +14,7 @@ pub type Object = BTreeMap<String, Json>;
 ///
 #[derive(Debug, Clone)]
 pub struct Context {
-    data: Arc<Json>,
+    data: Json,
 }
 
 #[inline]
@@ -115,16 +113,14 @@ pub fn merge_json(base: &Json, addition: &Object) -> Json {
 impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
-        Context {
-            data: Arc::new(Json::Null),
-        }
+        Context { data: Json::Null }
     }
 
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
         to_value(e)
             .map_err(RenderError::from)
-            .map(|d| Context { data: Arc::new(d) })
+            .map(|d| Context { data: d })
     }
 
     /// Navigate the context with base path and relative path
@@ -142,13 +138,14 @@ impl Context {
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
 
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
-        let mut data: Option<&Json> = Some(self.data.as_ref());
+        let mut data: Option<&Json> = Some(&self.data);
         for p in paths.iter() {
             if *p == "this" {
                 continue;
             }
             data = match data {
-                Some(&Json::Array(ref l)) => p.parse::<usize>()
+                Some(&Json::Array(ref l)) => p
+                    .parse::<usize>()
                     .map_err(|e| RenderError::with(e))
                     .map(|idx_u| l.get(idx_u))?,
                 Some(&Json::Object(ref m)) => m.get(*p),
@@ -160,82 +157,20 @@ impl Context {
     }
 
     pub fn data(&self) -> &Json {
-        self.data.as_ref()
+        &self.data
     }
 
     pub fn data_mut(&mut self) -> &mut Json {
-        Arc::make_mut(&mut self.data)
-    }
-}
-
-/// Render Json data with default format
-pub trait JsonRender {
-    fn render(&self) -> String;
-}
-
-pub trait JsonTruthy {
-    fn is_truthy(&self) -> bool;
-}
-
-impl JsonRender for Json {
-    fn render(&self) -> String {
-        match *self {
-            Json::String(ref s) => s.to_string(),
-            Json::Bool(i) => i.to_string(),
-            Json::Number(ref n) => n.to_string(),
-            Json::Null => "".to_owned(),
-            Json::Array(ref a) => {
-                let mut buf = String::new();
-                buf.push('[');
-                for i in a.iter() {
-                    buf.push_str(i.render().as_ref());
-                    buf.push_str(", ");
-                }
-                buf.push(']');
-                buf
-            }
-            Json::Object(_) => "[object]".to_owned(),
-        }
-    }
-}
-
-pub fn to_json<T>(src: &T) -> Json
-where
-    T: Serialize,
-{
-    to_value(src).unwrap_or_default()
-}
-
-pub fn as_string(src: &Json) -> Option<&str> {
-    src.as_str()
-}
-
-impl JsonTruthy for Json {
-    fn is_truthy(&self) -> bool {
-        match *self {
-            Json::Bool(ref i) => *i,
-            Json::Number(ref n) => n.as_f64().map(|f| f.is_normal()).unwrap_or(false),
-            Json::Null => false,
-            Json::String(ref i) => i.len() > 0,
-            Json::Array(ref i) => i.len() > 0,
-            Json::Object(ref i) => i.len() > 0,
-        }
+        &mut self.data
     }
 }
 
 #[cfg(test)]
 mod test {
-    use context::{self, Context, JsonRender};
+    use context::{self, Context};
+    use serde_json::value::Map;
     use std::collections::VecDeque;
-    use serde_json::value::{Map, Value as Json};
-
-    #[test]
-    fn test_json_render() {
-        let raw = "<p>Hello world</p>\n<p thing=\"hello\"</p>";
-        let thing = Json::String(raw.to_string());
-
-        assert_eq!(raw, thing.render());
-    }
+    use value::{self, JsonRender};
 
     #[derive(Serialize)]
     struct Address {
@@ -331,12 +266,12 @@ mod test {
     #[test]
     fn test_this() {
         let mut map_with_this = Map::new();
-        map_with_this.insert("this".to_string(), context::to_json(&"hello"));
-        map_with_this.insert("age".to_string(), context::to_json(&5usize));
+        map_with_this.insert("this".to_string(), value::to_json(&"hello"));
+        map_with_this.insert("age".to_string(), value::to_json(&5usize));
         let ctx1 = Context::wraps(&map_with_this).unwrap();
 
         let mut map_without_this = Map::new();
-        map_without_this.insert("age".to_string(), context::to_json(&4usize));
+        map_without_this.insert("age".to_string(), value::to_json(&4usize));
         let ctx2 = Context::wraps(&map_without_this).unwrap();
 
         assert_eq!(
@@ -360,7 +295,7 @@ mod test {
         let map = json!({ "age": 4 });
         let s = "hello".to_owned();
         let hash = btreemap!{
-            "tag".to_owned() => context::to_json(&"h1")
+            "tag".to_owned() => value::to_json(&"h1")
         };
 
         let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
@@ -381,7 +316,7 @@ mod test {
             "h1".to_owned()
         );
 
-        let ctx_a2 = Context::wraps(&context::merge_json(&context::to_json(&s), &hash)).unwrap();
+        let ctx_a2 = Context::wraps(&context::merge_json(&value::to_json(&s), &hash)).unwrap();
         assert_eq!(
             ctx_a2
                 .navigate(".", &VecDeque::new(), "this")
@@ -415,8 +350,8 @@ mod test {
         );
     }
 
-    use serde::{Serialize, Serializer};
     use serde::ser::Error as SerdeError;
+    use serde::{Serialize, Serializer};
 
     struct UnserializableType {}
 

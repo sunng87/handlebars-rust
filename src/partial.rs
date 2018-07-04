@@ -1,74 +1,81 @@
+use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
-use std::borrow::Borrow;
 use std::rc::Rc;
 
-use template::Template;
-use registry::Registry;
 use context::{merge_json, Context};
-use render::{Directive, Evaluable, RenderContext, Renderable};
 use error::RenderError;
+use output::Output;
+use registry::Registry;
+use render::{Directive, Evaluable, RenderContext, Renderable};
+use template::Template;
 
-fn render_partial(
-    t: &Template,
-    d: &Directive,
-    r: &Registry,
+fn render_partial<'reg: 'rc, 'rc>(
+    t: &'reg Template,
+    d: &Directive<'reg, 'rc>,
+    r: &'reg Registry,
+    ctx: &'rc Context,
     local_rc: &mut RenderContext,
+    out: &mut Output,
 ) -> Result<(), RenderError> {
-    let context_param = d.params().get(0).and_then(|p| p.path());
-    if let Some(p) = context_param {
-        let old_path = local_rc.get_path().clone();
-        local_rc.promote_local_vars();
-        let new_path = format!("{}/{}", old_path, p);
-        local_rc.set_path(new_path);
+    if let Some(ref p) = d.param(0) {
+        if let Some(ref param_path) = p.path() {
+            let old_path = local_rc.get_path().clone();
+            local_rc.promote_local_vars();
+            let new_path = format!("{}/{}", old_path, param_path);
+            local_rc.set_path(new_path);
+        }
     };
 
     // @partial-block
     if let Some(t) = d.template() {
+        // FIXME: avoid clone here possibly
         local_rc.set_partial("@partial-block".to_string(), Rc::new(t.clone()));
     }
 
-    let hash = d.hash();
-    if hash.is_empty() {
-        t.render(r, local_rc)
+    if d.hash().is_empty() {
+        t.render(r, ctx, local_rc, out)
     } else {
         let hash_ctx =
             BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
-        let partial_context = merge_json(local_rc.evaluate(".", r.strict_mode())?, &hash_ctx);
-        let mut partial_rc = local_rc.with_context(Context::wraps(&partial_context)?);
-        t.render(r, &mut partial_rc)
+        let partial_context = merge_json(local_rc.evaluate(ctx, ".", r.strict_mode())?, &hash_ctx);
+        let ctx = Context::wraps(&partial_context)?;
+        let mut partial_rc = local_rc.new_for_block();
+        t.render(r, &ctx, &mut partial_rc, out)
     }
 }
 
-pub fn expand_partial(
-    d: &Directive,
-    r: &Registry,
+pub fn expand_partial<'reg: 'rc, 'rc>(
+    d: &Directive<'reg, 'rc>,
+    r: &'reg Registry,
+    ctx: &'rc Context,
     rc: &mut RenderContext,
+    out: &mut Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {
-        try!(t.eval(r, rc));
-    }
-
-    if rc.is_current_template(d.name()) {
-        return Err(RenderError::new("Cannot include self in >"));
+        t.eval(r, ctx, rc)?;
     }
 
     let tname = d.name();
+    if rc.is_current_template(tname) {
+        return Err(RenderError::new("Cannot include self in >"));
+    }
+
     let partial = rc.get_partial(tname);
 
     match partial {
         Some(t) => {
             let mut local_rc = rc.derive();
-            render_partial(t.borrow(), d, r, &mut local_rc)
+            render_partial(t.borrow(), d, r, ctx, &mut local_rc, out)?;
         }
-        None => if let Some(t) = r.get_template(tname).or(d.template()) {
+        None => if let Some(t) = r.get_template(tname.as_ref()).or(d.template()) {
             let mut local_rc = rc.derive();
-            render_partial(t, d, r, &mut local_rc)
-        } else {
-            Ok(())
+            render_partial(t, d, r, ctx, &mut local_rc, out)?;
         },
     }
+
+    Ok(())
 }
 
 #[cfg(test)]

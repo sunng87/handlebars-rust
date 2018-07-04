@@ -37,8 +37,8 @@ pub mod str {
 
     #[cfg(test)]
     mod test {
-        use support::str::StringWriter;
         use std::io::Write;
+        use support::str::StringWriter;
 
         #[test]
         fn test_string_writer() {
@@ -50,5 +50,36 @@ pub mod str {
             let s = sw.to_string();
             assert_eq!(s, "helloworld".to_string());
         }
+    }
+}
+
+use std::cell::Ref;
+use std::ops::Deref;
+
+pub enum RefWrapper<'a, T: 'a + ?Sized> {
+    CellRef(Ref<'a, T>),
+    Ref(&'a T),
+}
+
+impl<'a, T: 'a + ?Sized> Deref for RefWrapper<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            RefWrapper::CellRef(cell_ref) => cell_ref.deref(),
+            RefWrapper::Ref(normal_ref) => normal_ref.deref(),
+        }
+    }
+}
+
+impl<'a, T: 'a + ?Sized> From<Ref<'a, T>> for RefWrapper<'a, T> {
+    fn from(cell_ref: Ref<'a, T>) -> RefWrapper<'a, T> {
+        RefWrapper::CellRef(cell_ref)
+    }
+}
+
+impl<'a, T: 'a + ?Sized> From<&'a T> for RefWrapper<'a, T> {
+    fn from(normal_ref: &'a T) -> RefWrapper<'a, T> {
+        RefWrapper::Ref(normal_ref)
     }
 }

@@ -1,20 +1,28 @@
 use std::collections::BTreeMap;
 
-use helpers::{HelperDef, HelperResult};
-use registry::Registry;
-use context::{to_json, JsonTruthy};
-use render::{Helper, RenderContext, Renderable};
+use context::Context;
 use error::RenderError;
+use helpers::{HelperDef, HelperResult};
+use output::Output;
+use registry::Registry;
+use render::{Helper, RenderContext, Renderable};
+use value::{to_json, JsonTruthy};
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
 
 impl HelperDef for WithHelper {
-    fn call(&self, h: &Helper, r: &Registry, rc: &mut RenderContext) -> HelperResult {
-        let param = try!(
-            h.param(0)
-                .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))
-        );
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper,
+        r: &Registry,
+        ctx: &Context,
+        rc: &mut RenderContext,
+        out: &mut Output,
+    ) -> HelperResult {
+        let param = h
+            .param(0)
+            .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
         rc.promote_local_vars();
 
@@ -46,7 +54,7 @@ impl HelperDef for WithHelper {
             }
 
             let result = match template {
-                Some(t) => t.render(r, &mut local_rc),
+                Some(t) => t.render(r, ctx, &mut local_rc, out),
                 None => Ok(()),
             };
 
@@ -71,7 +79,7 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 #[cfg(test)]
 mod test {
     use registry::Registry;
-    use context::to_json;
+    use value::to_json;
 
     #[derive(Serialize)]
     struct Address {

@@ -3,26 +3,17 @@ extern crate handlebars;
 #[macro_use]
 extern crate maplit;
 
-use std::path::Path;
 use handlebars::Handlebars;
+use std::error::Error;
 
-fn main() {
-    env_logger::init().unwrap();
+fn main() -> Result<(), Box<Error>> {
+    env_logger::init();
     let mut handlebars = Handlebars::new();
 
-    handlebars
-        .register_template_file("template", &Path::new("./examples/partials/template2.hbs"))
-        .ok()
-        .unwrap();
+    handlebars.register_template_file("template", "./examples/partials/template2.hbs")?;
 
-    handlebars
-        .register_template_file("base0", &Path::new("./examples/partials/base0.hbs"))
-        .ok()
-        .unwrap();
-    handlebars
-        .register_template_file("base1", &Path::new("./examples/partials/base1.hbs"))
-        .ok()
-        .unwrap();
+    handlebars.register_template_file("base0", "./examples/partials/base0.hbs")?;
+    handlebars.register_template_file("base1", "./examples/partials/base1.hbs")?;
 
     let data0 = btreemap! {
         "title".to_string() => "example 0".to_string(),
@@ -34,19 +25,11 @@ fn main() {
     };
 
     println!("Page 0");
-    println!(
-        "{}",
-        handlebars
-            .render("template", &data0,)
-            .unwrap_or_else(|e| format!("{}", e),)
-    );
+    println!("{}", handlebars.render("template", &data0)?);
     println!("=======================================================");
 
     println!("Page 1");
-    println!(
-        "{}",
-        handlebars
-            .render("template", &data1,)
-            .unwrap_or_else(|e| format!("{}", e),)
-    );
+    println!("{}", handlebars.render("template", &data1)?);
+
+    Ok(())
 }

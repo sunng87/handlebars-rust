@@ -1,3 +1,4 @@
+#![doc(html_root_url = "https://docs.rs/crate/handlebars/")]
 //! # Handlebars
 //!
 //! [Handlebars](http://handlebarsjs.com/) is a modern and extensible templating solution originally created in the JavaScript world. It's used by many popular frameworks like [Ember.js](http://emberjs.com) and Chaplin. It's also ported to some other platforms such as [Java](https://github.com/jknack/handlebars.java).
@@ -120,16 +121,16 @@
 //! Templates are created from String and registered to `Handlebars` with a name.
 //!
 //! ```
-//! extern crate handlebars;
+//! # extern crate handlebars;
 //!
 //! use handlebars::Handlebars;
 //!
-//! fn main() {
+//! # fn main() {
 //!   let mut handlebars = Handlebars::new();
 //!   let source = "hello {{world}}";
 //!
 //!   assert!(handlebars.register_template_string("t1", source).is_ok())
-//! }
+//! # }
 //! ```
 //!
 //! On registeration, the template is parsed, compiled and cached in the registry. So further
@@ -141,17 +142,22 @@
 //! without registration.
 //!
 //! ```
+//! # use std::error::Error;
 //! use handlebars::Handlebars;
 //! use std::collections::BTreeMap;
 //!
-//! fn main() {
+//! # fn _main() -> Result<(), Box<Error>> {
 //!   let mut handlebars = Handlebars::new();
 //!   let source = "hello {{world}}";
 //!
 //!   let mut data = BTreeMap::new();
 //!   data.insert("world".to_string(), "世界!".to_string());
-//!   assert_eq!(handlebars.render_template(source, &data).unwrap(),"hello 世界!".to_owned());
-//! }
+//!   assert_eq!(handlebars.render_template(source, &data)?, "hello 世界!".to_owned());
+//! # Ok(())
+//! # }
+//! # fn main() {
+//! #   _main().unwrap();
+//! # }
 //! ```
 //!
 //! ### Rendering Something
@@ -162,8 +168,11 @@
 //!
 //! You can use default `render` function to render a template into `String`. From 0.9, there's `renderw` to render text into anything of `std::io::Write`.
 //!
-//! ```ignore
-//! use std::collections::BTreeMap;
+//! ```
+//! # use std::error::Error;
+//! # #[macro_use]
+//! # extern crate serde_derive;
+//! # extern crate handlebars;
 //!
 //! use handlebars::Handlebars;
 //!
@@ -173,7 +182,7 @@
 //!   age: i16,
 //! }
 //!
-//! fn main() {
+//! # fn _main() -> Result<(), Box<Error>> {
 //!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();
@@ -184,15 +193,29 @@
 //!       name: "Ning Sun".to_string(),
 //!       age: 27
 //!   };
-//!   assert_eq!(handlebars.render("hello", &data).unwrap(), "Hello, Ning Sun".to_owned());
-//! }
+//!   assert_eq!(handlebars.render("hello", &data)?, "Hello, Ning Sun".to_owned());
+//! # Ok(())
+//! # }
+//! #
+//! # fn main() { _main().unwrap(); }
 //! ```
 //!
 //! Or if you don't need the template to be cached or referenced by other ones, you can
 //! simply render it without registering.
 //!
-//! ```ignore
-//! fn main() {
+//! ```
+//! # use std::error::Error;
+//! # #[macro_use]
+//! # extern crate serde_derive;
+//! # extern crate handlebars;
+//! use handlebars::Handlebars;
+//! # #[derive(Serialize)]
+//! # struct Person {
+//! #  name: String,
+//! #  age: i16,
+//! # }
+//!
+//! # fn _main() -> Result<(), Box<Error>> {
 //!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();
@@ -201,9 +224,11 @@
 //!       name: "Ning Sun".to_string(),
 //!       age: 27
 //!   };
-//!   assert_eq!(handlebars.render_template("Hello, {{name}}", &data).unwrap(),
+//!   assert_eq!(handlebars.render_template("Hello, {{name}}", &data)?,
 //!       "Hello, Ning Sun".to_owned());
-//! }
+//! # Ok(())
+//! # }
+//! # fn main() { _main().unwrap(); }
 //! ```
 //!
 //! #### Escaping
@@ -216,50 +241,54 @@
 //!
 //! ```
 //! use std::io::Write;
-//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult};
+//! # use std::error::Error;
+//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult, Output, RenderError};
 //!
 //! // implement by a structure impls HelperDef
 //! #[derive(Clone, Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call(&self, h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
+//!   fn call<'reg: 'rc, 'rc>(&self, h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
-//!     try!(rc.writer.write("1st helper: ".as_bytes()));
-//!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
+//!     out.write("1st helper: ")?;
+//!     out.write(param.value().render().as_ref())?;
 //!     Ok(())
 //!   }
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> HelperResult {
+//! fn another_simple_helper (h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
-//!     try!(rc.writer.write("2nd helper: ".as_bytes()));
-//!     try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
+//!     out.write("2nd helper: ")?;
+//!     out.write(param.value().render().as_ref())?;
 //!     Ok(())
 //! }
 //!
 //!
-//! fn main() {
+//! # fn _main() -> Result<(), Box<Error>> {
 //!   let mut handlebars = Handlebars::new();
 //!   handlebars.register_helper("simple-helper", Box::new(SimpleHelper));
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
-//!       Box::new(|h: &Helper, r: &Handlebars, rc: &mut RenderContext| -> HelperResult {
-//!           let param = h.param(0).unwrap();
+//!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output| -> HelperResult {
+//!           let param = h.param(0).ok_or(RenderError::new("param not found"))?;
 //!
-//!           try!(rc.writer.write("3rd helper: ".as_bytes()));
-//!           try!(rc.writer.write(param.value().render().into_bytes().as_ref()));
+//!           out.write("3rd helper: ")?;
+//!           out.write(param.value().render().as_ref())?;
 //!           Ok(())
 //!       }));
 //!
 //!   let tpl = "{{simple-helper 1}}\n{{another-simple-helper 2}}\n{{closure-helper 3}}";
-//!   assert_eq!(handlebars.render_template(tpl, &()).unwrap(),
+//!   assert_eq!(handlebars.render_template(tpl, &())?,
 //!       "1st helper: 1\n2nd helper: 2\n3rd helper: 3".to_owned());
-//! }
+//! # Ok(())
+//! # }
+//!
+//! # fn main() { _main().unwrap(); }
 //! ```
 //! Data available to helper can be found in [Helper](struct.Helper.html). And there are more
 //! examples in [HelperDef](trait.HelperDef.html) page.
@@ -312,23 +341,26 @@ extern crate serde;
 extern crate serde_json;
 extern crate walkdir;
 
-pub use self::template::Template;
-pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
-pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
-pub use self::render::{ContextJson, Directive as Decorator, Evaluable, Helper, RenderContext,
-                       Renderable};
-pub use self::helpers::{HelperDef, HelperResult};
+pub use self::context::Context;
 pub use self::directives::DirectiveDef as DecoratorDef;
-pub use self::context::{to_json, Context, JsonRender};
+pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
+pub use self::helpers::{HelperDef, HelperResult};
+pub use self::output::Output;
+pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
+pub use self::render::{Directive as Decorator, Evaluable, Helper, RenderContext, Renderable};
 pub use self::support::str::StringWriter;
+pub use self::template::Template;
+pub use self::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 
-mod grammar;
-mod template;
+mod context;
+mod directives;
 mod error;
+mod grammar;
+mod helpers;
+mod output;
+mod partial;
 mod registry;
 mod render;
-mod helpers;
-mod context;
 mod support;
-mod directives;
-mod partial;
+mod template;
+mod value;

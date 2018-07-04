@@ -1,8 +1,8 @@
 [package]
 
 name = "handlebars"
-version = "0.32.4"
-authors = ["Ning Sun <sunng@about.me>"]
+version = "1.0.0-beta.2"
+authors = ["Ning Sun <sunng@pm.me>"]
 description = "Handlebars templating implemented in Rust."
 license = "MIT"
 keywords = ["handlebars", "templating", "web"]
@@ -30,11 +30,10 @@ lazy_static = "^1.0.0"
 walkdir = "^2.1.4"
 
 [dev-dependencies]
-env_logger = "^0.4.0"
+env_logger = "^0.5.0"
 maplit = "^1.0.0"
 serde_derive = "^1.0.0"
 tempfile = "^3.0.0"
 
 [badges]
 maintenance = { status = "actively-developed" }
-

@@ -2,9 +2,9 @@ extern crate env_logger;
 extern crate handlebars;
 extern crate serde_json;
 
+use std::env;
 use std::io::{self, Write};
 use std::process;
-use std::env;
 use std::str::FromStr;
 
 use serde_json::value::Value as Json;
@@ -28,7 +28,7 @@ fn parse_json(text: &str) -> Json {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     let mut args = env::args();
     args.next(); // skip own filename
@@ -54,6 +54,3 @@ fn main() {
         }
     }
 }
-
-#[cfg(feature = "serde_type")]
-fn main() {}
