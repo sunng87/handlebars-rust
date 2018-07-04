@@ -2,7 +2,7 @@
 
 name = "handlebars"
 version = "1.0.0-beta.2"
-authors = ["Ning Sun <sunng@about.me>"]
+authors = ["Ning Sun <sunng@pm.me>"]
 description = "Handlebars templating implemented in Rust."
 license = "MIT"
 keywords = ["handlebars", "templating", "web"]
