@@ -300,11 +300,11 @@ impl Registry {
     where
         T: Serialize,
     {
-        self.get_template(&name.to_string())
+        self.get_template(name)
             .ok_or(RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
                 let ctx = Context::wraps(data)?;
-                let mut render_context = RenderContext::new(t.name.clone());
+                let mut render_context = RenderContext::new(t.name.as_ref());
                 t.render(self, &ctx, &mut render_context, output)
             })
             .map(|_| ())

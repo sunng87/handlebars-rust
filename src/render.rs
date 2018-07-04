@@ -40,9 +40,9 @@ pub struct RenderContextInner<'reg> {
     local_helpers: HashMap<String, Rc<Box<HelperDef + 'static>>>,
     local_variables: HashMap<String, Json>,
     /// current template name
-    current_template: Option<String>,
+    current_template: Option<&'reg String>,
     /// root template name
-    root_template: Option<String>,
+    root_template: Option<&'reg String>,
     disable_escape: bool,
 }
 
@@ -65,7 +65,7 @@ impl Default for BlockRenderContext {
 
 impl<'reg> RenderContext<'reg> {
     /// Create a render context from a `Write`
-    pub fn new(root_template: Option<String>) -> RenderContext<'reg> {
+    pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg> {
         let inner = Rc::new(RenderContextInner {
             partials: HashMap::new(),
             local_variables: HashMap::new(),
@@ -213,7 +213,6 @@ impl<'reg> RenderContext<'reg> {
     pub fn is_current_template(&self, p: &str) -> bool {
         self.inner()
             .current_template
-            .as_ref()
             .map(|s| s == p)
             .unwrap_or(false)
     }
@@ -236,19 +235,19 @@ impl<'reg> RenderContext<'reg> {
         self.inner().local_helpers.get(name).map(|r| r.clone())
     }
 
-    pub fn get_current_template_name(&self) -> Option<&String> {
-        self.inner().current_template.as_ref()
+    pub fn get_current_template_name(&self) -> Option<&'reg String> {
+        self.inner().current_template
     }
 
-    pub fn set_current_template_name(&mut self, name: Option<String>) {
+    pub fn set_current_template_name(&mut self, name: Option<&'reg String>) {
         self.inner_mut().current_template = name;
     }
 
-    pub fn get_root_template_name(&self) -> Option<&String> {
-        self.inner().root_template.as_ref()
+    pub fn get_root_template_name(&self) -> Option<&'reg String> {
+        self.inner().root_template
     }
 
-    pub fn set_root_template_name(&mut self, name: Option<String>) {
+    pub fn set_root_template_name(&mut self, name: Option<&'reg String>) {
         self.inner_mut().root_template = name;
     }
 
@@ -479,7 +478,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
         context: &'rc Context,
         render_context: &mut RenderContext<'reg>,
     ) -> Result<Directive<'reg, 'rc>, RenderError> {
-        let name = try!(dt.name.expand_as_name(registry, context, render_context));
+        let name = dt.name.expand_as_name(registry, context, render_context)?;
 
         let mut pv = Vec::new();
         for p in dt.params.iter() {
@@ -698,8 +697,7 @@ impl Renderable for Template {
         rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> Result<(), RenderError> {
-        let template_name = self.name.clone();
-        rc.set_current_template_name(template_name);
+        rc.set_current_template_name(self.name.as_ref());
         let iter = self.elements.iter();
         let mut idx = 0;
         for t in iter {
