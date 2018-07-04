@@ -1,16 +1,16 @@
-use render::{Helper, RenderContext};
 use context::Context;
-use registry::Registry;
 use error::RenderError;
 use output::Output;
+use registry::Registry;
+use render::{Helper, RenderContext};
 use value::ScopedJson;
 
-pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
 pub use self::helper_each::EACH_HELPER;
-pub use self::helper_with::WITH_HELPER;
+pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
+pub use self::helper_log::LOG_HELPER;
 pub use self::helper_lookup::LOOKUP_HELPER;
 pub use self::helper_raw::RAW_HELPER;
-pub use self::helper_log::LOG_HELPER;
+pub use self::helper_with::WITH_HELPER;
 
 pub type HelperResult = Result<(), RenderError>;
 
@@ -81,11 +81,16 @@ pub trait HelperDef: Send + Sync {
 
 /// implement HelperDef for bare function so we can use function as helper
 impl<
-    F: Send
-        + Sync
-        + for<'reg, 'rc> Fn(&Helper<'reg, 'rc>, &'reg Registry, &'rc Context, &mut RenderContext, &mut Output)
-        -> HelperResult,
-> HelperDef for F
+        F: Send
+            + Sync
+            + for<'reg, 'rc> Fn(
+                &Helper<'reg, 'rc>,
+                &'reg Registry,
+                &'rc Context,
+                &mut RenderContext,
+                &mut Output,
+            ) -> HelperResult,
+    > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
@@ -99,12 +104,12 @@ impl<
     }
 }
 
-mod helper_if;
 mod helper_each;
-mod helper_with;
+mod helper_if;
+mod helper_log;
 mod helper_lookup;
 mod helper_raw;
-mod helper_log;
+mod helper_with;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
@@ -117,13 +122,13 @@ mod helper_log;
 mod test {
     use std::collections::BTreeMap;
 
-    use value::JsonRender;
-    use helpers::HelperDef;
     use context::Context;
+    use error::RenderError;
+    use helpers::HelperDef;
+    use output::Output;
     use registry::Registry;
     use render::{Helper, RenderContext, Renderable};
-    use error::RenderError;
-    use output::Output;
+    use value::JsonRender;
 
     #[derive(Clone, Copy)]
     struct MetaHelper;

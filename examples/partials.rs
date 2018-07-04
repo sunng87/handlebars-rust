@@ -3,8 +3,8 @@ extern crate handlebars;
 #[macro_use]
 extern crate maplit;
 
-use std::error::Error;
 use handlebars::Handlebars;
+use std::error::Error;
 
 fn main() -> Result<(), Box<Error>> {
     env_logger::init();

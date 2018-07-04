@@ -37,8 +37,8 @@ pub mod str {
 
     #[cfg(test)]
     mod test {
-        use support::str::StringWriter;
         use std::io::Write;
+        use support::str::StringWriter;
 
         #[test]
         fn test_string_writer() {
@@ -58,7 +58,7 @@ use std::ops::Deref;
 
 pub enum RefWrapper<'a, T: 'a + ?Sized> {
     CellRef(Ref<'a, T>),
-    Ref(&'a T)
+    Ref(&'a T),
 }
 
 impl<'a, T: 'a + ?Sized> Deref for RefWrapper<'a, T> {
@@ -67,7 +67,7 @@ impl<'a, T: 'a + ?Sized> Deref for RefWrapper<'a, T> {
     fn deref(&self) -> &Self::Target {
         match self {
             RefWrapper::CellRef(cell_ref) => cell_ref.deref(),
-            RefWrapper::Ref(normal_ref) => normal_ref.deref()
+            RefWrapper::Ref(normal_ref) => normal_ref.deref(),
         }
     }
 }

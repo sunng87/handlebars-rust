@@ -1,6 +1,6 @@
-use std::io::Error as IOError;
 use std::error::Error;
 use std::fmt;
+use std::io::Error as IOError;
 use std::string::FromUtf8Error;
 
 use serde_json::error::Error as SerdeError;
@@ -220,7 +220,10 @@ quick_error! {
 
 impl From<WalkdirError> for TemplateFileError {
     fn from(error: WalkdirError) -> TemplateFileError {
-        let path_string: String = error.path().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
+        let path_string: String = error
+            .path()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default();
         TemplateFileError::IOError(IOError::from(error), path_string)
     }
 }
@@ -257,4 +260,3 @@ impl TemplateRenderError {
         }
     }
 }
-

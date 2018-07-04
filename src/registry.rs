@@ -1,25 +1,25 @@
 use std::collections::HashMap;
-use std::io::prelude::*;
-use std::fs::File;
-use std::path::Path;
 use std::fmt::{self, Debug, Formatter};
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
 
 use serde::Serialize;
 
 use regex::{Captures, Regex};
 
-use template::Template;
-use render::{RenderContext, Renderable};
 use context::Context;
-use helpers::{self, HelperDef};
 use directives::{self, DirectiveDef};
-use support::str::StringWriter;
 use error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
+use helpers::{self, HelperDef};
 use output::{Output, StringOutput, WriteOutput};
+use render::{RenderContext, Renderable};
+use support::str::StringWriter;
+use template::Template;
 
 use walkdir::WalkDir;
 
-lazy_static!{
+lazy_static! {
     static ref DEFAULT_REPLACE: Regex = Regex::new(">|<|\"|&").unwrap();
 }
 
@@ -201,7 +201,8 @@ impl Registry {
             let tpl_path = entry.path();
             let tpl_file_path = entry.path().to_string_lossy();
             if entry.metadata()?.is_file() && tpl_file_path.ends_with(tpl_extension) {
-                let tpl_name = &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
+                let tpl_name =
+                    &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
                 let tpl_canonical_name = tpl_name.replace("\\", "/");
                 self.register_template_file(&tpl_canonical_name, &tpl_path)?;
             }
@@ -325,12 +326,7 @@ impl Registry {
     }
 
     /// Render a registered template and write some data to the `std::io::Write`
-    pub fn render_to_write<T, W>(
-        &self,
-        name: &str,
-        data: &T,
-        writer: W,
-    ) -> Result<(), RenderError>
+    pub fn render_to_write<T, W>(&self, name: &str, data: &T, writer: W) -> Result<(), RenderError>
     where
         T: Serialize,
         W: Write,
@@ -394,16 +390,16 @@ impl Registry {
 
 #[cfg(test)]
 mod test {
-    use registry::Registry;
     use context::Context;
-    use render::{Helper, RenderContext, Renderable};
-    use helpers::HelperDef;
-    use support::str::StringWriter;
-    use output::Output;
     use error::RenderError;
-    use tempfile::tempdir;
+    use helpers::HelperDef;
+    use output::Output;
+    use registry::Registry;
+    use render::{Helper, RenderContext, Renderable};
+    use std::fs::{DirBuilder, File};
     use std::io::Write;
-    use std::fs::{File, DirBuilder};
+    use support::str::StringWriter;
+    use tempfile::tempdir;
 
     #[derive(Clone, Copy)]
     struct DummyHelper;
@@ -509,8 +505,12 @@ mod test {
             let dir = tempdir().unwrap();
 
             let _ = DirBuilder::new().create(dir.path().join("french")).unwrap();
-            let _ = DirBuilder::new().create(dir.path().join("portugese")).unwrap();
-            let _ = DirBuilder::new().create(dir.path().join("italian")).unwrap();
+            let _ = DirBuilder::new()
+                .create(dir.path().join("portugese"))
+                .unwrap();
+            let _ = DirBuilder::new()
+                .create(dir.path().join("italian"))
+                .unwrap();
 
             let file1_path = dir.path().join("french/t7.hbs");
             let mut file1: File = File::create(&file1_path).unwrap();
@@ -588,10 +588,7 @@ mod test {
             r.render_template(r" \{{hello}}", &data).unwrap()
         );
 
-        assert_eq!(
-            r"\world",
-            r.render_template(r"\\{{hello}}", &data).unwrap()
-        );
+        assert_eq!(r"\world", r.render_template(r"\\{{hello}}", &data).unwrap());
     }
 
     #[test]
@@ -615,9 +612,9 @@ mod test {
                 .is_err()
         );
 
-        let render_error =
-            r.render_template("accessing non-exists key {{the_key_never_exists}}", &data)
-                .unwrap_err();
+        let render_error = r
+            .render_template("accessing non-exists key {{the_key_never_exists}}", &data)
+            .unwrap_err();
         assert_eq!(
             render_error.as_render_error().unwrap().column_no.unwrap(),
             26
@@ -632,7 +629,8 @@ mod test {
             r.render_template("accessing invalid array index {{this.[3]}}", &data2)
                 .is_err()
         );
-        let render_error2 = r.render_template("accessing invalid array index {{this.[3]}}", &data2)
+        let render_error2 = r
+            .render_template("accessing invalid array index {{this.[3]}}", &data2)
             .unwrap_err();
         assert_eq!(
             render_error2.as_render_error().unwrap().column_no.unwrap(),

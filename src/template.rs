@@ -32,22 +32,25 @@ pub struct Subexpression {
 }
 
 impl Subexpression {
-    pub fn new(name: String, params: Vec<Parameter>, hash: BTreeMap<String, Parameter>) -> Subexpression {
+    pub fn new(
+        name: String,
+        params: Vec<Parameter>,
+        hash: BTreeMap<String, Parameter>,
+    ) -> Subexpression {
         if params.is_empty() && hash.is_empty() {
             Subexpression {
                 element: Box::new(Expression(Parameter::Name(name.clone()))),
             }
         } else {
             Subexpression {
-                element: Box::new(HelperExpression(
-                    HelperTemplate {
-                        name: name.clone(),
-                        params: params.clone(),
-                        hash: hash.clone(),
-                        template: None,
-                        inverse: None,
-                        block_param: None,
-                        block: false,
+                element: Box::new(HelperExpression(HelperTemplate {
+                    name: name.clone(),
+                    params: params.clone(),
+                    hash: hash.clone(),
+                    template: None,
+                    inverse: None,
+                    block_param: None,
+                    block: false,
                 })),
             }
         }
@@ -67,27 +70,25 @@ impl Subexpression {
     pub fn name(&self) -> &str {
         match self.as_element() {
             HelperExpression(ref ht) => &ht.name,
-            Expression(p) => {
-                match p {
-                    Parameter::Name(ref s) => s,
-                    _ => unreachable!()
-                }
+            Expression(p) => match p {
+                Parameter::Name(ref s) => s,
+                _ => unreachable!(),
             },
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
     pub fn params(&self) -> Option<&Vec<Parameter>> {
         match self.as_element() {
             HelperExpression(ref ht) => Some(&ht.params),
-            _ => None
+            _ => None,
         }
     }
 
     pub fn hash(&self) -> Option<&BTreeMap<String, Parameter>> {
         match self.as_element() {
             HelperExpression(ref ht) => Some(&ht.hash),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -178,10 +179,16 @@ impl Template {
         it: &mut Peekable<I>,
         limit: usize,
     ) -> Result<Parameter, TemplateError>
-    where I: Iterator<Item = Pair<'a, Rule>> {
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
         let espec = Template::parse_expression(source, it.by_ref(), limit)?;
         if let Parameter::Name(name) = espec.name {
-            Ok(Parameter::Subexpression(Subexpression::new(name, espec.params, espec.hash)))
+            Ok(Parameter::Subexpression(Subexpression::new(
+                name,
+                espec.params,
+                espec.hash,
+            )))
         } else {
             // line/col no
             Err(TemplateError::of(TemplateErrorReason::NestedSubexpression))
@@ -474,7 +481,9 @@ impl Template {
 
                 if rule != Rule::template {
                     // trailing string check
-                    if span.start() != prev_end && !omit_pro_ws && rule != Rule::raw_text
+                    if span.start() != prev_end
+                        && !omit_pro_ws
+                        && rule != Rule::raw_text
                         && rule != Rule::raw_block_text
                     {
                         let (line_no, col_no) = span.start_pos().line_col();
@@ -687,14 +696,16 @@ impl Template {
                         }
                     }
                     Rule::hbs_comment_compact => {
-                        let text = span.as_str()
+                        let text = span
+                            .as_str()
                             .trim_left_matches("{{!")
                             .trim_right_matches("}}");
                         let t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     Rule::hbs_comment => {
-                        let text = span.as_str()
+                        let text = span
+                            .as_str()
                             .trim_left_matches("{{!--")
                             .trim_right_matches("--}}");
                         let t = template_stack.front_mut().unwrap();

@@ -7,8 +7,9 @@ use std::error::Error;
 
 use serde_json::value::{Map, Value as Json};
 
-use handlebars::{to_json, Context, Decorator, Handlebars, Helper, JsonRender, Output, RenderContext,
-                 RenderError};
+use handlebars::{
+    to_json, Context, Decorator, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError,
+};
 
 // default format helper
 fn format_helper(
@@ -19,7 +20,8 @@ fn format_helper(
     out: &mut Output,
 ) -> Result<(), RenderError> {
     // get parameter from helper or throw an error
-    let param = h.param(0)
+    let param = h
+        .param(0)
         .ok_or(RenderError::new("Param 0 is required for format helper."))?;
     let rendered = format!("{} pts", param.value().render());
     out.write(rendered.as_ref())?;
@@ -32,15 +34,21 @@ fn format_decorator(
     _: &Context,
     rc: &mut RenderContext,
 ) -> Result<(), RenderError> {
-    let suffix = d.param(0)
+    let suffix = d
+        .param(0)
         .map(|v| v.value().render())
         .unwrap_or("".to_owned());
     rc.register_local_helper(
         "format",
         Box::new(
-            move |h: &Helper, _: &Handlebars, _: &Context, _: &mut RenderContext, out: &mut Output| {
+            move |h: &Helper,
+                  _: &Handlebars,
+                  _: &Context,
+                  _: &mut RenderContext,
+                  out: &mut Output| {
                 // get parameter from helper or throw an error
-                let param = h.param(0)
+                let param = h
+                    .param(0)
                     .ok_or(RenderError::new("Param 0 is required for format helper."))?;
                 let rendered = format!("{} {}", param.value().render(), suffix);
                 out.write(rendered.as_ref())?;
@@ -59,12 +67,14 @@ fn rank_helper(
     _: &mut RenderContext,
     out: &mut Output,
 ) -> Result<(), RenderError> {
-    let rank = h.param(0)
+    let rank = h
+        .param(0)
         .and_then(|v| v.value().as_u64())
         .ok_or(RenderError::new(
             "Param 0 with u64 type is required for rank helper.",
         ))? as usize;
-    let total = h.param(1)
+    let total = h
+        .param(1)
         .as_ref()
         .and_then(|v| v.value().as_array())
         .map(|arr| arr.len())

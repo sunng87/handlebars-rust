@@ -3,10 +3,10 @@ use serde_json::value::{to_value, Map, Value as Json};
 
 use std::collections::{BTreeMap, VecDeque};
 
-use pest::Parser;
-use pest::iterators::Pair;
-use grammar::{HandlebarsParser, Rule};
 use error::RenderError;
+use grammar::{HandlebarsParser, Rule};
+use pest::iterators::Pair;
+use pest::Parser;
 
 pub type Object = BTreeMap<String, Json>;
 
@@ -113,9 +113,7 @@ pub fn merge_json(base: &Json, addition: &Object) -> Json {
 impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
-        Context {
-            data: Json::Null,
-        }
+        Context { data: Json::Null }
     }
 
     /// Create a context with given data
@@ -146,7 +144,8 @@ impl Context {
                 continue;
             }
             data = match data {
-                Some(&Json::Array(ref l)) => p.parse::<usize>()
+                Some(&Json::Array(ref l)) => p
+                    .parse::<usize>()
                     .map_err(|e| RenderError::with(e))
                     .map(|idx_u| l.get(idx_u))?,
                 Some(&Json::Object(ref m)) => m.get(*p),
@@ -169,9 +168,9 @@ impl Context {
 #[cfg(test)]
 mod test {
     use context::{self, Context};
-    use value::{self, JsonRender};
-    use std::collections::VecDeque;
     use serde_json::value::Map;
+    use std::collections::VecDeque;
+    use value::{self, JsonRender};
 
     #[derive(Serialize)]
     struct Address {
@@ -351,8 +350,8 @@ mod test {
         );
     }
 
-    use serde::{Serialize, Serializer};
     use serde::ser::Error as SerdeError;
+    use serde::{Serialize, Serializer};
 
     struct UnserializableType {}
 

@@ -8,8 +8,8 @@ extern crate test;
 
 use std::collections::BTreeMap;
 
-use serde_json::value::Value as Json;
 use handlebars::{to_json, Handlebars, Template};
+use serde_json::value::Value as Json;
 
 static SOURCE: &'static str = "<html>
   <head>

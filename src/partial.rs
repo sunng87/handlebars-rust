@@ -1,14 +1,14 @@
+use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
-use std::borrow::Borrow;
 use std::rc::Rc;
 
-use template::Template;
-use registry::Registry;
 use context::{merge_json, Context};
-use render::{Directive, Evaluable, RenderContext, Renderable};
 use error::RenderError;
 use output::Output;
+use registry::Registry;
+use render::{Directive, Evaluable, RenderContext, Renderable};
+use template::Template;
 
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
@@ -72,7 +72,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         None => if let Some(t) = r.get_template(tname.as_ref()).or(d.template()) {
             let mut local_rc = rc.derive();
             render_partial(t, d, r, ctx, &mut local_rc, out)?;
-        }
+        },
     }
 
     Ok(())

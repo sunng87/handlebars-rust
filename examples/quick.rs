@@ -2,8 +2,8 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use std::error::Error;
 use handlebars::Handlebars;
+use std::error::Error;
 
 // wait RFC1937 in
 fn main() -> Result<(), Box<Error>> {

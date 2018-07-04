@@ -1,8 +1,7 @@
-
 use context::Context;
-use render::{Directive, RenderContext};
-use registry::Registry;
 use error::RenderError;
+use registry::Registry;
+use render::{Directive, RenderContext};
 
 pub use self::inline::INLINE_DIRECTIVE;
 
@@ -58,18 +57,30 @@ pub type DirectiveResult = Result<(), RenderError>;
 /// ```
 ///
 pub trait DirectiveDef: Send + Sync {
-    fn call<'reg: 'rc, 'rc>(&'reg self, d: &Directive<'reg, 'rc>, r: &'reg Registry, ctx: &'rc Context, rc: &mut RenderContext) -> DirectiveResult;
+    fn call<'reg: 'rc, 'rc>(
+        &'reg self,
+        d: &Directive<'reg, 'rc>,
+        r: &'reg Registry,
+        ctx: &'rc Context,
+        rc: &mut RenderContext,
+    ) -> DirectiveResult;
 }
 
 /// implement DirectiveDef for bare function so we can use function as directive
 impl<
-    F: Send
-        + Sync
-        + for<'reg, 'rc> Fn(&Directive<'reg, 'rc>, &'reg Registry, &'rc Context, &mut RenderContext)
-        -> DirectiveResult,
-> DirectiveDef for F
+        F: Send
+            + Sync
+            + for<'reg, 'rc> Fn(&Directive<'reg, 'rc>, &'reg Registry, &'rc Context, &mut RenderContext)
+                -> DirectiveResult,
+    > DirectiveDef for F
 {
-    fn call<'reg: 'rc, 'rc>(&'reg self, d: &Directive<'reg, 'rc>, reg: &'reg Registry, ctx: &'rc Context, rc: &mut RenderContext) -> DirectiveResult {
+    fn call<'reg: 'rc, 'rc>(
+        &'reg self,
+        d: &Directive<'reg, 'rc>,
+        reg: &'reg Registry,
+        ctx: &'rc Context,
+        rc: &mut RenderContext,
+    ) -> DirectiveResult {
         (*self)(d, reg, ctx, rc)
     }
 }
@@ -78,12 +89,12 @@ mod inline;
 
 #[cfg(test)]
 mod test {
-    use registry::Registry;
     use context::Context;
-    use value::{to_json, as_string};
-    use render::{Directive, Helper, RenderContext};
-    use output::Output;
     use error::RenderError;
+    use output::Output;
+    use registry::Registry;
+    use render::{Directive, Helper, RenderContext};
+    use value::{as_string, to_json};
 
     #[test]
     fn test_register_decorator() {
@@ -101,9 +112,11 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |_: &Directive, _: &Registry, _: &Context, _: &mut RenderContext| -> Result<(), RenderError> {
-                    Ok(())
-                },
+                |_: &Directive,
+                 _: &Registry,
+                 _: &Context,
+                 _: &mut RenderContext|
+                 -> Result<(), RenderError> { Ok(()) },
             ),
         );
         assert_eq!(handlebars.render("t0", &data).ok().unwrap(), "".to_string());
@@ -124,7 +137,11 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |_: &Directive, _: &Registry, ctx: &Context, rc: &mut RenderContext| -> Result<(), RenderError> {
+                |_: &Directive,
+                 _: &Registry,
+                 ctx: &Context,
+                 rc: &mut RenderContext|
+                 -> Result<(), RenderError> {
                     // modify json object
                     let mut new_ctx = ctx.clone();
                     {
@@ -148,9 +165,14 @@ mod test {
         handlebars.register_decorator(
             "bar",
             Box::new(
-                |d: &Directive, _: &Registry, _: &Context, rc: &mut RenderContext| -> Result<(), RenderError> {
+                |d: &Directive,
+                 _: &Registry,
+                 _: &Context,
+                 rc: &mut RenderContext|
+                 -> Result<(), RenderError> {
                     // modify value
-                    let v = d.param(0)
+                    let v = d
+                        .param(0)
                         .and_then(|v| Context::wraps(v.value()).ok())
                         .unwrap_or(Context::null());
                     rc.set_context(v);
@@ -221,8 +243,13 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |d: &Directive, _: &Registry, _: &Context, rc: &mut RenderContext| -> Result<(), RenderError> {
-                    let new_unit = d.param(0)
+                |d: &Directive,
+                 _: &Registry,
+                 _: &Context,
+                 rc: &mut RenderContext|
+                 -> Result<(), RenderError> {
+                    let new_unit = d
+                        .param(0)
                         .as_ref()
                         .and_then(|v| as_string(v.value()))
                         .unwrap_or("")
@@ -253,7 +280,11 @@ mod test {
         handlebars.register_decorator(
             "bar",
             Box::new(
-                |_: &Directive, _: &Registry, _: &Context, rc: &mut RenderContext| -> Result<(), RenderError> {
+                |_: &Directive,
+                 _: &Registry,
+                 _: &Context,
+                 rc: &mut RenderContext|
+                 -> Result<(), RenderError> {
                     rc.unregister_local_helper("distance");
                     Ok(())
                 },
