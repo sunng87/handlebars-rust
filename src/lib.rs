@@ -268,7 +268,7 @@
 //! }
 //!
 //!
-//! # fn _main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<Error>> {
 //!   let mut handlebars = Handlebars::new();
 //!   handlebars.register_helper("simple-helper", Box::new(SimpleHelper));
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
@@ -288,7 +288,6 @@
 //! # Ok(())
 //! # }
 //!
-//! # fn main() { _main().unwrap(); }
 //! ```
 //! Data available to helper can be found in [Helper](struct.Helper.html). And there are more
 //! examples in [HelperDef](trait.HelperDef.html) page.
