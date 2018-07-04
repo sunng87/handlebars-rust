@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::io::prelude::*;
-use std::io;
 use std::fs::File;
 use std::path::Path;
 use std::fmt::{self, Debug, Formatter};
@@ -391,53 +390,6 @@ impl Registry {
             .map_err(|e| TemplateRenderError::IOError(e, "Unamed template source".to_owned()))?;
         self.render_template_to_write(&tpl_str, data, writer)
     }
-
-    // #[deprecated(since = "0.30.0", note = "Please use render_to_write instead.")]
-    // pub fn renderw<T>(&self, name: &str, data: &T, writer: &mut W) -> Result<(), RenderError>
-    // where
-    //     T: Serialize,
-    //     W: Write,
-    // {
-    //     self.render_to_write(name, data, writer)
-    // }
-
-    // #[deprecated(since = "0.30.0", note = "Please use render_template instead.")]
-    // pub fn template_render<T>(
-    //     &self,
-    //     template_string: &str,
-    //     data: &T,
-    // ) -> Result<String, TemplateRenderError>
-    // where
-    //     T: Serialize,
-    // {
-    //     self.render_template(template_string, data)
-    // }
-
-    // #[deprecated(since = "0.30.0", note = "Please use render_template_to_write instead.")]
-    // pub fn template_renderw<T>(
-    //     &self,
-    //     template_string: &str,
-    //     data: &T,
-    //     writer: &mut Write,
-    // ) -> Result<(), TemplateRenderError>
-    // where
-    //     T: Serialize,
-    // {
-    //     self.render_template_to_write(template_string, data, &mut writer)
-    // }
-
-    // #[deprecated(since = "0.30.0", note = "Please use render_template_source_to_write instead.")]
-    // pub fn template_renderw2<T>(
-    //     &self,
-    //     template_source: &mut Read,
-    //     data: &T,
-    //     writer: &mut Write,
-    // ) -> Result<(), TemplateRenderError>
-    // where
-    //     T: Serialize,
-    // {
-    //     self.render_template_source_to_write(template_source, data, writer)
-    // }
 }
 
 #[cfg(test)]
