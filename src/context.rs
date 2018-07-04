@@ -160,6 +160,10 @@ impl Context {
     pub fn data(&self) -> &Json {
         &self.data
     }
+
+    pub fn data_mut(&mut self) -> &mut Json {
+        &mut self.data
+    }
 }
 
 #[cfg(test)]

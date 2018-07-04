@@ -30,6 +30,8 @@ static DEFAULT_VALUE: Json = Json::Null;
 pub struct RenderContext {
     inner: Rc<RenderContextInner>,
     block: Rc<BlockRenderContext>,
+    // copy-on-write context
+    modified_context: Option<Rc<Context>>,
 }
 
 #[derive(Clone)]
@@ -76,21 +78,24 @@ impl RenderContext {
         });
 
         let block = Rc::new(BlockRenderContext::default());
-        RenderContext { inner, block }
+        let modified_context = None;
+        RenderContext { inner, block, modified_context }
     }
 
     pub fn derive(&self) -> RenderContext {
         let inner = self.inner.clone();
         let block = self.block.clone();
+        let modified_context = self.modified_context.clone();
 
-        RenderContext { inner, block }
+        RenderContext { inner, block, modified_context }
     }
 
     pub fn new_for_block(&self) -> RenderContext {
         let inner = self.inner.clone();
         let block = Rc::new(BlockRenderContext::default());
+        let modified_context = self.modified_context.clone();
 
-        RenderContext { inner, block }
+        RenderContext { inner, block, modified_context }
     }
 
     fn inner(&self) -> &RenderContextInner {
@@ -109,13 +114,13 @@ impl RenderContext {
         Rc::make_mut(&mut self.block)
     }
 
-    // pub fn context(&self) -> &Context {
-    //     &self.context
-    // }
+    pub fn context(&self) -> Option<Rc<Context>> {
+         self.modified_context.clone()
+    }
 
-    // pub fn context_mut(&mut self) -> &mut Context {
-    //     &mut self.context
-    // }
+    pub fn context_mut(&mut self, ctx: Context) {
+        self.modified_context = Some(Rc::new(ctx))
+    }
 
     pub fn evaluate<'ctx>(&self, context: &'ctx Context, path: &str, strict: bool) -> Result<&'ctx Json, RenderError> {
         let value_container =
@@ -584,6 +589,7 @@ impl Parameter {
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
+                let strict = registry.strict_mode();
                 let local_value = rc.get_local_var(&name);
                 if let Some(value) = local_value {
                     // local var, @first, @last for example
@@ -592,17 +598,24 @@ impl Parameter {
                     Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived(value.clone())))
                 } else {
                     // try to evaluate using block context if any
-                    let block_context_value = rc.evaluate_in_block_context(name)?;
-                    if block_context_value.is_none() {
-                        // failback to normal evaluation
-                        // FIXME:
-                        let context_value = rc.evaluate(ctx, name, registry.strict_mode())?;
-                        // value borrowed from context data
-                        Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Context(context_value)))
-                    } else {
-                        let block_context_value = block_context_value.unwrap();
-                        // also we do clone for block context
+                    if let Some(block_context_value) = rc.evaluate_in_block_context(name)? {
+                        // we do clone for block context because it's from
+                        // render_context
                         Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived(block_context_value.clone())))
+                    } else {
+                        if let Some(rc_context) = rc.context() {
+                            // the context is modified from a decorator
+                            // use the modified one
+                            let json = rc.evaluate(rc_context.borrow(), name, strict)?;
+                            // the data is fetched from mutable reference render_context
+                            // so we have to clone it to bypass lifetime check
+                            Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Derived(json.clone())))
+                        } else {
+                            // failback to normal evaluation
+                            let json_ref = rc.evaluate(ctx, name, strict)?;
+                            // value borrowed from context data
+                            Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Context(json_ref)))
+                        }
                     }
                 }
             }
