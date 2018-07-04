@@ -6,8 +6,8 @@ use std::error::Error;
 
 use handlebars::Handlebars;
 
-fn _main() -> Result<(), Box<Error>> {
-    env_logger::init()?;
+fn main() -> Result<(), Box<Error>> {
+    env_logger::init();
     let mut handlebars = Handlebars::new();
 
     // template not found
@@ -21,8 +21,4 @@ fn _main() -> Result<(), Box<Error>> {
         .unwrap_or_else(|e| println!("{}", e));
 
     Ok(())
-}
-
-fn main() {
-    _main().unwrap();
 }

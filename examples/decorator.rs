@@ -136,8 +136,8 @@ pub fn make_data() -> Map<String, Json> {
     data
 }
 
-fn _main() -> Result<(), Box<Error>> {
-    env_logger::init()?;
+fn main() -> Result<(), Box<Error>> {
+    env_logger::init();
     // create the handlebars registry
     let mut handlebars = Handlebars::new();
 
@@ -154,8 +154,4 @@ fn _main() -> Result<(), Box<Error>> {
     let data = make_data();
     println!("{}", handlebars.render("table", &data)?);
     Ok(())
-}
-
-fn main() {
-    _main().unwrap();
 }

@@ -6,7 +6,7 @@ use std::error::Error;
 use handlebars::Handlebars;
 
 // wait RFC1937 in
-fn _main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<Error>> {
     let mut reg = Handlebars::new();
     // render without register
     println!(
@@ -18,8 +18,4 @@ fn _main() -> Result<(), Box<Error>> {
     reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?;
     println!("{}", reg.render("tpl_1", &json!({"name": "foo"}))?);
     Ok(())
-}
-
-fn main() {
-    _main().unwrap();
 }

@@ -6,8 +6,8 @@ extern crate maplit;
 use std::error::Error;
 use handlebars::Handlebars;
 
-fn _main() -> Result<(), Box<Error>> {
-    env_logger::init()?;
+fn main() -> Result<(), Box<Error>> {
+    env_logger::init();
     let mut handlebars = Handlebars::new();
 
     handlebars.register_template_file("template", "./examples/partials/template2.hbs")?;
@@ -32,8 +32,4 @@ fn _main() -> Result<(), Box<Error>> {
     println!("{}", handlebars.render("template", &data1)?);
 
     Ok(())
-}
-
-fn main() {
-    _main().unwrap();
 }

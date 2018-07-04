@@ -28,7 +28,7 @@ fn parse_json(text: &str) -> Json {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     let mut args = env::args();
     args.next(); // skip own filename

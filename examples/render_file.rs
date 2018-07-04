@@ -115,8 +115,8 @@ pub fn make_data() -> Map<String, Json> {
     data
 }
 
-fn _main() -> Result<(), Box<Error>> {
-    env_logger::init()?;
+fn main() -> Result<(), Box<Error>> {
+    env_logger::init();
     let mut handlebars = Handlebars::new();
 
     handlebars.register_helper("format", Box::new(format_helper));
@@ -130,8 +130,4 @@ fn _main() -> Result<(), Box<Error>> {
     handlebars.render_template_source_to_write(&mut source_template, &data, &mut output_file)?;
     println!("target/table.html generated");
     Ok(())
-}
-
-fn main() {
-    _main().unwrap();
 }
