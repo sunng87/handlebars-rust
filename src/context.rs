@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
 
@@ -16,7 +14,7 @@ pub type Object = BTreeMap<String, Json>;
 ///
 #[derive(Debug, Clone)]
 pub struct Context {
-    data: Arc<Json>,
+    data: Json,
 }
 
 #[inline]
@@ -116,7 +114,7 @@ impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
         Context {
-            data: Arc::new(Json::Null),
+            data: Json::Null,
         }
     }
 
@@ -124,7 +122,7 @@ impl Context {
     pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
         to_value(e)
             .map_err(RenderError::from)
-            .map(|d| Context { data: Arc::new(d) })
+            .map(|d| Context { data: d })
     }
 
     /// Navigate the context with base path and relative path
@@ -142,7 +140,7 @@ impl Context {
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
 
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
-        let mut data: Option<&Json> = Some(self.data.as_ref());
+        let mut data: Option<&Json> = Some(&self.data);
         for p in paths.iter() {
             if *p == "this" {
                 continue;
@@ -160,11 +158,7 @@ impl Context {
     }
 
     pub fn data(&self) -> &Json {
-        self.data.as_ref()
-    }
-
-    pub fn data_mut(&mut self) -> &mut Json {
-        Arc::make_mut(&mut self.data)
+        &self.data
     }
 }
 
