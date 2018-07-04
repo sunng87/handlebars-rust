@@ -407,10 +407,10 @@ mod test {
     impl HelperDef for DummyHelper {
         fn call<'reg: 'rc, 'rc>(
             &self,
-            h: &Helper,
-            r: &Registry,
+            h: &Helper<'reg, 'rc>,
+            r: &'reg Registry,
             ctx: &Context,
-            rc: &mut RenderContext,
+            rc: &mut RenderContext<'reg>,
             out: &mut Output,
         ) -> Result<(), RenderError> {
             h.template().unwrap().render(r, ctx, rc, out)

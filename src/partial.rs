@@ -1,7 +1,6 @@
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
-use std::rc::Rc;
 
 use context::{merge_json, Context};
 use error::RenderError;
@@ -15,7 +14,7 @@ fn render_partial<'reg: 'rc, 'rc>(
     d: &Directive<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    local_rc: &mut RenderContext,
+    local_rc: &mut RenderContext<'reg>,
     out: &mut Output,
 ) -> Result<(), RenderError> {
     if let Some(ref p) = d.param(0) {
@@ -30,7 +29,7 @@ fn render_partial<'reg: 'rc, 'rc>(
     // @partial-block
     if let Some(t) = d.template() {
         // FIXME: avoid clone here possibly
-        local_rc.set_partial("@partial-block".to_string(), Rc::new(t.clone()));
+        local_rc.set_partial("@partial-block".to_string(), t);
     }
 
     if d.hash().is_empty() {
@@ -49,7 +48,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Directive<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &mut RenderContext,
+    rc: &mut RenderContext<'reg>,
     out: &mut Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first

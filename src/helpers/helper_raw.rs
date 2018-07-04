@@ -10,10 +10,10 @@ pub struct RawHelper;
 impl HelperDef for RawHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        r: &Registry,
+        h: &Helper<'reg, 'rc>,
+        r: &'reg Registry,
         ctx: &Context,
-        rc: &mut RenderContext,
+        rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> HelperResult {
         let tpl = h.template();

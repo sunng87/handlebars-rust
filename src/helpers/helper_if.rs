@@ -14,10 +14,10 @@ pub struct IfHelper {
 impl HelperDef for IfHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        r: &Registry,
+        h: &Helper<'reg, 'rc>,
+        r: &'reg Registry,
         ctx: &Context,
-        rc: &mut RenderContext,
+        rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> HelperResult {
         let param = h

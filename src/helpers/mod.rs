@@ -45,8 +45,16 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn dummy_block(h: &Helper, r: &Handlebars, ctx: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
-///     h.template().map(|t| t.render(r, ctx, rc, out)).unwrap_or(Ok(()))
+/// fn dummy_block<'reg, 'rc>(
+///     h: &Helper<'reg, 'rc>,
+///     r: &'reg Handlebars,
+///     ctx: &Context,
+///     rc: &mut RenderContext<'reg>,
+///     out: &mut Output,
+/// ) -> HelperResult {
+///     h.template()
+///         .map(|t| t.render(r, ctx, rc, out))
+///         .unwrap_or(Ok(()))
 /// }
 /// ```
 ///
@@ -58,7 +66,7 @@ pub trait HelperDef: Send + Sync {
         _: &Helper<'reg, 'rc>,
         _: &'reg Registry,
         _: &'rc Context,
-        _: &mut RenderContext,
+        _: &mut RenderContext<'reg>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
@@ -68,7 +76,7 @@ pub trait HelperDef: Send + Sync {
         h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext,
+        rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, ctx, rc)? {
@@ -87,7 +95,7 @@ impl<
                 &Helper<'reg, 'rc>,
                 &'reg Registry,
                 &'rc Context,
-                &mut RenderContext,
+                &mut RenderContext<'reg>,
                 &mut Output,
             ) -> HelperResult,
     > HelperDef for F
@@ -97,7 +105,7 @@ impl<
         h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext,
+        rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> HelperResult {
         (*self)(h, r, ctx, rc, out)
@@ -136,10 +144,10 @@ mod test {
     impl HelperDef for MetaHelper {
         fn call<'reg: 'rc, 'rc>(
             &self,
-            h: &Helper,
-            r: &Registry,
+            h: &Helper<'reg, 'rc>,
+            r: &'reg Registry,
             ctx: &Context,
-            rc: &mut RenderContext,
+            rc: &mut RenderContext<'reg>,
             out: &mut Output,
         ) -> Result<(), RenderError> {
             let v = h.param(0).unwrap();

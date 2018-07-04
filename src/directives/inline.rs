@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use context::Context;
 use directives::{DirectiveDef, DirectiveResult};
 use error::RenderError;
@@ -25,7 +23,7 @@ impl DirectiveDef for InlineDirective {
         d: &Directive<'reg, 'rc>,
         _: &'reg Registry,
         _: &'rc Context,
-        rc: &mut RenderContext,
+        rc: &mut RenderContext<'reg>,
     ) -> DirectiveResult {
         let name = get_name(d)?;
 
@@ -33,7 +31,7 @@ impl DirectiveDef for InlineDirective {
             .template()
             .ok_or_else(|| RenderError::new("inline should have a block"))?;
 
-        rc.set_partial(name.to_owned(), Rc::new(template.clone()));
+        rc.set_partial(name.to_owned(), template);
         Ok(())
     }
 }
