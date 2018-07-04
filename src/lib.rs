@@ -331,12 +331,15 @@ extern crate quick_error;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_derive;
+#[cfg(test)]
+extern crate tempfile;
 
 extern crate regex;
 extern crate serde;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
+extern crate walkdir;
 
 pub use self::template::Template;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};

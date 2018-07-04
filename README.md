@@ -8,6 +8,7 @@ Rust templating with [Handlebars templating language](https://handlebarsjs.com).
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Docs](https://docs.rs/handlebars/badge.svg)](https://docs.rs/crate/handlebars/)
+[![Donate](https://img.shields.io/badge/donate-liberapay-yellow.svg)](https://liberapay.com/Sunng/donate)
 
 ## Getting Started
 
@@ -68,10 +69,9 @@ boolean and etc.
 Rustc_serialize is now officially deprecated. If your application is
 still using it, you need to use handlebars-rust `0.25.*`.
 
-## Documents
+## Document
 
-[Rust
-doc](http://sunng87.github.io/handlebars-rust/handlebars/index.html).
+[Rust doc](https://docs.rs/crate/handlebars/).
 
 ## Changelog
 
@@ -88,6 +88,11 @@ feel free to contact me on github.
 I'm always looking for maintainers to work together on this library,
 also let me know (via email or anywhere in the issue tracker) if you
 want to join.
+
+## Donation
+
+I'm now accepting donation on [liberapay](https://liberapay.com/Sunng/donate),
+if you find my work helpful and want to keep it going.
 
 ## Why (this) Handlebars?
 
@@ -219,6 +224,4 @@ Add your project to our
 
 This library (handlebars-rust) is open sourced under MIT License.
 
-## Contact
 
-[Ning Sun](https://github.com/sunng87) (sunng@protonmail.com)
