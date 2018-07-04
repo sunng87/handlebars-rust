@@ -121,12 +121,14 @@ yourself.
 A helper can be as a simple as a Rust function like:
 
 ```rust
-fn hex_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+fn hex_helper (h: &Helper, _: &Handlebars, _: &Context, rc: &mut
+    RenderContext, out: &mut Output) -> Result<(), RenderError> {
+
     // just for example, add error check for unwrap
     let param = h.param(0).unwrap().value();
     let rendered = format!("0x{:x}", param.as_u64().unwrap());
-    try!(rc.writer.write(rendered.into_bytes().as_ref()));
-    Ok(())
+
+    out.write(rendered.into_bytes().as_ref())
 }
 
 /// register the helper
@@ -223,5 +225,3 @@ Add your project to our
 ## License
 
 This library (handlebars-rust) is open sourced under MIT License.
-
-
