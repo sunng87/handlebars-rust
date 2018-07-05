@@ -17,6 +17,7 @@ use render::{RenderContext, Renderable};
 use support::str::StringWriter;
 use template::Template;
 
+#[cfg(not(feature = "no_dir_source"))]
 use walkdir::WalkDir;
 
 lazy_static! {
@@ -176,6 +177,7 @@ impl Registry {
     }
 
     /// Register a template from a directory
+    #[cfg(not(feature="no_dir_source"))]
     pub fn register_templates_directory<P>(
         &mut self,
         tpl_extension: &'static str,
@@ -396,9 +398,12 @@ mod test {
     use output::Output;
     use registry::Registry;
     use render::{Helper, RenderContext, Renderable};
+    #[cfg(not(feature="no_dir_source"))]
     use std::fs::{DirBuilder, File};
+    #[cfg(not(feature="no_dir_source"))]
     use std::io::Write;
     use support::str::StringWriter;
+    #[cfg(not(feature="no_dir_source"))]
     use tempfile::tempdir;
 
     #[derive(Clone, Copy)]
@@ -441,6 +446,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(not(feature="no_dir_source"))]
     fn test_register_templates_directory() {
         let mut r = Registry::new();
         {
