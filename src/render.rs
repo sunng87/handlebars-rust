@@ -339,7 +339,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         context: &'rc Context,
         render_context: &mut RenderContext<'reg>,
     ) -> Result<Helper<'reg, 'rc>, RenderError> {
-        let mut pv = Vec::new();
+        let mut pv = Vec::with_capacity(ht.params.len());
         for p in ht.params.iter() {
             let r = p.expand(registry, context, render_context)?;
             pv.push(r);
@@ -478,7 +478,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
     ) -> Result<Directive<'reg, 'rc>, RenderError> {
         let name = dt.name.expand_as_name(registry, context, render_context)?;
 
-        let mut pv = Vec::new();
+        let mut pv = Vec::with_capacity(dt.params.len());
         for p in dt.params.iter() {
             let r = p.expand(registry, context, render_context)?;
             pv.push(r);
