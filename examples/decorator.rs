@@ -104,7 +104,7 @@ pub struct Team {
 pub fn make_data() -> Map<String, Json> {
     let mut data = Map::new();
 
-    data.insert("year".to_string(), to_json(&"2015".to_owned()));
+    data.insert("year".to_string(), to_json("2015"));
 
     let teams = vec![
         Team {
@@ -142,7 +142,7 @@ pub fn make_data() -> Map<String, Json> {
     ];
 
     data.insert("teams".to_string(), to_json(&teams));
-    data.insert("engine".to_string(), to_json(&TYPES.to_owned()));
+    data.insert("engine".to_string(), to_json(TYPES));
     data
 }
 

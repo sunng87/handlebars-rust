@@ -39,12 +39,12 @@ impl Subexpression {
     ) -> Subexpression {
         if params.is_empty() && hash.is_empty() {
             Subexpression {
-                element: Box::new(Expression(Parameter::Name(name.clone()))),
+                element: Box::new(Expression(Parameter::Name(name))),
             }
         } else {
             Subexpression {
                 element: Box::new(HelperExpression(HelperTemplate {
-                    name: name.clone(),
+                    name: name,
                     params: params.clone(),
                     hash: hash.clone(),
                     template: None,
@@ -57,7 +57,7 @@ impl Subexpression {
     }
 
     pub fn is_helper(&self) -> bool {
-        match self.element.as_ref() {
+        match self.as_element() {
             TemplateElement::HelperExpression(_) => true,
             _ => false,
         }
@@ -173,7 +173,6 @@ impl Template {
         Template::compile2(source, false)
     }
 
-    #[inline]
     fn parse_subexpression<'a, I>(
         source: &'a str,
         it: &mut Peekable<I>,
@@ -195,7 +194,6 @@ impl Template {
         }
     }
 
-    #[inline]
     fn parse_name<'a, I>(
         source: &'a str,
         it: &mut Peekable<I>,
@@ -218,7 +216,6 @@ impl Template {
         }
     }
 
-    #[inline]
     fn parse_param<'a, I>(
         source: &'a str,
         it: &mut Peekable<I>,
@@ -265,7 +262,6 @@ impl Template {
         Ok(result)
     }
 
-    #[inline]
     fn parse_hash<'a, I>(
         source: &'a str,
         it: &mut Peekable<I>,
@@ -283,7 +279,6 @@ impl Template {
         Ok((key, value))
     }
 
-    #[inline]
     fn parse_block_param<'a, I>(
         _: &'a str,
         it: &mut Peekable<I>,
@@ -317,7 +312,6 @@ impl Template {
         }
     }
 
-    #[inline]
     fn parse_expression<'a, I>(
         source: &'a str,
         it: &mut Peekable<I>,
@@ -383,7 +377,6 @@ impl Template {
         })
     }
 
-    #[inline]
     fn remove_previous_whitespace(template_stack: &mut VecDeque<Template>) {
         let t = template_stack.front_mut().unwrap();
         if let Some(el) = t.elements.pop() {

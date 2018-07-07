@@ -45,9 +45,9 @@ impl HelperDef for EachHelper {
                                 local_rc.push_local_path_root(p.clone());
                             }
 
-                            local_rc.set_local_var("@first".to_string(), to_json(&(i == 0usize)));
-                            local_rc.set_local_var("@last".to_string(), to_json(&(i == len - 1)));
-                            local_rc.set_local_var("@index".to_string(), to_json(&i));
+                            local_rc.set_local_var("@first".to_string(), to_json(i == 0usize));
+                            local_rc.set_local_var("@last".to_string(), to_json(i == len - 1));
+                            local_rc.set_local_var("@index".to_string(), to_json(i));
 
                             if let Some(inner_path) = value.path() {
                                 let new_path =
@@ -82,7 +82,7 @@ impl HelperDef for EachHelper {
                             if let Some(ref p) = local_path_root {
                                 local_rc.push_local_path_root(p.clone());
                             }
-                            local_rc.set_local_var("@first".to_string(), to_json(&first));
+                            local_rc.set_local_var("@first".to_string(), to_json(first));
                             if first {
                                 first = false;
                             }

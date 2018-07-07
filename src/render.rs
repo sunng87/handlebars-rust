@@ -600,11 +600,11 @@ impl Parameter {
         rc: &mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
         match self {
-            &Parameter::Name(ref name) => Ok(name.to_owned()),
-            &Parameter::Subexpression(_) => {
+            Parameter::Name(ref name) => Ok(name.to_owned()),
+            Parameter::Subexpression(_) => {
                 self.expand(registry, ctx, rc).map(|v| v.value().render())
             }
-            &Parameter::Literal(ref j) => Ok(j.render()),
+            Parameter::Literal(ref j) => Ok(j.render()),
         }
     }
 
@@ -615,10 +615,9 @@ impl Parameter {
         rc: &mut RenderContext<'reg>,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
-            &Parameter::Name(ref name) => {
+            Parameter::Name(ref name) => {
                 let strict = registry.strict_mode();
-                let local_value = rc.get_local_var(&name);
-                if let Some(value) = local_value {
+                if let Some(value) = rc.get_local_var(name) {
                     // local var, @first, @last for example
                     // here we count it as derived value, and simply clone it
                     // to bypass lifetime issue
@@ -658,8 +657,8 @@ impl Parameter {
                     }
                 }
             }
-            &Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
-            &Parameter::Subexpression(ref t) => match t.as_element() {
+            Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
+            Parameter::Subexpression(ref t) => match t.as_element() {
                 Expression(ref expr) => expr.expand(registry, ctx, rc),
                 HelperExpression(ref ht) => {
                     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
@@ -919,7 +918,7 @@ fn test_render_context_promotion_and_demotion() {
     use value::to_json;
     let mut render_context = RenderContext::new(None);
 
-    render_context.set_local_var("@index".to_string(), to_json(&0));
+    render_context.set_local_var("@index".to_string(), to_json(0));
 
     render_context.promote_local_vars();
 
@@ -927,14 +926,14 @@ fn test_render_context_promotion_and_demotion() {
         render_context
             .get_local_var(&"@../index".to_string())
             .unwrap(),
-        &to_json(&0)
+        &to_json(0)
     );
 
     render_context.demote_local_vars();
 
     assert_eq!(
         render_context.get_local_var(&"@index".to_string()).unwrap(),
-        &to_json(&0)
+        &to_json(0)
     );
 }
 

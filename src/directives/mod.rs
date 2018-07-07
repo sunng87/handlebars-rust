@@ -28,7 +28,7 @@ pub type DirectiveResult = Result<(), RenderError>;
 ///     {
 ///         let mut data = new_ctx.data_mut();
 ///         if let Some(ref mut m) = data.as_object_mut() {
-///             m.insert("hello".to_string(), to_json(&"world".to_owned()));
+///             m.insert("hello".to_string(), to_json("world"));
 ///         }
 ///     }
 ///     rc.set_context(new_ctx);
@@ -147,7 +147,7 @@ mod test {
                     {
                         let data = new_ctx.data_mut();
                         if let Some(ref mut m) = data.as_object_mut().as_mut() {
-                            m.insert("hello".to_string(), to_json(&"war".to_owned()));
+                            m.insert("hello".to_string(), to_json("war"));
                         }
                     }
                     rc.set_context(new_ctx);
@@ -233,7 +233,7 @@ mod test {
                         h.param(0)
                             .as_ref()
                             .map(|v| v.value())
-                            .unwrap_or(&to_json(&0))
+                            .unwrap_or(&to_json(0))
                     );
                     out.write(s.as_ref())?;
                     Ok(())
@@ -265,7 +265,7 @@ mod test {
                             h.param(0)
                                 .as_ref()
                                 .map(|v| v.value())
-                                .unwrap_or(&to_json(&0)),
+                                .unwrap_or(&to_json(0)),
                             new_unit
                         );
                         out.write(s.as_ref())?;

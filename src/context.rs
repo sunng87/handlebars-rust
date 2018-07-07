@@ -266,12 +266,12 @@ mod test {
     #[test]
     fn test_this() {
         let mut map_with_this = Map::new();
-        map_with_this.insert("this".to_string(), value::to_json(&"hello"));
-        map_with_this.insert("age".to_string(), value::to_json(&5usize));
+        map_with_this.insert("this".to_string(), value::to_json("hello"));
+        map_with_this.insert("age".to_string(), value::to_json(5usize));
         let ctx1 = Context::wraps(&map_with_this).unwrap();
 
         let mut map_without_this = Map::new();
-        map_without_this.insert("age".to_string(), value::to_json(&4usize));
+        map_without_this.insert("age".to_string(), value::to_json(4usize));
         let ctx2 = Context::wraps(&map_without_this).unwrap();
 
         assert_eq!(
@@ -295,7 +295,7 @@ mod test {
         let map = json!({ "age": 4 });
         let s = "hello".to_owned();
         let hash = btreemap!{
-            "tag".to_owned() => value::to_json(&"h1")
+            "tag".to_owned() => value::to_json("h1")
         };
 
         let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
@@ -316,7 +316,7 @@ mod test {
             "h1".to_owned()
         );
 
-        let ctx_a2 = Context::wraps(&context::merge_json(&value::to_json(&s), &hash)).unwrap();
+        let ctx_a2 = Context::wraps(&context::merge_json(&value::to_json(s), &hash)).unwrap();
         assert_eq!(
             ctx_a2
                 .navigate(".", &VecDeque::new(), "this")

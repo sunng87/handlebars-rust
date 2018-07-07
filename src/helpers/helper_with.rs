@@ -259,7 +259,7 @@ mod test {
             "a".to_string() => to_json(&btreemap! {
                 "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
             }),
-            "d".to_string() => to_json(&1)
+            "d".to_string() => to_json(1)
         };
 
         let r0 = handlebars.render("t0", &data);

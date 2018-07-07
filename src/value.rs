@@ -98,7 +98,7 @@ impl JsonRender for Json {
     }
 }
 
-pub fn to_json<T>(src: &T) -> Json
+pub fn to_json<T>(src: T) -> Json
 where
     T: Serialize,
 {

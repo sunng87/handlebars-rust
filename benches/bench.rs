@@ -30,7 +30,7 @@ static SOURCE: &'static str = "<html>
 fn make_data() -> BTreeMap<String, Json> {
     let mut data = BTreeMap::new();
 
-    data.insert("year".to_string(), to_json(&"2015".to_owned()));
+    data.insert("year".to_string(), to_json("2015"));
 
     let mut teams = Vec::new();
 
@@ -43,8 +43,8 @@ fn make_data() -> BTreeMap<String, Json> {
     {
         let (name, score) = *v;
         let mut t = BTreeMap::new();
-        t.insert("name".to_string(), to_json(&name));
-        t.insert("score".to_string(), to_json(&score));
+        t.insert("name".to_string(), to_json(name));
+        t.insert("score".to_string(), to_json(score));
         teams.push(t)
     }
 
