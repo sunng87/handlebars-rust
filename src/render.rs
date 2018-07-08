@@ -85,15 +85,7 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn derive(&self) -> RenderContext<'reg> {
-        let inner = self.inner.clone();
-        let block = self.block.clone();
-        let modified_context = self.modified_context.clone();
-
-        RenderContext {
-            inner,
-            block,
-            modified_context,
-        }
+        self.clone()
     }
 
     pub fn new_for_block(&self) -> RenderContext<'reg> {
@@ -181,11 +173,7 @@ impl<'reg> RenderContext<'reg> {
     pub fn promote_local_vars(&mut self) {
         let mut new_map: HashMap<String, Json> = HashMap::new();
         for (key, v) in self.inner().local_variables.iter() {
-            let mut new_key = String::new();
-            new_key.push_str("@../");
-            new_key.push_str(&key[1..]);
-
-            new_map.insert(new_key, v.clone());
+            new_map.insert(format!("@../{}", &key[1..]), v.clone());
         }
         self.inner_mut().local_variables = new_map;
     }
@@ -194,11 +182,7 @@ impl<'reg> RenderContext<'reg> {
         let mut new_map: HashMap<String, Json> = HashMap::new();
         for (key, v) in self.inner().local_variables.iter() {
             if key.starts_with("@../") {
-                let mut new_key = String::new();
-                new_key.push('@');
-                new_key.push_str(&key[4..]);
-
-                new_map.insert(new_key, v.clone());
+                new_map.insert(format!("@{}", &key[4..]), v.clone());
             }
         }
         self.inner_mut().local_variables = new_map;

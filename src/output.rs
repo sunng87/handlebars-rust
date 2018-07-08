@@ -27,9 +27,7 @@ pub struct StringOutput {
 
 impl Output for StringOutput {
     fn write(&mut self, seg: &str) -> Result<(), IOError> {
-        for b in seg.as_bytes() {
-            self.buf.push(*b);
-        }
+        self.buf.extend_from_slice(seg.as_bytes());
         Ok(())
     }
 }

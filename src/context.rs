@@ -58,7 +58,6 @@ fn parse_json_visitor_inner<'a>(
     Ok(())
 }
 
-#[inline]
 fn parse_json_visitor<'a>(
     path_stack: &mut VecDeque<&'a str>,
     base_path: &'a str,
@@ -117,7 +116,7 @@ impl Context {
     }
 
     /// Create a context with given data
-    pub fn wraps<T: Serialize>(e: &T) -> Result<Context, RenderError> {
+    pub fn wraps<T: Serialize>(e: T) -> Result<Context, RenderError> {
         to_value(e)
             .map_err(RenderError::from)
             .map(|d| Context { data: d })

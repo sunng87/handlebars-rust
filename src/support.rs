@@ -24,9 +24,7 @@ pub mod str {
 
     impl Write for StringWriter {
         fn write(&mut self, buf: &[u8]) -> Result<usize> {
-            for b in buf {
-                self.buf.push(*b);
-            }
+            self.buf.extend_from_slice(buf);
             Ok(buf.len())
         }
 
