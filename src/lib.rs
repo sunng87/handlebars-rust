@@ -362,5 +362,5 @@ mod partial;
 mod registry;
 mod render;
 mod support;
-mod template;
+pub mod template;
 mod value;
