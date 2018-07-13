@@ -38,7 +38,7 @@ pub struct RenderContext<'reg> {
 pub struct RenderContextInner<'reg> {
     partials: HashMap<String, &'reg Template>,
     local_helpers: HashMap<String, Rc<Box<HelperDef + 'static>>>,
-    local_variables: HashMap<String, Json>,
+    local_variables: BTreeMap<String, Json>,
     /// current template name
     current_template: Option<&'reg String>,
     /// root template name
@@ -68,7 +68,7 @@ impl<'reg> RenderContext<'reg> {
     pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg> {
         let inner = Rc::new(RenderContextInner {
             partials: HashMap::new(),
-            local_variables: HashMap::new(),
+            local_variables: BTreeMap::new(),
             local_helpers: HashMap::new(),
             current_template: None,
             root_template: root_template,
@@ -171,7 +171,7 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn promote_local_vars(&mut self) {
-        let mut new_map: HashMap<String, Json> = HashMap::new();
+        let mut new_map = BTreeMap::new();
         for (key, v) in self.inner().local_variables.iter() {
             new_map.insert(format!("@../{}", &key[1..]), v.clone());
         }
@@ -179,7 +179,7 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn demote_local_vars(&mut self) {
-        let mut new_map: HashMap<String, Json> = HashMap::new();
+        let mut new_map = BTreeMap::new();
         for (key, v) in self.inner().local_variables.iter() {
             if key.starts_with("@../") {
                 new_map.insert(format!("@{}", &key[4..]), v.clone());
