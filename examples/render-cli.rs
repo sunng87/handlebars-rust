@@ -3,6 +3,7 @@ extern crate handlebars;
 extern crate serde_json;
 
 use std::env;
+use std::fs;
 use std::io::{self, Write};
 use std::process;
 use std::str::FromStr;
@@ -21,7 +22,12 @@ fn usage() -> ! {
 }
 
 fn parse_json(text: &str) -> Json {
-    match Json::from_str(text) {
+    let text = if text.starts_with("@") {
+        fs::read_to_string(&text[1..]).unwrap()
+    } else {
+        text.to_owned()
+    };
+    match Json::from_str(&text) {
         Ok(json) => json,
         Err(_) => usage(),
     }
