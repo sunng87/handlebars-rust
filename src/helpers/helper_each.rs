@@ -45,21 +45,8 @@ impl HelperDef for EachHelper {
                                 local_rc.push_local_path_root(p.clone());
                             }
 
-                            // optimize map calls
-                            let is_first = i == 0;
-                            let is_last = i == len - 1;
-                            if is_first {
-                                local_rc.set_local_var("@first".to_string(), to_json(true));
-                                local_rc.set_local_var("@last".to_string(), to_json(false));
-                            } else if i == 1 {
-                                local_rc.set_local_var("@first".to_string(), to_json(false));
-                            }
-
-                            if is_last {
-                                local_rc.set_local_var("@last".to_string(), to_json(true));
-                            }
-
-
+                            local_rc.set_local_var("@first".to_string(), to_json(i == 0usize));
+                            local_rc.set_local_var("@last".to_string(), to_json(i == len - 1));
                             local_rc.set_local_var("@index".to_string(), to_json(i));
 
                             if let Some(inner_path) = value.path() {
