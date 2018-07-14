@@ -21,23 +21,19 @@ extern crate serde_json;
 
 use handlebars::Handlebars;
 
-fn main() {
+fn main() -> Result<(), Box<Error>> {
     let mut reg = Handlebars::new();
     // render without register
     println!(
         "{}",
-        reg.render_template("Hello {{name}}", &json!({"name": "foo"}))
-            .unwrap()
+        reg.render_template("Hello {{name}}", &json!({"name": "foo"}))?
     );
 
     // register template using given name
-    reg.register_template_string("tpl_1", "Good afternoon, {{name}}")
-        .unwrap();
-    println!("{}", reg.render("tpl_1", &json!({"name": "foo"})).unwrap());
+    reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?
+    println!("{}", reg.render("tpl_1", &json!({"name": "foo"}))?);
 }
 ```
-
-Note that I use `unwrap` here which is not recommended in your real code.
 
 ### Code Example
 
