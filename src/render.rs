@@ -724,7 +724,7 @@ impl Evaluable for Template {
                 e.template_name = self.name.clone();
                 e
             })?;
-            idx +=1;
+            idx += 1;
         }
         Ok(())
     }

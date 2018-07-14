@@ -246,11 +246,17 @@ impl Template {
             _ => unreachable!(),
         };
 
-        while let Some(n) = it.peek() {
-            let n_span = n.clone().into_span();
-            if n_span.end() > param_span.end() {
+        loop {
+            if let Some(n) = it.peek() {
+                let n_span = n.clone().into_span();
+                if n_span.end() > param_span.end() {
+                    break;
+                }
+            } else {
                 break;
             }
+
+            it.next();
         }
 
         Ok(result)
@@ -990,28 +996,10 @@ fn test_raw_helper() {
 }
 
 #[test]
-#[cfg(all(feature = "rustc_ser_type", not(feature = "serde_type")))]
 fn test_literal_parameter_parser() {
     match Template::compile("{{hello 1 name=\"value\" valid=false ref=someref}}") {
         Ok(t) => if let HelperExpression(ref ht) = t.elements[0] {
-            assert_eq!(ht.params[0], Parameter::Literal(Json::U64(1)));
-            assert_eq!(
-                ht.hash["name"],
-                Parameter::Literal(Json::String("value".to_owned()))
-            );
-            assert_eq!(ht.hash["valid"], Parameter::Literal(Json::Boolean(false)));
-            assert_eq!(ht.hash["ref"], Parameter::Name("someref".to_owned()));
-        },
-        Err(e) => panic!("{}", e),
-    }
-}
-
-#[test]
-#[cfg(serde_type)]
-fn test_literal_parameter_parser() {
-    match Template::compile("{{hello 1 name=\"value\" valid=false ref=someref}}") {
-        Ok(t) => if let HelperExpression(ref ht) = t.elements[0] {
-            assert_eq!(ht.params[0], Parameter::Literal(Json::U64(1)));
+            assert_eq!(ht.params[0], Parameter::Literal(json!(1)));
             assert_eq!(
                 ht.hash["name"],
                 Parameter::Literal(Json::String("value".to_owned()))
