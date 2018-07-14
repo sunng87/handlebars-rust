@@ -34,8 +34,8 @@ pub struct Subexpression {
 impl Subexpression {
     pub fn new(
         name: String,
-        params: Vec<Parameter>,
-        hash: BTreeMap<String, Parameter>,
+        params: &[Parameter],
+        hash: &BTreeMap<String, Parameter>,
     ) -> Subexpression {
         if params.is_empty() && hash.is_empty() {
             Subexpression {
@@ -43,15 +43,15 @@ impl Subexpression {
             }
         } else {
             Subexpression {
-                element: Box::new(HelperExpression(HelperTemplate {
-                    name: name,
-                    params: params.clone(),
+                element: Box::new(HelperExpression(Box::new(HelperTemplate {
+                    name,
+                    params: params.to_owned(),
                     hash: hash.clone(),
                     template: None,
                     inverse: None,
                     block_param: None,
                     block: false,
-                })),
+                }))),
             }
         }
     }
@@ -185,8 +185,8 @@ impl Template {
         if let Parameter::Name(name) = espec.name {
             Ok(Parameter::Subexpression(Subexpression::new(
                 name,
-                espec.params,
-                espec.hash,
+                &espec.params,
+                &espec.hash,
             )))
         } else {
             // line/col no
@@ -246,17 +246,11 @@ impl Template {
             _ => unreachable!(),
         };
 
-        loop {
-            if let Some(n) = it.peek() {
-                let n_span = n.clone().into_span();
-                if n_span.end() > param_span.end() {
-                    break;
-                }
-            } else {
+        while let Some(n) = it.peek() {
+            let n_span = n.clone().into_span();
+            if n_span.end() > param_span.end() {
                 break;
             }
-
-            it.next();
         }
 
         Ok(result)
@@ -368,12 +362,12 @@ impl Template {
             }
         }
         Ok(ExpressionSpec {
-            name: name,
-            params: params,
+            name,
+            params,
             hash: hashes,
-            block_param: block_param,
-            omit_pre_ws: omit_pre_ws,
-            omit_pro_ws: omit_pro_ws,
+            block_param,
+            omit_pre_ws,
+            omit_pro_ws,
         })
     }
 
@@ -437,21 +431,17 @@ impl Template {
 
         let parser_queue =
             HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| match e {
-                PestError::ParsingError {
-                    pos,
-                    positives: _,
-                    negatives: _,
-                } => {
+                PestError::ParsingError { pos, .. } => {
                     let (line_no, col_no) = pos.line_col();
                     TemplateError::of(TemplateErrorReason::InvalidSyntax)
                         .at(source, line_no, col_no)
                 }
-                PestError::CustomErrorPos { pos, message: _ } => {
+                PestError::CustomErrorPos { pos, .. } => {
                     let (line_no, col_no) = pos.line_col();
                     TemplateError::of(TemplateErrorReason::InvalidSyntax)
                         .at(source, line_no, col_no)
                 }
-                PestError::CustomErrorSpan { span, message: _ } => {
+                PestError::CustomErrorSpan { span, .. } => {
                     let (line_no, col_no) = span.start_pos().line_col();
                     TemplateError::of(TemplateErrorReason::InvalidSyntax)
                         .at(source, line_no, col_no)
@@ -472,30 +462,30 @@ impl Template {
                 let rule = pair.as_rule();
                 let span = pair.clone().into_span();
 
-                if rule != Rule::template {
+                let is_trailing_string = rule != Rule::template
+                    && span.start() != prev_end
+                    && !omit_pro_ws
+                    && rule != Rule::raw_text
+                    && rule != Rule::raw_block_text;
+
+                if is_trailing_string {
                     // trailing string check
-                    if span.start() != prev_end
-                        && !omit_pro_ws
-                        && rule != Rule::raw_text
-                        && rule != Rule::raw_block_text
-                    {
-                        let (line_no, col_no) = span.start_pos().line_col();
-                        if rule == Rule::raw_block_end {
-                            let mut t = Template::new(mapping);
-                            t.push_element(
-                                Template::raw_string(&source[prev_end..span.start()], None, false),
-                                line_no,
-                                col_no,
-                            );
-                            template_stack.push_front(t);
-                        } else {
-                            let t = template_stack.front_mut().unwrap();
-                            t.push_element(
-                                Template::raw_string(&source[prev_end..span.start()], None, false),
-                                line_no,
-                                col_no,
-                            );
-                        }
+                    let (line_no, col_no) = span.start_pos().line_col();
+                    if rule == Rule::raw_block_end {
+                        let mut t = Template::new(mapping);
+                        t.push_element(
+                            Template::raw_string(&source[prev_end..span.start()], None, false),
+                            line_no,
+                            col_no,
+                        );
+                        template_stack.push_front(t);
+                    } else {
+                        let t = template_stack.front_mut().unwrap();
+                        t.push_element(
+                            Template::raw_string(&source[prev_end..span.start()], None, false),
+                            line_no,
+                            col_no,
+                        );
                     }
                 }
 
@@ -624,7 +614,7 @@ impl Template {
                                     template: None,
                                     inverse: None,
                                 };
-                                let el = HelperExpression(helper_template);
+                                let el = HelperExpression(Box::new(helper_template));
                                 let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
@@ -654,7 +644,7 @@ impl Template {
                                         h.template = Some(prev_t);
                                     }
                                     let t = template_stack.front_mut().unwrap();
-                                    t.elements.push(HelperBlock(h));
+                                    t.elements.push(HelperBlock(Box::new(h)));
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedHelper(
@@ -744,8 +734,8 @@ pub enum TemplateElement {
     RawString(String),
     Expression(Parameter),
     HTMLExpression(Parameter),
-    HelperExpression(HelperTemplate),
-    HelperBlock(HelperTemplate),
+    HelperExpression(Box<HelperTemplate>),
+    HelperBlock(Box<HelperTemplate>),
     DirectiveExpression(DirectiveTemplate),
     DirectiveBlock(DirectiveTemplate),
     PartialExpression(DirectiveTemplate),

@@ -71,7 +71,7 @@ impl<'reg> RenderContext<'reg> {
             local_variables: HashMap::new(),
             local_helpers: HashMap::new(),
             current_template: None,
-            root_template: root_template,
+            root_template,
             disable_escape: false,
         });
 
@@ -133,7 +133,7 @@ impl<'reg> RenderContext<'reg> {
         let value_container = context.navigate(self.get_path(), self.get_local_path_root(), path);
         if strict {
             value_container
-                .and_then(|v| v.ok_or(RenderError::new("Value not found in strict mode.")))
+                .and_then(|v| v.ok_or_else(|| RenderError::new("Value not found in strict mode.")))
         } else {
             value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
         }
@@ -148,7 +148,7 @@ impl<'reg> RenderContext<'reg> {
         let value_container = context.navigate(".", &VecDeque::new(), path);
         if strict {
             value_container
-                .and_then(|v| v.ok_or(RenderError::new("Value not found in strict mode.")))
+                .and_then(|v| v.ok_or_else(|| RenderError::new("Value not found in strict mode.")))
         } else {
             value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
         }
@@ -172,7 +172,7 @@ impl<'reg> RenderContext<'reg> {
 
     pub fn promote_local_vars(&mut self) {
         let mut new_map: HashMap<String, Json> = HashMap::new();
-        for (key, v) in self.inner().local_variables.iter() {
+        for (key, v) in &self.inner().local_variables {
             new_map.insert(format!("@../{}", &key[1..]), v.clone());
         }
         self.inner_mut().local_variables = new_map;
@@ -180,7 +180,7 @@ impl<'reg> RenderContext<'reg> {
 
     pub fn demote_local_vars(&mut self) {
         let mut new_map: HashMap<String, Json> = HashMap::new();
-        for (key, v) in self.inner().local_variables.iter() {
+        for (key, v) in &self.inner().local_variables {
             if key.starts_with("@../") {
                 new_map.insert(format!("@{}", &key[4..]), v.clone());
             }
@@ -188,7 +188,7 @@ impl<'reg> RenderContext<'reg> {
         self.inner_mut().local_variables = new_map;
     }
 
-    pub fn get_local_var(&self, name: &String) -> Option<&Json> {
+    pub fn get_local_var(&self, name: &str) -> Option<&Json> {
         self.inner().local_variables.get(name)
     }
 
@@ -214,7 +214,7 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<HelperDef + 'static>>> {
-        self.inner().local_helpers.get(name).map(|r| r.clone())
+        self.inner().local_helpers.get(name).cloned()
     }
 
     pub fn get_current_template_name(&self) -> Option<&'reg String> {
@@ -265,11 +265,10 @@ impl<'reg> RenderContext<'reg> {
     where
         T: Serialize,
     {
-        let r = self
+        Ok(self
             .block_mut()
             .block_context
-            .push_front(Context::wraps(ctx)?);
-        Ok(r)
+            .push_front(Context::wraps(ctx)?))
     }
 
     pub fn pop_block_context(&mut self) {
@@ -281,7 +280,7 @@ impl<'reg> RenderContext<'reg> {
         local_path: &str,
     ) -> Result<Option<&Json>, RenderError> {
         let block = self.block();
-        for bc in block.block_context.iter() {
+        for bc in &block.block_context {
             let v = bc.navigate(".", &block.local_path_root, local_path)?;
             if v.is_some() {
                 return Ok(v);
@@ -324,13 +323,13 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         render_context: &mut RenderContext<'reg>,
     ) -> Result<Helper<'reg, 'rc>, RenderError> {
         let mut pv = Vec::with_capacity(ht.params.len());
-        for p in ht.params.iter() {
+        for p in &ht.params {
             let r = p.expand(registry, context, render_context)?;
             pv.push(r);
         }
 
         let mut hm = BTreeMap::new();
-        for (k, p) in ht.hash.iter() {
+        for (k, p) in &ht.hash {
             let r = p.expand(registry, context, render_context)?;
             hm.insert(k.clone(), r);
         }
@@ -463,19 +462,19 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
         let name = dt.name.expand_as_name(registry, context, render_context)?;
 
         let mut pv = Vec::with_capacity(dt.params.len());
-        for p in dt.params.iter() {
+        for p in &dt.params {
             let r = p.expand(registry, context, render_context)?;
             pv.push(r);
         }
 
         let mut hm = BTreeMap::new();
-        for (k, p) in dt.hash.iter() {
+        for (k, p) in &dt.hash {
             let r = p.expand(registry, context, render_context)?;
             hm.insert(k.clone(), r);
         }
 
         Ok(Directive {
-            name: name,
+            name,
             params: pv,
             hash: hm,
             template: dt.template.as_ref(),
@@ -533,7 +532,7 @@ pub trait Renderable {
     ) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
         self.render(registry, ctx, rc, &mut so)?;
-        so.to_string().map_err(RenderError::from)
+        so.into_string().map_err(RenderError::from)
     }
 }
 
@@ -568,7 +567,7 @@ fn call_helper_for_value<'reg: 'rc, 'rc>(
         hd.call(ht, r, ctx, rc, &mut so)?;
         rc.set_disable_escape(disable_escape);
 
-        let string = so.to_string().map_err(RenderError::from)?;
+        let string = so.into_string().map_err(RenderError::from)?;
         Ok(PathAndJson::new(
             None,
             ScopedJson::Derived(Json::String(string)),
@@ -609,36 +608,33 @@ impl Parameter {
                         Some(name.to_owned()),
                         ScopedJson::Derived(value.clone()),
                     ))
-                } else {
+                } else if let Some(block_context_value) = rc.evaluate_in_block_context(name)? {
                     // try to evaluate using block context if any
-                    if let Some(block_context_value) = rc.evaluate_in_block_context(name)? {
-                        // we do clone for block context because it's from
-                        // render_context
-                        Ok(PathAndJson::new(
-                            Some(name.to_owned()),
-                            ScopedJson::Derived(block_context_value.clone()),
-                        ))
-                    } else {
-                        if let Some(rc_context) = rc.context() {
-                            // the context is modified from a decorator
-                            // use the modified one
-                            let json = rc.evaluate(rc_context.borrow(), name, strict)?;
-                            // the data is fetched from mutable reference render_context
-                            // so we have to clone it to bypass lifetime check
-                            Ok(PathAndJson::new(
-                                Some(name.to_owned()),
-                                ScopedJson::Derived(json.clone()),
-                            ))
-                        } else {
-                            // failback to normal evaluation
-                            let json_ref = rc.evaluate(ctx, name, strict)?;
-                            // value borrowed from context data
-                            Ok(PathAndJson::new(
-                                Some(name.to_owned()),
-                                ScopedJson::Context(json_ref),
-                            ))
-                        }
-                    }
+
+                    // we do clone for block context because it's from
+                    // render_context
+                    Ok(PathAndJson::new(
+                        Some(name.to_owned()),
+                        ScopedJson::Derived(block_context_value.clone()),
+                    ))
+                } else if let Some(rc_context) = rc.context() {
+                    // the context is modified from a decorator
+                    // use the modified one
+                    let json = rc.evaluate(rc_context.borrow(), name, strict)?;
+                    // the data is fetched from mutable reference render_context
+                    // so we have to clone it to bypass lifetime check
+                    Ok(PathAndJson::new(
+                        Some(name.to_owned()),
+                        ScopedJson::Derived(json.clone()),
+                    ))
+                } else {
+                    // failback to normal evaluation
+                    let json_ref = rc.evaluate(ctx, name, strict)?;
+                    // value borrowed from context data
+                    Ok(PathAndJson::new(
+                        Some(name.to_owned()),
+                        ScopedJson::Context(json_ref),
+                    ))
                 }
             }
             Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
@@ -652,12 +648,12 @@ impl Parameter {
                     } else {
                         registry
                             .get_helper(&ht.name)
-                            .or(registry.get_helper(if ht.block {
+                            .or_else(|| registry.get_helper(if ht.block {
                                 "blockHelperMissing"
                             } else {
                                 "helperMissing"
                             }))
-                            .ok_or(RenderError::new(format!(
+                            .ok_or_else(|| RenderError::new(format!(
                                 "Helper not defined: {:?}",
                                 ht.name
                             )))
@@ -699,7 +695,7 @@ impl Renderable for Template {
 
                 e
             })?;
-            idx = idx + 1;
+            idx += 1;
         }
         Ok(())
     }
@@ -728,7 +724,7 @@ impl Evaluable for Template {
                 e.template_name = self.name.clone();
                 e
             })?;
-            idx = idx + 1;
+            idx +=1;
         }
         Ok(())
     }
@@ -772,12 +768,12 @@ impl Renderable for TemplateElement {
                 } else {
                     registry
                         .get_helper(&ht.name)
-                        .or(registry.get_helper(if ht.block {
+                        .or_else(|| registry.get_helper(if ht.block {
                             "blockHelperMissing"
                         } else {
                             "helperMissing"
                         }))
-                        .ok_or(RenderError::new(format!(
+                        .ok_or_else(|| RenderError::new(format!(
                             "Helper not defined: {:?}",
                             ht.name
                         )))
@@ -828,7 +824,7 @@ fn test_raw_string() {
         let mut rc = RenderContext::new(None);
         raw_string.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
-    assert_eq!(out.to_string().unwrap(), "<h1>hello world</h1>".to_string());
+    assert_eq!(out.into_string().unwrap(), "<h1>hello world</h1>".to_string());
 }
 
 #[test]
@@ -846,7 +842,7 @@ fn test_expression() {
         element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
 
-    assert_eq!(out.to_string().unwrap(), "&lt;p&gt;&lt;/p&gt;".to_string());
+    assert_eq!(out.into_string().unwrap(), "&lt;p&gt;&lt;/p&gt;".to_string());
 }
 
 #[test]
@@ -864,7 +860,7 @@ fn test_html_expression() {
         element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
 
-    assert_eq!(out.to_string().unwrap(), value.to_string());
+    assert_eq!(out.into_string().unwrap(), value.to_string());
 }
 
 #[test]
@@ -894,7 +890,7 @@ fn test_template() {
         template.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
 
-    assert_eq!(out.to_string().unwrap(), "<h1>world</h1>".to_string());
+    assert_eq!(out.into_string().unwrap(), "<h1>world</h1>".to_string());
 }
 
 #[test]
@@ -941,7 +937,7 @@ fn test_render_subexpression() {
         }
     }
 
-    assert_eq!(sw.to_string(), "<h1>world</h1>".to_string());
+    assert_eq!(sw.into_string(), "<h1>world</h1>".to_string());
 }
 
 #[test]
@@ -975,7 +971,7 @@ fn test_render_subexpression_issue_115() {
         }
     }
 
-    assert_eq!(sw.to_string(), "123".to_string());
+    assert_eq!(sw.into_string(), "123".to_string());
 }
 
 #[test]

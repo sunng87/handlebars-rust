@@ -6,6 +6,12 @@ pub mod str {
         buf: Vec<u8>,
     }
 
+    impl Default for StringWriter {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl StringWriter {
         pub fn new() -> StringWriter {
             StringWriter {
@@ -13,7 +19,7 @@ pub mod str {
             }
         }
 
-        pub fn to_string(self) -> String {
+        pub fn into_string(self) -> String {
             if let Ok(s) = String::from_utf8(self.buf) {
                 s
             } else {
@@ -45,7 +51,7 @@ pub mod str {
             let _ = sw.write("hello".to_owned().into_bytes().as_ref());
             let _ = sw.write("world".to_owned().into_bytes().as_ref());
 
-            let s = sw.to_string();
+            let s = sw.into_string();
             assert_eq!(s, "helloworld".to_string());
         }
     }

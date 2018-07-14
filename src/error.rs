@@ -185,9 +185,9 @@ fn template_segment(template_str: &str, line: usize, col: usize) -> String {
 impl fmt::Display for TemplateError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match (self.line_no, self.column_no, &self.segment) {
-            (Some(line), Some(col), &Some(ref seg)) => write!(
+            (Some(line), Some(col), &Some(ref seg)) => writeln!(
                 f,
-                "Template error: {}\n    --> Template error in \"{}\":{}:{}\n     |\n{}     |\n     = reason: {}\n",
+                "Template error: {}\n    --> Template error in \"{}\":{}:{}\n     |\n{}     |\n     = reason: {}",
                 self.reason,
                 self.template_name
                     .as_ref()
@@ -255,7 +255,7 @@ quick_error! {
 
 impl TemplateRenderError {
     pub fn as_render_error(&self) -> Option<&RenderError> {
-        if let &TemplateRenderError::RenderError(ref e) = self {
+        if let TemplateRenderError::RenderError(ref e) = self {
             Some(&e)
         } else {
             None

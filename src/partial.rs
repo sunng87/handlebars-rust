@@ -68,7 +68,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             let mut local_rc = rc.derive();
             render_partial(t.borrow(), d, r, ctx, &mut local_rc, out)?;
         }
-        None => if let Some(t) = r.get_template(tname).or(d.template()) {
+        None => if let Some(t) = r.get_template(tname).or_else(|| d.template()) {
             let mut local_rc = rc.derive();
             render_partial(t, d, r, ctx, &mut local_rc, out)?;
         },

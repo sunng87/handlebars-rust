@@ -51,7 +51,7 @@ fn parse_json_visitor_inner<'a>(
         }
     }
 
-    for i in seg_stack.into_iter() {
+    for i in seg_stack {
         let span = i.into_span();
         path_stack.push_back(&path[span.start()..span.end()]);
     }
@@ -70,13 +70,9 @@ fn parse_json_visitor<'a>(
 
     let mut path_context_depth: i64 = -1;
 
-    loop {
-        if let Some(sg) = parser.next() {
-            if sg.as_rule() == Rule::path_up {
-                path_context_depth += 1;
-            } else {
-                break;
-            }
+    while let Some(sg) = parser.next() {
+        if sg.as_rule() == Rule::path_up {
+            path_context_depth += 1;
         } else {
             break;
         }
@@ -98,7 +94,7 @@ fn parse_json_visitor<'a>(
 
 pub fn merge_json(base: &Json, addition: &Object) -> Json {
     let mut base_map = match base {
-        &Json::Object(ref m) => m.clone(),
+        Json::Object(ref m) => m.clone(),
         _ => Map::new(),
     };
 
@@ -138,14 +134,14 @@ impl Context {
 
         let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
         let mut data: Option<&Json> = Some(&self.data);
-        for p in paths.iter() {
+        for p in &paths {
             if *p == "this" {
                 continue;
             }
             data = match data {
                 Some(&Json::Array(ref l)) => p
                     .parse::<usize>()
-                    .map_err(|e| RenderError::with(e))
+                    .map_err(RenderError::with)
                     .map(|idx_u| l.get(idx_u))?,
                 Some(&Json::Object(ref m)) => m.get(*p),
                 Some(_) => None,

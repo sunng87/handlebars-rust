@@ -39,7 +39,7 @@ impl HelperDef for EachHelper {
                 let rendered = match (value.value().is_truthy(), value.value()) {
                     (true, &Json::Array(ref list)) => {
                         let len = list.len();
-                        for i in 0..len {
+                        for (i, _) in list.iter().enumerate().take(len) {
                             let mut local_rc = rc.derive();
                             if let Some(ref p) = local_path_root {
                                 local_rc.push_local_path_root(p.clone());

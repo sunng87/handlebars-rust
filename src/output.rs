@@ -39,7 +39,7 @@ impl StringOutput {
         }
     }
 
-    pub fn to_string(self) -> Result<String, FromUtf8Error> {
+    pub fn into_string(self) -> Result<String, FromUtf8Error> {
         String::from_utf8(self.buf)
     }
 }

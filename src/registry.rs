@@ -76,6 +76,12 @@ impl Debug for Registry {
     }
 }
 
+impl Default for Registry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Registry {
     pub fn new() -> Registry {
         let r = Registry {
@@ -188,7 +194,7 @@ impl Registry {
     {
         let dir_path = dir_path.as_ref();
 
-        let prefix_len = if dir_path.to_string_lossy().ends_with("/") {
+        let prefix_len = if dir_path.to_string_lossy().ends_with('/') {
             dir_path.to_string_lossy().len()
         } else {
             dir_path.to_string_lossy().len() + 1
@@ -308,7 +314,7 @@ impl Registry {
         T: Serialize,
     {
         self.get_template(name)
-            .ok_or(RenderError::new(format!("Template not found: {}", name)))
+            .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
                 let ctx = Context::wraps(data)?;
                 let mut render_context = RenderContext::new(t.name.as_ref());
@@ -329,7 +335,7 @@ impl Registry {
     {
         let mut output = StringOutput::new();
         self.render_to_output(name, data, &mut output)?;
-        output.to_string().map_err(RenderError::from)
+        output.into_string().map_err(RenderError::from)
     }
 
     /// Render a registered template and write some data to the `std::io::Write`
@@ -353,7 +359,7 @@ impl Registry {
     {
         let mut writer = StringWriter::new();
         self.render_template_to_write(template_string, data, &mut writer)?;
-        Ok(writer.to_string())
+        Ok(writer.into_string())
     }
 
     /// render a template string using current registry without register it
@@ -561,7 +567,7 @@ mod test {
             r.render_to_write("index", &(), &mut sw).ok().unwrap();
         }
 
-        assert_eq!("<h1></h1>".to_string(), sw.to_string());
+        assert_eq!("<h1></h1>".to_string(), sw.into_string());
     }
 
     #[test]
