@@ -268,6 +268,11 @@ impl Registry {
         &*self.escape_fn
     }
 
+    /// Return `true` if a template is registered for the given name
+    pub fn has_template(&self, name: &str) -> bool {
+        self.get_template(name).is_some()
+    }
+
     /// Return a registered template,
     pub fn get_template(&self, name: &str) -> Option<&Template> {
         self.templates.get(name)
