@@ -352,6 +352,8 @@ pub use self::support::str::StringWriter;
 pub use self::template::Template;
 pub use self::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 
+
+#[macro_use] mod macros;
 mod context;
 mod directives;
 mod error;
