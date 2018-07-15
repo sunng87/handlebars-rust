@@ -112,6 +112,7 @@ impl<
     }
 }
 
+pub(crate) mod helper_boolean;
 mod helper_each;
 mod helper_if;
 mod helper_log;

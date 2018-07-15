@@ -105,6 +105,14 @@ impl Registry {
         self.register_helper("raw", Box::new(helpers::RAW_HELPER));
         self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
+        self.register_helper("gt", Box::new(helpers::helper_boolean::gt));
+        self.register_helper("gte", Box::new(helpers::helper_boolean::gte));
+        self.register_helper("lt", Box::new(helpers::helper_boolean::lt));
+        self.register_helper("lte", Box::new(helpers::helper_boolean::lte));
+        self.register_helper("and", Box::new(helpers::helper_boolean::and));
+        self.register_helper("or", Box::new(helpers::helper_boolean::or));
+        self.register_helper("not", Box::new(helpers::helper_boolean::not));
+
         self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
         self
     }
@@ -453,7 +461,10 @@ mod test {
         r.register_helper("dummy", Box::new(DUMMY_HELPER));
 
         // built-in helpers plus 1
-        assert_eq!(r.helpers.len(), 7 + 1);
+        let num_helpers = 7;
+        let num_boolean_helpers = 7; // stuff like gt and lte
+        let num_custom_helpers = 1; // dummy from above
+        assert_eq!(r.helpers.len(), num_helpers + num_boolean_helpers + num_custom_helpers);
     }
 
     #[test]
