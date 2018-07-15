@@ -12,7 +12,7 @@ pub type DirectiveResult = Result<(), RenderError>;
 /// Implement this trait to define your own decorators or directives. Currently
 /// decorator shares same definition with helper.
 ///
-/// In handlebars, it is recommanded to use decorator to change context data and update helper
+/// In handlebars, it is recommended to use decorator to change context data and update helper
 /// definition.
 /// ## Updating context data
 ///

@@ -80,7 +80,7 @@
 //! generates empty string for such case. However, in Rust we want a
 //! little bit strict sometime.
 //!
-//! By enabling `strcit_mode` on handlebars:
+//! By enabling `strict_mode` on handlebars:
 //!
 //! ```
 //! # use handlebars::Handlebars;
@@ -133,12 +133,12 @@
 //! # }
 //! ```
 //!
-//! On registeration, the template is parsed, compiled and cached in the registry. So further
-//! usage will benifite from the one-time work. Also features like include, inheritance
+//! On registration, the template is parsed, compiled and cached in the registry. So further
+//! usage will benefit from the one-time work. Also features like include, inheritance
 //! that involves template reference requires you to register those template first with
 //! a name so the registry can find it.
 //!
-//! If you template is small or just to expirement, you can use `render_template` API
+//! If you template is small or just to experiment, you can use `render_template` API
 //! without registration.
 //!
 //! ```
@@ -299,16 +299,16 @@
 //! * `{{{{#raw}}}} ... {{{{/raw}}}}` escape handlebars expression within the block
 //! * `{{#if ...}} ... {{else}} ... {{/if}}` if-else block
 //! * `{{#unless ...}} ... {{else}} .. {{/unless}}` if-not-else block
-//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebar-rust doesn't support mustach iteration syntax so use this instead.
-//! * `{{#with ...}} ... {{/with}}` change current context. Similar to {{#each}}, used for replace corresponding mustach syntax.
+//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebar-rust doesn't support mustache iteration syntax so use this instead.
+//! * `{{#with ...}} ... {{/with}}` change current context. Similar to {{#each}}, used for replace corresponding mustache syntax.
 //! * `{{lookup ... ...}}` get value from array by `@index` or `@key`
 //! * `{{> ...}}` include template with name
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //!
 //! ### Template inheritance
 //!
-//! Handlebarsjs partial system is fully supported in this implementation.
-//! Check [example](https://github.com/sunng87/handlebars-rust/blob/master/examples/partials.rs#L49) for detail.
+//! Handlebars.js' partial system is fully supported in this implementation.
+//! Check [example](https://github.com/sunng87/handlebars-rust/blob/master/examples/partials.rs#L49) for details.
 //!
 //!
 

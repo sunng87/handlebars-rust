@@ -396,7 +396,7 @@ impl Registry {
         let mut tpl_str = String::new();
         template_source
             .read_to_string(&mut tpl_str)
-            .map_err(|e| TemplateRenderError::IOError(e, "Unamed template source".to_owned()))?;
+            .map_err(|e| TemplateRenderError::IOError(e, "Unnamed template source".to_owned()))?;
         self.render_template_to_write(&tpl_str, data, writer)
     }
 }
