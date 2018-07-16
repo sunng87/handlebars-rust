@@ -20,7 +20,7 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 /// * `&Helper`: current helper template information, contains name, params, hashes and nested template
 /// * `&Registry`: the global registry, you can find templates by name from registry
-/// * `&mut RenderContext`: you can access data or modify variables (starts with @)/patials in render context, for example, @index of #each. See its document for detail.
+/// * `&mut RenderContext`: you can access data or modify variables (starts with @)/partials in render context, for example, @index of #each. See its document for detail.
 ///
 /// By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
 ///
