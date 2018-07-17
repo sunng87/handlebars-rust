@@ -2,63 +2,11 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
-use serde_json::Value;
-
-struct GtHelper;
-
-impl HelperDef for GtHelper {
-    fn call_inner<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper,
-        _: &Handlebars,
-        _: &Context,
-        _: &mut RenderContext,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        let p1 = h
-            .param(0)
-            .and_then(|v| v.value().as_i64())
-            .ok_or(RenderError::new(
-                "Param 0 with i64 type is required for gt helper.",
-            ))?;
-        let p2 = h
-            .param(1)
-            .and_then(|v| v.value().as_i64())
-            .ok_or(RenderError::new(
-                "Param 1 with i64 type is required for gt helper.",
-            ))?;
-
-        Ok(Some(Value::Bool(p1 > p2).into()))
-    }
-}
-
-struct NotHelper;
-
-impl HelperDef for NotHelper {
-    fn call_inner<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper,
-        _: &Handlebars,
-        _: &Context,
-        _: &mut RenderContext,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        let p1 = h
-            .param(0)
-            .and_then(|v| v.value().as_bool())
-            .ok_or(RenderError::new(
-                "Param 0 with bool type is required for not helper.",
-            ))?;
-
-        Ok(Some(Value::Bool(!p1).into()))
-    }
-}
+use handlebars::Handlebars;
 
 #[test]
 fn test_subexpression() {
-    let mut hbs = Handlebars::new();
-
-    hbs.register_helper("gt", Box::new(GtHelper));
-    hbs.register_helper("not", Box::new(NotHelper));
+    let hbs = Handlebars::new();
 
     let data = json!({"a": 1, "b": 0, "c": 2});
 

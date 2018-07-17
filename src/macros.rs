@@ -64,7 +64,6 @@ macro_rules! handlebars_helper {
 
     (@as_json_value $x:ident, object) => { $x.as_object() };
     (@as_json_value $x:ident, array) => { $x.as_array() };
-    (@as_json_value $x:ident, string) => { $x.as_string() };
     (@as_json_value $x:ident, str) => { $x.as_str() };
     (@as_json_value $x:ident, i64) => { $x.as_i64() };
     (@as_json_value $x:ident, u64) => { $x.as_u64() };
