@@ -265,10 +265,11 @@ impl<'reg> RenderContext<'reg> {
     where
         T: Serialize,
     {
-        Ok(self
+        self
             .block_mut()
             .block_context
-            .push_front(Context::wraps(ctx)?))
+            .push_front(Context::wraps(ctx)?);
+        Ok(())
     }
 
     pub fn pop_block_context(&mut self) {
