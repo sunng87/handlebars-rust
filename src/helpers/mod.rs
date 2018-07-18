@@ -20,7 +20,9 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 /// * `&Helper`: current helper template information, contains name, params, hashes and nested template
 /// * `&Registry`: the global registry, you can find templates by name from registry
+/// * `&Context`: the whole data to render, in most case you can use data from `Helper`
 /// * `&mut RenderContext`: you can access data or modify variables (starts with @)/partials in render context, for example, @index of #each. See its document for detail.
+/// * `&mut Output`: where you write output to
 ///
 /// By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
 ///
@@ -58,6 +60,18 @@ pub type HelperResult = Result<(), RenderError>;
 /// }
 /// ```
 ///
+/// ## Define helper function using macro
+///
+/// In most case you just need some simple function to call from template. We have  `handlebars_helper!` macro to simplify the job.
+///
+/// ```
+/// use handlebars::*;
+///
+/// handlebars_helper!(plus: |x: i64, y: i64| x + y);
+///
+/// let mut hbs = Handlebars::new();
+/// hbs.register_helper("plus", Box::new(plus));
+/// ```
 ///
 
 pub trait HelperDef: Send + Sync {
