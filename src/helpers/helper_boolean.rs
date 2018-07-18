@@ -1,9 +1,11 @@
 //! Helpers for boolean operations
 
-handlebars_helper!(gt: |x: u64, y: u64| x > y);
-handlebars_helper!(gte: |x: u64, y: u64| x >= y);
-handlebars_helper!(lt: |x: u64, y: u64| x < y);
-handlebars_helper!(lte: |x: u64, y: u64| x <= y);
+handlebars_helper!(eq: |x: i64, y: i64| x == y);
+handlebars_helper!(ne: |x: i64, y: i64| x != y);
+handlebars_helper!(gt: |x: i64, y: i64| x > y);
+handlebars_helper!(gte: |x: i64, y: i64| x >= y);
+handlebars_helper!(lt: |x: i64, y: i64| x < y);
+handlebars_helper!(lte: |x: i64, y: i64| x <= y);
 handlebars_helper!(and: |x: bool, y: bool| x && y);
 handlebars_helper!(or: |x: bool, y: bool| x || y);
 handlebars_helper!(not: |x: bool| !x);
@@ -30,6 +32,10 @@ mod test_conditions {
         test_condition("(gt 5 3)", true);
         test_condition("(gt 3 5)", false);
         test_condition("(or (gt 3 5) (gt 5 3))", true);
+        test_condition("(eq 5 5)", true);
+        test_condition("(eq 5 6)", false);
+        test_condition("(ne 5 6)", true);
+        test_condition("(ne 5 5)", false);
     }
 
     #[test]

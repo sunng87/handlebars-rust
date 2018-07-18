@@ -146,7 +146,7 @@
 //! use handlebars::Handlebars;
 //! use std::collections::BTreeMap;
 //!
-//! # fn _main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<Error>> {
 //!   let mut handlebars = Handlebars::new();
 //!   let source = "hello {{world}}";
 //!
@@ -154,9 +154,6 @@
 //!   data.insert("world".to_string(), "世界!".to_string());
 //!   assert_eq!(handlebars.render_template(source, &data)?, "hello 世界!".to_owned());
 //! # Ok(())
-//! # }
-//! # fn main() {
-//! #   _main().unwrap();
 //! # }
 //! ```
 //!
@@ -182,7 +179,7 @@
 //!   age: i16,
 //! }
 //!
-//! # fn _main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<Error>> {
 //!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();
@@ -197,7 +194,6 @@
 //! # Ok(())
 //! # }
 //! #
-//! # fn main() { _main().unwrap(); }
 //! ```
 //!
 //! Or if you don't need the template to be cached or referenced by other ones, you can
@@ -215,7 +211,7 @@
 //! #  age: i16,
 //! # }
 //!
-//! # fn _main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<Error>> {
 //!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();
@@ -228,7 +224,6 @@
 //!       "Hello, Ning Sun".to_owned());
 //! # Ok(())
 //! # }
-//! # fn main() { _main().unwrap(); }
 //! ```
 //!
 //! #### Escaping
@@ -304,6 +299,16 @@
 //! * `{{lookup ... ...}}` get value from array by `@index` or `@key`
 //! * `{{> ...}}` include template with name
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
+//! * Boolean helpers that can be used in `if` as subexpression, for example `{{#if (gt 2 1)}} ...`:
+//!   * `eq`
+//!   * `ne`
+//!   * `gt`
+//!   * `gte`
+//!   * `lt`
+//!   * `lte`
+//!   * `and`
+//!   * `or`
+//!   * `not`
 //!
 //! ### Template inheritance
 //!
