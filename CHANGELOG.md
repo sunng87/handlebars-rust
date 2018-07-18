@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.0.0](https://github.com/sunng87/handlebars-rust/compare/0.32.4...1.0.0) - 2018-07-18
+
+* [Changed] Helper API finalized and new output API
+* [Changed] New internal value API, reduced clone cost
+* [Added] Helper macro
+* [Added] New built-in helpers: `gt`, `lt` and some more
+* [Added] Register template folder
+
 ## [0.32.4](https://github.com/sunng87/handlebars-rust/compare/0.32.3...0.32.4) - 2018-05-23
 
 * [Changed] Keep compatibility with pre-1.26 rust by removing `impl
