@@ -7,6 +7,7 @@ use handlebars::Handlebars;
 
 handlebars_helper!(lower: |s: str| s.to_lowercase());
 handlebars_helper!(upper: |s: str| s.to_uppercase());
+handlebars_helper!(hex: |v: i64| format!("0x{:x}", v));
 
 #[test]
 fn test_macro_helper() {
@@ -14,6 +15,7 @@ fn test_macro_helper() {
 
     hbs.register_helper("lower", Box::new(lower));
     hbs.register_helper("upper", Box::new(upper));
+    hbs.register_helper("hex", Box::new(hex));
 
     let data = json!("Teixeira");
 
@@ -25,4 +27,5 @@ fn test_macro_helper() {
         hbs.render_template("{{upper this}}", &data).unwrap(),
         "TEIXEIRA"
     );
+    assert_eq!(hbs.render_template("{{hex 16}}", &()).unwrap(), "0x10");
 }

@@ -117,24 +117,16 @@ yourself.
 A helper can be as a simple as a Rust function like:
 
 ```rust
-fn hex_helper (h: &Helper, _: &Handlebars, _: &Context, rc: &mut
-    RenderContext, out: &mut Output) -> Result<(), RenderError> {
-
-    // just for example, add error check for unwrap
-    let param = h.param(0).unwrap().value();
-    let rendered = format!("0x{:x}", param.as_u64().unwrap());
-
-    out.write(rendered.into_bytes().as_ref())
-}
+handlebars_helper!(hex: |v: i64| format!("0x{:x}", v));
 
 /// register the helper
-handlebars.register_helper("hex", Box::new(hex_helper));
+handlebars.register_helper("hex", Box::new(hex));
 ```
 
 And using it in your template:
 
 ```handlebars
-{{hex my_value}}
+{{hex 16}}
 ```
 
 #### Template inheritance
