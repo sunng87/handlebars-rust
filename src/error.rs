@@ -4,7 +4,7 @@ use std::io::Error as IOError;
 use std::string::FromUtf8Error;
 
 use serde_json::error::Error as SerdeError;
-#[cfg(not(feature="no_dir_source"))]
+#[cfg(not(feature = "no_dir_source"))]
 use walkdir::Error as WalkdirError;
 
 use template::Parameter;
@@ -219,7 +219,7 @@ quick_error! {
     }
 }
 
-#[cfg(not(feature="no_dir_source"))]
+#[cfg(not(feature = "no_dir_source"))]
 impl From<WalkdirError> for TemplateFileError {
     fn from(error: WalkdirError) -> TemplateFileError {
         let path_string: String = error

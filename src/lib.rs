@@ -357,9 +357,11 @@ pub use self::support::str::StringWriter;
 pub use self::template::Template;
 pub use self::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 
-#[doc(hidden)] pub use self::serde_json::Value as JsonValue;
+#[doc(hidden)]
+pub use self::serde_json::Value as JsonValue;
 
-#[macro_use] mod macros;
+#[macro_use]
+mod macros;
 mod context;
 mod directives;
 mod error;

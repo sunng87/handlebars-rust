@@ -265,8 +265,7 @@ impl<'reg> RenderContext<'reg> {
     where
         T: Serialize,
     {
-        self
-            .block_mut()
+        self.block_mut()
             .block_context
             .push_front(Context::wraps(ctx)?);
         Ok(())
@@ -649,15 +648,16 @@ impl Parameter {
                     } else {
                         registry
                             .get_helper(&ht.name)
-                            .or_else(|| registry.get_helper(if ht.block {
-                                "blockHelperMissing"
-                            } else {
-                                "helperMissing"
-                            }))
-                            .ok_or_else(|| RenderError::new(format!(
-                                "Helper not defined: {:?}",
-                                ht.name
-                            )))
+                            .or_else(|| {
+                                registry.get_helper(if ht.block {
+                                    "blockHelperMissing"
+                                } else {
+                                    "helperMissing"
+                                })
+                            })
+                            .ok_or_else(|| {
+                                RenderError::new(format!("Helper not defined: {:?}", ht.name))
+                            })
                             .and_then(move |d| call_helper_for_value(d, &h, registry, ctx, rc))
                     }
                 }
@@ -769,15 +769,16 @@ impl Renderable for TemplateElement {
                 } else {
                     registry
                         .get_helper(&ht.name)
-                        .or_else(|| registry.get_helper(if ht.block {
-                            "blockHelperMissing"
-                        } else {
-                            "helperMissing"
-                        }))
-                        .ok_or_else(|| RenderError::new(format!(
-                            "Helper not defined: {:?}",
-                            ht.name
-                        )))
+                        .or_else(|| {
+                            registry.get_helper(if ht.block {
+                                "blockHelperMissing"
+                            } else {
+                                "helperMissing"
+                            })
+                        })
+                        .ok_or_else(|| {
+                            RenderError::new(format!("Helper not defined: {:?}", ht.name))
+                        })
                         .and_then(move |d| d.call(&h, registry, ctx, rc, out))
                 }
             }
@@ -825,7 +826,10 @@ fn test_raw_string() {
         let mut rc = RenderContext::new(None);
         raw_string.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
-    assert_eq!(out.into_string().unwrap(), "<h1>hello world</h1>".to_string());
+    assert_eq!(
+        out.into_string().unwrap(),
+        "<h1>hello world</h1>".to_string()
+    );
 }
 
 #[test]
@@ -843,7 +847,10 @@ fn test_expression() {
         element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
     }
 
-    assert_eq!(out.into_string().unwrap(), "&lt;p&gt;&lt;/p&gt;".to_string());
+    assert_eq!(
+        out.into_string().unwrap(),
+        "&lt;p&gt;&lt;/p&gt;".to_string()
+    );
 }
 
 #[test]

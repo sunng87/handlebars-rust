@@ -193,7 +193,7 @@ impl Registry {
     }
 
     /// Register a template from a directory
-    #[cfg(not(feature="no_dir_source"))]
+    #[cfg(not(feature = "no_dir_source"))]
     pub fn register_templates_directory<P>(
         &mut self,
         tpl_extension: &'static str,
@@ -419,12 +419,12 @@ mod test {
     use output::Output;
     use registry::Registry;
     use render::{Helper, RenderContext, Renderable};
-    #[cfg(not(feature="no_dir_source"))]
+    #[cfg(not(feature = "no_dir_source"))]
     use std::fs::{DirBuilder, File};
-    #[cfg(not(feature="no_dir_source"))]
+    #[cfg(not(feature = "no_dir_source"))]
     use std::io::Write;
     use support::str::StringWriter;
-    #[cfg(not(feature="no_dir_source"))]
+    #[cfg(not(feature = "no_dir_source"))]
     use tempfile::tempdir;
 
     #[derive(Clone, Copy)]
@@ -466,11 +466,14 @@ mod test {
         let num_helpers = 7;
         let num_boolean_helpers = 9; // stuff like gt and lte
         let num_custom_helpers = 1; // dummy from above
-        assert_eq!(r.helpers.len(), num_helpers + num_boolean_helpers + num_custom_helpers);
+        assert_eq!(
+            r.helpers.len(),
+            num_helpers + num_boolean_helpers + num_custom_helpers
+        );
     }
 
     #[test]
-    #[cfg(not(feature="no_dir_source"))]
+    #[cfg(not(feature = "no_dir_source"))]
     fn test_register_templates_directory() {
         let mut r = Registry::new();
         {
