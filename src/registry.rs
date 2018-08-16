@@ -204,7 +204,15 @@ impl Registry {
         self.register_template_source(name, &mut file)
     }
 
-    /// Register a template from a directory
+    /// Register templates from a directory
+    ///
+    /// * `tpl_extension`: the template file extension
+    /// * `dir_path`: the path of directory
+    ///
+    /// Hidden files and tempfile (starts with `#`) will be ignored. All registered
+    /// will use their relative name as template name. For example, when `dir_path` is
+    /// `templates/` and `tpl_extension` is `.hbs`, the file
+    /// `templates/some/path/file.hbs` will be registerd as `some/path/file`.
     #[cfg(not(feature = "no_dir_source"))]
     pub fn register_templates_directory<P>(
         &mut self,
