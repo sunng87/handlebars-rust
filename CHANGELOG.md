@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.0...Unreleased) - ReleaseDate
+
+* [Changed] Added hidden/temp file filter to directory register
+
 ## [1.0.0](https://github.com/sunng87/handlebars-rust/compare/0.32.4...1.0.0) - 2018-07-18
 
 * [Changed] Helper API finalized and new output API
