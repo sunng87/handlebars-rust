@@ -18,7 +18,7 @@ use support::str::StringWriter;
 use template::Template;
 
 #[cfg(not(feature = "no_dir_source"))]
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
 
 lazy_static! {
     static ref DEFAULT_REPLACE: Regex = Regex::new(">|<|\"|&").unwrap();
@@ -80,6 +80,18 @@ impl Default for Registry {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
+    let path = entry.path();
+
+    // ignore hidden files, emacs buffers and files with wrong suffix
+    !path.is_file() || path
+        .file_name()
+        .map(|s| {
+            let ds = s.to_string_lossy();
+            ds.starts_with(".") || ds.starts_with("#") || !ds.ends_with(suffix)
+        }).unwrap_or(true)
 }
 
 impl Registry {
@@ -211,19 +223,20 @@ impl Registry {
         };
 
         let walker = WalkDir::new(dir_path);
-        let dir_iter = walker.min_depth(1).into_iter();
+        let dir_iter = walker
+            .min_depth(1)
+            .into_iter()
+            .filter(|e| e.is_ok() && !filter_file(e.as_ref().unwrap(), tpl_extension));
 
         for entry in dir_iter {
             let entry = entry?;
 
             let tpl_path = entry.path();
             let tpl_file_path = entry.path().to_string_lossy();
-            if entry.metadata()?.is_file() && tpl_file_path.ends_with(tpl_extension) {
-                let tpl_name =
-                    &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
-                let tpl_canonical_name = tpl_name.replace("\\", "/");
-                self.register_template_file(&tpl_canonical_name, &tpl_path)?;
-            }
+
+            let tpl_name = &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
+            let tpl_canonical_name = tpl_name.replace("\\", "/");
+            self.register_template_file(&tpl_canonical_name, &tpl_path)?;
         }
 
         Ok(())
@@ -493,12 +506,17 @@ mod test {
             let mut file3: File = File::create(&file3_path).unwrap();
             writeln!(file3, "<h1>Hallo {{world}}!</h1>").unwrap();
 
+            let file4_path = dir.path().join(".t4.hbs");
+            let mut file4: File = File::create(&file4_path).unwrap();
+            writeln!(file4, "<h1>Hallo {{world}}!</h1>").unwrap();
+
             r.register_templates_directory(".hbs", dir.path()).unwrap();
 
             assert_eq!(r.templates.len(), 3);
             assert_eq!(r.templates.contains_key("t1"), true);
             assert_eq!(r.templates.contains_key("t2"), true);
             assert_eq!(r.templates.contains_key("t3"), true);
+            assert_eq!(r.templates.contains_key("t4"), false);
 
             drop(file1);
             drop(file2);
