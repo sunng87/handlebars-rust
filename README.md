@@ -204,6 +204,7 @@ workaround for cases we don't support.
 
 * Iron: [handlebars-iron](https://github.com/sunng87/handlebars-iron)
 * Rocket: [rocket/contrib](https://api.rocket.rs/rocket_contrib/struct.Template.html)
+* Warp: [handlebars example](https://github.com/seanmonstar/warp/blob/master/examples/handlebars_template.rs)
 
 ## Using handlebars-rust?
 
