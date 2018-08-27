@@ -56,15 +56,6 @@ output).
 
 Checkout `examples/` for more concrete demos of current API.
 
-From 0.26, [Serde](https://serde.rs/) JSON is the default type system
-for this library. The data you pass to handlebars template must
-implements the `Serialize` trait. Note that we don't actually
-serialize data to JSON string, we just use the JSON type: number,
-boolean and etc.
-
-Rustc_serialize is now officially deprecated. If your application is
-still using it, you need to use handlebars-rust `0.25.*`.
-
 ## Document
 
 [Rust doc](https://docs.rs/crate/handlebars/).
@@ -76,7 +67,7 @@ Change log is available in the source tree named as `CHANGELOG.md`.
 ## Contributor Guide
 
 Any contribution to this library is welcomed. To get started into
-development, I have several [Helper
+development, I have several [Help
 Wanted](https://github.com/sunng87/handlebars-rust/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 issue, with difficult level labeled. When running into any problem,
 feel free to contact me on github.
@@ -144,9 +135,12 @@ You can find a real example for template inheritance in
 
 #### WebAssembly compatible
 
-You can use this handlebars implementation in your rust project that
-compiles to WebAssembly. Checkout my fork of
-[todomvc](https://github.com/sunng87/rust-todomvc) demo.
+Handlebars 1.0 can be used in WebAssembly projects with directory
+source feature disabled. Adding handlebars to your project like this:
+
+```
+handlebars = { version = "1", features = ["no_dir_source"], default-features = false }
+```
 
 #### Strict mode
 
@@ -161,7 +155,7 @@ By enabling `strict_mode` on handlebars:
 handlebars.set_strict_mode(true);
 ```
 
-You will get a `RenderError` when accessing fields that not exists.
+You will get a `RenderError` when accessing field that not exists.
 
 ### Limitations
 
