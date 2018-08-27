@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.0...1.0.1) - ReleaseDate
+## [1.0.2](https://github.com/sunng87/handlebars-rust/compare/1.0.0...1.0.1) - 2018-08-27
 
 * [Changed] Update minimal dependency versions
 
