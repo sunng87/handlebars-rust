@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.0...1.0.1) - ReleaseDate
+
+* [Changed] Update minimal dependency versions
+
 ## [1.0.1](https://github.com/sunng87/handlebars-rust/compare/1.0.0...1.0.1) - 2018-08-16
 
 * [Changed] Added hidden/temp file filter to directory register
