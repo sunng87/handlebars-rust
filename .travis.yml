@@ -4,3 +4,7 @@ rust:
   - beta
   - stable
   - 1.23.0
+
+matrix:
+  allow_failures:
+  - rust: 1.23.0
