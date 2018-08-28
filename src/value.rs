@@ -18,9 +18,9 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
     /// get the JSON reference
     pub fn as_json(&self) -> &Json {
         match self {
-            ScopedJson::Constant(j) => j,
-            ScopedJson::Derived(ref j) => j,
-            ScopedJson::Context(j) => j,
+            &ScopedJson::Constant(j) => j,
+            &ScopedJson::Derived(ref j) => j,
+            &ScopedJson::Context(j) => j,
         }
     }
 

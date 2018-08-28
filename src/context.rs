@@ -94,7 +94,7 @@ fn parse_json_visitor<'a>(
 
 pub fn merge_json(base: &Json, addition: &Object) -> Json {
     let mut base_map = match base {
-        Json::Object(ref m) => m.clone(),
+        &Json::Object(ref m) => m.clone(),
         _ => Map::new(),
     };
 

@@ -255,7 +255,7 @@ quick_error! {
 
 impl TemplateRenderError {
     pub fn as_render_error(&self) -> Option<&RenderError> {
-        if let TemplateRenderError::RenderError(ref e) = self {
+        if let &TemplateRenderError::RenderError(ref e) = self {
             Some(&e)
         } else {
             None

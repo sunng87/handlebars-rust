@@ -424,7 +424,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
 
     /// Returns block param if any
     pub fn block_param(&self) -> Option<&str> {
-        if let Some(BlockParam::Single(Parameter::Name(ref s))) = self.block_param {
+        if let Some(&BlockParam::Single(Parameter::Name(ref s))) = self.block_param {
             Some(s)
         } else {
             None
@@ -433,7 +433,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
 
     /// Return block param pair (for example |key, val|) if any
     pub fn block_param_pair(&self) -> Option<(&str, &str)> {
-        if let Some(BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
+        if let Some(&BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
             self.block_param
         {
             Some((s1, s2))
@@ -583,11 +583,11 @@ impl Parameter {
         rc: &mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
         match self {
-            Parameter::Name(ref name) => Ok(name.to_owned()),
-            Parameter::Subexpression(_) => {
+            &Parameter::Name(ref name) => Ok(name.to_owned()),
+            &Parameter::Subexpression(_) => {
                 self.expand(registry, ctx, rc).map(|v| v.value().render())
             }
-            Parameter::Literal(ref j) => Ok(j.render()),
+            &Parameter::Literal(ref j) => Ok(j.render()),
         }
     }
 
@@ -598,7 +598,7 @@ impl Parameter {
         rc: &mut RenderContext<'reg>,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
-            Parameter::Name(ref name) => {
+            &Parameter::Name(ref name) => {
                 let strict = registry.strict_mode();
                 if let Some(value) = rc.get_local_var(name) {
                     // local var, @first, @last for example
@@ -637,10 +637,10 @@ impl Parameter {
                     ))
                 }
             }
-            Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
-            Parameter::Subexpression(ref t) => match t.as_element() {
-                Expression(ref expr) => expr.expand(registry, ctx, rc),
-                HelperExpression(ref ht) => {
+            &Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
+            &Parameter::Subexpression(ref t) => match t.as_element() {
+                &Expression(ref expr) => expr.expand(registry, ctx, rc),
+                &HelperExpression(ref ht) => {
                     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                     if let Some(ref d) = rc.get_local_helper(&ht.name) {
                         let helper_def = d.borrow();
