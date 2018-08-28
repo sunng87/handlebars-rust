@@ -5,6 +5,20 @@ rust:
   - stable
   - 1.23.0
 
+env:
+  - TASK=build
+  - TASK=test
+
 matrix:
-  allow_failures:
-  - rust: 1.23.0
+  exclude:
+    - rust: nightly
+      env: TASK=build
+    - rust: beta
+      env: TASK=build
+    - rust: stable
+      env: TASK=build
+    - rust: 1.23.0
+      env: TASK=test
+
+script:
+  - cargo $TASK --verbose
