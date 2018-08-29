@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.1...Unreleased) - ReleaseDate
+## [1.0.3](https://github.com/sunng87/handlebars-rust/compare/1.0.1...1.0.3) - 2018-08-29
 
 * [Changed] Fixed build on Rust 1.23.0
 
