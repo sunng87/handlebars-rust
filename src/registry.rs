@@ -82,6 +82,7 @@ impl Default for Registry {
     }
 }
 
+#[cfg(not(feature = "no_dir_source"))]
 fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
     let path = entry.path();
 
