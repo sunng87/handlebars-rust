@@ -121,6 +121,8 @@ fn test_json_literal() {
     let s = vec![
         "\"json string\"",
         "\"quot: \\\"\"",
+        "'json string'",
+        "'quot: \\''",
         "[]",
         "[\"hello\"]",
         "[1,2,3,4,true]",
