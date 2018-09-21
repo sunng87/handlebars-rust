@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.2...Unreleased) - ReleaseDate
+## [1.0.4](https://github.com/sunng87/handlebars-rust/compare/1.0.2...1.0.4) - 2018-09-21
 
 * [Changed] Fixed build on wasm
 * [Changed] Added support for single-quote Json string literal
