@@ -2,13 +2,13 @@ use std::collections::BTreeMap;
 
 use serde_json::value::Value as Json;
 
-use context::Context;
-use error::RenderError;
-use helpers::{HelperDef, HelperResult};
-use output::Output;
-use registry::Registry;
-use render::{Helper, RenderContext, Renderable};
-use value::{to_json, JsonTruthy};
+use crate::context::Context;
+use crate::error::RenderError;
+use crate::helpers::{HelperDef, HelperResult};
+use crate::output::Output;
+use crate::registry::Registry;
+use crate::render::{Helper, RenderContext, Renderable};
+use crate::value::{to_json, JsonTruthy};
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;
@@ -139,8 +139,8 @@ pub static EACH_HELPER: EachHelper = EachHelper;
 
 #[cfg(test)]
 mod test {
-    use registry::Registry;
-    use value::to_json;
+    use crate::registry::Registry;
+    use crate::value::to_json;
 
     use serde_json::value::Value as Json;
     use std::collections::BTreeMap;

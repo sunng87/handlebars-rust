@@ -1,8 +1,8 @@
-use context::Context;
-use helpers::{HelperDef, HelperResult};
-use output::Output;
-use registry::Registry;
-use render::{Helper, RenderContext, Renderable};
+use crate::context::Context;
+use crate::helpers::{HelperDef, HelperResult};
+use crate::output::Output;
+use crate::registry::Registry;
+use crate::render::{Helper, RenderContext, Renderable};
 
 #[derive(Clone, Copy)]
 pub struct RawHelper;
@@ -29,7 +29,7 @@ pub static RAW_HELPER: RawHelper = RawHelper;
 
 #[cfg(test)]
 mod test {
-    use registry::Registry;
+    use crate::registry::Registry;
 
     #[test]
     fn test_raw_helper() {

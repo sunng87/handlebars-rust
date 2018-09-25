@@ -1,8 +1,8 @@
-use context::Context;
-use directives::{DirectiveDef, DirectiveResult};
-use error::RenderError;
-use registry::Registry;
-use render::{Directive, RenderContext};
+use crate::context::Context;
+use crate::directives::{DirectiveDef, DirectiveResult};
+use crate::error::RenderError;
+use crate::registry::Registry;
+use crate::render::{Directive, RenderContext};
 
 #[derive(Clone, Copy)]
 pub struct InlineDirective;
@@ -40,10 +40,10 @@ pub static INLINE_DIRECTIVE: InlineDirective = InlineDirective;
 
 #[cfg(test)]
 mod test {
-    use context::Context;
-    use registry::Registry;
-    use render::{Evaluable, RenderContext};
-    use template::Template;
+    use crate::context::Context;
+    use crate::registry::Registry;
+    use crate::render::{Evaluable, RenderContext};
+    use crate::template::Template;
 
     #[test]
     fn test_inline() {

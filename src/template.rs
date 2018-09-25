@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::convert::From;
 use std::iter::Peekable;
 
-use grammar::{HandlebarsParser, Rule};
+use crate::grammar::{HandlebarsParser, Rule};
 use pest::error::LineColLocation;
 use pest::iterators::Pair;
 use pest::{Parser, Position};
@@ -10,7 +10,7 @@ use pest::{Parser, Position};
 use serde_json::value::Value as Json;
 use std::str::FromStr;
 
-use error::{TemplateError, TemplateErrorReason};
+use crate::error::{TemplateError, TemplateErrorReason};
 
 use self::TemplateElement::*;
 

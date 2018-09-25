@@ -1,12 +1,12 @@
-use context::Context;
+use crate::context::Context;
 #[cfg(not(feature = "no_logging"))]
-use error::RenderError;
-use helpers::{HelperDef, HelperResult};
-use output::Output;
-use registry::Registry;
-use render::{Helper, RenderContext};
+use crate::error::RenderError;
+use crate::helpers::{HelperDef, HelperResult};
+use crate::output::Output;
+use crate::registry::Registry;
+use crate::render::{Helper, RenderContext};
 #[cfg(not(feature = "no_logging"))]
-use value::JsonRender;
+use crate::value::JsonRender;
 #[cfg(not(feature = "no_logging"))]
 use log::Level;
 #[cfg(not(feature = "no_logging"))]

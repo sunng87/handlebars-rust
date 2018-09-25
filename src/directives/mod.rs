@@ -1,7 +1,7 @@
-use context::Context;
-use error::RenderError;
-use registry::Registry;
-use render::{Directive, RenderContext};
+use crate::context::Context;
+use crate::error::RenderError;
+use crate::registry::Registry;
+use crate::render::{Directive, RenderContext};
 
 pub use self::inline::INLINE_DIRECTIVE;
 
@@ -89,12 +89,12 @@ mod inline;
 
 #[cfg(test)]
 mod test {
-    use context::Context;
-    use error::RenderError;
-    use output::Output;
-    use registry::Registry;
-    use render::{Directive, Helper, RenderContext};
-    use value::{as_string, to_json};
+    use crate::context::Context;
+    use crate::error::RenderError;
+    use crate::output::Output;
+    use crate::registry::Registry;
+    use crate::render::{Directive, Helper, RenderContext};
+    use crate::value::{as_string, to_json};
 
     #[test]
     fn test_register_decorator() {

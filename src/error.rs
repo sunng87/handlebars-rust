@@ -7,7 +7,7 @@ use serde_json::error::Error as SerdeError;
 #[cfg(not(feature = "no_dir_source"))]
 use walkdir::Error as WalkdirError;
 
-use template::Parameter;
+use crate::template::Parameter;
 
 /// Error when rendering data on template.
 #[derive(Debug)]

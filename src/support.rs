@@ -42,7 +42,7 @@ pub mod str {
     #[cfg(test)]
     mod test {
         use std::io::Write;
-        use support::str::StringWriter;
+        use crate::support::str::StringWriter;
 
         #[test]
         fn test_string_writer() {

@@ -1,12 +1,12 @@
 use serde_json::value::Value as Json;
 
-use context::Context;
-use error::RenderError;
-use helpers::{HelperDef, HelperResult};
-use output::Output;
-use registry::Registry;
-use render::{Helper, RenderContext};
-use value::JsonRender;
+use crate::context::Context;
+use crate::error::RenderError;
+use crate::helpers::{HelperDef, HelperResult};
+use crate::output::Output;
+use crate::registry::Registry;
+use crate::render::{Helper, RenderContext};
+use crate::value::JsonRender;
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
@@ -52,7 +52,7 @@ pub static LOOKUP_HELPER: LookupHelper = LookupHelper;
 
 #[cfg(test)]
 mod test {
-    use registry::Registry;
+    use crate::registry::Registry;
 
     use std::collections::BTreeMap;
 
