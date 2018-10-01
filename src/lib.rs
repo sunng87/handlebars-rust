@@ -322,8 +322,11 @@
 
 #[macro_use]
 extern crate lazy_static;
+
+#[cfg(feature = "logging")]
 #[macro_use]
 extern crate log;
+
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
