@@ -75,7 +75,7 @@ macro_rules! handlebars_helper {
 /// This macro is defined if the `logging` feature is set.
 ///
 /// It ignores all logging calls inside the library.
-#[cfg(feature = "logging"))]
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! debug {
     (target: $target:expr, $($arg:tt)*) => { };
@@ -85,7 +85,7 @@ macro_rules! debug {
 /// This macro is defined if the `logging` feature is not set.
 ///
 /// It ignores all logging calls inside the library.
-#[cfg(feature = "logging"))]
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! error {
     (target: $target:expr, $($arg:tt)*) => { };
@@ -95,7 +95,7 @@ macro_rules! error {
 /// This macro is defined if the `logging` feature is not set.
 ///
 /// It ignores all logging calls inside the library.
-#[cfg(feature = "logging"))]
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! info {
     (target: $target:expr, $($arg:tt)*) => { };
@@ -105,7 +105,7 @@ macro_rules! info {
 /// This macro is defined if the `logging` feature is not set.
 ///
 /// It ignores all logging calls inside the library.
-#[cfg(feature = "logging"))]
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! log {
     (target: $target:expr, $($arg:tt)*) => { };
@@ -115,7 +115,7 @@ macro_rules! log {
 /// This macro is defined if the `logging` feature is not set.
 ///
 /// It ignores all logging calls inside the library.
-#[cfg(feature = "logging"))]
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! trace {
     (target: $target:expr, $($arg:tt)*) => { };
@@ -125,7 +125,7 @@ macro_rules! trace {
 /// This macro is defined if the `logging` feature is not set.
 ///
 /// It ignores all logging calls inside the library.
-#[cfg(feature = "logging"))]
+#[cfg(feature = "logging")]
 #[macro_export]
 macro_rules! warn {
     (target: $target:expr, $($arg:tt)*) => { };
