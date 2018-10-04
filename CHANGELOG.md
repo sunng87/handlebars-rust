@@ -1,6 +1,11 @@
 # Change Log
 
-## [1.0.4](https://github.com/sunng87/handlebars-rust/compare/1.0.2...1.0.4) - 2018-09-21
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.4...Unreleased) - ReleseDate
+
+* [Changed] Added feature `no_logging` for using handlebars in a
+  logging provider.
+
+## [1.0.4](https://github.com/sunng87/handlebars-rust/compare/1.0.3...1.0.4) - 2018-09-21
 
 * [Changed] Fixed build on wasm
 * [Changed] Added support for single-quote Json string literal
