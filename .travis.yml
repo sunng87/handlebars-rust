@@ -22,3 +22,5 @@ matrix:
 
 script:
   - cargo $TASK --verbose
+  - cargo $TASK --no-default-features --features no_logging --verbose
+  - cargo $TASK --no-default-features --features no_dir_source --verbose
