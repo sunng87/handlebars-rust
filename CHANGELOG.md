@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.4...Unreleased) - ReleseDate
+## [1.0.5](https://github.com/sunng87/handlebars-rust/compare/1.0.4...1.0.5) - ReleseDate
 
 * [Changed] Added feature `no_logging` for using handlebars in a
   logging provider.
