@@ -7,6 +7,7 @@ use value::ScopedJson;
 
 pub use self::helper_each::EACH_HELPER;
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
+#[cfg(not(feature = "no_logging"))]
 pub use self::helper_log::LOG_HELPER;
 pub use self::helper_lookup::LOOKUP_HELPER;
 pub use self::helper_raw::RAW_HELPER;
@@ -129,6 +130,7 @@ impl<
 pub(crate) mod helper_boolean;
 mod helper_each;
 mod helper_if;
+#[cfg(not(feature = "no_logging"))]
 mod helper_log;
 mod helper_lookup;
 mod helper_raw;

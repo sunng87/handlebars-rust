@@ -43,8 +43,7 @@ pub fn html_escape(data: &str) -> String {
                 Some("&") => "&amp;",
                 _ => unreachable!(),
             }.to_owned()
-        })
-        .into_owned()
+        }).into_owned()
 }
 
 /// `EscapeFn` that do not change any thing. Useful when using in a non-html
@@ -116,6 +115,7 @@ impl Registry {
         self.register_helper("with", Box::new(helpers::WITH_HELPER));
         self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
         self.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        #[cfg(not(feature = "no_logging"))]
         self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
         self.register_helper("eq", Box::new(helpers::helper_boolean::eq));
@@ -351,8 +351,7 @@ impl Registry {
                 let ctx = Context::wraps(data)?;
                 let mut render_context = RenderContext::new(t.name.as_ref());
                 t.render(self, &ctx, &mut render_context, output)
-            })
-            .map(|_| ())
+            }).map(|_| ())
     }
 
     /// Render a registered template with some data into a string

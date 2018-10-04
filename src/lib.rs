@@ -323,7 +323,7 @@
 #[macro_use]
 extern crate lazy_static;
 
-#[cfg(feature = "logging")]
+#[cfg(not(feature = "no_logging"))]
 #[macro_use]
 extern crate log;
 

@@ -38,8 +38,11 @@ tempfile = "3.0.0"
 [features]
 dir_source = ["walkdir"]
 logging = ["log"]
+
 default = ["dir_source", "logging"]
-no_dir_source = []
+
+no_dir_source = ["logging"]
+no_logging = ["dir_source"]
 
 [badges]
 maintenance = { status = "actively-developed" }
