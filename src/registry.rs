@@ -115,7 +115,6 @@ impl Registry {
         self.register_helper("with", Box::new(helpers::WITH_HELPER));
         self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
         self.register_helper("raw", Box::new(helpers::RAW_HELPER));
-        #[cfg(not(feature = "no_logging"))]
         self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
         self.register_helper("eq", Box::new(helpers::helper_boolean::eq));
