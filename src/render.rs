@@ -132,8 +132,11 @@ impl<'reg> RenderContext<'reg> {
     ) -> Result<&'ctx Json, RenderError> {
         let value_container = context.navigate(self.get_path(), self.get_local_path_root(), path);
         if strict {
-            value_container
-                .and_then(|v| v.ok_or_else(|| RenderError::new("Value not found in strict mode.")))
+            value_container.and_then(|v| {
+                v.ok_or_else(|| {
+                    RenderError::new(&format!("Variable {:?} not found in strict mode.", path))
+                })
+            })
         } else {
             value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
         }
@@ -147,8 +150,11 @@ impl<'reg> RenderContext<'reg> {
     ) -> Result<&'ctx Json, RenderError> {
         let value_container = context.navigate(".", &VecDeque::new(), path);
         if strict {
-            value_container
-                .and_then(|v| v.ok_or_else(|| RenderError::new("Value not found in strict mode.")))
+            value_container.and_then(|v| {
+                v.ok_or_else(|| {
+                    RenderError::new(&format!("Variable {:?} not found in strict mode.", path))
+                })
+            })
         } else {
             value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
         }
@@ -1014,7 +1020,8 @@ fn test_partial_failback_render() {
         r.register_template_string(
             "child",
             "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}"
-        ).is_ok()
+        )
+        .is_ok()
     );
     assert!(r.register_template_string("seg", "1234").is_ok());
 
