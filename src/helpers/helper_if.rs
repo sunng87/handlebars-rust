@@ -24,7 +24,7 @@ impl HelperDef for IfHelper {
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"if\""))?;
 
-        let mut value = param.value().is_truthy();
+        let mut value = param.value().is_truthy(false);
 
         if !self.positive {
             value = !value;

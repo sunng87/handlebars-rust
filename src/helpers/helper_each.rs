@@ -36,7 +36,7 @@ impl HelperDef for EachHelper {
                     .map(|p| format!("{}/{}", rc.get_path(), p));
 
                 debug!("each value {:?}", value.value());
-                let rendered = match (value.value().is_truthy(), value.value()) {
+                let rendered = match (value.value().is_truthy(false), value.value()) {
                     (true, &Json::Array(ref list)) => {
                         let len = list.len();
                         for (i, _) in list.iter().enumerate().take(len) {
