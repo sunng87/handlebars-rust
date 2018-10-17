@@ -4,7 +4,8 @@ use std::iter::Peekable;
 
 use grammar::{HandlebarsParser, Rule};
 use pest::iterators::Pair;
-use pest::Error as PestError;
+use pest::error::Error as PestError;
+use pest::error::ErrorVariant;
 use pest::{Parser, Position};
 
 use serde_json::value::Value as Json;
@@ -436,23 +437,32 @@ impl Template {
         let mut omit_pro_ws = false;
 
         let parser_queue =
-            HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| match e {
-                PestError::ParsingError { pos, .. } => {
-                    let (line_no, col_no) = pos.line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
-                        .at(source, line_no, col_no)
+            HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| {
+                let (line_no, col_no) = match e.location {
+                    InputLocation::Pos(p) => p.line_col(),
+                    InputLocation::Span((start, end)) =>
                 }
-                PestError::CustomErrorPos { pos, .. } => {
-                    let (line_no, col_no) = pos.line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
-                        .at(source, line_no, col_no)
-                }
-                PestError::CustomErrorSpan { span, .. } => {
-                    let (line_no, col_no) = span.start_pos().line_col();
-                    TemplateError::of(TemplateErrorReason::InvalidSyntax)
-                        .at(source, line_no, col_no)
-                }
-            })?;
+            }
+
+
+                                                                      // match e.variant {
+            //     ErrorVariant::ParsingError { pos, .. } => {
+            //         let (line_no, col_no) = pos.line_col();
+            //         TemplateError::of(TemplateErrorReason::InvalidSyntax)
+            //             .at(source, line_no, col_no)
+            //     }
+            //     ErrorVariant::CustomErrorPos { pos, .. } => {
+            //         let (line_no, col_no) = pos.line_col();
+            //         TemplateError::of(TemplateErrorReason::InvalidSyntax)
+            //             .at(source, line_no, col_no)
+            //     }
+            //     ErrorVariant::CustomErrorSpan { span, .. } => {
+            //         let (line_no, col_no) = span.start_pos().line_col();
+            //         TemplateError::of(TemplateErrorReason::InvalidSyntax)
+            //             .at(source, line_no, col_no)
+            //     }
+            // }
+            )?;
 
         // println!("{:?}", parser_queue.clone());
 

@@ -2,8 +2,8 @@ whitespace = _{ " "|"\t"|"\n"|"\r" }
 keywords = @{ "as" | "else" }
 
 escape = @{ ("\\" ~ "{{" ~ "{{"?) | ("\\" ~ "\\"+ ~ &"{{") }
-raw_text = ${ ( escape | (!"{{" ~ any) )+ }
-raw_block_text = ${ ( escape | (!"{{{{" ~ any) )* }
+raw_text = ${ ( escape | (!"{{" ~ ANY) )+ }
+raw_block_text = ${ ( escape | (!"{{{{" ~ ANY) )* }
 
 literal = { string_literal |
             array_literal |
@@ -14,14 +14,14 @@ literal = { string_literal |
 
 null_literal = { "null" }
 boolean_literal = { "true"|"false" }
-number_literal = @{ "-"? ~ '0'..'9'+ ~ "."? ~ '0'..'9'*
-~ ("E" ~ "-"? ~ '0'..'9'+)? }
-string_literal = @{ ("\"" ~ (!"\"" ~ ("\\\"" | any))* ~ "\"") | ("'" ~ (!"'" ~ ("\\'" | any))* ~ "'") }
+number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT*
+~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
+string_literal = @{ ("\"" ~ (!"\"" ~ ("\\\"" | ANY))* ~ "\"") | ("'" ~ (!"'" ~ ("\\'" | ANY))* ~ "'") }
 array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
 
-symbol_char = _{'a'..'z'|'A'..'Z'|'0'..'9'|"@"|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
+symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"@"|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
 path_char = _{ "/" }
 
 identifier = @{ symbol_char+ }
@@ -81,8 +81,8 @@ raw_block_end = { "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ name ~
                   pro_whitespace_omitter? ~ "}}}}" }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-hbs_comment = { "{{!--" ~ (!"--}}" ~ any)* ~ "--}}" }
-hbs_comment_compact = { "{{!" ~ (!"}}" ~ any)* ~ "}}" }
+hbs_comment = { "{{!--" ~ (!"--}}" ~ ANY)* ~ "--}}" }
+hbs_comment_compact = { "{{!" ~ (!"}}" ~ ANY)* ~ "}}" }
 
 template = { (
             raw_text |
@@ -98,15 +98,15 @@ template = { (
             partial_expression |
             partial_block )* }
 
-parameter = _{ param ~ eoi }
-handlebars = _{ template ~ eoi }
+parameter = _{ param ~ EOI }
+handlebars = _{ template ~ EOI }
 
 // json path visitor
 // Disallowed chars: Whitespace ! " # % & ' ( ) * + , . / ; < = > @ [ \ ] ^ ` { | } ~
 
 path_id = { symbol_char+ }
 
-path_raw_id = { (!"]" ~ any)* }
+path_raw_id = { (!"]" ~ ANY)* }
 path_sep = _{ "/" | "." }
 path_up = { ".." }
 path_key = _{ "[" ~  path_raw_id ~ "]" }
@@ -114,4 +114,4 @@ path_item = _{ path_up|path_id|path_current|path_key }
 path_current = { "this" | "." }
 
 path_inline = _{ path_item ~ (path_sep ~  path_item)* }
-path = _{ path_inline ~ eoi }
+path = _{ path_inline ~ EOI }
