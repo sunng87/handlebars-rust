@@ -139,6 +139,7 @@ fn test_json_render() {
 
 #[test]
 fn test_json_number_truthy() {
+    use std::f64;
     assert!(json!(16i16).is_truthy(false));
     assert!(json!(16i16).is_truthy(true));
 
@@ -154,13 +155,13 @@ fn test_json_number_truthy() {
     assert!(!json!(None as Option<i16>).is_truthy(false));
     assert!(!json!(None as Option<i16>).is_truthy(true));
 
-    assert!(!json!(std::f64::NAN).is_truthy(false));
-    assert!(!json!(std::f64::NAN).is_truthy(true));
+    assert!(!json!(f64::NAN).is_truthy(false));
+    assert!(!json!(f64::NAN).is_truthy(true));
 
     // there is no infinity in json/serde_json
-    // assert!(json!(std::f64::INFINITY).is_truthy(false));
-    // assert!(json!(std::f64::INFINITY).is_truthy(true));
+    // assert!(json!(f64::INFINITY).is_truthy(false));
+    // assert!(json!(f64::INFINITY).is_truthy(true));
 
-    // assert!(json!(std::f64::NEG_INFINITY).is_truthy(false));
-    // assert!(json!(std::f64::NEG_INFINITY).is_truthy(true));
+    // assert!(json!(f64::NEG_INFINITY).is_truthy(false));
+    // assert!(json!(f64::NEG_INFINITY).is_truthy(true));
 }
