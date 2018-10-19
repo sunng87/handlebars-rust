@@ -7,6 +7,10 @@ use registry::Registry;
 use render::{Helper, RenderContext};
 #[cfg(not(feature = "no_logging"))]
 use value::JsonRender;
+#[cfg(not(feature = "no_logging"))]
+use log::Level;
+#[cfg(not(feature = "no_logging"))]
+use std::str::FromStr;
 
 #[derive(Clone, Copy)]
 pub struct LogHelper;
@@ -28,24 +32,13 @@ impl HelperDef for LogHelper {
             .and_then(|v| v.value().as_str())
             .unwrap_or("info");
 
-        match level {
-            "trace" => trace!("{}: {}",
-                              param.path().unwrap_or(&"".to_owned()),
-                              param.value().render()),
-            "debug" => debug!("{}: {}",
-                            param.path().unwrap_or(&"".to_owned()),
-                            param.value().render()),
-            "info" => info!("{}: {}",
-                            param.path().unwrap_or(&"".to_owned()),
-                            param.value().render()),
-            "warn" => warn!("{}: {}",
-                            param.path().unwrap_or(&"".to_owned()),
-                            param.value().render()),
-            "error" => error!("{}: {}",
-                              param.path().unwrap_or(&"".to_owned()),
-                              param.value().render()),
-            _ => {}
-        };
+        if let Ok(log_level) = Level::from_str(level) {
+            log!(log_level, "{}: {}",
+                 param.path().unwrap_or(&"".to_owned()),
+                 param.value().render())
+        } else {
+            return Err(RenderError::new(&format!("Unsupported logging level {}", level)));
+        }
         Ok(())
     }
 }
