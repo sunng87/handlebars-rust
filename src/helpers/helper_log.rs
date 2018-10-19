@@ -24,13 +24,28 @@ impl HelperDef for LogHelper {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"log\""))?;
+        let level = h.hash_get("level")
+            .and_then(|v| v.value().as_str())
+            .unwrap_or("info");
 
-        info!(
-            "{}: {}",
-            param.path().unwrap_or(&"".to_owned()),
-            param.value().render()
-        );
-
+        match level {
+            "trace" => trace!("{}: {}",
+                              param.path().unwrap_or(&"".to_owned()),
+                              param.value().render()),
+            "debug" => debug!("{}: {}",
+                            param.path().unwrap_or(&"".to_owned()),
+                            param.value().render()),
+            "info" => info!("{}: {}",
+                            param.path().unwrap_or(&"".to_owned()),
+                            param.value().render()),
+            "warn" => warn!("{}: {}",
+                            param.path().unwrap_or(&"".to_owned()),
+                            param.value().render()),
+            "error" => error!("{}: {}",
+                              param.path().unwrap_or(&"".to_owned()),
+                              param.value().render()),
+            _ => {}
+        };
         Ok(())
     }
 }
