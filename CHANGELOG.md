@@ -1,6 +1,11 @@
 # Change Log
 
-## [1.0.5](https://github.com/sunng87/handlebars-rust/compare/1.0.4...1.0.5) - ReleseDate
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.5...Unreleased) - ReleaseDate
+
+* [Added] New option `includeZero` for `if` helper
+* [Added] New option `level` for `log` helper
+
+## [1.0.5](https://github.com/sunng87/handlebars-rust/compare/1.0.4...1.0.5) - 2018-10-04
 
 * [Changed] Added feature `no_logging` for using handlebars in a
   logging provider.
