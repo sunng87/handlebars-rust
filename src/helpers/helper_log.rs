@@ -7,6 +7,10 @@ use registry::Registry;
 use render::{Helper, RenderContext};
 #[cfg(not(feature = "no_logging"))]
 use value::JsonRender;
+#[cfg(not(feature = "no_logging"))]
+use log::Level;
+#[cfg(not(feature = "no_logging"))]
+use std::str::FromStr;
 
 #[derive(Clone, Copy)]
 pub struct LogHelper;
@@ -24,13 +28,17 @@ impl HelperDef for LogHelper {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"log\""))?;
+        let level = h.hash_get("level")
+            .and_then(|v| v.value().as_str())
+            .unwrap_or("info");
 
-        info!(
-            "{}: {}",
-            param.path().unwrap_or(&"".to_owned()),
-            param.value().render()
-        );
-
+        if let Ok(log_level) = Level::from_str(level) {
+            log!(log_level, "{}: {}",
+                 param.path().unwrap_or(&"".to_owned()),
+                 param.value().render())
+        } else {
+            return Err(RenderError::new(&format!("Unsupported logging level {}", level)));
+        }
         Ok(())
     }
 }
