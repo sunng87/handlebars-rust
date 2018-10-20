@@ -29,7 +29,7 @@ impl HelperDef for WithHelper {
         let result = {
             let mut local_rc = rc.derive();
 
-            let not_empty = param.value().is_truthy();
+            let not_empty = param.value().is_truthy(false);
             let template = if not_empty {
                 h.template()
             } else {

@@ -23,15 +23,18 @@ impl HelperDef for IfHelper {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"if\""))?;
+        let include_zero = h
+            .hash_get("includeZero")
+            .and_then(|v| v.value().as_bool())
+            .unwrap_or(false);
 
-        let mut value = param.value().is_truthy();
+        let mut value = param.value().is_truthy(include_zero);
 
         if !self.positive {
             value = !value;
         }
 
-        let tmpl =
-            if value { h.template() } else { h.inverse() };
+        let tmpl = if value { h.template() } else { h.inverse() };
         match tmpl {
             Some(ref t) => t.render(r, ctx, rc, out),
             None => Ok(()),
@@ -99,5 +102,36 @@ mod test {
 
         let r1 = handlebars.render("t1", &data);
         assert_eq!(r1.ok().unwrap(), "hello 99".to_string());
+    }
+
+    #[test]
+    fn test_if_include_zero() {
+        use std::f64;
+        let handlebars = Registry::new();
+
+        assert_eq!(
+            "0".to_owned(),
+            handlebars
+                .render_template("{{#if a}}1{{else}}0{{/if}}", &json!({"a": 0}))
+                .unwrap()
+        );
+        assert_eq!(
+            "1".to_owned(),
+            handlebars
+                .render_template(
+                    "{{#if a includeZero=true}}1{{else}}0{{/if}}",
+                    &json!({"a": 0})
+                )
+                .unwrap()
+        );
+        assert_eq!(
+            "0".to_owned(),
+            handlebars
+                .render_template(
+                    "{{#if a includeZero=true}}1{{else}}0{{/if}}",
+                    &json!({ "a": f64::NAN })
+                )
+                .unwrap()
+        );
     }
 }

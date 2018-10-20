@@ -73,7 +73,7 @@ pub trait JsonRender {
 }
 
 pub trait JsonTruthy {
-    fn is_truthy(&self) -> bool;
+    fn is_truthy(&self, include_zero: bool) -> bool;
 }
 
 impl JsonRender for Json {
@@ -110,10 +110,17 @@ pub fn as_string(src: &Json) -> Option<&str> {
 }
 
 impl JsonTruthy for Json {
-    fn is_truthy(&self) -> bool {
+    fn is_truthy(&self, include_zero: bool) -> bool {
         match *self {
             Json::Bool(ref i) => *i,
-            Json::Number(ref n) => n.as_f64().map(|f| f.is_normal()).unwrap_or(false),
+            Json::Number(ref n) => {
+                if include_zero {
+                    n.as_f64().map(|f| !f.is_nan()).unwrap_or(false)
+                } else {
+                    // there is no inifity in json/serde_json
+                    n.as_f64().map(|f| f.is_normal()).unwrap_or(false)
+                }
+            }
             Json::Null => false,
             Json::String(ref i) => !i.is_empty(),
             Json::Array(ref i) => !i.is_empty(),
@@ -128,4 +135,33 @@ fn test_json_render() {
     let thing = Json::String(raw.to_string());
 
     assert_eq!(raw, thing.render());
+}
+
+#[test]
+fn test_json_number_truthy() {
+    use std::f64;
+    assert!(json!(16i16).is_truthy(false));
+    assert!(json!(16i16).is_truthy(true));
+
+    assert!(json!(0i16).is_truthy(true));
+    assert!(!json!(0i16).is_truthy(false));
+
+    assert!(json!(1.0f64).is_truthy(false));
+    assert!(json!(1.0f64).is_truthy(true));
+
+    assert!(json!(Some(16i16)).is_truthy(false));
+    assert!(json!(Some(16i16)).is_truthy(true));
+
+    assert!(!json!(None as Option<i16>).is_truthy(false));
+    assert!(!json!(None as Option<i16>).is_truthy(true));
+
+    assert!(!json!(f64::NAN).is_truthy(false));
+    assert!(!json!(f64::NAN).is_truthy(true));
+
+    // there is no infinity in json/serde_json
+    // assert!(json!(f64::INFINITY).is_truthy(false));
+    // assert!(json!(f64::INFINITY).is_truthy(true));
+
+    // assert!(json!(f64::NEG_INFINITY).is_truthy(false));
+    // assert!(json!(f64::NEG_INFINITY).is_truthy(true));
 }
