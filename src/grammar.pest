@@ -1,4 +1,4 @@
-whitespace = _{ " "|"\t"|"\n"|"\r" }
+WHITESPACE = _{ " "|"\t"|"\n"|"\r" }
 keywords = @{ "as" | "else" }
 
 escape = @{ ("\\" ~ "{{" ~ "{{"?) | ("\\" ~ "\\"+ ~ &"{{") }
