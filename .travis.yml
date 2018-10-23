@@ -3,10 +3,9 @@ rust:
   - nightly
   - beta
   - stable
-  - 1.23.0
 
 env:
-  - TASK=build
+  # - TASK=build
   - TASK=test
 
 matrix:
@@ -17,8 +16,8 @@ matrix:
       env: TASK=build
     - rust: stable
       env: TASK=build
-    - rust: 1.23.0
-      env: TASK=test
+    # - rust: 1.23.0
+    #   env: TASK=test
 
 script:
   - cargo $TASK --verbose
