@@ -4,6 +4,7 @@
 
 * [Added] New option `includeZero` for `if` helper
 * [Added] New option `level` for `log` helper
+* [Changed] Updated Pest to 2.0
 
 ## [1.0.5](https://github.com/sunng87/handlebars-rust/compare/1.0.4...1.0.5) - 2018-10-04
 
