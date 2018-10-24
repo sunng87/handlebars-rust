@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.0.5...Unreleased) - ReleaseDate
+## [1.1.0](https://github.com/sunng87/handlebars-rust/compare/1.0.5...1.1.0) - 2018-10-24
 
 * [Added] New option `includeZero` for `if` helper
 * [Added] New option `level` for `log` helper
