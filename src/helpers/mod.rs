@@ -1,9 +1,9 @@
-use context::Context;
-use error::RenderError;
-use output::Output;
-use registry::Registry;
-use render::{Helper, RenderContext};
-use value::ScopedJson;
+use crate::context::Context;
+use crate::error::RenderError;
+use crate::output::Output;
+use crate::registry::Registry;
+use crate::render::{Helper, RenderContext};
+use crate::value::ScopedJson;
 
 pub use self::helper_each::EACH_HELPER;
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
@@ -145,13 +145,13 @@ mod helper_with;
 mod test {
     use std::collections::BTreeMap;
 
-    use context::Context;
-    use error::RenderError;
-    use helpers::HelperDef;
-    use output::Output;
-    use registry::Registry;
-    use render::{Helper, RenderContext, Renderable};
-    use value::JsonRender;
+    use crate::context::Context;
+    use crate::error::RenderError;
+    use crate::helpers::HelperDef;
+    use crate::output::Output;
+    use crate::registry::Registry;
+    use crate::render::{Helper, RenderContext, Renderable};
+    use crate::value::JsonRender;
 
     #[derive(Clone, Copy)]
     struct MetaHelper;

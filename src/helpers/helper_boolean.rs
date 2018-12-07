@@ -13,7 +13,7 @@ handlebars_helper!(not: |x: bool| !x);
 #[cfg(test)]
 mod test_conditions {
     fn test_condition(condition: &str, expected: bool) {
-        let handlebars = ::Handlebars::new();
+        let handlebars = crate::Handlebars::new();
 
         let result = handlebars
             .render_template(
@@ -40,7 +40,7 @@ mod test_conditions {
 
     #[test]
     fn nested_conditions() {
-        let handlebars = ::Handlebars::new();
+        let handlebars = crate::Handlebars::new();
 
         let result = handlebars
             .render_template("{{#if (gt 5 3)}}lorem{{else}}ipsum{{/if}}", &json!({}))

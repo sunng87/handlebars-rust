@@ -2,12 +2,12 @@ use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
-use context::{merge_json, Context};
-use error::RenderError;
-use output::Output;
-use registry::Registry;
-use render::{Directive, Evaluable, RenderContext, Renderable};
-use template::Template;
+use crate::context::{merge_json, Context};
+use crate::error::RenderError;
+use crate::output::Output;
+use crate::registry::Registry;
+use crate::render::{Directive, Evaluable, RenderContext, Renderable};
+use crate::template::Template;
 
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
@@ -79,7 +79,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
 #[cfg(test)]
 mod test {
-    use registry::Registry;
+    use crate::registry::Registry;
 
     #[test]
     fn test() {

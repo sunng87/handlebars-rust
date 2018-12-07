@@ -3,8 +3,8 @@ use serde_json::value::{to_value, Map, Value as Json};
 
 use std::collections::{BTreeMap, VecDeque};
 
-use error::RenderError;
-use grammar::{HandlebarsParser, Rule};
+use crate::error::RenderError;
+use crate::grammar::{HandlebarsParser, Rule};
 use pest::iterators::Pair;
 use pest::Parser;
 
@@ -162,10 +162,10 @@ impl Context {
 
 #[cfg(test)]
 mod test {
-    use context::{self, Context};
+    use crate::context::{self, Context};
     use serde_json::value::Map;
     use std::collections::VecDeque;
-    use value::{self, JsonRender};
+    use crate::value::{self, JsonRender};
 
     #[derive(Serialize)]
     struct Address {

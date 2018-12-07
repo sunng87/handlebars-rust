@@ -6,18 +6,18 @@ use std::rc::Rc;
 use serde::Serialize;
 use serde_json::value::Value as Json;
 
-use context::Context;
-use error::RenderError;
-use helpers::HelperDef;
-use output::{Output, StringOutput};
-use partial;
-use registry::Registry;
-use template::TemplateElement::*;
-use template::{
+use crate::context::Context;
+use crate::error::RenderError;
+use crate::helpers::HelperDef;
+use crate::output::{Output, StringOutput};
+use crate::partial;
+use crate::registry::Registry;
+use crate::template::TemplateElement::*;
+use crate::template::{
     BlockParam, DirectiveTemplate, HelperTemplate, Parameter, Template, TemplateElement,
     TemplateMapping,
 };
-use value::{JsonRender, PathAndJson, ScopedJson};
+use crate::value::{JsonRender, PathAndJson, ScopedJson};
 
 static DEFAULT_VALUE: Json = Json::Null;
 
@@ -909,7 +909,7 @@ fn test_template() {
 
 #[test]
 fn test_render_context_promotion_and_demotion() {
-    use value::to_json;
+    use crate::value::to_json;
     let mut render_context = RenderContext::new(None);
 
     render_context.set_local_var("@index".to_string(), to_json(0));
@@ -933,7 +933,7 @@ fn test_render_context_promotion_and_demotion() {
 
 #[test]
 fn test_render_subexpression() {
-    use support::str::StringWriter;
+    use crate::support::str::StringWriter;
 
     let r = Registry::new();
     let mut sw = StringWriter::new();
@@ -956,7 +956,7 @@ fn test_render_subexpression() {
 
 #[test]
 fn test_render_subexpression_issue_115() {
-    use support::str::StringWriter;
+    use crate::support::str::StringWriter;
 
     let mut r = Registry::new();
     r.register_helper(

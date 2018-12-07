@@ -8,14 +8,14 @@ use serde::Serialize;
 
 use regex::{Captures, Regex};
 
-use context::Context;
-use directives::{self, DirectiveDef};
-use error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
-use helpers::{self, HelperDef};
-use output::{Output, StringOutput, WriteOutput};
-use render::{RenderContext, Renderable};
-use support::str::StringWriter;
-use template::Template;
+use crate::context::Context;
+use crate::directives::{self, DirectiveDef};
+use crate::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
+use crate::helpers::{self, HelperDef};
+use crate::output::{Output, StringOutput, WriteOutput};
+use crate::render::{RenderContext, Renderable};
+use crate::support::str::StringWriter;
+use crate::template::Template;
 
 #[cfg(not(feature = "no_dir_source"))]
 use walkdir::{DirEntry, WalkDir};
@@ -433,17 +433,17 @@ impl Registry {
 
 #[cfg(test)]
 mod test {
-    use context::Context;
-    use error::RenderError;
-    use helpers::HelperDef;
-    use output::Output;
-    use registry::Registry;
-    use render::{Helper, RenderContext, Renderable};
+    use crate::context::Context;
+    use crate::error::RenderError;
+    use crate::helpers::HelperDef;
+    use crate::output::Output;
+    use crate::registry::Registry;
+    use crate::render::{Helper, RenderContext, Renderable};
     #[cfg(not(feature = "no_dir_source"))]
     use std::fs::{DirBuilder, File};
     #[cfg(not(feature = "no_dir_source"))]
     use std::io::Write;
-    use support::str::StringWriter;
+    use crate::support::str::StringWriter;
     #[cfg(not(feature = "no_dir_source"))]
     use tempfile::tempdir;
 
