@@ -1,6 +1,8 @@
 use serde::Serialize;
 use serde_json::value::{to_value, Value as Json};
 
+pub(crate) static DEFAULT_VALUE: Json = Json::Null;
+
 /// A JSON wrapper designed for handlebars internal use case
 ///
 /// * Constant: the JSON value hardcoded into template
@@ -12,6 +14,7 @@ pub enum ScopedJson<'reg: 'rc, 'rc> {
     Constant(&'reg Json),
     Derived(Json),
     Context(&'rc Json),
+    Missing,
 }
 
 impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
@@ -21,6 +24,7 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
             &ScopedJson::Constant(j) => j,
             &ScopedJson::Derived(ref j) => j,
             &ScopedJson::Context(j) => j,
+            _ => &DEFAULT_VALUE,
         }
     }
 
@@ -64,6 +68,14 @@ impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
     /// Returns the value
     pub fn value(&self) -> &Json {
         self.value.as_json()
+    }
+
+    /// Test if value is missing
+    pub fn is_value_missing(&self) -> bool {
+        match self.value {
+            ScopedJson::Missing => true,
+            _ => false,
+        }
     }
 }
 
