@@ -128,16 +128,6 @@ impl<'reg> RenderContext<'reg> {
         path: &str,
     ) -> Result<Option<&'ctx Json>, RenderError> {
         context.navigate(self.get_path(), self.get_local_path_root(), path)
-        //TODO
-        // if strict {
-        //     value_container.and_then(|v| {
-        //         v.ok_or_else(|| {
-        //             RenderError::new(&format!("Variable {:?} not found in strict mode.", path))
-        //         })
-        //     })
-        // } else {
-        //     value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
-        // }
     }
 
     pub fn evaluate_absolute<'ctx>(
