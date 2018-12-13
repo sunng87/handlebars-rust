@@ -59,27 +59,21 @@ mod test {
     #[test]
     fn test_lookup() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{#each v1}}{{lookup ../../v2 @index}}{{/each}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t1", "{{#each v1}}{{lookup ../../v2 1}}{{/each}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t2", "{{lookup kk \"a\"}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{#each v1}}{{lookup ../../v2 @index}}{{/each}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t1", "{{#each v1}}{{lookup ../../v2 1}}{{/each}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t2", "{{lookup kk \"a\"}}")
+            .is_ok());
 
         let mut m: BTreeMap<String, Vec<u16>> = BTreeMap::new();
         m.insert("v1".to_string(), vec![1u16, 2u16, 3u16]);
         m.insert("v2".to_string(), vec![9u16, 8u16, 7u16]);
 
-        let m2 = btreemap!{
+        let m2 = btreemap! {
             "kk".to_string() => btreemap!{"a".to_string() => "world".to_string()}
         };
 

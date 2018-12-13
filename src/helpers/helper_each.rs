@@ -149,22 +149,15 @@ mod test {
     #[test]
     fn test_each() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t0",
-                    "{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}"
-                )
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t1",
-                    "{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}"
-                )
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string(
+                "t0",
+                "{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}"
+            )
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t1", "{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}")
+            .is_ok());
 
         let r0 = handlebars.render("t0", &vec![1u16, 2u16, 3u16]);
         assert_eq!(
@@ -190,11 +183,9 @@ mod test {
         // previously, to access the parent in an each block,
         // a user would need to specify ../../b, as the path
         // that is computed includes the array index: ./a.c.[0]
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{#each a.c}} d={{d}} b={{../a.a}} {{/each}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{#each a.c}} d={{d}} b={{../a.a}} {{/each}}")
+            .is_ok());
 
         let r1 = handlebars.render("t0", &data);
         assert_eq!(r1.ok().unwrap(), " d=100 b=99  d=200 b=99 ".to_string());
@@ -206,14 +197,12 @@ mod test {
 
         let data = Json::from_str(json_str).unwrap();
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t0",
-                    "{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}"
-                )
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string(
+                "t0",
+                "{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}"
+            )
+            .is_ok());
 
         let r1 = handlebars.render("t0", &data);
         assert_eq!(r1.ok().unwrap(), "100:200".to_string());
@@ -226,14 +215,12 @@ mod test {
         let data = Json::from_str(json_str).unwrap();
 
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t0",
-                    "{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}"
-                )
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string(
+                "t0",
+                "{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}"
+            )
+            .is_ok());
 
         let r1 = handlebars.render("t0", &data);
         assert_eq!(r1.ok().unwrap(), "12345".to_string());
@@ -242,11 +229,9 @@ mod test {
     #[test]
     fn test_nested_array() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{#each this.[0]}}{{this}}{{/each}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{#each this.[0]}}{{this}}{{/each}}")
+            .is_ok());
 
         let r0 = handlebars.render("t0", &(vec![vec![1, 2, 3]]));
 
@@ -256,11 +241,9 @@ mod test {
     #[test]
     fn test_empty_key() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{#each this}}{{@key}}-{{value}}\n{{/each}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{#each this}}{{@key}}-{{value}}\n{{/each}}")
+            .is_ok());
 
         let r0 = handlebars
             .render(
@@ -291,18 +274,16 @@ mod test {
     #[test]
     fn test_each_else() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{#each a}}1{{else}}empty{{/each}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{#each a}}1{{else}}empty{{/each}}")
+            .is_ok());
         let m1 = btreemap! {
             "a".to_string() => Vec::<String>::new(),
         };
         let r0 = handlebars.render("t0", &m1).unwrap();
         assert_eq!(r0, "empty");
 
-        let m2 = btreemap!{
+        let m2 = btreemap! {
             "b".to_string() => Vec::<String>::new()
         };
         let r1 = handlebars.render("t0", &m2).unwrap();
@@ -312,11 +293,9 @@ mod test {
     #[test]
     fn test_block_param() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{#each a as |i|}}{{i}}{{/each}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{#each a as |i|}}{{i}}{{/each}}")
+            .is_ok());
         let m1 = btreemap! {
             "a".to_string() => vec![1,2,3,4,5]
         };
@@ -332,7 +311,7 @@ mod test {
                         {{/each}}";
         assert!(handlebars.register_template_string("t0", template).is_ok());
 
-        let m = btreemap!{
+        let m = btreemap! {
             "ftp".to_string() => 21,
             "http".to_string() => 80
         };
@@ -343,14 +322,12 @@ mod test {
     #[test]
     fn test_nested_each_with_path_ups() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t0",
-                    "{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}"
-                )
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string(
+                "t0",
+                "{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}"
+            )
+            .is_ok());
 
         let data = btreemap! {
             "a".to_string() => to_json(&btreemap! {
@@ -381,11 +358,9 @@ mod test {
     #[test]
     fn test_key_iteration_with_unicode() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{#each this}}{{@key}}: {{this}}\n{{/each}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{#each this}}{{@key}}: {{this}}\n{{/each}}")
+            .is_ok());
         let data = json!({
             "normal": 1,
             "你好": 2,

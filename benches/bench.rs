@@ -39,7 +39,8 @@ fn make_data() -> BTreeMap<String, Json> {
         ("Beijing", 27u16),
         ("Guangzhou", 22u16),
         ("Shandong", 12u16),
-    ].iter()
+    ]
+    .iter()
     {
         let (name, score) = *v;
         let mut t = BTreeMap::new();

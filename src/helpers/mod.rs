@@ -183,16 +183,12 @@ mod test {
     #[test]
     fn test_meta_helper() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{foo this}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t1", "{{#bar this}}nice{{/bar}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{foo this}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t1", "{{#bar this}}nice{{/bar}}")
+            .is_ok());
 
         let meta_helper = MetaHelper;
         handlebars.register_helper("helperMissing", Box::new(meta_helper));
@@ -208,11 +204,9 @@ mod test {
     #[test]
     fn test_helper_for_subexpression() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t2", "{{foo value=(bar 0)}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t2", "{{foo value=(bar 0)}}")
+            .is_ok());
 
         handlebars.register_helper(
             "helperMissing",

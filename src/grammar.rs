@@ -32,7 +32,8 @@ macro_rules! assert_not_rule {
                     .last()
                     .unwrap()
                     .into_span()
-                    .end() != $in.len()
+                    .end()
+                    != $in.len()
         );
     };
 }

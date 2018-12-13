@@ -163,9 +163,9 @@ impl Context {
 #[cfg(test)]
 mod test {
     use crate::context::{self, Context};
+    use crate::value::{self, JsonRender};
     use serde_json::value::Map;
     use std::collections::VecDeque;
-    use crate::value::{self, JsonRender};
 
     #[derive(Serialize)]
     struct Address {
@@ -289,7 +289,7 @@ mod test {
     fn test_merge_json() {
         let map = json!({ "age": 4 });
         let s = "hello".to_owned();
-        let hash = btreemap!{
+        let hash = btreemap! {
             "tag".to_owned() => value::to_json("h1")
         };
 
@@ -332,7 +332,7 @@ mod test {
 
     #[test]
     fn test_key_name_with_this() {
-        let m = btreemap!{
+        let m = btreemap! {
             "this_name".to_string() => "the_value".to_string()
         };
         let ctx = Context::wraps(&m).unwrap();

@@ -78,8 +78,8 @@ macro_rules! handlebars_helper {
 #[cfg(feature = "no_logging")]
 #[macro_export]
 macro_rules! debug {
-    (target: $target:expr, $($arg:tt)*) => { };
-    ($($arg:tt)*) => { };
+    (target: $target:expr, $($arg:tt)*) => {};
+    ($($arg:tt)*) => {};
 }
 
 /// This macro is defined if the `logging` feature is not set.
@@ -88,8 +88,8 @@ macro_rules! debug {
 #[cfg(feature = "no_logging")]
 #[macro_export]
 macro_rules! error {
-    (target: $target:expr, $($arg:tt)*) => { };
-    ($($arg:tt)*) => { };
+    (target: $target:expr, $($arg:tt)*) => {};
+    ($($arg:tt)*) => {};
 }
 
 /// This macro is defined if the `logging` feature is not set.
@@ -98,8 +98,8 @@ macro_rules! error {
 #[cfg(not(feature = "logging"))]
 #[macro_export]
 macro_rules! info {
-    (target: $target:expr, $($arg:tt)*) => { };
-    ($($arg:tt)*) => { };
+    (target: $target:expr, $($arg:tt)*) => {};
+    ($($arg:tt)*) => {};
 }
 
 /// This macro is defined if the `logging` feature is not set.
@@ -108,8 +108,8 @@ macro_rules! info {
 #[cfg(feature = "no_logging")]
 #[macro_export]
 macro_rules! log {
-    (target: $target:expr, $($arg:tt)*) => { };
-    ($($arg:tt)*) => { };
+    (target: $target:expr, $($arg:tt)*) => {};
+    ($($arg:tt)*) => {};
 }
 
 /// This macro is defined if the `logging` feature is not set.
@@ -118,8 +118,8 @@ macro_rules! log {
 #[cfg(feature = "no_logging")]
 #[macro_export]
 macro_rules! trace {
-    (target: $target:expr, $($arg:tt)*) => { };
-    ($($arg:tt)*) => { };
+    (target: $target:expr, $($arg:tt)*) => {};
+    ($($arg:tt)*) => {};
 }
 
 /// This macro is defined if the `logging` feature is not set.
@@ -128,6 +128,6 @@ macro_rules! trace {
 #[cfg(feature = "no_logging")]
 #[macro_export]
 macro_rules! warn {
-    (target: $target:expr, $($arg:tt)*) => { };
-    ($($arg:tt)*) => { };
+    (target: $target:expr, $($arg:tt)*) => {};
+    ($($arg:tt)*) => {};
 }

@@ -28,16 +28,23 @@ impl HelperDef for LogHelper {
         let param = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"log\""))?;
-        let level = h.hash_get("level")
+        let level = h
+            .hash_get("level")
             .and_then(|v| v.value().as_str())
             .unwrap_or("info");
 
         if let Ok(log_level) = Level::from_str(level) {
-            log!(log_level, "{}: {}",
-                 param.path().unwrap_or(&"".to_owned()),
-                 param.value().render())
+            log!(
+                log_level,
+                "{}: {}",
+                param.path().unwrap_or(&"".to_owned()),
+                param.value().render()
+            )
         } else {
-            return Err(RenderError::new(&format!("Unsupported logging level {}", level)));
+            return Err(RenderError::new(&format!(
+                "Unsupported logging level {}",
+                level
+            )));
         }
         Ok(())
     }

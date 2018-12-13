@@ -70,8 +70,12 @@ pub trait DirectiveDef: Send + Sync {
 impl<
         F: Send
             + Sync
-            + for<'reg, 'rc> Fn(&Directive<'reg, 'rc>, &'reg Registry, &'rc Context, &mut RenderContext)
-                -> DirectiveResult,
+            + for<'reg, 'rc> Fn(
+                &Directive<'reg, 'rc>,
+                &'reg Registry,
+                &'rc Context,
+                &mut RenderContext,
+            ) -> DirectiveResult,
     > DirectiveDef for F
 {
     fn call<'reg: 'rc, 'rc>(

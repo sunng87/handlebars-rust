@@ -17,7 +17,8 @@ fn usage() -> ! {
         &mut io::stderr(),
         "{}",
         r#"Usage: ./render-cli template.hbs '{"json": "data"}'"#
-    ).ok();
+    )
+    .ok();
     process::exit(1);
 }
 
