@@ -8,6 +8,7 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Directive, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
+use crate::value::DEFAULT_VALUE;
 
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
@@ -37,7 +38,12 @@ fn render_partial<'reg: 'rc, 'rc>(
     } else {
         let hash_ctx =
             BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
-        let partial_context = merge_json(local_rc.evaluate(ctx, ".", r.strict_mode())?, &hash_ctx);
+        let partial_context = merge_json(
+            local_rc
+                .evaluate(ctx, ".")?
+                .unwrap_or_else(|| &DEFAULT_VALUE),
+            &hash_ctx,
+        );
         let ctx = Context::wraps(&partial_context)?;
         let mut partial_rc = local_rc.new_for_block();
         t.render(r, &ctx, &mut partial_rc, out)
@@ -68,10 +74,12 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             let mut local_rc = rc.derive();
             render_partial(t.borrow(), d, r, ctx, &mut local_rc, out)?;
         }
-        None => if let Some(t) = r.get_template(tname).or_else(|| d.template()) {
-            let mut local_rc = rc.derive();
-            render_partial(t, d, r, ctx, &mut local_rc, out)?;
-        },
+        None => {
+            if let Some(t) = r.get_template(tname).or_else(|| d.template()) {
+                let mut local_rc = rc.derive();
+                render_partial(t, d, r, ctx, &mut local_rc, out)?;
+            }
+        }
     }
 
     Ok(())
@@ -84,58 +92,40 @@ mod test {
     #[test]
     fn test() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{> t1}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t1", "{{this}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t2", "{{#> t99}}not there{{/t99}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t3", "{{#*inline \"t31\"}}{{this}}{{/inline}}{{> t31}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t4",
-                    "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}"
-                )
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t5", "include {{> nav}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t6", "{{> t1 a}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t7",
-                    "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}"
-                )
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t0", "{{> t1}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t1", "{{this}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t2", "{{#> t99}}not there{{/t99}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t3", "{{#*inline \"t31\"}}{{this}}{{/inline}}{{> t31}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string(
+                "t4",
+                "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}"
+            )
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t5", "include {{> nav}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("t6", "{{> t1 a}}")
+            .is_ok());
+        assert!(handlebars
+            .register_template_string(
+                "t7",
+                "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}"
+            )
+            .is_ok());
         assert!(handlebars.register_template_string("t8", "{{a}}").is_ok());
-        assert!(
-            handlebars
-                .register_template_string("t9", "{{> t8 a=2}}")
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("t9", "{{> t8 a=2}}")
+            .is_ok());
 
         assert_eq!(handlebars.render("t0", &1).ok().unwrap(), "1".to_string());
         assert_eq!(
@@ -149,7 +139,7 @@ mod test {
         );
         assert_eq!(
             handlebars
-                .render("t6", &btreemap!{"a".to_string() => "2".to_string()})
+                .render("t6", &btreemap! {"a".to_string() => "2".to_string()})
                 .ok()
                 .unwrap(),
             "2".to_string()
@@ -192,16 +182,12 @@ mod test {
         let two_partial = "--- two ---";
 
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("template", main_template)
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("two", two_partial)
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("template", main_template)
+            .is_ok());
+        assert!(handlebars
+            .register_template_string("two", two_partial)
+            .is_ok());
 
         let r0 = handlebars.render("template", &true);
         assert_eq!(r0.ok().unwrap(), "one--- two ---three--- two ---");
@@ -213,11 +199,9 @@ mod test {
         let p_partial = "{{a}}";
 
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("template", main_template)
-                .is_ok()
-        );
+        assert!(handlebars
+            .register_template_string("template", main_template)
+            .is_ok());
         assert!(handlebars.register_template_string("p", p_partial).is_ok());
 
         let r0 = handlebars.render("template", &true);

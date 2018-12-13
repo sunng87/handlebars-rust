@@ -42,8 +42,10 @@ pub fn html_escape(data: &str) -> String {
                 Some("\"") => "&quot;",
                 Some("&") => "&amp;",
                 _ => unreachable!(),
-            }.to_owned()
-        }).into_owned()
+            }
+            .to_owned()
+        })
+        .into_owned()
 }
 
 /// `EscapeFn` that do not change any thing. Useful when using in a non-html
@@ -86,12 +88,14 @@ fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
     let path = entry.path();
 
     // ignore hidden files, emacs buffers and files with wrong suffix
-    !path.is_file() || path
-        .file_name()
-        .map(|s| {
-            let ds = s.to_string_lossy();
-            ds.starts_with(".") || ds.starts_with("#") || !ds.ends_with(suffix)
-        }).unwrap_or(true)
+    !path.is_file()
+        || path
+            .file_name()
+            .map(|s| {
+                let ds = s.to_string_lossy();
+                ds.starts_with(".") || ds.starts_with("#") || !ds.ends_with(suffix)
+            })
+            .unwrap_or(true)
 }
 
 impl Registry {
@@ -350,7 +354,8 @@ impl Registry {
                 let ctx = Context::wraps(data)?;
                 let mut render_context = RenderContext::new(t.name.as_ref());
                 t.render(self, &ctx, &mut render_context, output)
-            }).map(|_| ())
+            })
+            .map(|_| ())
     }
 
     /// Render a registered template with some data into a string
@@ -439,11 +444,11 @@ mod test {
     use crate::output::Output;
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext, Renderable};
+    use crate::support::str::StringWriter;
     #[cfg(not(feature = "no_dir_source"))]
     use std::fs::{DirBuilder, File};
     #[cfg(not(feature = "no_dir_source"))]
     use std::io::Write;
-    use crate::support::str::StringWriter;
     #[cfg(not(feature = "no_dir_source"))]
     use tempfile::tempdir;
 
@@ -661,14 +666,12 @@ mod test {
             "the_only_key": "the_only_value"
         });
 
-        assert!(
-            r.render_template("accessing the_only_key {{the_only_key}}", &data)
-                .is_ok()
-        );
-        assert!(
-            r.render_template("accessing non-exists key {{the_key_never_exists}}", &data)
-                .is_err()
-        );
+        assert!(r
+            .render_template("accessing the_only_key {{the_only_key}}", &data)
+            .is_ok());
+        assert!(r
+            .render_template("accessing non-exists key {{the_key_never_exists}}", &data)
+            .is_err());
 
         let render_error = r
             .render_template("accessing non-exists key {{the_key_never_exists}}", &data)
@@ -679,14 +682,12 @@ mod test {
         );
 
         let data2 = json!([1, 2, 3]);
-        assert!(
-            r.render_template("accessing valid array index {{this.[2]}}", &data2)
-                .is_ok()
-        );
-        assert!(
-            r.render_template("accessing invalid array index {{this.[3]}}", &data2)
-                .is_err()
-        );
+        assert!(r
+            .render_template("accessing valid array index {{this.[2]}}", &data2)
+            .is_ok());
+        assert!(r
+            .render_template("accessing invalid array index {{this.[3]}}", &data2)
+            .is_err());
         let render_error2 = r
             .render_template("accessing invalid array index {{this.[3]}}", &data2)
             .unwrap_err();
@@ -694,5 +695,40 @@ mod test {
             render_error2.as_render_error().unwrap().column_no.unwrap(),
             31
         );
+    }
+
+    #[test]
+    fn test_strict_mode_in_helper() {
+        let mut r = Registry::new();
+        r.set_strict_mode(true);
+
+        r.register_helper(
+            "check_missing",
+            Box::new(
+                |h: &Helper,
+                 _: &Registry,
+                 _: &Context,
+                 _: &mut RenderContext,
+                 _: &mut Output|
+                 -> Result<(), RenderError> {
+                    let value = h.param(0).unwrap();
+                    assert!(value.is_value_missing());
+                    Ok(())
+                },
+            ),
+        );
+
+        let data = json!({
+            "the_key_we_have": "the_value_we_have"
+        });
+        assert!(r
+            .render_template("accessing non-exists key {{the_key_we_dont_have}}", &data)
+            .is_err());
+        assert!(r
+            .render_template(
+                "accessing non-exists key from helper {{check_missing the_key_we_dont_have}}",
+                &data
+            )
+            .is_ok());
     }
 }

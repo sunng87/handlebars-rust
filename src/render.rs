@@ -19,8 +19,6 @@ use crate::template::{
 };
 use crate::value::{JsonRender, PathAndJson, ScopedJson};
 
-static DEFAULT_VALUE: Json = Json::Null;
-
 /// The context of a render call
 ///
 /// this context stores information of a render and a writer where generated
@@ -128,36 +126,16 @@ impl<'reg> RenderContext<'reg> {
         &self,
         context: &'ctx Context,
         path: &str,
-        strict: bool,
-    ) -> Result<&'ctx Json, RenderError> {
-        let value_container = context.navigate(self.get_path(), self.get_local_path_root(), path);
-        if strict {
-            value_container.and_then(|v| {
-                v.ok_or_else(|| {
-                    RenderError::new(&format!("Variable {:?} not found in strict mode.", path))
-                })
-            })
-        } else {
-            value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
-        }
+    ) -> Result<Option<&'ctx Json>, RenderError> {
+        context.navigate(self.get_path(), self.get_local_path_root(), path)
     }
 
     pub fn evaluate_absolute<'ctx>(
         &self,
         context: &'ctx Context,
         path: &str,
-        strict: bool,
-    ) -> Result<&'ctx Json, RenderError> {
-        let value_container = context.navigate(".", &VecDeque::new(), path);
-        if strict {
-            value_container.and_then(|v| {
-                v.ok_or_else(|| {
-                    RenderError::new(&format!("Variable {:?} not found in strict mode.", path))
-                })
-            })
-        } else {
-            value_container.map(|v| v.unwrap_or(&DEFAULT_VALUE))
-        }
+    ) -> Result<Option<&'ctx Json>, RenderError> {
+        context.navigate(".", &VecDeque::new(), path)
     }
 
     pub fn get_partial(&self, name: &str) -> Option<&&Template> {
@@ -605,7 +583,6 @@ impl Parameter {
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             &Parameter::Name(ref name) => {
-                let strict = registry.strict_mode();
                 if let Some(value) = rc.get_local_var(name) {
                     // local var, @first, @last for example
                     // here we count it as derived value, and simply clone it
@@ -626,20 +603,21 @@ impl Parameter {
                 } else if let Some(rc_context) = rc.context() {
                     // the context is modified from a decorator
                     // use the modified one
-                    let json = rc.evaluate(rc_context.borrow(), name, strict)?;
+                    let json = rc.evaluate(rc_context.borrow(), name)?;
                     // the data is fetched from mutable reference render_context
                     // so we have to clone it to bypass lifetime check
                     Ok(PathAndJson::new(
                         Some(name.to_owned()),
-                        ScopedJson::Derived(json.clone()),
+                        json.map(|j| ScopedJson::Derived(j.clone()))
+                            .unwrap_or_else(|| ScopedJson::Missing),
                     ))
                 } else {
                     // failback to normal evaluation
-                    let json_ref = rc.evaluate(ctx, name, strict)?;
-                    // value borrowed from context data
                     Ok(PathAndJson::new(
                         Some(name.to_owned()),
-                        ScopedJson::Context(json_ref),
+                        rc.evaluate(ctx, name)?
+                            .map(|json| ScopedJson::Context(json))
+                            .unwrap_or_else(|| ScopedJson::Missing),
                     ))
                 }
             }
@@ -752,6 +730,15 @@ impl Renderable for TemplateElement {
             }
             Expression(ref v) => {
                 let context_json = v.expand(registry, ctx, rc)?;
+
+                // strict mode check
+                if registry.strict_mode() && context_json.is_value_missing() {
+                    return Err(RenderError::new(&format!(
+                        "Variable {:?} not found in strict mode.",
+                        context_json.path()
+                    )));
+                }
+
                 let rendered = context_json.value().render();
 
                 let output = if !rc.is_disable_escape() {
@@ -764,6 +751,15 @@ impl Renderable for TemplateElement {
             }
             HTMLExpression(ref v) => {
                 let context_json = v.expand(registry, ctx, rc)?;
+
+                // strict mode check
+                if registry.strict_mode() && context_json.is_value_missing() {
+                    return Err(RenderError::new(&format!(
+                        "Variable {:?} not found in strict mode.",
+                        context_json.path()
+                    )));
+                }
+
                 let rendered = context_json.value().render();
                 out.write(rendered.as_ref())?;
                 Ok(())
@@ -994,10 +990,9 @@ fn test_render_error_line_no() {
     let m: HashMap<String, String> = HashMap::new();
 
     let name = "invalid_template";
-    assert!(
-        r.register_template_string(name, "<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}")
-            .is_ok()
-    );
+    assert!(r
+        .register_template_string(name, "<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}")
+        .is_ok());
 
     if let Err(e) = r.render(name, &m) {
         assert_eq!(e.line_no.unwrap(), 3);
@@ -1012,17 +1007,15 @@ fn test_render_error_line_no() {
 fn test_partial_failback_render() {
     let mut r = Registry::new();
 
-    assert!(
-        r.register_template_string("parent", "<html>{{> layout}}</html>")
-            .is_ok()
-    );
-    assert!(
-        r.register_template_string(
+    assert!(r
+        .register_template_string("parent", "<html>{{> layout}}</html>")
+        .is_ok());
+    assert!(r
+        .register_template_string(
             "child",
             "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}"
         )
-        .is_ok()
-    );
+        .is_ok());
     assert!(r.register_template_string("seg", "1234").is_ok());
 
     let r = r.render("child", &true).expect("should work");
@@ -1033,10 +1026,9 @@ fn test_partial_failback_render() {
 fn test_key_with_slash() {
     let mut r = Registry::new();
 
-    assert!(
-        r.register_template_string("t", "{{#each .}}{{@key}}: {{this}}\n{{/each}}")
-            .is_ok()
-    );
+    assert!(r
+        .register_template_string("t", "{{#each .}}{{@key}}: {{this}}\n{{/each}}")
+        .is_ok());
 
     let r = r.render("t", &json!({"/foo": "bar"})).expect("should work");
 
