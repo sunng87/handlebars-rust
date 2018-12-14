@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
+use std::ops::Deref;
 
 use serde::Serialize;
 use serde_json::value::Value as Json;
@@ -531,7 +532,7 @@ pub trait Evaluable {
 }
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
-    hd: &Box<HelperDef>,
+    hd: &HelperDef,
     ht: &Helper<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
@@ -566,12 +567,12 @@ impl Parameter {
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
-        match self {
-            &Parameter::Name(ref name) => Ok(name.to_owned()),
-            &Parameter::Subexpression(_) => {
+        match *self {
+            Parameter::Name(ref name) => Ok(name.to_owned()),
+            Parameter::Subexpression(_) => {
                 self.expand(registry, ctx, rc).map(|v| v.value().render())
             }
-            &Parameter::Literal(ref j) => Ok(j.render()),
+            Parameter::Literal(ref j) => Ok(j.render()),
         }
     }
 
@@ -581,8 +582,8 @@ impl Parameter {
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
-        match self {
-            &Parameter::Name(ref name) => {
+        match *self {
+            Parameter::Name(ref name) => {
                 if let Some(value) = rc.get_local_var(name) {
                     // local var, @first, @last for example
                     // here we count it as derived value, and simply clone it
@@ -621,13 +622,13 @@ impl Parameter {
                     ))
                 }
             }
-            &Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
-            &Parameter::Subexpression(ref t) => match t.as_element() {
-                &Expression(ref expr) => expr.expand(registry, ctx, rc),
-                &HelperExpression(ref ht) => {
+            Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
+            Parameter::Subexpression(ref t) => match *t.as_element() {
+                Expression(ref expr) => expr.expand(registry, ctx, rc),
+                HelperExpression(ref ht) => {
                     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                     if let Some(ref d) = rc.get_local_helper(&ht.name) {
-                        let helper_def = d.borrow();
+                        let helper_def = d.deref().as_ref();
                         call_helper_for_value(helper_def, &h, registry, ctx, rc)
                     } else {
                         registry
@@ -642,7 +643,9 @@ impl Parameter {
                             .ok_or_else(|| {
                                 RenderError::new(format!("Helper not defined: {:?}", ht.name))
                             })
-                            .and_then(move |d| call_helper_for_value(d, &h, registry, ctx, rc))
+                            .and_then(move |d| {
+                                call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
+                            })
                     }
                 }
                 _ => unreachable!(),
@@ -890,7 +893,7 @@ fn test_template() {
     ];
 
     let template = Template {
-        elements: elements,
+        elements,
         name: None,
         mapping: None,
     };

@@ -101,7 +101,7 @@ mod test {
         let person = Person {
             name: "Ning Sun".to_string(),
             age: 27,
-            addr: addr,
+            addr,
             titles: vec!["programmer".to_string(), "cartographier".to_string()],
         };
 
@@ -136,7 +136,7 @@ mod test {
         let person = Person {
             name: "Ning Sun".to_string(),
             age: 27,
-            addr: addr,
+            addr,
             titles: vec!["programmer".to_string(), "cartographier".to_string()],
         };
 
@@ -171,7 +171,7 @@ mod test {
         let person = Person {
             name: "Ning Sun".to_string(),
             age: 27,
-            addr: addr,
+            addr,
             titles: vec!["programmer".to_string(), "cartographier".to_string()],
         };
 

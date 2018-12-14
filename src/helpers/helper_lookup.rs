@@ -28,14 +28,14 @@ impl HelperDef for LookupHelper {
             .ok_or_else(|| RenderError::new("Insufficient params for helper \"lookup\""))?;
 
         let null = Json::Null;
-        let value = match collection_value.value() {
-            &Json::Array(ref v) => index
+        let value = match *collection_value.value() {
+            Json::Array(ref v) => index
                 .value()
                 .as_u64()
                 .and_then(|u| Some(u as usize))
                 .and_then(|u| v.get(u))
                 .unwrap_or(&null),
-            &Json::Object(ref m) => index
+            Json::Object(ref m) => index
                 .value()
                 .as_str()
                 .and_then(|k| m.get(k))

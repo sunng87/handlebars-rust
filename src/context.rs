@@ -93,8 +93,8 @@ fn parse_json_visitor<'a>(
 }
 
 pub fn merge_json(base: &Json, addition: &Object) -> Json {
-    let mut base_map = match base {
-        &Json::Object(ref m) => m.clone(),
+    let mut base_map = match *base {
+        Json::Object(ref m) => m.clone(),
         _ => Map::new(),
     };
 
@@ -132,7 +132,7 @@ impl Context {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
 
-        let paths: Vec<&str> = path_stack.iter().map(|x| *x).collect();
+        let paths: Vec<&str> = path_stack.iter().cloned().collect();
         let mut data: Option<&Json> = Some(&self.data);
         for p in &paths {
             if *p == "this" {
@@ -204,7 +204,7 @@ mod test {
         let person = Person {
             name: "Ning Sun".to_string(),
             age: 27,
-            addr: addr,
+            addr,
             titles: vec!["programmer".to_string(), "cartographier".to_string()],
         };
 

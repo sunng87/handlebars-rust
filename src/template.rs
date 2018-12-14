@@ -57,8 +57,8 @@ impl Subexpression {
     }
 
     pub fn is_helper(&self) -> bool {
-        match self.as_element() {
-            &TemplateElement::HelperExpression(_) => true,
+        match *self.as_element() {
+            TemplateElement::HelperExpression(_) => true,
             _ => false,
         }
     }
@@ -68,10 +68,10 @@ impl Subexpression {
     }
 
     pub fn name(&self) -> &str {
-        match self.as_element() {
-            &HelperExpression(ref ht) => &ht.name,
-            &Expression(ref p) => match p {
-                &Parameter::Name(ref s) => s,
+        match *self.as_element() {
+            HelperExpression(ref ht) => &ht.name,
+            Expression(ref p) => match *p {
+                Parameter::Name(ref s) => s,
                 _ => unreachable!(),
             },
             _ => unreachable!(),
@@ -79,15 +79,15 @@ impl Subexpression {
     }
 
     pub fn params(&self) -> Option<&Vec<Parameter>> {
-        match self.as_element() {
-            &HelperExpression(ref ht) => Some(&ht.params),
+        match *self.as_element() {
+            HelperExpression(ref ht) => Some(&ht.params),
             _ => None,
         }
     }
 
     pub fn hash(&self) -> Option<&BTreeMap<String, Parameter>> {
-        match self.as_element() {
-            &HelperExpression(ref ht) => Some(&ht.hash),
+        match *self.as_element() {
+            HelperExpression(ref ht) => Some(&ht.hash),
             _ => None,
         }
     }
@@ -246,16 +246,11 @@ impl Template {
             _ => unreachable!(),
         };
 
-        loop {
-            if let Some(n) = it.peek() {
-                let n_span = n.clone().into_span();
-                if n_span.end() > param_span.end() {
-                    break;
-                }
-            } else {
+        while let Some(n) = it.peek() {
+            let n_span = n.clone().into_span();
+            if n_span.end() > param_span.end() {
                 break;
             }
-
             it.next();
         }
 

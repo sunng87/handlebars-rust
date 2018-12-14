@@ -93,7 +93,7 @@ fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
             .file_name()
             .map(|s| {
                 let ds = s.to_string_lossy();
-                ds.starts_with(".") || ds.starts_with("#") || !ds.ends_with(suffix)
+                ds.starts_with('.') || ds.starts_with('#') || !ds.ends_with(suffix)
             })
             .unwrap_or(true)
 }
