@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.1.0...Unreleased) - ReleaseDate
+## [1.2.0](https://github.com/sunng87/handlebars-rust/compare/1.1.0...1.2.0) - 2018-12-15
 
 * [Changed] Using rust 2018 edition
 * [Changed] Improve strict mode and only raise error when accessing
