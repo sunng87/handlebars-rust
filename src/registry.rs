@@ -320,13 +320,13 @@ impl Registry {
     }
 
     /// Return a registered helper
-    pub fn get_helper(&self, name: &str) -> Option<&Box<HelperDef + 'static>> {
-        self.helpers.get(name)
+    pub fn get_helper(&self, name: &str) -> Option<&(HelperDef + 'static)> {
+        self.helpers.get(name).map(|v| v.as_ref())
     }
 
     /// Return a registered directive, aka decorator
-    pub fn get_decorator(&self, name: &str) -> Option<&Box<DirectiveDef + 'static>> {
-        self.directives.get(name)
+    pub fn get_decorator(&self, name: &str) -> Option<&(DirectiveDef + 'static)> {
+        self.directives.get(name).map(|v| v.as_ref())
     }
 
     /// Return all templates registered

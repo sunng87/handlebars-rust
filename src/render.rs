@@ -644,7 +644,7 @@ impl Parameter {
                                 RenderError::new(format!("Helper not defined: {:?}", ht.name))
                             })
                             .and_then(move |d| {
-                                call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
+                                call_helper_for_value(d, &h, registry, ctx, rc)
                             })
                     }
                 }
@@ -808,7 +808,7 @@ impl Evaluable for TemplateElement {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
                 let di = Directive::try_from_template(dt, registry, ctx, rc)?;
                 match registry.get_decorator(di.name()) {
-                    Some(d) => (**d).call(&di, registry, ctx, rc),
+                    Some(d) => d.call(&di, registry, ctx, rc),
                     None => Err(RenderError::new(format!(
                         "Directive not defined: {:?}",
                         dt.name
