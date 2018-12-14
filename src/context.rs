@@ -64,13 +64,13 @@ fn parse_json_visitor<'a>(
     path_context: &'a VecDeque<String>,
     relative_path: &'a str,
 ) -> Result<(), RenderError> {
-    let mut parser = HandlebarsParser::parse(Rule::path, relative_path)
+    let parser = HandlebarsParser::parse(Rule::path, relative_path)
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new("Invalid JSON path."))?;
 
     let mut path_context_depth: i64 = -1;
 
-    while let Some(sg) = parser.next() {
+    for sg in parser {
         if sg.as_rule() == Rule::path_up {
             path_context_depth += 1;
         } else {
