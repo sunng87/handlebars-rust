@@ -5,6 +5,7 @@
 * [Changed] Using rust 2018 edition
 * [Changed] Improve strict mode and only raise error when accessing
   missing fields in expression
+* [Changed] Improved `get_helper` and `get_decorator` return type
 
 ## [1.1.0](https://github.com/sunng87/handlebars-rust/compare/1.0.5...1.1.0) - 2018-10-24
 
