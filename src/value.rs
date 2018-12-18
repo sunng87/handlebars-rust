@@ -31,6 +31,13 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
     pub fn render(&self) -> String {
         self.as_json().render()
     }
+
+    pub fn is_missing(&self) -> bool {
+        match *self {
+            ScopedJson::Missing => true,
+            _ => false,
+        }
+    }
 }
 
 impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'reg, 'rc> {
@@ -72,10 +79,7 @@ impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
 
     /// Test if value is missing
     pub fn is_value_missing(&self) -> bool {
-        match self.value {
-            ScopedJson::Missing => true,
-            _ => false,
-        }
+        self.value.is_missing()
     }
 }
 

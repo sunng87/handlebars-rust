@@ -94,7 +94,11 @@ pub trait HelperDef: Send + Sync {
         out: &mut Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, ctx, rc)? {
-            out.write(result.render().as_ref())?;
+            if !(r.strict_mode() && result.is_missing()) {
+                return Err(RenderError::strict_error(None));
+            } else {
+                out.write(result.render().as_ref())?;
+            }
         }
 
         Ok(())

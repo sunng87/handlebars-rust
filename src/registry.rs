@@ -150,7 +150,7 @@ impl Registry {
     /// By default, handlebars renders empty string for value that
     /// undefined or never exists. Since rust is a static type
     /// language, we offer strict mode in handlebars-rust.  In strict
-    /// mode, if you were access a value that doesn't exist, a
+    /// mode, if you were to render a value that doesn't exist, a
     /// `RenderError` will be raised.
     pub fn set_strict_mode(&mut self, enable: bool) {
         self.strict_mode = enable;
@@ -697,6 +697,20 @@ mod test {
         );
     }
 
+    use crate::value::ScopedJson;
+    struct GenMissingHelper;
+    impl HelperDef for GenMissingHelper {
+        fn call_inner<'reg: 'rc, 'rc>(
+            &self,
+            _: &Helper<'reg, 'rc>,
+            _: &'reg Registry,
+            _: &'rc Context,
+            _: &mut RenderContext<'reg>,
+        ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+            Ok(Some(ScopedJson::Missing))
+        }
+    }
+
     #[test]
     fn test_strict_mode_in_helper() {
         let mut r = Registry::new();
@@ -718,6 +732,8 @@ mod test {
             ),
         );
 
+        r.register_helper("generate_missing_value", Box::new(GenMissingHelper));
+
         let data = json!({
             "the_key_we_have": "the_value_we_have"
         });
@@ -730,5 +746,11 @@ mod test {
                 &data
             )
             .is_ok());
+        assert!(r
+            .render_template(
+                "accessing helper that generates missing value {{generate_missing_value}}",
+                &data
+            )
+            .is_err());
     }
 }

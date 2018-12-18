@@ -736,10 +736,7 @@ impl Renderable for TemplateElement {
 
                 // strict mode check
                 if registry.strict_mode() && context_json.is_value_missing() {
-                    return Err(RenderError::new(&format!(
-                        "Variable {:?} not found in strict mode.",
-                        context_json.path()
-                    )));
+                    return Err(RenderError::strict_error(context_json.path()));
                 }
 
                 let rendered = context_json.value().render();
@@ -757,10 +754,7 @@ impl Renderable for TemplateElement {
 
                 // strict mode check
                 if registry.strict_mode() && context_json.is_value_missing() {
-                    return Err(RenderError::new(&format!(
-                        "Variable {:?} not found in strict mode.",
-                        context_json.path()
-                    )));
+                    return Err(RenderError::strict_error(context_json.path()));
                 }
 
                 let rendered = context_json.value().render();
