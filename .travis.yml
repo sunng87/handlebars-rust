@@ -3,6 +3,7 @@ rust:
   - nightly
   - beta
   - stable
+  - 1.30.0
 
 env:
   # - TASK=build
