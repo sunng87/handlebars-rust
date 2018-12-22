@@ -66,7 +66,7 @@ fn parse_json_visitor<'a>(
 ) -> Result<(), RenderError> {
     let parser = HandlebarsParser::parse(Rule::path, relative_path)
         .map(|p| p.flatten())
-        .map_err(|_| RenderError::new("Invalid JSON path."))?;
+        .map_err(|_| RenderError::new(format!("Invalid JSON path: {}", relative_path)))?;
 
     let mut path_context_depth: i64 = -1;
 

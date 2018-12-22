@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
@@ -18,6 +17,7 @@ fn render_partial<'reg: 'rc, 'rc>(
     local_rc: &mut RenderContext<'reg>,
     out: &mut Output,
 ) -> Result<(), RenderError> {
+    // partial context path
     if let Some(ref p) = d.param(0) {
         if let Some(ref param_path) = p.path() {
             let old_path = local_rc.get_path().clone();
@@ -29,8 +29,7 @@ fn render_partial<'reg: 'rc, 'rc>(
 
     // @partial-block
     if let Some(t) = d.template() {
-        // FIXME: avoid clone here possibly
-        local_rc.set_partial("@partial-block".to_string(), t);
+        local_rc.set_partial("@partial-block".to_owned(), t);
     }
 
     if d.hash().is_empty() {
@@ -72,7 +71,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     match partial {
         Some(t) => {
             let mut local_rc = rc.derive();
-            render_partial(t.borrow(), d, r, ctx, &mut local_rc, out)?;
+            render_partial(&t, d, r, ctx, &mut local_rc, out)?;
         }
         None => {
             if let Some(t) = r.get_template(tname).or_else(|| d.template()) {
