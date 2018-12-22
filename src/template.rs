@@ -376,7 +376,7 @@ impl Template {
         let t = template_stack.front_mut().unwrap();
         if let Some(el) = t.elements.pop() {
             if let RawString(ref text) = el {
-                t.elements.push(RawString(text.trim_right().to_owned()));
+                t.elements.push(RawString(text.trim_end().to_owned()));
             } else {
                 t.elements.push(el);
             }
@@ -386,7 +386,7 @@ impl Template {
     fn raw_string<'a>(
         source: &'a str,
         pair: Option<Pair<'a, Rule>>,
-        trim_left: bool,
+        trim_start: bool,
     ) -> TemplateElement {
         let mut s = String::from(source);
 
@@ -415,8 +415,8 @@ impl Template {
             }
         }
 
-        if trim_left {
-            RawString(s.trim_left().to_owned())
+        if trim_start {
+            RawString(s.trim_start().to_owned())
         } else {
             RawString(s)
         }
@@ -673,16 +673,16 @@ impl Template {
                     Rule::hbs_comment_compact => {
                         let text = span
                             .as_str()
-                            .trim_left_matches("{{!")
-                            .trim_right_matches("}}");
+                            .trim_start_matches("{{!")
+                            .trim_end_matches("}}");
                         let t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     Rule::hbs_comment => {
                         let text = span
                             .as_str()
-                            .trim_left_matches("{{!--")
-                            .trim_right_matches("--}}");
+                            .trim_start_matches("{{!--")
+                            .trim_end_matches("--}}");
                         let t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
