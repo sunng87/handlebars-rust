@@ -291,7 +291,7 @@
 //!
 //! #### Built-in Helpers
 //!
-//! * `{{{{#raw}}}} ... {{{{/raw}}}}` escape handlebars expression within the block
+//! * `{{{{raw}}}} ... {{{{/raw}}}}` escape handlebars expression within the block
 //! * `{{#if ...}} ... {{else}} ... {{/if}}` if-else block
 //! * `{{#unless ...}} ... {{else}} .. {{/unless}}` if-not-else block
 //! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebar-rust doesn't support mustache iteration syntax so use this instead.
