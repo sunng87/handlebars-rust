@@ -56,6 +56,20 @@ output).
 
 Checkout `examples/` for more concrete demos of current API.
 
+
+## Minimum Rust Version Policy
+
+Handlebars will track Rust nightly and stable channel. When dropping
+support for previous stable versions, I will bump **minor** version
+and clarify in CHANGELOG.
+
+### Rust compatibility table
+
+| Handlebars version range | Minimum Rust version |
+| --- | --- |
+| ~1.1.0 | 1.30 |
+| ~1.0.0 | 1.23 |
+
 ## Document
 
 [Rust doc](https://docs.rs/crate/handlebars/).

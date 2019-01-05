@@ -2,6 +2,8 @@
 
 ## [1.2.0](https://github.com/sunng87/handlebars-rust/compare/1.1.0...1.2.0) - 2018-12-15
 
+*This release is yanked.*
+
 * [Changed] Using rust 2018 edition
 * [Changed] Improve strict mode and only raise error when accessing
   missing fields in expression
@@ -11,7 +13,7 @@
 
 * [Added] New option `includeZero` for `if` helper
 * [Added] New option `level` for `log` helper
-* [Changed] Updated Pest to 2.0
+* [Changed] Updated Pest to 2.0, moving minimal Rust version to 1.30
 
 ## [1.0.5](https://github.com/sunng87/handlebars-rust/compare/1.0.4...1.0.5) - 2018-10-04
 
