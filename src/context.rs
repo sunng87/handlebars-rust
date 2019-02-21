@@ -52,7 +52,7 @@ fn parse_json_visitor_inner<'a>(
     }
 
     for i in seg_stack {
-        let span = i.into_span();
+        let span = i.as_span();
         path_stack.push_back(&path[span.start()..span.end()]);
     }
     Ok(())

@@ -204,7 +204,7 @@ impl Template {
     {
         let name_node = it.next().unwrap();
         let rule = name_node.as_rule();
-        let name_span = name_node.into_span();
+        let name_span = name_node.as_span();
         match rule {
             Rule::identifier | Rule::reference | Rule::invert_tag_item => {
                 Ok(Parameter::Name(name_span.as_str().to_owned()))
@@ -229,7 +229,7 @@ impl Template {
             param = it.next().unwrap();
         }
         let param_rule = param.as_rule();
-        let param_span = param.into_span();
+        let param_span = param.as_span();
         let result = match param_rule {
             Rule::reference => Parameter::Name(param_span.as_str().to_owned()),
             Rule::literal => {
@@ -247,7 +247,7 @@ impl Template {
         };
 
         while let Some(n) = it.peek() {
-            let n_span = n.clone().into_span();
+            let n_span = n.as_span();
             if n_span.end() > param_span.end() {
                 break;
             }
@@ -266,7 +266,7 @@ impl Template {
         I: Iterator<Item = Pair<'a, Rule>>,
     {
         let name = it.next().unwrap();
-        let name_node = name.into_span();
+        let name_node = name.as_span();
         // identifier
         let key = name_node.as_str().to_owned();
 
@@ -283,12 +283,12 @@ impl Template {
         I: Iterator<Item = Pair<'a, Rule>>,
     {
         let p1_name = it.next().unwrap();
-        let p1_name_span = p1_name.into_span();
+        let p1_name_span = p1_name.as_span();
         // identifier
         let p1 = p1_name_span.as_str().to_owned();
 
         let p2 = it.peek().and_then(|p2_name| {
-            let p2_name_span = p2_name.clone().into_span();
+            let p2_name_span = p2_name.as_span();
             if p2_name_span.end() <= limit {
                 Some(p2_name_span.as_str().to_owned())
             } else {
@@ -332,7 +332,7 @@ impl Template {
             let rule;
             let end;
             if let Some(pair) = it.peek() {
-                let pair_span = pair.clone().into_span();
+                let pair_span = pair.as_span();
                 if pair_span.end() < limit {
                     rule = pair.as_rule();
                     end = pair_span.end();
@@ -393,7 +393,7 @@ impl Template {
         if let Some(pair) = pair {
             // the source may contains leading space because of pest's limitation
             // we calculate none space start here in order to correct the offset
-            let pair_span = pair.clone().into_span();
+            let pair_span = pair.as_span();
 
             let current_start = pair_span.start();
             let span_length = pair_span.end() - current_start;
@@ -406,7 +406,7 @@ impl Template {
             for sub_pair in pairs.into_iter().rev() {
                 // remove escaped backslash
                 if sub_pair.as_rule() == Rule::escape {
-                    let escape_span = sub_pair.into_span();
+                    let escape_span = sub_pair.as_span();
 
                     let backslash_pos = escape_span.start();
                     let backslash_rel_pos = leading_space_offset + backslash_pos - current_start;
@@ -450,7 +450,7 @@ impl Template {
             if let Some(pair) = it.next() {
                 let prev_end = end_pos.as_ref().map(|p| p.pos()).unwrap_or(0);
                 let rule = pair.as_rule();
-                let span = pair.clone().into_span();
+                let span = pair.as_span();
 
                 let is_trailing_string = rule != Rule::template
                     && span.start() != prev_end
