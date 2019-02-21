@@ -349,6 +349,8 @@ extern crate serde_json;
 #[cfg(not(feature = "no_dir_source"))]
 extern crate walkdir;
 
+extern crate hashbrown;
+
 pub use self::context::Context;
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
