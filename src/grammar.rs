@@ -15,7 +15,7 @@ macro_rules! assert_rule {
                 .unwrap()
                 .last()
                 .unwrap()
-                .into_span()
+                .as_span()
                 .end(),
             $in.len()
         );
@@ -31,7 +31,7 @@ macro_rules! assert_not_rule {
                     .unwrap()
                     .last()
                     .unwrap()
-                    .into_span()
+                    .as_span()
                     .end()
                     != $in.len()
         );
