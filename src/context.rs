@@ -1,14 +1,14 @@
+use std::collections::VecDeque;
+
+use hashbrown::HashMap;
+use pest::iterators::Pair;
+use pest::Parser;
 use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
 
-use std::collections::{BTreeMap, VecDeque};
-
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
-use pest::iterators::Pair;
-use pest::Parser;
-
-pub type Object = BTreeMap<String, Json>;
+pub type Object = HashMap<String, Json>;
 
 /// The context wrap data you render on your templates.
 ///
@@ -165,6 +165,7 @@ mod test {
     use crate::context::{self, Context};
     use crate::value::{self, JsonRender};
     use serde_json::value::Map;
+    use hashbrown::HashMap;
     use std::collections::VecDeque;
 
     #[derive(Serialize)]
@@ -289,9 +290,8 @@ mod test {
     fn test_merge_json() {
         let map = json!({ "age": 4 });
         let s = "hello".to_owned();
-        let hash = btreemap! {
-            "tag".to_owned() => value::to_json("h1")
-        };
+        let mut hash = HashMap::new();
+        hash.insert("tag".to_owned(), value::to_json("h1"));
 
         let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
         assert_eq!(

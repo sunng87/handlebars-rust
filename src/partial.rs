@@ -1,5 +1,6 @@
-use std::collections::BTreeMap;
 use std::iter::FromIterator;
+
+use hashbrown::HashMap;
 
 use crate::context::{merge_json, Context};
 use crate::error::RenderError;
@@ -36,7 +37,7 @@ fn render_partial<'reg: 'rc, 'rc>(
         t.render(r, ctx, local_rc, out)
     } else {
         let hash_ctx =
-            BTreeMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
+            HashMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
         let partial_context = merge_json(
             local_rc
                 .evaluate(ctx, ".")?

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use hashbrown::HashMap;
 
 use crate::context::Context;
 use crate::error::RenderError;
@@ -43,7 +43,7 @@ impl HelperDef for WithHelper {
                 }
 
                 if let Some(block_param) = h.block_param() {
-                    let mut map = BTreeMap::new();
+                    let mut map = HashMap::new();
                     map.insert(block_param.to_string(), to_json(param.value()));
                     local_rc.push_block_context(&map)?;
                 }

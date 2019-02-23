@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
 use serde::Serialize;
+use hashbrown::HashMap;
 
 use regex::{Captures, Regex};
 

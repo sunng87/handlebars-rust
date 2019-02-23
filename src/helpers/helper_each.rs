@@ -1,6 +1,5 @@
-use std::collections::BTreeMap;
-
 use serde_json::value::Value as Json;
+use hashbrown::HashMap;
 
 use crate::context::Context;
 use crate::error::RenderError;
@@ -57,7 +56,7 @@ impl HelperDef for EachHelper {
                             }
 
                             if let Some(block_param) = h.block_param() {
-                                let mut map = BTreeMap::new();
+                                let mut map = HashMap::new();
                                 map.insert(block_param.to_string(), to_json(&list[i]));
                                 local_rc.push_block_context(&map)?;
                             }
@@ -96,7 +95,7 @@ impl HelperDef for EachHelper {
                             }
 
                             if let Some((bp_key, bp_val)) = h.block_param_pair() {
-                                let mut map = BTreeMap::new();
+                                let mut map = HashMap::new();
                                 map.insert(bp_key.to_string(), to_json(k));
                                 map.insert(bp_val.to_string(), to_json(v));
                                 local_rc.push_block_context(&map)?;

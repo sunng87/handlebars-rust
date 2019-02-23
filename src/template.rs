@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::VecDeque;
 use std::convert::From;
 use std::iter::Peekable;
 
@@ -8,6 +8,7 @@ use pest::iterators::Pair;
 use pest::{Parser, Position};
 
 use serde_json::value::Value as Json;
+use hashbrown::HashMap;
 use std::str::FromStr;
 
 use crate::error::{TemplateError, TemplateErrorReason};
@@ -35,7 +36,7 @@ impl Subexpression {
     pub fn new(
         name: String,
         params: &[Parameter],
-        hash: &BTreeMap<String, Parameter>,
+        hash: &HashMap<String, Parameter>,
     ) -> Subexpression {
         if params.is_empty() && hash.is_empty() {
             Subexpression {
@@ -85,7 +86,7 @@ impl Subexpression {
         }
     }
 
-    pub fn hash(&self) -> Option<&BTreeMap<String, Parameter>> {
+    pub fn hash(&self) -> Option<&HashMap<String, Parameter>> {
         match *self.as_element() {
             HelperExpression(ref ht) => Some(&ht.hash),
             _ => None,
@@ -103,7 +104,7 @@ pub enum BlockParam {
 pub struct ExpressionSpec {
     pub name: Parameter,
     pub params: Vec<Parameter>,
-    pub hash: BTreeMap<String, Parameter>,
+    pub hash: HashMap<String, Parameter>,
     pub block_param: Option<BlockParam>,
     pub omit_pre_ws: bool,
     pub omit_pro_ws: bool,
@@ -120,7 +121,7 @@ pub enum Parameter {
 pub struct HelperTemplate {
     pub name: String,
     pub params: Vec<Parameter>,
-    pub hash: BTreeMap<String, Parameter>,
+    pub hash: HashMap<String, Parameter>,
     pub block_param: Option<BlockParam>,
     pub template: Option<Template>,
     pub inverse: Option<Template>,
@@ -131,7 +132,7 @@ pub struct HelperTemplate {
 pub struct DirectiveTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
-    pub hash: BTreeMap<String, Parameter>,
+    pub hash: HashMap<String, Parameter>,
     pub template: Option<Template>,
 }
 
@@ -316,7 +317,7 @@ impl Template {
         I: Iterator<Item = Pair<'a, Rule>>,
     {
         let mut params: Vec<Parameter> = Vec::new();
-        let mut hashes: BTreeMap<String, Parameter> = BTreeMap::new();
+        let mut hashes: HashMap<String, Parameter> = HashMap::new();
         let mut omit_pre_ws = false;
         let mut omit_pro_ws = false;
         let mut block_param = None;
