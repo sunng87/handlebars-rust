@@ -1,9 +1,10 @@
 use std::borrow::Borrow;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::fmt;
-use std::rc::Rc;
 use std::ops::Deref;
+use std::rc::Rc;
 
+use hashbrown::HashMap as SwissMap;
 use serde::Serialize;
 use serde_json::value::Value as Json;
 
@@ -35,9 +36,9 @@ pub struct RenderContext<'reg> {
 
 #[derive(Clone)]
 pub struct RenderContextInner<'reg> {
-    partials: HashMap<String, &'reg Template>,
-    local_helpers: HashMap<String, Rc<Box<HelperDef + 'static>>>,
-    local_variables: HashMap<String, Json>,
+    partials: SwissMap<String, &'reg Template>,
+    local_helpers: SwissMap<String, Rc<Box<HelperDef + 'static>>>,
+    local_variables: SwissMap<String, Json>,
     /// current template name
     current_template: Option<&'reg String>,
     /// root template name
@@ -66,9 +67,9 @@ impl<'reg> RenderContext<'reg> {
     /// Create a render context from a `Write`
     pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg> {
         let inner = Rc::new(RenderContextInner {
-            partials: HashMap::new(),
-            local_variables: HashMap::new(),
-            local_helpers: HashMap::new(),
+            partials: SwissMap::new(),
+            local_variables: SwissMap::new(),
+            local_helpers: SwissMap::new(),
             current_template: None,
             root_template,
             disable_escape: false,
@@ -156,7 +157,7 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn promote_local_vars(&mut self) {
-        let mut new_map: HashMap<String, Json> = HashMap::new();
+        let mut new_map: SwissMap<String, Json> = SwissMap::new();
         for (key, v) in &self.inner().local_variables {
             new_map.insert(format!("@../{}", &key[1..]), v.clone());
         }
@@ -164,7 +165,7 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn demote_local_vars(&mut self) {
-        let mut new_map: HashMap<String, Json> = HashMap::new();
+        let mut new_map: SwissMap<String, Json> = SwissMap::new();
         for (key, v) in &self.inner().local_variables {
             if key.starts_with("@../") {
                 new_map.insert(format!("@{}", &key[4..]), v.clone());
@@ -293,7 +294,7 @@ impl<'reg> fmt::Debug for RenderContextInner<'reg> {
 pub struct Helper<'reg: 'rc, 'rc> {
     name: &'reg String,
     params: Vec<PathAndJson<'reg, 'rc>>,
-    hash: BTreeMap<String, PathAndJson<'reg, 'rc>>,
+    hash: SwissMap<String, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
     inverse: Option<&'reg Template>,
     block_param: Option<&'reg BlockParam>,
@@ -313,7 +314,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
             pv.push(r);
         }
 
-        let mut hm = BTreeMap::new();
+        let mut hm = SwissMap::new();
         for (k, p) in &ht.hash {
             let r = p.expand(registry, context, render_context)?;
             hm.insert(k.clone(), r);
@@ -363,7 +364,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &BTreeMap<String, PathAndJson<'reg, 'rc>> {
+    pub fn hash(&self) -> &SwissMap<String, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
@@ -433,7 +434,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
 pub struct Directive<'reg: 'rc, 'rc> {
     name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
-    hash: BTreeMap<String, PathAndJson<'reg, 'rc>>,
+    hash: SwissMap<String, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
 }
 
@@ -452,7 +453,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
             pv.push(r);
         }
 
-        let mut hm = BTreeMap::new();
+        let mut hm = SwissMap::new();
         for (k, p) in &dt.hash {
             let r = p.expand(registry, context, render_context)?;
             hm.insert(k.clone(), r);
@@ -482,7 +483,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &BTreeMap<String, PathAndJson<'reg, 'rc>> {
+    pub fn hash(&self) -> &SwissMap<String, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
@@ -643,9 +644,7 @@ impl Parameter {
                             .ok_or_else(|| {
                                 RenderError::new(format!("Helper not defined: {:?}", ht.name))
                             })
-                            .and_then(move |d| {
-                                call_helper_for_value(d, &h, registry, ctx, rc)
-                            })
+                            .and_then(move |d| call_helper_for_value(d, &h, registry, ctx, rc))
                     }
                 }
                 _ => unreachable!(),
@@ -813,6 +812,9 @@ impl Evaluable for TemplateElement {
         }
     }
 }
+
+#[cfg(test)]
+use std::collections::HashMap;
 
 #[test]
 fn test_raw_string() {
