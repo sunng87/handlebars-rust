@@ -164,8 +164,8 @@ impl Context {
 mod test {
     use crate::context::{self, Context};
     use crate::value::{self, JsonRender};
-    use serde_json::value::Map;
     use hashbrown::HashMap;
+    use serde_json::value::Map;
     use std::collections::VecDeque;
 
     #[derive(Serialize)]

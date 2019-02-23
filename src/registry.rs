@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
-use serde::Serialize;
 use hashbrown::HashMap;
+use serde::Serialize;
 
 use regex::{Captures, Regex};
 

@@ -79,7 +79,7 @@ impl RenderError {
     pub fn strict_error(path: Option<&String>) -> RenderError {
         let msg = match path {
             Some(path) => format!("Variable {:?} not found in strict mode.", path),
-            None => "Value is missing in strict mode".to_owned()
+            None => "Value is missing in strict mode".to_owned(),
         };
         RenderError::new(&msg)
     }

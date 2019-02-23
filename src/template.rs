@@ -7,8 +7,8 @@ use pest::error::LineColLocation;
 use pest::iterators::Pair;
 use pest::{Parser, Position};
 
-use serde_json::value::Value as Json;
 use hashbrown::HashMap;
+use serde_json::value::Value as Json;
 use std::str::FromStr;
 
 use crate::error::{TemplateError, TemplateErrorReason};
