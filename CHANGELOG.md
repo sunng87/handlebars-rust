@@ -1,5 +1,14 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.1.0...Unreleased) - {{ ReleaseDate}}
+
+* [Changed] Everything changed in yanked 1.2.0
+* [Changed] With Pest updated to 2.1, our minimal rust version is set
+  to 1.31
+* [Changed] Using hashbrown `HashMap` internally and externally,
+  performance improvement up to 10%
+* [Changed] strict mode also apply to return value of helper expression
+
 ## [1.2.0](https://github.com/sunng87/handlebars-rust/compare/1.1.0...1.2.0) - 2018-12-15
 
 *This release is yanked.*
