@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/1.1.0...Unreleased) - {{ ReleaseDate}}
+## [2.0.0-beta.1](https://github.com/sunng87/handlebars-rust/compare/1.1.0...2.0.0-beta.1) - {{ 2019-03-16}}
 
 * [Changed] Everything changed in yanked 1.2.0
 * [Changed] With Pest updated to 2.1, our minimal rust version is set
