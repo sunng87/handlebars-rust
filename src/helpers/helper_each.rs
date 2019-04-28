@@ -94,7 +94,7 @@ impl HelperDef for EachHelper {
                                 local_rc.set_path(new_path);
                             }
 
-                            if let Some((bp_key, bp_val)) = h.block_param_pair() {
+                            if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                 let mut map = HashMap::new();
                                 map.insert(bp_key.to_string(), to_json(k));
                                 map.insert(bp_val.to_string(), to_json(v));
@@ -305,7 +305,7 @@ mod test {
     #[test]
     fn test_each_object_block_param() {
         let mut handlebars = Registry::new();
-        let template = "{{#each this as |k v|}}\
+        let template = "{{#each this as |v k|}}\
                         {{#with k as |inner_k|}}{{inner_k}}{{/with}}:{{v}}|\
                         {{/each}}";
         assert!(handlebars.register_template_string("t0", template).is_ok());

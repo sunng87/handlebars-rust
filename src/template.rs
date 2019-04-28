@@ -1043,14 +1043,14 @@ fn test_block_param() {
         Err(e) => panic!("{}", e),
     }
 
-    match Template::compile("{{#each people as |key val|}}{{person}}{{/each}}") {
+    match Template::compile("{{#each people as |val key|}}{{person}}{{/each}}") {
         Ok(t) => {
             if let HelperBlock(ref ht) = t.elements[0] {
                 if let Some(BlockParam::Pair((Parameter::Name(ref n1), Parameter::Name(ref n2)))) =
                     ht.block_param
                 {
-                    assert_eq!(n1, "key");
-                    assert_eq!(n2, "val");
+                    assert_eq!(n1, "val");
+                    assert_eq!(n2, "key");
                 } else {
                     panic!("helper block param expected.");
                 }
