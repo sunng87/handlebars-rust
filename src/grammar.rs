@@ -215,7 +215,7 @@ fn test_helper_start() {
         "{{#if}}",
         "{{~#if hello~}}",
         "{{#each people as |person|}}",
-        "{{#each-obj obj as |key val|}}",
+        "{{#each-obj obj as |val key|}}",
         "{{#each assets}}",
     ];
     for i in s.iter() {
@@ -263,7 +263,7 @@ fn test_raw_block() {
 
 #[test]
 fn test_block_param() {
-    let s = vec!["as |person|", "as |key val|"];
+    let s = vec!["as |person|", "as |val key|"];
     for i in s.iter() {
         assert_rule!(Rule::block_param, i);
     }
