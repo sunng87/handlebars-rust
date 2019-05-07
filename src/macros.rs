@@ -70,6 +70,7 @@ macro_rules! handlebars_helper {
     (@as_json_value $x:ident, f64) => { $x.as_f64() };
     (@as_json_value $x:ident, bool) => { $x.as_bool() };
     (@as_json_value $x:ident, null) => { $x.as_null() };
+    (@as_json_value $x:ident, Json) => { Some($x) };
 }
 
 /// This macro is defined if the `logging` feature is set.
