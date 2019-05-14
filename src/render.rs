@@ -21,6 +21,13 @@ use crate::template::{
 };
 use crate::value::{JsonRender, PathAndJson, ScopedJson};
 
+enum BlockContext {
+    // a reference to certain context value
+    Ref(String),
+    // an actual value holder
+    Value(Json),
+}
+
 /// The context of a render call
 ///
 /// this context stores information of a render and a writer where generated
