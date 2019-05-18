@@ -21,7 +21,8 @@ use crate::template::{
 };
 use crate::value::{JsonRender, PathAndJson, ScopedJson};
 
-enum BlockContext {
+#[derive(Clone, Debug)]
+pub enum BlockContextHolder {
     // a reference to certain context value
     Ref(String),
     // an actual value holder
@@ -57,7 +58,8 @@ pub struct RenderContextInner<'reg> {
 pub struct BlockRenderContext {
     path: String,
     local_path_root: VecDeque<String>,
-    block_context: VecDeque<Context>,
+    // current block context variables
+    block_context: VecDeque<HashMap<String, BlockContextHolder>>,
 }
 
 impl Default for BlockRenderContext {
@@ -139,6 +141,7 @@ impl<'reg> RenderContext<'reg> {
         context.navigate(self.get_path(), self.get_local_path_root(), path)
     }
 
+    // TODO: add support for block context
     pub fn evaluate_absolute<'ctx>(
         &self,
         context: &'ctx Context,
@@ -254,13 +257,14 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().local_path_root.pop_front();
     }
 
-    pub fn push_block_context<T>(&mut self, ctx: &T) -> Result<(), RenderError>
+    pub fn push_block_context<T>(
+        &mut self,
+        current_ctx: HashMap<String, BlockContextHolder>,
+    ) -> Result<(), RenderError>
     where
         T: Serialize,
     {
-        self.block_mut()
-            .block_context
-            .push_front(Context::wraps(ctx)?);
+        self.block_mut().block_context.push_front(current_ctx);
         Ok(())
     }
 
@@ -268,19 +272,16 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().block_context.pop_front();
     }
 
-    pub fn evaluate_in_block_context(
-        &self,
-        local_path: &str,
-    ) -> Result<Option<&Json>, RenderError> {
+    fn evaluate_in_block_context_for_value(&self, var: &str) -> Option<&BlockContextHolder> {
         let block = self.block();
         for bc in &block.block_context {
-            let v = bc.navigate(".", &block.local_path_root, local_path)?;
+            let v = bc.get(var);
             if v.is_some() {
-                return Ok(v);
+                return v;
             }
         }
 
-        Ok(None)
+        None
     }
 }
 
