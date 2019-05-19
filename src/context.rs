@@ -10,6 +10,52 @@ use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
 pub type Object = HashMap<String, Json>;
 
+static EMPTY_VEC_DEQUE: VecDeque<String> = VecDeque::new();
+
+#[derive(Clone, Debug)]
+pub enum BlockParamHolder<'a> {
+    // a reference to certain context value
+    Path(Vec<String>),
+    // an actual value holder
+    Value(&'a Json),
+}
+
+impl<'a> BlockParamHolder<'a> {
+    pub fn value(v: &'a Json) -> BlockParamHolder {
+        BlockParamHolder::Value(v)
+    }
+
+    pub fn path(r: &str) -> Result<BlockParamHolder, RenderError> {
+        let mut path_stack: VecDeque<&str> = VecDeque::new();
+        parse_json_visitor(&mut path_stack, ".", &EMPTY_VEC_DEQUE, r)?;
+
+        Ok(BlockParamHolder::Path(
+            path_stack.iter().cloned().map(|v| v.to_owned()).collect(),
+        ))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct BlockParams<'a> {
+    data: HashMap<String, BlockParamHolder<'a>>,
+}
+
+impl<'a> BlockParams<'a> {
+    pub fn new() -> BlockParams<'a> {
+        BlockParams {
+            data: HashMap::new(),
+        }
+    }
+
+    pub fn add(&mut self, k: String, v: BlockParamHolder) {
+        self.data.insert(k, v);
+    }
+
+    pub fn get(&self, k: &str) -> Option<&BlockParamHolder> {
+        self.data.get(k)
+    }
+}
+
 /// The context wrap data you render on your templates.
 ///
 #[derive(Debug, Clone)]
@@ -92,6 +138,33 @@ fn parse_json_visitor<'a>(
     Ok(())
 }
 
+fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, RenderError> {
+    let result = match d {
+        Some(&Json::Array(ref l)) => p
+            .parse::<usize>()
+            .map_err(RenderError::with)
+            .map(|idx_u| l.get(idx_u))?,
+        Some(&Json::Object(ref m)) => m.get(p),
+        Some(_) => None,
+        None => None,
+    };
+    Ok(result)
+}
+
+fn get_in_block_params<'ctx, 'a>(
+    block_contexts: &'a VecDeque<BlockParams>,
+    p: &str,
+) -> Option<&'a BlockParamHolder<'ctx>> {
+    for bc in block_contexts {
+        let v = bc.get(p);
+        if v.is_some() {
+            return v;
+        }
+    }
+
+    None
+}
+
 pub fn merge_json(base: &Json, addition: &Object) -> Json {
     let mut base_map = match *base {
         Json::Object(ref m) => m.clone(),
@@ -129,23 +202,38 @@ impl Context {
         path_context: &VecDeque<String>,
         relative_path: &str,
     ) -> Result<Option<&Json>, RenderError> {
+        self.navigate2(base_path, path_context, relative_path, &VecDeque::new())
+    }
+
+    pub fn navigate2(
+        &self,
+        base_path: &str,
+        path_context: &VecDeque<String>,
+        relative_path: &str,
+        block_params: &VecDeque<BlockParams>,
+    ) -> Result<Option<&Json>, RenderError> {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
 
         let paths: Vec<&str> = path_stack.iter().cloned().collect();
         let mut data: Option<&Json> = Some(&self.data);
-        for p in &paths {
-            if *p == "this" {
+        for p in paths {
+            if p == "this" {
                 continue;
             }
-            data = match data {
-                Some(&Json::Array(ref l)) => p
-                    .parse::<usize>()
-                    .map_err(RenderError::with)
-                    .map(|idx_u| l.get(idx_u))?,
-                Some(&Json::Object(ref m)) => m.get(*p),
-                Some(_) => None,
-                None => break,
+
+            // TODO:
+            if let Some(blk_param) = get_in_block_params(block_params, p) {
+                match blk_param {
+                    BlockParamHolder::Path(paths) => {
+                        for p in paths {
+                            data = get_data(data, p)?
+                        }
+                    }
+                    BlockParamHolder::Value(ref v) => data = Some(v),
+                }
+            } else {
+                data = get_data(data, p)?;
             }
         }
         Ok(data)
