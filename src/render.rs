@@ -76,7 +76,7 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
             disable_escape: false,
         });
 
-        let block = Rc::new(BlockRenderContext::default());
+        let block = Rc::new(BlockRenderContext::new());
         let modified_context = None;
         RenderContext {
             inner,
@@ -91,7 +91,7 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
 
     pub fn new_for_block(&self) -> RenderContext<'reg, 'rc> {
         let inner = self.inner.clone();
-        let block = Rc::new(BlockRenderContext::default());
+        let block = Rc::new(BlockRenderContext::new());
         let modified_context = self.modified_context.clone();
 
         RenderContext {
@@ -113,7 +113,7 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
         self.block.borrow()
     }
 
-    fn block_mut(&mut self) -> &mut BlockRenderContext {
+    fn block_mut(&mut self) -> &mut BlockRenderContext<'rc> {
         Rc::make_mut(&mut self.block)
     }
 
@@ -126,7 +126,7 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
     }
 
     pub fn evaluate(
-        &self,
+        &'rc self,
         context: &'rc Context,
         path: &str,
     ) -> Result<Option<&'rc Json>, RenderError> {
@@ -254,7 +254,10 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
         self.block_mut().local_path_root.pop_front();
     }
 
-    pub fn push_block_context<T>(&mut self, current_context: BlockParams) -> Result<(), RenderError>
+    pub fn push_block_context<T>(
+        &mut self,
+        current_context: BlockParams<'rc>,
+    ) -> Result<(), RenderError>
     where
         T: Serialize,
     {
@@ -524,10 +527,10 @@ pub trait Evaluable {
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
     hd: &HelperDef,
-    ht: &Helper<'reg, 'rc>,
+    ht: &'rc Helper<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg, 'rc>,
+    rc: &'rc mut RenderContext<'reg, 'rc>,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
     if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
         Ok(PathAndJson::new(None, result))
@@ -648,7 +651,7 @@ impl Renderable for Template {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &'rc mut RenderContext<'reg, 'rc>,
         out: &mut Output,
     ) -> Result<(), RenderError> {
         rc.set_current_template_name(self.name.as_ref());
@@ -683,7 +686,7 @@ impl Evaluable for Template {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &'rc mut RenderContext<'reg, 'rc>,
     ) -> Result<(), RenderError> {
         let iter = self.elements.iter();
         let mut idx = 0;
@@ -712,7 +715,7 @@ impl Renderable for TemplateElement {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &'rc mut RenderContext<'reg, 'rc>,
         out: &mut Output,
     ) -> Result<(), RenderError> {
         match *self {

@@ -15,7 +15,7 @@ fn render_partial<'reg: 'rc, 'rc>(
     d: &Directive<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    local_rc: &mut RenderContext<'reg>,
+    local_rc: &'rc mut RenderContext<'reg, 'rc>,
     out: &mut Output,
 ) -> Result<(), RenderError> {
     let param_context = d.param(0).map(|v| v.value()).unwrap_or_else(|| {
@@ -50,7 +50,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Directive<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg>,
+    rc: &'rc mut RenderContext<'reg, 'rc>,
     out: &mut Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first

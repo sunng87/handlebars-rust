@@ -18,7 +18,7 @@ impl HelperDef for EachHelper {
         h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
         out: &mut Output,
     ) -> HelperResult {
         let value = h
