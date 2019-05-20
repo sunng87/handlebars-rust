@@ -17,11 +17,11 @@ pub enum BlockParamHolder<'rc> {
     // a reference to certain context value
     Path(Vec<String>),
     // an actual value holder
-    Value(&'rc Json),
+    Value(Json),
 }
 
 impl<'rc> BlockParamHolder<'rc> {
-    pub fn value(v: &'rc Json) -> BlockParamHolder {
+    pub fn value(v: Json) -> BlockParamHolder<'rc> {
         BlockParamHolder::Value(v)
     }
 
@@ -47,8 +47,14 @@ impl<'rc> BlockParams<'rc> {
         }
     }
 
-    pub fn add(&mut self, k: String, v: BlockParamHolder<'rc>) {
-        self.data.insert(k, v);
+    pub fn add_path(&mut self, k: &str, v: &str) -> Result<(), RenderError> {
+        self.data.insert(k.to_owned(), BlockParamHolder::path(v)?);
+        Ok(())
+    }
+
+    pub fn add_value(&mut self, k: &str, v: &'rc Json) -> Result<(), RenderError> {
+        self.data.insert(k.to_owned(), BlockParamHolder::value(v));
+        Ok(())
     }
 
     pub fn get(&self, k: &str) -> Option<&BlockParamHolder> {

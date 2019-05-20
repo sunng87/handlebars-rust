@@ -256,7 +256,7 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
 
     pub fn push_block_context<T>(
         &mut self,
-        current_context: BlockParams<'rc>,
+        current_context: &BlockParams<'rc>,
     ) -> Result<(), RenderError>
     where
         T: Serialize,

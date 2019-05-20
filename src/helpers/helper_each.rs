@@ -1,7 +1,7 @@
 use hashbrown::HashMap;
 use serde_json::value::Value as Json;
 
-use crate::context::Context;
+use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 use crate::output::Output;
@@ -56,9 +56,10 @@ impl HelperDef for EachHelper {
                             }
 
                             if let Some(block_param) = h.block_param() {
-                                let mut map = HashMap::new();
-                                map.insert(block_param.to_string(), to_json(&list[i]));
-                                local_rc.push_block_context(&map)?;
+                                let mut params = BlockParams::new();
+                                params.add_path(block_param, &format!("[{}]", i))?;
+
+                                local_rc.push_block_context(&params)?;
                             }
 
                             t.render(r, ctx, &mut local_rc, out)?;
@@ -95,10 +96,11 @@ impl HelperDef for EachHelper {
                             }
 
                             if let Some((bp_val, bp_key)) = h.block_param_pair() {
-                                let mut map = HashMap::new();
-                                map.insert(bp_key.to_string(), to_json(k));
-                                map.insert(bp_val.to_string(), to_json(v));
-                                local_rc.push_block_context(&map)?;
+                                let mut params = BlockParams::new();
+                                params.add_path(bp_val, &format!("{}", k))?;
+                                params.add_value(bp_key, to_json(&k));
+
+                                local_rc.push_block_context(&params)?;
                             }
 
                             t.render(r, ctx, &mut local_rc, out)?;
