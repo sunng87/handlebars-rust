@@ -1,12 +1,10 @@
-use hashbrown::HashMap;
-
-use crate::context::Context;
+use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
-use crate::value::{to_json, JsonTruthy};
+use crate::value::JsonTruthy;
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
@@ -43,9 +41,11 @@ impl HelperDef for WithHelper {
                 }
 
                 if let Some(block_param) = h.block_param() {
-                    let mut map = HashMap::new();
-                    map.insert(block_param.to_string(), to_json(param.value()));
-                    local_rc.push_block_context(&map)?;
+                    let mut params = BlockParams::new();
+                    // TODO: verify this
+                    params.add_path(block_param, "this")?;
+
+                    local_rc.push_block_context(params);
                 }
             }
 

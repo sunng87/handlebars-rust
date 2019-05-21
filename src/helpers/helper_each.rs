@@ -1,4 +1,3 @@
-use hashbrown::HashMap;
 use serde_json::value::Value as Json;
 
 use crate::context::{BlockParams, Context};
@@ -18,7 +17,7 @@ impl HelperDef for EachHelper {
         h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> HelperResult {
         let value = h
@@ -57,9 +56,10 @@ impl HelperDef for EachHelper {
 
                             if let Some(block_param) = h.block_param() {
                                 let mut params = BlockParams::new();
+                                // TODO: this or "[i]"
                                 params.add_path(block_param, &format!("[{}]", i))?;
 
-                                local_rc.push_block_context(&params)?;
+                                local_rc.push_block_context(params);
                             }
 
                             t.render(r, ctx, &mut local_rc, out)?;
@@ -100,7 +100,7 @@ impl HelperDef for EachHelper {
                                 params.add_path(bp_val, &format!("{}", k))?;
                                 params.add_value(bp_key, to_json(&k));
 
-                                local_rc.push_block_context(&params)?;
+                                local_rc.push_block_context(params)?;
                             }
 
                             t.render(r, ctx, &mut local_rc, out)?;

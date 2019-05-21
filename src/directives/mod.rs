@@ -62,7 +62,7 @@ pub trait DirectiveDef: Send + Sync {
         d: &Directive<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg>,
     ) -> DirectiveResult;
 }
 

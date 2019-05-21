@@ -13,15 +13,15 @@ pub type Object = HashMap<String, Json>;
 static EMPTY_VEC_DEQUE: VecDeque<String> = VecDeque::new();
 
 #[derive(Clone, Debug)]
-pub enum BlockParamHolder<'rc> {
+pub enum BlockParamHolder {
     // a reference to certain context value
     Path(Vec<String>),
     // an actual value holder
     Value(Json),
 }
 
-impl<'rc> BlockParamHolder<'rc> {
-    pub fn value(v: Json) -> BlockParamHolder<'rc> {
+impl BlockParamHolder {
+    pub fn value(v: Json) -> BlockParamHolder {
         BlockParamHolder::Value(v)
     }
 
@@ -36,12 +36,12 @@ impl<'rc> BlockParamHolder<'rc> {
 }
 
 #[derive(Clone, Debug)]
-pub struct BlockParams<'rc> {
-    data: HashMap<String, BlockParamHolder<'rc>>,
+pub struct BlockParams {
+    data: HashMap<String, BlockParamHolder>,
 }
 
-impl<'rc> BlockParams<'rc> {
-    pub fn new() -> BlockParams<'rc> {
+impl BlockParams {
+    pub fn new() -> BlockParams {
         BlockParams {
             data: HashMap::new(),
         }
@@ -52,7 +52,7 @@ impl<'rc> BlockParams<'rc> {
         Ok(())
     }
 
-    pub fn add_value(&mut self, k: &str, v: &'rc Json) -> Result<(), RenderError> {
+    pub fn add_value(&mut self, k: &str, v: Json) -> Result<(), RenderError> {
         self.data.insert(k.to_owned(), BlockParamHolder::value(v));
         Ok(())
     }
@@ -158,9 +158,9 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
 }
 
 fn get_in_block_params<'rc>(
-    block_contexts: &'rc VecDeque<BlockParams<'rc>>,
+    block_contexts: &'rc VecDeque<BlockParams>,
     p: &str,
-) -> Option<&'rc BlockParamHolder<'rc>> {
+) -> Option<&'rc BlockParamHolder> {
     for bc in block_contexts {
         let v = bc.get(p);
         if v.is_some() {
@@ -172,7 +172,7 @@ fn get_in_block_params<'rc>(
 }
 
 pub fn merge_json(base: &Json, addition: &Object) -> Json {
-    let mut base_map = match *base {
+    let mut base_map = match base {
         Json::Object(ref m) => m.clone(),
         _ => Map::new(),
     };
@@ -211,12 +211,12 @@ impl Context {
         self.navigate2(base_path, path_context, relative_path, &VecDeque::new())
     }
 
-    pub fn navigate2<'rc>(
-        &'rc self,
+    pub fn navigate2<'ctx: 'rc, 'rc>(
+        &'ctx self,
         base_path: &str,
         path_context: &VecDeque<String>,
         relative_path: &str,
-        block_params: &'rc VecDeque<BlockParams<'rc>>,
+        block_params: &'rc VecDeque<BlockParams>,
     ) -> Result<Option<&'rc Json>, RenderError> {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
