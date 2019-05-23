@@ -139,11 +139,11 @@ impl<'reg> RenderContext<'reg> {
 
     // TODO: add support for block context
     pub fn evaluate_absolute<'rc>(
-        &self,
+        &'rc self,
         context: &'rc Context,
         path: &str,
     ) -> Result<Option<&'rc Json>, RenderError> {
-        context.navigate(".", &VecDeque::new(), path)
+        context.navigate2(".", &VecDeque::new(), path, &self.block.block_context)
     }
 
     pub fn get_partial(&self, name: &str) -> Option<&&Template> {
@@ -292,7 +292,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         ht: &'reg HelperTemplate,
         registry: &'reg Registry,
         context: &'rc Context,
-        render_context: &mut RenderContext<'reg>,
+        render_context: &'rc mut RenderContext<'reg>,
     ) -> Result<Helper<'reg, 'rc>, RenderError> {
         let mut pv = Vec::with_capacity(ht.params.len());
         for p in &ht.params {
@@ -429,7 +429,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
         dt: &'reg DirectiveTemplate,
         registry: &'reg Registry,
         context: &'rc Context,
-        render_context: &mut RenderContext<'reg>,
+        render_context: &'rc mut RenderContext<'reg>,
     ) -> Result<Directive<'reg, 'rc>, RenderError> {
         let name = dt.name.expand_as_name(registry, context, render_context)?;
 
@@ -523,7 +523,7 @@ fn call_helper_for_value<'reg: 'rc, 'rc>(
     ht: &'rc Helper<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg>,
+    rc: &'rc mut RenderContext<'reg>,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
     if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
         Ok(PathAndJson::new(None, result))
@@ -552,7 +552,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &'rc mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
         match *self {
             Parameter::Name(ref name) => Ok(name.to_owned()),
