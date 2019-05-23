@@ -76,7 +76,7 @@ impl HelperDef for EachHelper {
                     }
                     (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
-                        for (k, v) in obj.iter() {
+                        for (k, _) in obj.iter() {
                             let mut local_rc = rc.derive();
 
                             if let Some(ref p) = local_path_root {
