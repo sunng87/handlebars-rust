@@ -125,7 +125,7 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn evaluate<'rc>(
-        &'rc self,
+        &self,
         context: &'rc Context,
         path: &str,
     ) -> Result<Option<&'rc Json>, RenderError> {
@@ -139,7 +139,7 @@ impl<'reg> RenderContext<'reg> {
 
     // TODO: add support for block context
     pub fn evaluate_absolute<'rc>(
-        &'rc self,
+        &self,
         context: &'rc Context,
         path: &str,
     ) -> Result<Option<&'rc Json>, RenderError> {
@@ -292,7 +292,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         ht: &'reg HelperTemplate,
         registry: &'reg Registry,
         context: &'rc Context,
-        render_context: &'rc mut RenderContext<'reg>,
+        render_context: &mut RenderContext<'reg>,
     ) -> Result<Helper<'reg, 'rc>, RenderError> {
         let mut pv = Vec::with_capacity(ht.params.len());
         for p in &ht.params {
@@ -429,7 +429,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
         dt: &'reg DirectiveTemplate,
         registry: &'reg Registry,
         context: &'rc Context,
-        render_context: &'rc mut RenderContext<'reg>,
+        render_context: &mut RenderContext<'reg>,
     ) -> Result<Directive<'reg, 'rc>, RenderError> {
         let name = dt.name.expand_as_name(registry, context, render_context)?;
 
@@ -491,7 +491,7 @@ pub trait Renderable {
         &'reg self,
         registry: &'reg Registry,
         context: &'rc Context,
-        rc: &'rc mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> Result<(), RenderError>;
 
@@ -500,7 +500,7 @@ pub trait Renderable {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
         self.render(registry, ctx, rc, &mut so)?;
@@ -520,10 +520,10 @@ pub trait Evaluable {
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
     hd: &HelperDef,
-    ht: &'rc Helper<'reg, 'rc>,
+    ht: &Helper<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &'rc mut RenderContext<'reg>,
+    rc: &mut RenderContext<'reg>,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
     if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
         Ok(PathAndJson::new(None, result))
@@ -552,7 +552,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
         match *self {
             Parameter::Name(ref name) => Ok(name.to_owned()),
@@ -567,7 +567,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg>,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match *self {
             Parameter::Name(ref name) => {
@@ -635,7 +635,7 @@ impl Renderable for Template {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> Result<(), RenderError> {
         rc.set_current_template_name(self.name.as_ref());

@@ -8,9 +8,12 @@ use serde_json::value::{to_value, Map, Value as Json};
 
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
+
 pub type Object = HashMap<String, Json>;
 
-static EMPTY_VEC_DEQUE: VecDeque<String> = VecDeque::new();
+lazy_static! {
+    static ref EMPTY_VEC_DEQUE: VecDeque<String> = VecDeque::new();
+}
 
 #[derive(Clone, Debug)]
 pub enum BlockParamHolder {
@@ -157,14 +160,14 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
     Ok(result)
 }
 
-fn get_in_block_params<'rc>(
-    block_contexts: &'rc VecDeque<BlockParams>,
+fn get_in_block_param_refs<'a>(
+    block_contexts: &'a VecDeque<BlockParams>,
     p: &str,
-) -> Option<&'rc BlockParamHolder> {
+) -> Option<&'a Vec<String>> {
     for bc in block_contexts {
         let v = bc.get(p);
-        if v.is_some() {
-            return v;
+        if let Some(BlockParamHolder::Path(ref paths)) = v {
+            return Some(paths);
         }
     }
 
@@ -211,13 +214,13 @@ impl Context {
         self.navigate2(base_path, path_context, relative_path, &VecDeque::new())
     }
 
-    pub fn navigate2<'ctx: 'rc, 'rc>(
-        &'ctx self,
+    pub fn navigate2(
+        &self,
         base_path: &str,
         path_context: &VecDeque<String>,
         relative_path: &str,
-        block_params: &'rc VecDeque<BlockParams>,
-    ) -> Result<Option<&'rc Json>, RenderError> {
+        block_params: &VecDeque<BlockParams>,
+    ) -> Result<Option<&Json>, RenderError> {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
         parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
 
@@ -228,15 +231,9 @@ impl Context {
                 continue;
             }
 
-            // TODO:
-            if let Some(blk_param) = get_in_block_params(block_params, p) {
-                match blk_param {
-                    BlockParamHolder::Path(paths) => {
-                        for p in paths {
-                            data = get_data(data, p)?
-                        }
-                    }
-                    BlockParamHolder::Value(ref v) => data = Some(v),
+            if let Some(paths) = get_in_block_param_refs(block_params, p) {
+                for p in paths {
+                    data = get_data(data, p)?
                 }
             } else {
                 data = get_data(data, p)?;

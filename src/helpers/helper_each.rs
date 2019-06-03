@@ -59,7 +59,7 @@ impl HelperDef for EachHelper {
                                 // TODO: this or "[i]"
                                 params.add_path(block_param, &format!("[{}]", i))?;
 
-                                local_rc.push_block_context(params);
+                                local_rc.push_block_context(params)?;
                             }
 
                             t.render(r, ctx, &mut local_rc, out)?;
@@ -98,7 +98,7 @@ impl HelperDef for EachHelper {
                             if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
                                 params.add_path(bp_val, &format!("{}", k))?;
-                                params.add_value(bp_key, to_json(&k));
+                                params.add_value(bp_key, to_json(&k))?;
 
                                 local_rc.push_block_context(params)?;
                             }

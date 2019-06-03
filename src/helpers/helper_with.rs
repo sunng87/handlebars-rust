@@ -45,7 +45,7 @@ impl HelperDef for WithHelper {
                     // TODO: verify this
                     params.add_path(block_param, "this")?;
 
-                    local_rc.push_block_context(params);
+                    local_rc.push_block_context(params)?;
                 }
             }
 
