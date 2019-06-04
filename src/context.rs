@@ -210,15 +210,6 @@ impl Context {
         base_path: &str,
         path_context: &VecDeque<String>,
         relative_path: &str,
-    ) -> Result<Option<&Json>, RenderError> {
-        self.navigate2(base_path, path_context, relative_path, &VecDeque::new())
-    }
-
-    pub fn navigate2(
-        &self,
-        base_path: &str,
-        path_context: &VecDeque<String>,
-        relative_path: &str,
         block_params: &VecDeque<BlockParams>,
     ) -> Result<Option<&Json>, RenderError> {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
@@ -253,7 +244,7 @@ impl Context {
 
 #[cfg(test)]
 mod test {
-    use crate::context::{self, Context};
+    use crate::context::{self, BlockParams, Context};
     use crate::value::{self, JsonRender};
     use hashbrown::HashMap;
     use serde_json::value::Map;
@@ -278,7 +269,7 @@ mod test {
         let v = "hello";
         let ctx = Context::wraps(&v.to_string()).unwrap();
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "this")
+            ctx.navigate(".", &VecDeque::new(), "this", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -302,14 +293,19 @@ mod test {
 
         let ctx = Context::wraps(&person).unwrap();
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "./name/../addr/country")
-                .unwrap()
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                ".",
+                &VecDeque::new(),
+                "./name/../addr/country",
+                &VecDeque::new()
+            )
+            .unwrap()
+            .unwrap()
+            .render(),
             "China".to_string()
         );
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "addr.[country]")
+            ctx.navigate(".", &VecDeque::new(), "addr.[country]", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -319,7 +315,7 @@ mod test {
         let v = true;
         let ctx2 = Context::wraps(&v).unwrap();
         assert_eq!(
-            ctx2.navigate(".", &VecDeque::new(), "this")
+            ctx2.navigate(".", &VecDeque::new(), "this", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -327,7 +323,7 @@ mod test {
         );
 
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "titles.[0]")
+            ctx.navigate(".", &VecDeque::new(), "titles.[0]", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -335,17 +331,27 @@ mod test {
         );
 
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "titles.[0]/../../age")
-                .unwrap()
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                ".",
+                &VecDeque::new(),
+                "titles.[0]/../../age",
+                &VecDeque::new()
+            )
+            .unwrap()
+            .unwrap()
+            .render(),
             "27".to_string()
         );
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "this.titles.[0]/../../age")
-                .unwrap()
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                ".",
+                &VecDeque::new(),
+                "this.titles.[0]/../../age",
+                &VecDeque::new()
+            )
+            .unwrap()
+            .unwrap()
+            .render(),
             "27".to_string()
         );
     }
@@ -362,14 +368,14 @@ mod test {
         let ctx2 = Context::wraps(&map_without_this).unwrap();
 
         assert_eq!(
-            ctx1.navigate(".", &VecDeque::new(), "this")
+            ctx1.navigate(".", &VecDeque::new(), "this", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
             "[object]".to_owned()
         );
         assert_eq!(
-            ctx2.navigate(".", &VecDeque::new(), "age")
+            ctx2.navigate(".", &VecDeque::new(), "age", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -387,7 +393,7 @@ mod test {
         let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
         assert_eq!(
             ctx_a1
-                .navigate(".", &VecDeque::new(), "age")
+                .navigate(".", &VecDeque::new(), "age", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -395,7 +401,7 @@ mod test {
         );
         assert_eq!(
             ctx_a1
-                .navigate(".", &VecDeque::new(), "tag")
+                .navigate(".", &VecDeque::new(), "tag", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -405,7 +411,7 @@ mod test {
         let ctx_a2 = Context::wraps(&context::merge_json(&value::to_json(s), &hash)).unwrap();
         assert_eq!(
             ctx_a2
-                .navigate(".", &VecDeque::new(), "this")
+                .navigate(".", &VecDeque::new(), "this", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -413,7 +419,7 @@ mod test {
         );
         assert_eq!(
             ctx_a2
-                .navigate(".", &VecDeque::new(), "tag")
+                .navigate(".", &VecDeque::new(), "tag", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -428,7 +434,7 @@ mod test {
         };
         let ctx = Context::wraps(&m).unwrap();
         assert_eq!(
-            ctx.navigate(".", &VecDeque::new(), "this_name")
+            ctx.navigate(".", &VecDeque::new(), "this_name", &VecDeque::new())
                 .unwrap()
                 .unwrap()
                 .render(),
@@ -470,7 +476,31 @@ mod test {
         });
         let ctx = Context::wraps(&m).unwrap();
         assert_eq!(
-            ctx.navigate("a/b", &VecDeque::new(), "@root/b")
+            ctx.navigate("a/b", &VecDeque::new(), "@root/b", &VecDeque::new())
+                .unwrap()
+                .unwrap()
+                .render(),
+            "2".to_string()
+        );
+    }
+
+    #[test]
+    fn test_block_params() {
+        let m = json!([{
+            "a": [1, 2]
+        }, {
+            "b": [2, 3]
+        }]);
+
+        let ctx = Context::wraps(&m).unwrap();
+        let mut block_param = BlockParams::new();
+        block_param.add_path("z", "[0].a").unwrap();
+
+        let mut block_params = VecDeque::new();
+        block_params.push_front(block_param);
+
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "z.[1]", &block_params)
                 .unwrap()
                 .unwrap()
                 .render(),

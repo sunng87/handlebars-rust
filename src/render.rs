@@ -129,7 +129,7 @@ impl<'reg> RenderContext<'reg> {
         context: &'rc Context,
         path: &str,
     ) -> Result<Option<&'rc Json>, RenderError> {
-        context.navigate2(
+        context.navigate(
             self.get_path(),
             self.get_local_path_root(),
             path,
@@ -143,7 +143,7 @@ impl<'reg> RenderContext<'reg> {
         context: &'rc Context,
         path: &str,
     ) -> Result<Option<&'rc Json>, RenderError> {
-        context.navigate2(".", &VecDeque::new(), path, &self.block.block_context)
+        context.navigate(".", &VecDeque::new(), path, &self.block.block_context)
     }
 
     pub fn get_partial(&self, name: &str) -> Option<&&Template> {
