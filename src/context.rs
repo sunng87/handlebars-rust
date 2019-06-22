@@ -30,7 +30,7 @@ impl BlockParamHolder {
 
     pub fn path(r: &str) -> Result<BlockParamHolder, RenderError> {
         let mut path_stack: VecDeque<&str> = VecDeque::new();
-        parse_json_visitor(&mut path_stack, ".", &EMPTY_VEC_DEQUE, r)?;
+        parse_json_visitor_inner(&mut path_stack, r)?;
 
         Ok(BlockParamHolder::Path(
             path_stack.iter().cloned().map(|v| v.to_owned()).collect(),
@@ -72,8 +72,7 @@ pub struct Context {
     data: Json,
 }
 
-#[inline]
-fn parse_json_visitor_inner<'a>(
+pub(crate) fn parse_json_visitor_inner<'a>(
     path_stack: &mut VecDeque<&'a str>,
     path: &'a str,
 ) -> Result<(), RenderError> {
@@ -118,14 +117,22 @@ fn parse_json_visitor<'a>(
     base_path: &'a str,
     path_context: &'a VecDeque<String>,
     relative_path: &'a str,
+    block_params: &VecDeque<BlockParams>,
 ) -> Result<(), RenderError> {
     let parser = HandlebarsParser::parse(Rule::path, relative_path)
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new(format!("Invalid JSON path: {}", relative_path)))?;
 
     let mut path_context_depth: i64 = -1;
+    let mut has_block_param = false;
 
+    // deal with block param and  "../../" in relative path
     for sg in parser {
+        if get_in_block_param_refs(block_params, sg.as_str()).is_some() {
+            has_block_param = true;
+            break;
+        }
+
         if sg.as_rule() == Rule::path_up {
             path_context_depth += 1;
         } else {
@@ -136,10 +143,10 @@ fn parse_json_visitor<'a>(
     if path_context_depth >= 0 {
         if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
             parse_json_visitor_inner(path_stack, context_base_path)?;
-        } else {
+        } else if !has_block_param {
             parse_json_visitor_inner(path_stack, base_path)?;
         }
-    } else {
+    } else if !has_block_param {
         parse_json_visitor_inner(path_stack, base_path)?;
     }
 
@@ -212,9 +219,19 @@ impl Context {
         relative_path: &str,
         block_params: &VecDeque<BlockParams>,
     ) -> Result<Option<&Json>, RenderError> {
+        dbg!(base_path);
+        dbg!(path_context);
+        dbg!(relative_path);
         let mut path_stack: VecDeque<&str> = VecDeque::new();
-        parse_json_visitor(&mut path_stack, base_path, path_context, relative_path)?;
+        parse_json_visitor(
+            &mut path_stack,
+            base_path,
+            path_context,
+            relative_path,
+            block_params,
+        )?;
 
+        dbg!(&path_stack);
         let paths: Vec<&str> = path_stack.iter().cloned().collect();
         let mut data: Option<&Json> = Some(&self.data);
         for p in paths {

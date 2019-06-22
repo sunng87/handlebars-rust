@@ -42,8 +42,7 @@ impl HelperDef for WithHelper {
 
                 if let Some(block_param) = h.block_param() {
                     let mut params = BlockParams::new();
-                    // TODO: verify this
-                    params.add_path(block_param, "this")?;
+                    params.add_path(block_param, local_rc.get_path())?;
 
                     local_rc.push_block_context(params)?;
                 }
