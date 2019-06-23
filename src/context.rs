@@ -8,6 +8,7 @@ use serde_json::value::{to_value, Map, Value as Json};
 
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
+use crate::value::ScopedJson;
 
 pub type Object = HashMap<String, Json>;
 
@@ -72,7 +73,7 @@ pub struct Context {
     data: Json,
 }
 
-pub(crate) fn parse_json_visitor_inner<'a>(
+fn parse_json_visitor_inner<'a>(
     path_stack: &mut VecDeque<&'a str>,
     path: &'a str,
 ) -> Result<(), RenderError> {
@@ -112,27 +113,26 @@ pub(crate) fn parse_json_visitor_inner<'a>(
     Ok(())
 }
 
-fn parse_json_visitor<'a>(
-    path_stack: &mut VecDeque<&'a str>,
+fn parse_json_visitor<'a, 'b: 'a>(
     base_path: &'a str,
     path_context: &'a VecDeque<String>,
     relative_path: &'a str,
-    block_params: &VecDeque<BlockParams>,
-) -> Result<(), RenderError> {
+    block_params: &'b VecDeque<BlockParams>,
+) -> Result<(VecDeque<&'a str>, Option<Json>), RenderError> {
+    let mut path_stack = VecDeque::new();
     let parser = HandlebarsParser::parse(Rule::path, relative_path)
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new(format!("Invalid JSON path: {}", relative_path)))?;
 
     let mut path_context_depth: i64 = -1;
-    let mut has_block_param = false;
+    let mut used_block_param = None;
 
     // deal with block param and  "../../" in relative path
     for sg in parser {
-        if get_in_block_param_refs(block_params, sg.as_str()).is_some() {
-            has_block_param = true;
+        if let Some(holder) = get_in_block_params(block_params, sg.as_str()) {
+            used_block_param = Some(holder);
             break;
         }
-
         if sg.as_rule() == Rule::path_up {
             path_context_depth += 1;
         } else {
@@ -140,21 +140,49 @@ fn parse_json_visitor<'a>(
         }
     }
 
-    if path_context_depth >= 0 {
-        if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
-            parse_json_visitor_inner(path_stack, context_base_path)?;
-        } else if !has_block_param {
-            parse_json_visitor_inner(path_stack, base_path)?;
+    // if the relative path is a block_param_value, skip base_path and context check
+    if used_block_param.is_none() {
+        if path_context_depth >= 0 {
+            if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
+                parse_json_visitor_inner(&mut path_stack, context_base_path)?;
+            } else {
+                parse_json_visitor_inner(&mut path_stack, base_path)?;
+            }
+        } else {
+            parse_json_visitor_inner(&mut path_stack, base_path)?;
         }
-    } else if !has_block_param {
-        parse_json_visitor_inner(path_stack, base_path)?;
     }
 
-    parse_json_visitor_inner(path_stack, relative_path)?;
-    Ok(())
+    match used_block_param {
+        Some(BlockParamHolder::Value(ref v)) => {
+            parse_json_visitor_inner(&mut path_stack, relative_path)?;
+            // drop first seg, which is block_param
+            path_stack.pop_front();
+            Ok((path_stack, Some(v.clone())))
+        }
+        Some(BlockParamHolder::Path(ref paths)) => {
+            parse_json_visitor_inner(&mut path_stack, relative_path)?;
+            // drop first seg, which is block_param
+            path_stack.pop_front();
+
+            for p in paths.iter().rev() {
+                path_stack.push_front(p)
+            }
+
+            Ok((path_stack, None))
+        }
+        None => {
+            parse_json_visitor_inner(&mut path_stack, relative_path)?;
+            Ok((path_stack, None))
+        }
+    }
 }
 
 fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, RenderError> {
+    if p == "this" {
+        return Ok(d);
+    }
+
     let result = match d {
         Some(&Json::Array(ref l)) => p
             .parse::<usize>()
@@ -167,14 +195,14 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
     Ok(result)
 }
 
-fn get_in_block_param_refs<'a>(
+fn get_in_block_params<'a>(
     block_contexts: &'a VecDeque<BlockParams>,
     p: &str,
-) -> Option<&'a Vec<String>> {
+) -> Option<&'a BlockParamHolder> {
     for bc in block_contexts {
         let v = bc.get(p);
-        if let Some(BlockParamHolder::Path(ref paths)) = v {
-            return Some(paths);
+        if v.is_some() {
+            return v;
         }
     }
 
@@ -212,42 +240,35 @@ impl Context {
     /// and set relative path to helper argument or so.
     ///
     /// If you want to navigate from top level, set the base path to `"."`
-    pub fn navigate(
-        &self,
+    pub fn navigate<'reg, 'rc>(
+        &'rc self,
         base_path: &str,
         path_context: &VecDeque<String>,
         relative_path: &str,
         block_params: &VecDeque<BlockParams>,
-    ) -> Result<Option<&Json>, RenderError> {
-        dbg!(base_path);
-        dbg!(path_context);
-        dbg!(relative_path);
-        let mut path_stack: VecDeque<&str> = VecDeque::new();
-        parse_json_visitor(
-            &mut path_stack,
-            base_path,
-            path_context,
-            relative_path,
-            block_params,
-        )?;
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+        let (paths, block_param_value) =
+            parse_json_visitor(base_path, path_context, relative_path, block_params)?;
 
-        dbg!(&path_stack);
-        let paths: Vec<&str> = path_stack.iter().cloned().collect();
-        let mut data: Option<&Json> = Some(&self.data);
-        for p in paths {
-            if p == "this" {
-                continue;
-            }
-
-            if let Some(paths) = get_in_block_param_refs(block_params, p) {
-                for p in paths {
-                    data = get_data(data, p)?
-                }
-            } else {
+        dbg!(&paths);
+        dbg!(&block_param_value);
+        if let Some(block_param_value) = block_param_value {
+            let mut data = Some(&block_param_value);
+            for p in paths.iter() {
                 data = get_data(data, p)?;
             }
+            Ok(data
+                .map(|v| ScopedJson::Derived(v.clone()))
+                .unwrap_or_else(|| ScopedJson::Missing))
+        } else {
+            let mut data = Some(self.data());
+            for p in paths.iter() {
+                data = get_data(data, p)?;
+            }
+            Ok(data
+                .map(|v| ScopedJson::Context(v))
+                .unwrap_or_else(|| ScopedJson::Missing))
         }
-        Ok(data)
     }
 
     pub fn data(&self) -> &Json {
@@ -288,7 +309,6 @@ mod test {
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "this", &VecDeque::new())
                 .unwrap()
-                .unwrap()
                 .render(),
             v.to_string()
         );
@@ -317,13 +337,11 @@ mod test {
                 &VecDeque::new()
             )
             .unwrap()
-            .unwrap()
             .render(),
             "China".to_string()
         );
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "addr.[country]", &VecDeque::new())
-                .unwrap()
                 .unwrap()
                 .render(),
             "China".to_string()
@@ -334,14 +352,12 @@ mod test {
         assert_eq!(
             ctx2.navigate(".", &VecDeque::new(), "this", &VecDeque::new())
                 .unwrap()
-                .unwrap()
                 .render(),
             "true".to_string()
         );
 
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "titles.[0]", &VecDeque::new())
-                .unwrap()
                 .unwrap()
                 .render(),
             "programmer".to_string()
@@ -355,7 +371,6 @@ mod test {
                 &VecDeque::new()
             )
             .unwrap()
-            .unwrap()
             .render(),
             "27".to_string()
         );
@@ -366,7 +381,6 @@ mod test {
                 "this.titles.[0]/../../age",
                 &VecDeque::new()
             )
-            .unwrap()
             .unwrap()
             .render(),
             "27".to_string()
@@ -387,13 +401,11 @@ mod test {
         assert_eq!(
             ctx1.navigate(".", &VecDeque::new(), "this", &VecDeque::new())
                 .unwrap()
-                .unwrap()
                 .render(),
             "[object]".to_owned()
         );
         assert_eq!(
             ctx2.navigate(".", &VecDeque::new(), "age", &VecDeque::new())
-                .unwrap()
                 .unwrap()
                 .render(),
             "4".to_owned()
@@ -412,14 +424,12 @@ mod test {
             ctx_a1
                 .navigate(".", &VecDeque::new(), "age", &VecDeque::new())
                 .unwrap()
-                .unwrap()
                 .render(),
             "4".to_owned()
         );
         assert_eq!(
             ctx_a1
                 .navigate(".", &VecDeque::new(), "tag", &VecDeque::new())
-                .unwrap()
                 .unwrap()
                 .render(),
             "h1".to_owned()
@@ -430,14 +440,12 @@ mod test {
             ctx_a2
                 .navigate(".", &VecDeque::new(), "this", &VecDeque::new())
                 .unwrap()
-                .unwrap()
                 .render(),
             "[object]".to_owned()
         );
         assert_eq!(
             ctx_a2
                 .navigate(".", &VecDeque::new(), "tag", &VecDeque::new())
-                .unwrap()
                 .unwrap()
                 .render(),
             "h1".to_owned()
@@ -452,7 +460,6 @@ mod test {
         let ctx = Context::wraps(&m).unwrap();
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "this_name", &VecDeque::new())
-                .unwrap()
                 .unwrap()
                 .render(),
             "the_value".to_string()
@@ -495,7 +502,6 @@ mod test {
         assert_eq!(
             ctx.navigate("a/b", &VecDeque::new(), "@root/b", &VecDeque::new())
                 .unwrap()
-                .unwrap()
                 .render(),
             "2".to_string()
         );
@@ -518,7 +524,6 @@ mod test {
 
         assert_eq!(
             ctx.navigate(".", &VecDeque::new(), "z.[1]", &block_params)
-                .unwrap()
                 .unwrap()
                 .render(),
             "2".to_string()

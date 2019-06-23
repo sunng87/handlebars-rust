@@ -7,7 +7,7 @@ use std::rc::Rc;
 use hashbrown::HashMap;
 use serde_json::value::Value as Json;
 
-use crate::context::{BlockParams, Context};
+use crate::context::{self, BlockParamHolder, BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
 use crate::output::{Output, StringOutput};
@@ -128,22 +128,13 @@ impl<'reg> RenderContext<'reg> {
         &self,
         context: &'rc Context,
         path: &str,
-    ) -> Result<Option<&'rc Json>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         context.navigate(
             self.get_path(),
             self.get_local_path_root(),
             path,
             &self.block.block_context,
         )
-    }
-
-    // TODO: add support for block context
-    pub fn evaluate_absolute<'rc>(
-        &self,
-        context: &'rc Context,
-        path: &str,
-    ) -> Result<Option<&'rc Json>, RenderError> {
-        context.navigate(".", &VecDeque::new(), path, &self.block.block_context)
     }
 
     pub fn get_partial(&self, name: &str) -> Option<&&Template> {
@@ -587,16 +578,13 @@ impl Parameter {
                     // so we have to clone it to bypass lifetime check
                     Ok(PathAndJson::new(
                         Some(name.to_owned()),
-                        json.map(|j| ScopedJson::Derived(j.clone()))
-                            .unwrap_or_else(|| ScopedJson::Missing),
+                        ScopedJson::Derived(json.as_json().clone()),
                     ))
                 } else {
                     // failback to normal evaluation
                     Ok(PathAndJson::new(
                         Some(name.to_owned()),
-                        rc.evaluate(ctx, name)?
-                            .map(|json| ScopedJson::Context(json))
-                            .unwrap_or_else(|| ScopedJson::Missing),
+                        rc.evaluate(ctx, name)?,
                     ))
                 }
             }

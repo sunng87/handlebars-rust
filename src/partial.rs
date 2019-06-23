@@ -8,7 +8,6 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Directive, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
-use crate::value::DEFAULT_VALUE;
 
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
@@ -18,32 +17,34 @@ fn render_partial<'reg: 'rc, 'rc>(
     local_rc: &mut RenderContext<'reg>,
     out: &mut Output,
 ) -> Result<(), RenderError> {
-    let param_context = d.param(0).map(|v| v.value()).unwrap_or_else(|| {
-        local_rc
-            .evaluate(ctx, ".")
-            .unwrap_or_else(|_| Some(&DEFAULT_VALUE))
-            .unwrap()
-    });
-
-    // TODO: avoid clone
-    let hash_context = d
-        .hash()
-        .iter()
-        .map(|(k, v)| (k.to_owned(), v.value().clone()))
-        .collect::<HashMap<String, Json>>();
-    let ctx = if hash_context.is_empty() {
-        Context::wraps(param_context)?
-    } else {
-        Context::wraps(&merge_json(&param_context, &hash_context))?
+    // partial context path
+    if let Some(ref p) = d.param(0) {
+        if let Some(ref param_path) = p.path() {
+            let old_path = local_rc.get_path().clone();
+            local_rc.promote_local_vars();
+            let new_path = format!("{}/{}", old_path, param_path);
+            local_rc.set_path(new_path);
+        }
     };
-    let mut partial_rc = local_rc.new_for_block();
 
     // @partial-block
     if let Some(t) = d.template() {
-        partial_rc.set_partial("@partial-block".to_owned(), t);
+        local_rc.set_partial("@partial-block".to_owned(), t);
     }
 
-    t.render(r, &ctx, &mut partial_rc, out)
+    if d.hash().is_empty() {
+        t.render(r, ctx, local_rc, out)
+    } else {
+        let hash_ctx = d
+            .hash()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.value().clone()))
+            .collect::<HashMap<String, Json>>();
+        let partial_context = merge_json(local_rc.evaluate(ctx, ".")?.as_json(), &hash_ctx);
+        let ctx = Context::wraps(&partial_context)?;
+        let mut partial_rc = local_rc.new_for_block();
+        t.render(r, &ctx, &mut partial_rc, out)
+    }
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
