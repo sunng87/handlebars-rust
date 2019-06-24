@@ -5,10 +5,9 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use hashbrown::HashMap;
-use serde::Serialize;
 use serde_json::value::Value as Json;
 
-use crate::context::Context;
+use crate::context::{self, BlockParamHolder, BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
 use crate::output::{Output, StringOutput};
@@ -50,11 +49,12 @@ pub struct RenderContextInner<'reg> {
 pub struct BlockRenderContext {
     path: String,
     local_path_root: VecDeque<String>,
-    block_context: VecDeque<Context>,
+    // current block context variables
+    block_context: VecDeque<BlockParams>,
 }
 
-impl Default for BlockRenderContext {
-    fn default() -> BlockRenderContext {
+impl BlockRenderContext {
+    fn new() -> BlockRenderContext {
         BlockRenderContext {
             path: ".".to_owned(),
             local_path_root: VecDeque::new(),
@@ -75,7 +75,7 @@ impl<'reg> RenderContext<'reg> {
             disable_escape: false,
         });
 
-        let block = Rc::new(BlockRenderContext::default());
+        let block = Rc::new(BlockRenderContext::new());
         let modified_context = None;
         RenderContext {
             inner,
@@ -90,7 +90,7 @@ impl<'reg> RenderContext<'reg> {
 
     pub fn new_for_block(&self) -> RenderContext<'reg> {
         let inner = self.inner.clone();
-        let block = Rc::new(BlockRenderContext::default());
+        let block = Rc::new(BlockRenderContext::new());
         let modified_context = self.modified_context.clone();
 
         RenderContext {
@@ -124,20 +124,17 @@ impl<'reg> RenderContext<'reg> {
         self.modified_context = Some(Rc::new(ctx))
     }
 
-    pub fn evaluate<'ctx>(
+    pub fn evaluate<'rc>(
         &self,
-        context: &'ctx Context,
+        context: &'rc Context,
         path: &str,
-    ) -> Result<Option<&'ctx Json>, RenderError> {
-        context.navigate(self.get_path(), self.get_local_path_root(), path)
-    }
-
-    pub fn evaluate_absolute<'ctx>(
-        &self,
-        context: &'ctx Context,
-        path: &str,
-    ) -> Result<Option<&'ctx Json>, RenderError> {
-        context.navigate(".", &VecDeque::new(), path)
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+        context.navigate(
+            self.get_path(),
+            self.get_local_path_root(),
+            path,
+            &self.block.block_context,
+        )
     }
 
     pub fn get_partial(&self, name: &str) -> Option<&&Template> {
@@ -235,6 +232,14 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().path = path;
     }
 
+    pub fn concat_path(&self, path_seg: &str) -> Option<String> {
+        match context::get_in_block_params(&self.block.block_context, path_seg) {
+            Some(BlockParamHolder::Path(paths)) => Some(paths.join("/")),
+            Some(BlockParamHolder::Value(_)) => None,
+            None => Some(format!("{}/{}", self.get_path(), path_seg)),
+        }
+    }
+
     pub fn get_local_path_root(&self) -> &VecDeque<String> {
         &self.block().local_path_root
     }
@@ -247,33 +252,13 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().local_path_root.pop_front();
     }
 
-    pub fn push_block_context<T>(&mut self, ctx: &T) -> Result<(), RenderError>
-    where
-        T: Serialize,
-    {
-        self.block_mut()
-            .block_context
-            .push_front(Context::wraps(ctx)?);
+    pub fn push_block_context(&mut self, current_context: BlockParams) -> Result<(), RenderError> {
+        self.block_mut().block_context.push_front(current_context);
         Ok(())
     }
 
     pub fn pop_block_context(&mut self) {
         self.block_mut().block_context.pop_front();
-    }
-
-    pub fn evaluate_in_block_context(
-        &self,
-        local_path: &str,
-    ) -> Result<Option<&Json>, RenderError> {
-        let block = self.block();
-        for bc in &block.block_context {
-            let v = bc.navigate(".", &block.local_path_root, local_path)?;
-            if v.is_some() {
-                return Ok(v);
-            }
-        }
-
-        Ok(None)
     }
 }
 
@@ -505,7 +490,7 @@ pub trait Renderable {
         &'reg self,
         registry: &'reg Registry,
         context: &'rc Context,
-        rc: &'rc mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> Result<(), RenderError>;
 
@@ -514,7 +499,7 @@ pub trait Renderable {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &'rc mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
         self.render(registry, ctx, rc, &mut so)?;
@@ -528,7 +513,7 @@ pub trait Evaluable {
         &'reg self,
         registry: &'reg Registry,
         context: &'rc Context,
-        rc: &'rc mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg>,
     ) -> Result<(), RenderError>;
 }
 
@@ -593,15 +578,6 @@ impl Parameter {
                         Some(name.to_owned()),
                         ScopedJson::Derived(value.clone()),
                     ))
-                } else if let Some(block_context_value) = rc.evaluate_in_block_context(name)? {
-                    // try to evaluate using block context if any
-
-                    // we do clone for block context because it's from
-                    // render_context
-                    Ok(PathAndJson::new(
-                        Some(name.to_owned()),
-                        ScopedJson::Derived(block_context_value.clone()),
-                    ))
                 } else if let Some(rc_context) = rc.context() {
                     // the context is modified from a decorator
                     // use the modified one
@@ -610,16 +586,13 @@ impl Parameter {
                     // so we have to clone it to bypass lifetime check
                     Ok(PathAndJson::new(
                         Some(name.to_owned()),
-                        json.map(|j| ScopedJson::Derived(j.clone()))
-                            .unwrap_or_else(|| ScopedJson::Missing),
+                        ScopedJson::Derived(json.as_json().clone()),
                     ))
                 } else {
                     // failback to normal evaluation
                     Ok(PathAndJson::new(
                         Some(name.to_owned()),
-                        rc.evaluate(ctx, name)?
-                            .map(|json| ScopedJson::Context(json))
-                            .unwrap_or_else(|| ScopedJson::Missing),
+                        rc.evaluate(ctx, name)?,
                     ))
                 }
             }

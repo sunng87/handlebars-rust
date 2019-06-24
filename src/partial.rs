@@ -1,6 +1,6 @@
-use std::iter::FromIterator;
-
 use hashbrown::HashMap;
+
+use serde_json::value::Value as Json;
 
 use crate::context::{merge_json, Context};
 use crate::error::RenderError;
@@ -8,7 +8,6 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Directive, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
-use crate::value::DEFAULT_VALUE;
 
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
@@ -20,11 +19,9 @@ fn render_partial<'reg: 'rc, 'rc>(
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref p) = d.param(0) {
-        if let Some(ref param_path) = p.path() {
-            let old_path = local_rc.get_path().clone();
+        if let Some(param_path) = p.path().and_then(|p| local_rc.concat_path(p)) {
             local_rc.promote_local_vars();
-            let new_path = format!("{}/{}", old_path, param_path);
-            local_rc.set_path(new_path);
+            local_rc.set_path(param_path);
         }
     };
 
@@ -36,14 +33,12 @@ fn render_partial<'reg: 'rc, 'rc>(
     if d.hash().is_empty() {
         t.render(r, ctx, local_rc, out)
     } else {
-        let hash_ctx =
-            HashMap::from_iter(d.hash().iter().map(|(k, v)| (k.clone(), v.value().clone())));
-        let partial_context = merge_json(
-            local_rc
-                .evaluate(ctx, ".")?
-                .unwrap_or_else(|| &DEFAULT_VALUE),
-            &hash_ctx,
-        );
+        let hash_ctx = d
+            .hash()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.value().clone()))
+            .collect::<HashMap<String, Json>>();
+        let partial_context = merge_json(local_rc.evaluate(ctx, ".")?.as_json(), &hash_ctx);
         let ctx = Context::wraps(&partial_context)?;
         let mut partial_rc = local_rc.new_for_block();
         t.render(r, &ctx, &mut partial_rc, out)

@@ -20,7 +20,7 @@ pub enum ScopedJson<'reg: 'rc, 'rc> {
 impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
     /// get the JSON reference
     pub fn as_json(&self) -> &Json {
-        match *self {
+        match self {
             ScopedJson::Constant(j) => j,
             ScopedJson::Derived(ref j) => j,
             ScopedJson::Context(j) => j,
@@ -37,6 +37,11 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
             ScopedJson::Missing => true,
             _ => false,
         }
+    }
+
+    pub fn into_derived(self) -> ScopedJson<'reg, 'rc> {
+        let v = self.as_json();
+        ScopedJson::Derived(v.clone())
     }
 }
 

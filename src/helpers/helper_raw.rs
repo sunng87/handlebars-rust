@@ -12,7 +12,7 @@ impl HelperDef for RawHelper {
         &self,
         h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
-        ctx: &Context,
+        ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
         out: &mut Output,
     ) -> HelperResult {
