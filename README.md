@@ -21,7 +21,7 @@ extern crate serde_json;
 
 use handlebars::Handlebars;
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut reg = Handlebars::new();
     // render without register
     println!(
