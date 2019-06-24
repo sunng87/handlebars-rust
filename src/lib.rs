@@ -351,7 +351,7 @@ extern crate walkdir;
 
 extern crate hashbrown;
 
-pub use self::context::Context;
+pub use self::context::{BlockParams, Context};
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::helpers::{HelperDef, HelperResult};
