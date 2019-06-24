@@ -15,7 +15,7 @@ fn render_partial<'reg: 'rc, 'rc>(
     r: &'reg Registry,
     ctx: &'rc Context,
     local_rc: &mut RenderContext<'reg>,
-    out: &mut Output,
+    out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref p) = d.param(0) {
@@ -50,7 +50,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     r: &'reg Registry,
     ctx: &'rc Context,
     rc: &mut RenderContext<'reg>,
-    out: &mut Output,
+    out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {

@@ -36,7 +36,7 @@ pub struct RenderContext<'reg> {
 #[derive(Clone)]
 pub struct RenderContextInner<'reg> {
     partials: HashMap<String, &'reg Template>,
-    local_helpers: HashMap<String, Rc<Box<HelperDef + 'static>>>,
+    local_helpers: HashMap<String, Rc<Box<dyn HelperDef + 'static>>>,
     local_variables: HashMap<String, Json>,
     /// current template name
     current_template: Option<&'reg String>,
@@ -185,8 +185,8 @@ impl<'reg> RenderContext<'reg> {
     pub fn register_local_helper(
         &mut self,
         name: &str,
-        def: Box<HelperDef + 'static>,
-    ) -> Option<Rc<Box<HelperDef + 'static>>> {
+        def: Box<dyn HelperDef + 'static>,
+    ) -> Option<Rc<Box<dyn HelperDef + 'static>>> {
         self.inner_mut()
             .local_helpers
             .insert(name.to_string(), Rc::new(def))
@@ -196,7 +196,7 @@ impl<'reg> RenderContext<'reg> {
         self.inner_mut().local_helpers.remove(name);
     }
 
-    pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<HelperDef + 'static>>> {
+    pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<dyn HelperDef + 'static>>> {
         self.inner().local_helpers.get(name).cloned()
     }
 
@@ -491,7 +491,7 @@ pub trait Renderable {
         registry: &'reg Registry,
         context: &'rc Context,
         rc: &mut RenderContext<'reg>,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> Result<(), RenderError>;
 
     /// render into string
@@ -518,7 +518,7 @@ pub trait Evaluable {
 }
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
-    hd: &HelperDef,
+    hd: &dyn HelperDef,
     ht: &Helper<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
@@ -632,7 +632,7 @@ impl Renderable for Template {
         registry: &'reg Registry,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         rc.set_current_template_name(self.name.as_ref());
         let iter = self.elements.iter();
@@ -696,7 +696,7 @@ impl Renderable for TemplateElement {
         registry: &'reg Registry,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         match *self {
             RawString(ref v) => {
@@ -931,7 +931,7 @@ fn test_render_subexpression_issue_115() {
              _: &Registry,
              _: &Context,
              _: &mut RenderContext,
-             out: &mut Output|
+             out: &mut dyn Output|
              -> Result<(), RenderError> {
                 out.write(format!("{}", h.param(0).unwrap().value().render()).as_ref())
                     .map(|_| ())

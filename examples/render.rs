@@ -18,7 +18,7 @@ fn format_helper(
     _: &Handlebars,
     _: &Context,
     _: &mut RenderContext,
-    out: &mut Output,
+    out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // get parameter from helper or throw an error
     let param = h
@@ -35,7 +35,7 @@ fn rank_helper(
     _: &Handlebars,
     _: &Context,
     _: &mut RenderContext,
-    out: &mut Output,
+    out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     let rank = h
         .param(0)
@@ -116,7 +116,7 @@ pub fn make_data() -> Map<String, Json> {
     data
 }
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
     // create the handlebars registry
     let mut handlebars = Handlebars::new();

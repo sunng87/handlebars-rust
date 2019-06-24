@@ -22,7 +22,7 @@ fn format_helper(
     _: &Handlebars,
     _: &Context,
     _: &mut RenderContext,
-    out: &mut Output,
+    out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     let param = h
         .param(0)
@@ -38,7 +38,7 @@ fn rank_helper(
     _: &Handlebars,
     _: &Context,
     _: &mut RenderContext,
-    out: &mut Output,
+    out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     let rank = h
         .param(0)
@@ -119,7 +119,7 @@ pub fn make_data() -> Map<String, Json> {
     data
 }
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
     let mut handlebars = Handlebars::new();
 

@@ -16,7 +16,7 @@ impl HelperDef for WithHelper {
         r: &Registry,
         ctx: &Context,
         rc: &mut RenderContext,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> HelperResult {
         let param = h
             .param(0)

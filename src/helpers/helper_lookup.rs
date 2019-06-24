@@ -18,7 +18,7 @@ impl HelperDef for LookupHelper {
         _: &Registry,
         _: &Context,
         _: &mut RenderContext,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> HelperResult {
         let collection_value = h
             .param(0)

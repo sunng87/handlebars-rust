@@ -29,7 +29,7 @@ lazy_static! {
 ///
 /// An *escape fn* is represented as a `Box` to avoid unnecessary type
 /// parameters (and because traits cannot be aliased using `type`).
-pub type EscapeFn = Box<Fn(&str) -> String + Send + Sync>;
+pub type EscapeFn = Box<dyn Fn(&str) -> String + Send + Sync>;
 
 /// The default *escape fn* replaces the characters `&"<>`
 /// with the equivalent html / xml entities.
@@ -59,8 +59,8 @@ pub fn no_escape(data: &str) -> String {
 /// It maintains compiled templates and registered helpers.
 pub struct Registry {
     templates: HashMap<String, Template>,
-    helpers: HashMap<String, Box<HelperDef + 'static>>,
-    directives: HashMap<String, Box<DirectiveDef + 'static>>,
+    helpers: HashMap<String, Box<dyn HelperDef + 'static>>,
+    directives: HashMap<String, Box<dyn DirectiveDef + 'static>>,
     escape_fn: EscapeFn,
     source_map: bool,
     strict_mode: bool,
@@ -255,11 +255,14 @@ impl Registry {
     }
 
     /// Register a template from `std::io::Read` source
-    pub fn register_template_source(
+    pub fn register_template_source<R>(
         &mut self,
         name: &str,
-        tpl_source: &mut Read,
-    ) -> Result<(), TemplateFileError> {
+        tpl_source: &mut R,
+    ) -> Result<(), TemplateFileError>
+    where
+        R: Read,
+    {
         let mut buf = String::new();
         tpl_source
             .read_to_string(&mut buf)
@@ -277,8 +280,8 @@ impl Registry {
     pub fn register_helper(
         &mut self,
         name: &str,
-        def: Box<HelperDef + 'static>,
-    ) -> Option<Box<HelperDef + 'static>> {
+        def: Box<dyn HelperDef + 'static>,
+    ) -> Option<Box<dyn HelperDef + 'static>> {
         self.helpers.insert(name.to_string(), def)
     }
 
@@ -286,8 +289,8 @@ impl Registry {
     pub fn register_decorator(
         &mut self,
         name: &str,
-        def: Box<DirectiveDef + 'static>,
-    ) -> Option<Box<DirectiveDef + 'static>> {
+        def: Box<dyn DirectiveDef + 'static>,
+    ) -> Option<Box<dyn DirectiveDef + 'static>> {
         self.directives.insert(name.to_string(), def)
     }
 
@@ -305,7 +308,7 @@ impl Registry {
     }
 
     /// Get a reference to the current *escape fn*.
-    pub fn get_escape_fn(&self) -> &Fn(&str) -> String {
+    pub fn get_escape_fn(&self) -> &dyn Fn(&str) -> String {
         &*self.escape_fn
     }
 
@@ -320,12 +323,12 @@ impl Registry {
     }
 
     /// Return a registered helper
-    pub fn get_helper(&self, name: &str) -> Option<&(HelperDef + 'static)> {
+    pub fn get_helper(&self, name: &str) -> Option<&(dyn HelperDef + 'static)> {
         self.helpers.get(name).map(|v| v.as_ref())
     }
 
     /// Return a registered directive, aka decorator
-    pub fn get_decorator(&self, name: &str) -> Option<&(DirectiveDef + 'static)> {
+    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DirectiveDef + 'static)> {
         self.directives.get(name).map(|v| v.as_ref())
     }
 
@@ -339,14 +342,15 @@ impl Registry {
         self.templates.clear();
     }
 
-    fn render_to_output<T>(
+    fn render_to_output<T, O>(
         &self,
         name: &str,
         data: &T,
-        output: &mut Output,
+        output: &mut O,
     ) -> Result<(), RenderError>
     where
         T: Serialize,
+        O: Output,
     {
         self.get_template(name)
             .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
@@ -418,15 +422,16 @@ impl Registry {
     }
 
     /// render a template source using current registry without register it
-    pub fn render_template_source_to_write<T, W>(
+    pub fn render_template_source_to_write<T, R, W>(
         &self,
-        template_source: &mut Read,
+        template_source: &mut R,
         data: &T,
         writer: W,
     ) -> Result<(), TemplateRenderError>
     where
         T: Serialize,
         W: Write,
+        R: Read,
     {
         let mut tpl_str = String::new();
         template_source

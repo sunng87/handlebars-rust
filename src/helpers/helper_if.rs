@@ -18,7 +18,7 @@ impl HelperDef for IfHelper {
         r: &'reg Registry,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> HelperResult {
         let param = h
             .param(0)

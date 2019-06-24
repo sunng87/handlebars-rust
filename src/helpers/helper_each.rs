@@ -1,6 +1,6 @@
 use serde_json::value::Value as Json;
 
-use crate::context::{self, BlockParams, Context};
+use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 use crate::output::Output;
@@ -18,7 +18,7 @@ impl HelperDef for EachHelper {
         r: &'reg Registry,
         ctx: &Context,
         rc: &mut RenderContext<'reg>,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> HelperResult {
         let value = h
             .param(0)

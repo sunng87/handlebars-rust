@@ -281,7 +281,7 @@ impl Context {
 #[cfg(test)]
 mod test {
     use crate::context::{self, BlockParams, Context};
-    use crate::value::{self, JsonRender};
+    use crate::value::{self};
     use hashbrown::HashMap;
     use serde_json::value::Map;
     use std::collections::VecDeque;

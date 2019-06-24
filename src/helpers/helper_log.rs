@@ -23,7 +23,7 @@ impl HelperDef for LogHelper {
         _: &Registry,
         _: &Context,
         _: &mut RenderContext,
-        _: &mut Output,
+        _: &mut dyn Output,
     ) -> HelperResult {
         let param = h
             .param(0)

@@ -6,7 +6,7 @@ use handlebars::Handlebars;
 use std::error::Error;
 
 // wait RFC1937 in
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut reg = Handlebars::new();
     // render without register
     println!(

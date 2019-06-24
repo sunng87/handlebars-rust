@@ -6,7 +6,7 @@ use std::error::Error;
 
 use handlebars::Handlebars;
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
     let mut handlebars = Handlebars::new();
 

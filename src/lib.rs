@@ -211,7 +211,7 @@
 //! #  age: i16,
 //! # }
 //!
-//! # fn main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<dyn Error>> {
 //!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();
@@ -244,7 +244,7 @@
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call<'reg: 'rc, 'rc>(&self, h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
+//!   fn call<'reg: 'rc, 'rc>(&self, h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
 //!     out.write("1st helper: ")?;
@@ -254,7 +254,7 @@
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output) -> HelperResult {
+//! fn another_simple_helper (h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output) -> HelperResult {
 //!     let param = h.param(0).unwrap();
 //!
 //!     out.write("2nd helper: ")?;
@@ -263,13 +263,13 @@
 //! }
 //!
 //!
-//! # fn main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<dyn Error>> {
 //!   let mut handlebars = Handlebars::new();
 //!   handlebars.register_helper("simple-helper", Box::new(SimpleHelper));
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
-//!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output| -> HelperResult {
+//!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output| -> HelperResult {
 //!           let param = h.param(0).ok_or(RenderError::new("param not found"))?;
 //!
 //!           out.write("3rd helper: ")?;

@@ -16,7 +16,7 @@ pub struct RenderError {
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    cause: Option<Box<Error + Send + Sync>>,
+    cause: Option<Box<dyn Error + Send + Sync>>,
 }
 
 impl fmt::Display for RenderError {
@@ -42,8 +42,8 @@ impl Error for RenderError {
         &self.desc[..]
     }
 
-    fn cause(&self) -> Option<&Error> {
-        self.cause.as_ref().map(|e| &**e as &Error)
+    fn cause(&self) -> Option<&dyn Error> {
+        self.cause.as_ref().map(|e| &**e as &dyn Error)
     }
 }
 

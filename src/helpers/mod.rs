@@ -22,7 +22,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// * `&Registry`: the global registry, you can find templates by name from registry
 /// * `&Context`: the whole data to render, in most case you can use data from `Helper`
 /// * `&mut RenderContext`: you can access data or modify variables (starts with @)/partials in render context, for example, @index of #each. See its document for detail.
-/// * `&mut Output`: where you write output to
+/// * `&mut dyn Output`: where you write output to
 ///
 /// By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
 ///
@@ -52,7 +52,7 @@ pub type HelperResult = Result<(), RenderError>;
 ///     r: &'reg Handlebars,
 ///     ctx: &Context,
 ///     rc: &mut RenderContext<'reg>,
-///     out: &mut Output,
+///     out: &mut dyn Output,
 /// ) -> HelperResult {
 ///     h.template()
 ///         .map(|t| t.render(r, ctx, rc, out))
@@ -91,7 +91,7 @@ pub trait HelperDef: Send + Sync {
         r: &'reg Registry,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, ctx, rc)? {
             if r.strict_mode() && result.is_missing() {
@@ -114,7 +114,7 @@ impl<
                 &'reg Registry,
                 &'rc Context,
                 &mut RenderContext<'reg>,
-                &mut Output,
+                &mut dyn Output,
             ) -> HelperResult,
     > HelperDef for F
 {
@@ -124,7 +124,7 @@ impl<
         r: &'reg Registry,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
-        out: &mut Output,
+        out: &mut dyn Output,
     ) -> HelperResult {
         (*self)(h, r, ctx, rc, out)
     }
@@ -167,7 +167,7 @@ mod test {
             r: &'reg Registry,
             ctx: &Context,
             rc: &mut RenderContext<'reg>,
-            out: &mut Output,
+            out: &mut dyn Output,
         ) -> Result<(), RenderError> {
             let v = h.param(0).unwrap();
 
@@ -219,7 +219,7 @@ mod test {
                  _: &Registry,
                  _: &Context,
                  _: &mut RenderContext,
-                 out: &mut Output|
+                 out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
                     out.write(output.as_ref())?;
@@ -234,7 +234,7 @@ mod test {
                  _: &Registry,
                  _: &Context,
                  _: &mut RenderContext,
-                 out: &mut Output|
+                 out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let output = format!("{}", h.hash_get("value").unwrap().value().render());
                     out.write(output.as_ref())?;
