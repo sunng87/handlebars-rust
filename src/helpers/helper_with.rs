@@ -35,14 +35,18 @@ impl HelperDef for WithHelper {
                 local_rc.push_local_path_root(local_path_root);
             }
             if not_empty {
-                if let Some(inner_path) = param.path() {
-                    let new_path = format!("{}/{}", local_rc.get_path(), inner_path);
-                    local_rc.set_path(new_path);
+                let new_path = param.path().and_then(|p| local_rc.concat_path(p));
+                if let Some(ref new_path) = new_path {
+                    local_rc.set_path(new_path.clone());
                 }
 
                 if let Some(block_param) = h.block_param() {
                     let mut params = BlockParams::new();
-                    params.add_path(block_param, local_rc.get_path())?;
+                    if new_path.is_some() {
+                        params.add_path(block_param, local_rc.get_path())?;
+                    } else {
+                        params.add_value(block_param, param.value().clone())?;
+                    }
 
                     local_rc.push_block_context(params)?;
                 }

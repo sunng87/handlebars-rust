@@ -195,7 +195,7 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
     Ok(result)
 }
 
-fn get_in_block_params<'a>(
+pub(crate) fn get_in_block_params<'a>(
     block_contexts: &'a VecDeque<BlockParams>,
     p: &str,
 ) -> Option<&'a BlockParamHolder> {
@@ -250,8 +250,6 @@ impl Context {
         let (paths, block_param_value) =
             parse_json_visitor(base_path, path_context, relative_path, block_params)?;
 
-        dbg!(&paths);
-        dbg!(&block_param_value);
         if let Some(block_param_value) = block_param_value {
             let mut data = Some(&block_param_value);
             for p in paths.iter() {

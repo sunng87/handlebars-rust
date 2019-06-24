@@ -19,11 +19,9 @@ fn render_partial<'reg: 'rc, 'rc>(
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref p) = d.param(0) {
-        if let Some(ref param_path) = p.path() {
-            let old_path = local_rc.get_path().clone();
+        if let Some(param_path) = p.path().and_then(|p| local_rc.concat_path(p)) {
             local_rc.promote_local_vars();
-            let new_path = format!("{}/{}", old_path, param_path);
-            local_rc.set_path(new_path);
+            local_rc.set_path(param_path);
         }
     };
 

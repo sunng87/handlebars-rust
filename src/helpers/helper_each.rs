@@ -1,6 +1,6 @@
 use serde_json::value::Value as Json;
 
-use crate::context::{BlockParams, Context};
+use crate::context::{self, BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 use crate::output::Output;
@@ -37,6 +37,9 @@ impl HelperDef for EachHelper {
                 let rendered = match (value.value().is_truthy(false), value.value()) {
                     (true, &Json::Array(ref list)) => {
                         let len = list.len();
+
+                        let array_path = value.path().and_then(|p| rc.concat_path(p));
+
                         for (i, _) in list.iter().enumerate().take(len) {
                             let mut local_rc = rc.derive();
                             if let Some(ref p) = local_path_root {
@@ -47,9 +50,8 @@ impl HelperDef for EachHelper {
                             local_rc.set_local_var("@last".to_string(), to_json(i == len - 1));
                             local_rc.set_local_var("@index".to_string(), to_json(i));
 
-                            if let Some(inner_path) = value.path() {
-                                let new_path =
-                                    format!("{}/{}/[{}]", local_rc.get_path(), inner_path, i);
+                            if let Some(ref p) = array_path {
+                                let new_path = format!("{}/[{}]", p, i);
                                 debug!("each path {:?}", new_path);
                                 local_rc.set_path(new_path);
                             }
@@ -75,6 +77,8 @@ impl HelperDef for EachHelper {
                     }
                     (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
+                        let obj_path = value.path().and_then(|p| rc.concat_path(p));
+
                         for (k, _) in obj.iter() {
                             let mut local_rc = rc.derive();
 
@@ -88,9 +92,8 @@ impl HelperDef for EachHelper {
 
                             local_rc.set_local_var("@key".to_string(), to_json(k));
 
-                            if let Some(inner_path) = value.path() {
-                                let new_path =
-                                    format!("{}/{}/[{}]", local_rc.get_path(), inner_path, k);
+                            if let Some(ref p) = obj_path {
+                                let new_path = format!("{}/[{}]", p, k);
                                 local_rc.set_path(new_path);
                             }
 
@@ -320,6 +323,22 @@ mod test {
     }
 
     #[test]
+    fn test_each_object_block_param2() {
+        let mut handlebars = Registry::new();
+        let template = "{{#each this as |v k|}}\
+                        {{#with v as |inner_v|}}{{k}}:{{inner_v}}{{/with}}|\
+                        {{/each}}";
+
+        assert!(handlebars.register_template_string("t0", template).is_ok());
+
+        let m = btreemap! {
+            "ftp".to_string() => 21,
+            "http".to_string() => 80
+        };
+        let r0 = handlebars.render("t0", &m);
+        assert_eq!(r0.ok().unwrap(), "ftp:21|http:80|".to_string());
+    }
+
     fn test_nested_each_with_path_ups() {
         let mut handlebars = Registry::new();
         assert!(handlebars

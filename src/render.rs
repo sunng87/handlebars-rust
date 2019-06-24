@@ -232,6 +232,14 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().path = path;
     }
 
+    pub fn concat_path(&self, path_seg: &str) -> Option<String> {
+        match context::get_in_block_params(&self.block.block_context, path_seg) {
+            Some(BlockParamHolder::Path(paths)) => Some(paths.join("/")),
+            Some(BlockParamHolder::Value(_)) => None,
+            None => Some(format!("{}/{}", self.get_path(), path_seg)),
+        }
+    }
+
     pub fn get_local_path_root(&self) -> &VecDeque<String> {
         &self.block().local_path_root
     }
