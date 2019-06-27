@@ -189,6 +189,10 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
             .map_err(RenderError::with)
             .map(|idx_u| l.get(idx_u))?,
         Some(&Json::Object(ref m)) => m.get(p),
+        Some(&Json::String(_)) => p
+            .parse::<usize>()
+            .map_err(RenderError::with)
+            .map(|idx_u| d.unwrap().get(idx_u))?,
         Some(_) => None,
         None => None,
     };
@@ -526,5 +530,18 @@ mod test {
                 .render(),
             "2".to_string()
         );
+    }
+
+    #[test]
+    fn test_string_index_access() {
+        let m = "helloworld";
+        let ctx = Context::wraps(&m).unwrap();
+
+        assert_eq!(
+            ctx.navigate(".", &VecDeque::new(), "this.[1]", &VecDeque::new())
+                .unwrap()
+                .render(),
+            "e".to_string()
+        )
     }
 }
