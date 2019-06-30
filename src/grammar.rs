@@ -161,15 +161,10 @@ fn test_subexpression() {
 
 #[test]
 fn test_expression() {
-    let s = vec!["{{exp}}", "{{(exp)}}", "{{this.name}}", "{{this.[0].name}}"];
-    for i in s.iter() {
-        assert_rule!(Rule::expression, i);
-    }
-}
-
-#[test]
-fn test_helper_expression() {
     let s = vec![
+        "{{exp}}",
+        "{{(exp)}}",
+        "{{../exp}}",
         "{{exp 1}}",
         "{{exp \"literal\"}}",
         "{{exp ref}}",
@@ -181,9 +176,10 @@ fn test_helper_expression() {
         "{{exp key=ref}}",
         "{{exp key=(sub)}}",
         "{{exp key=(sub 0)}}",
+        "{{exp key=(sub 0 key=1)}}",
     ];
     for i in s.iter() {
-        assert_rule!(Rule::helper_expression, i);
+        assert_rule!(Rule::expression, i);
     }
 }
 
