@@ -1,5 +1,8 @@
 # Change Log
 
+## [{{Unreleased}}](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta3...{{Unreleased}}) - {{ ReleaseDate }}
+* [Changed] Fixed more dyn trait warnings
+
 ## [2.0.0-beta.3](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta1...2.0.0-beta.3) - {{ 2019-06-24}}
 
 * [Changed] Block parameter revamp, fixed cases for #260 and #264
