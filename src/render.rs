@@ -1045,3 +1045,47 @@ fn test_comment() {
         "Hello 0 "
     );
 }
+
+#[test]
+fn test_zero_args_heler() {
+    let mut r = Registry::new();
+
+    r.register_helper(
+        "name",
+        Box::new(
+            |_: &Helper,
+             _: &Registry,
+             _: &Context,
+             _: &mut RenderContext,
+             out: &mut dyn Output|
+             -> Result<(), RenderError> { out.write("N/A").map_err(Into::into) },
+        ),
+    );
+
+    r.register_template_string("t0", "Output name: {{name}}")
+        .unwrap();
+    r.register_template_string("t1", "Output name: {{first_name}}")
+        .unwrap();
+
+    // when "name" is available in context, use context first
+    assert_eq!(
+        r.render("t0", &json!({"name": "Alex"})).unwrap(),
+        "Output name: Alex".to_owned()
+    );
+
+    // when "name" is unavailable, call helper with same name
+    assert_eq!(
+        r.render("t0", &json!({})).unwrap(),
+        "Output name: N/A".to_owned()
+    );
+
+    // output nothing when neither context nor helper available
+    assert_eq!(
+        r.render("t1", &json!({"name": "Alex"})).unwrap(),
+        "Output name: ".to_owned()
+    );
+
+    // generate error in strict mode for above case
+    r.set_strict_mode(true);
+    assert!(r.render("t1", &json!({"name": "Alex"})).is_err());
+}
