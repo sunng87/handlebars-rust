@@ -467,7 +467,7 @@ mod test {
             r: &'reg Registry,
             ctx: &Context,
             rc: &mut RenderContext<'reg>,
-            out: &mut Output,
+            out: &mut dyn Output,
         ) -> Result<(), RenderError> {
             h.template().unwrap().render(r, ctx, rc, out)
         }
@@ -728,7 +728,7 @@ mod test {
                  _: &Registry,
                  _: &Context,
                  _: &mut RenderContext,
-                 _: &mut Output|
+                 _: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let value = h.param(0).unwrap();
                     assert!(value.is_value_missing());

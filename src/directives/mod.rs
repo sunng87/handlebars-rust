@@ -46,7 +46,7 @@ pub type DirectiveResult = Result<(), RenderError>;
 ///
 /// fn override_helper(_: &Decorator, _: &Handlebars, _: &Context, rc: &mut RenderContext)
 ///         -> Result<(), RenderError> {
-///     let new_helper = |h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output|
+///     let new_helper = |h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output|
 ///             -> Result<(), RenderError> {
 ///         // your helper logic
 ///         Ok(())
@@ -230,7 +230,7 @@ mod test {
                  _: &Registry,
                  _: &Context,
                  _: &mut RenderContext,
-                 out: &mut Output|
+                 out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let s = format!(
                         "{}m",
@@ -262,7 +262,7 @@ mod test {
                                            _: &Registry,
                                            _: &Context,
                                            _: &mut RenderContext,
-                                           out: &mut Output|
+                                           out: &mut dyn Output|
                           -> Result<(), RenderError> {
                         let s = format!(
                             "{}{}",
