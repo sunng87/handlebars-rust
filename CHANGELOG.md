@@ -2,12 +2,15 @@
 
 ## [{{Unreleased}}](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta3...{{Unreleased}}) - {{ ReleaseDate }}
 * [Changed] Fixed more dyn trait warnings
+* [Changed] #80 Fixed support for zero-param helper
 
 ## [2.0.0-beta.3](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta1...2.0.0-beta.3) - {{ 2019-06-24}}
 
 * [Changed] Block parameter revamp, fixed cases for #260 and #264
 * [Changed] #265 Fixed block parameter order in `each` helper
 * [Changed] #266 Accept any JSON value in boolean helpers
+* [Changed] `RenderContext` API update, `evaluate_absolute` removed,
+  use `@root` instead
 
 ## [2.0.0-beta.1](https://github.com/sunng87/handlebars-rust/compare/1.1.0...2.0.0-beta.1) - {{ 2019-03-16}}
 
