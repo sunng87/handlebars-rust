@@ -3,6 +3,8 @@
 ## [{{2.0.0}}](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta3...{{2.0.0}}) - {{ 2019-07-02 }}
 * [Changed] Fixed more dyn trait warnings
 * [Changed] #80 Fixed support for zero-param helper
+* [Changed] Changed minimum Rust version to 1.32 as required by
+  getrandom crate
 
 ## [2.0.0-beta.3](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta1...2.0.0-beta.3) - {{ 2019-06-24}}
 
