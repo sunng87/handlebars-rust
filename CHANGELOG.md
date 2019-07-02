@@ -1,6 +1,6 @@
 # Change Log
 
-## [{{Unreleased}}](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta3...{{Unreleased}}) - {{ ReleaseDate }}
+## [{{2.0.0}}](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta3...{{2.0.0}}) - {{ 2019-07-02 }}
 * [Changed] Fixed more dyn trait warnings
 * [Changed] #80 Fixed support for zero-param helper
 
