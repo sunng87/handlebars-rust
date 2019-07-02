@@ -44,5 +44,33 @@ fn test_singular_and_pair_block_params() {
 
     let template =
         "{{#each this as |b index|}}{{b.value}}{{#each this as |value key|}}:{{key}},{{/each}}{{/each}}";
-    assert_eq!(hbs.render_template(template, &data).unwrap(), "11:value,22:value,");
+    assert_eq!(
+        hbs.render_template(template, &data).unwrap(),
+        "11:value,22:value,"
+    );
+}
+
+#[test]
+fn test_nested_each() {
+    let hbs = Handlebars::new();
+
+    let data = json!({
+        "classes": [
+            {
+                "methods": [
+                    {"id": 1},
+                    {"id": 2}
+                ]
+            },
+            {
+                "methods": [
+                    {"id": 3},
+                    {"id": 4}
+                ]
+            },
+        ],
+    });
+
+    let template = "{{#each classes as |class|}}{{#each class.methods as |method|}}{{method.id}}{{/each}}{{/each}}";
+    assert_eq!(hbs.render_template(template, &data).unwrap(), "1;2;3;4;");
 }
