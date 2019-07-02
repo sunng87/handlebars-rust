@@ -9,7 +9,7 @@ matrix:
     - rust: nightly
     - rust: beta
     - rust: stable
-    - rust: 1.31.0
+    - rust: 1.32.0
     - rust: nightly
       name: minimal-versions
       script:
