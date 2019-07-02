@@ -39,14 +39,10 @@ subexpression = { "(" ~ name ~ (hash|param)* ~ ")" }
 pre_whitespace_omitter = { "~" }
 pro_whitespace_omitter = { "~" }
 
-expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~ name ~
-pro_whitespace_omitter? ~ "}}" }
-
+expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~
+              name ~ (hash|param)* ~ block_param? ~ pro_whitespace_omitter? ~ "}}" }
 html_expression = { "{{{" ~ pre_whitespace_omitter? ~ name ~
 pro_whitespace_omitter? ~ "}}}" }
-
-helper_expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~ exp_line ~
-pro_whitespace_omitter? ~ "}}" }
 
 directive_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
 pro_whitespace_omitter? ~ "}}" }
@@ -88,7 +84,6 @@ template = { (
             raw_text |
             expression |
             html_expression |
-            helper_expression |
             helper_block |
             raw_block |
             hbs_comment |

@@ -277,7 +277,7 @@ impl<'reg> fmt::Debug for RenderContextInner<'reg> {
 // Render-time Helper data when using in a helper definition
 #[derive(Debug)]
 pub struct Helper<'reg: 'rc, 'rc> {
-    name: &'reg String,
+    name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
     hash: HashMap<String, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
@@ -293,6 +293,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         context: &'rc Context,
         render_context: &mut RenderContext<'reg>,
     ) -> Result<Helper<'reg, 'rc>, RenderError> {
+        let name = ht.name.expand_as_name(registry, context, render_context)?;
         let mut pv = Vec::with_capacity(ht.params.len());
         for p in &ht.params {
             let r = p.expand(registry, context, render_context)?;
@@ -306,7 +307,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         }
 
         Ok(Helper {
-            name: &ht.name,
+            name: name,
             params: pv,
             hash: hm,
             template: ht.template.as_ref(),
@@ -317,8 +318,8 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 
     /// Returns helper name
-    pub fn name(&self) -> &'reg str {
-        self.name
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// Returns all helper params, resolved within the context
@@ -598,26 +599,31 @@ impl Parameter {
             }
             Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
             Parameter::Subexpression(ref t) => match *t.as_element() {
-                Expression(ref expr) => expr.expand(registry, ctx, rc),
-                HelperExpression(ref ht) => {
-                    let h = Helper::try_from_template(ht, registry, ctx, rc)?;
-                    if let Some(ref d) = rc.get_local_helper(&ht.name) {
-                        let helper_def = d.deref().as_ref();
-                        call_helper_for_value(helper_def, &h, registry, ctx, rc)
+                Expression(ref ht) => {
+                    if ht.is_name_only() {
+                        ht.name.expand(registry, ctx, rc)
                     } else {
-                        registry
-                            .get_helper(&ht.name)
-                            .or_else(|| {
-                                registry.get_helper(if ht.block {
-                                    "blockHelperMissing"
-                                } else {
-                                    "helperMissing"
+                        let name = ht.name.expand_as_name(registry, ctx, rc)?;
+
+                        let h = Helper::try_from_template(ht, registry, ctx, rc)?;
+                        if let Some(ref d) = rc.get_local_helper(&name) {
+                            let helper_def = d.deref().as_ref();
+                            call_helper_for_value(helper_def, &h, registry, ctx, rc)
+                        } else {
+                            registry
+                                .get_helper(&name)
+                                .or_else(|| {
+                                    registry.get_helper(if ht.block {
+                                        "blockHelperMissing"
+                                    } else {
+                                        "helperMissing"
+                                    })
                                 })
-                            })
-                            .ok_or_else(|| {
-                                RenderError::new(format!("Helper not defined: {:?}", ht.name))
-                            })
-                            .and_then(move |d| call_helper_for_value(d, &h, registry, ctx, rc))
+                                .ok_or_else(|| {
+                                    RenderError::new(format!("Helper not defined: {:?}", ht.name))
+                                })
+                                .and_then(move |d| call_helper_for_value(d, &h, registry, ctx, rc))
+                        }
                     }
                 }
                 _ => unreachable!(),
@@ -690,6 +696,35 @@ impl Evaluable for Template {
     }
 }
 
+fn helper_exists(name: &str, reg: &Registry, rc: &RenderContext) -> bool {
+    rc.get_local_helper(name).is_some() || reg.get_helper(name).is_some()
+}
+
+fn render_helper<'reg: 'rc, 'rc>(
+    ht: &'reg HelperTemplate,
+    registry: &'reg Registry,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg>,
+    out: &mut dyn Output,
+) -> Result<(), RenderError> {
+    let h = Helper::try_from_template(ht, registry, ctx, rc)?;
+    if let Some(ref d) = rc.get_local_helper(h.name()) {
+        d.call(&h, registry, ctx, rc, out)
+    } else {
+        registry
+            .get_helper(h.name())
+            .or_else(|| {
+                registry.get_helper(if ht.block {
+                    "blockHelperMissing"
+                } else {
+                    "helperMissing"
+                })
+            })
+            .ok_or_else(|| RenderError::new(format!("Helper not defined: {:?}", ht.name)))
+            .and_then(move |d| d.call(&h, registry, ctx, rc, out))
+    }
+}
+
 impl Renderable for TemplateElement {
     fn render<'reg: 'rc, 'rc>(
         &'reg self,
@@ -703,23 +738,38 @@ impl Renderable for TemplateElement {
                 out.write(v.as_ref())?;
                 Ok(())
             }
-            Expression(ref v) => {
-                let context_json = v.expand(registry, ctx, rc)?;
+            Expression(ref ht) => {
+                // test if the expression is to render some value
+                if ht.is_name_only() {
+                    let context_json = ht.name.expand(registry, ctx, rc)?;
+                    if context_json.is_value_missing() {
+                        let helper_name = ht.name.expand_as_name(registry, ctx, rc)?;
+                        // no such value, try lookup if it's a helper
+                        if helper_exists(&helper_name, registry, rc) {
+                            render_helper(ht, registry, ctx, rc, out)
+                        } else {
+                            // strict mode check
+                            if registry.strict_mode() {
+                                return Err(RenderError::strict_error(context_json.path()));
+                            } else {
+                                Ok(())
+                            }
+                        }
+                    } else {
+                        let rendered = context_json.value().render();
 
-                // strict mode check
-                if registry.strict_mode() && context_json.is_value_missing() {
-                    return Err(RenderError::strict_error(context_json.path()));
-                }
-
-                let rendered = context_json.value().render();
-
-                let output = if !rc.is_disable_escape() {
-                    registry.get_escape_fn()(&rendered)
+                        let output = if !rc.is_disable_escape() {
+                            registry.get_escape_fn()(&rendered)
+                        } else {
+                            rendered
+                        };
+                        out.write(output.as_ref())?;
+                        Ok(())
+                    }
                 } else {
-                    rendered
-                };
-                out.write(output.as_ref())?;
-                Ok(())
+                    // this is a helper expression
+                    render_helper(ht, registry, ctx, rc, out)
+                }
             }
             HTMLExpression(ref v) => {
                 let context_json = v.expand(registry, ctx, rc)?;
@@ -733,26 +783,7 @@ impl Renderable for TemplateElement {
                 out.write(rendered.as_ref())?;
                 Ok(())
             }
-            HelperExpression(ref ht) | HelperBlock(ref ht) => {
-                let h = Helper::try_from_template(ht, registry, ctx, rc)?;
-                if let Some(ref d) = rc.get_local_helper(&ht.name) {
-                    d.call(&h, registry, ctx, rc, out)
-                } else {
-                    registry
-                        .get_helper(&ht.name)
-                        .or_else(|| {
-                            registry.get_helper(if ht.block {
-                                "blockHelperMissing"
-                            } else {
-                                "helperMissing"
-                            })
-                        })
-                        .ok_or_else(|| {
-                            RenderError::new(format!("Helper not defined: {:?}", ht.name))
-                        })
-                        .and_then(move |d| d.call(&h, registry, ctx, rc, out))
-                }
-            }
+            HelperBlock(ref ht) => render_helper(ht, registry, ctx, rc, out),
             DirectiveExpression(_) | DirectiveBlock(_) => self.eval(registry, ctx, rc),
             PartialExpression(ref dt) | PartialBlock(ref dt) => {
                 let di = Directive::try_from_template(dt, registry, ctx, rc)?;
@@ -806,7 +837,7 @@ fn test_raw_string() {
 #[test]
 fn test_expression() {
     let r = Registry::new();
-    let element = Expression(Parameter::Name("hello".into()));
+    let element = Expression(Box::new(HelperTemplate::with_name("hello".to_owned())));
 
     let mut out = StringOutput::new();
     let mut m: HashMap<String, String> = HashMap::new();
@@ -853,7 +884,7 @@ fn test_template() {
 
     let elements: Vec<TemplateElement> = vec![
         RawString("<h1>".to_string()),
-        Expression(Parameter::Name("hello".into())),
+        Expression(Box::new(HelperTemplate::with_name("hello".to_owned()))),
         RawString("</h1>".to_string()),
         Comment("".to_string()),
     ];
@@ -1013,4 +1044,48 @@ fn test_comment() {
             .unwrap(),
         "Hello 0 "
     );
+}
+
+#[test]
+fn test_zero_args_heler() {
+    let mut r = Registry::new();
+
+    r.register_helper(
+        "name",
+        Box::new(
+            |_: &Helper,
+             _: &Registry,
+             _: &Context,
+             _: &mut RenderContext,
+             out: &mut dyn Output|
+             -> Result<(), RenderError> { out.write("N/A").map_err(Into::into) },
+        ),
+    );
+
+    r.register_template_string("t0", "Output name: {{name}}")
+        .unwrap();
+    r.register_template_string("t1", "Output name: {{first_name}}")
+        .unwrap();
+
+    // when "name" is available in context, use context first
+    assert_eq!(
+        r.render("t0", &json!({"name": "Alex"})).unwrap(),
+        "Output name: Alex".to_owned()
+    );
+
+    // when "name" is unavailable, call helper with same name
+    assert_eq!(
+        r.render("t0", &json!({})).unwrap(),
+        "Output name: N/A".to_owned()
+    );
+
+    // output nothing when neither context nor helper available
+    assert_eq!(
+        r.render("t1", &json!({"name": "Alex"})).unwrap(),
+        "Output name: ".to_owned()
+    );
+
+    // generate error in strict mode for above case
+    r.set_strict_mode(true);
+    assert!(r.render("t1", &json!({"name": "Alex"})).is_err());
 }

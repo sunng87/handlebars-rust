@@ -90,10 +90,10 @@ mod test {
             .is_ok());
 
         let r0 = handlebars.render("t0", &data);
-        assert_eq!(r0.ok().unwrap(), "hello 99".to_string());
+        assert_eq!(r0.unwrap(), "hello 99".to_string());
 
         let r1 = handlebars.render("t1", &data);
-        assert_eq!(r1.ok().unwrap(), "hello 99".to_string());
+        assert_eq!(r1.unwrap(), "hello 99".to_string());
     }
 
     #[test]

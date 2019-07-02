@@ -38,28 +38,22 @@ impl Subexpression {
         params: &[Parameter],
         hash: &HashMap<String, Parameter>,
     ) -> Subexpression {
-        if params.is_empty() && hash.is_empty() {
-            Subexpression {
-                element: Box::new(Expression(Parameter::Name(name))),
-            }
-        } else {
-            Subexpression {
-                element: Box::new(HelperExpression(Box::new(HelperTemplate {
-                    name,
-                    params: params.to_owned(),
-                    hash: hash.clone(),
-                    template: None,
-                    inverse: None,
-                    block_param: None,
-                    block: false,
-                }))),
-            }
+        Subexpression {
+            element: Box::new(Expression(Box::new(HelperTemplate {
+                name: Parameter::Name(name),
+                params: params.to_owned(),
+                hash: hash.clone(),
+                template: None,
+                inverse: None,
+                block_param: None,
+                block: false,
+            }))),
         }
     }
 
     pub fn is_helper(&self) -> bool {
         match *self.as_element() {
-            TemplateElement::HelperExpression(_) => true,
+            TemplateElement::Expression(ref ht) => !ht.is_name_only(),
             _ => false,
         }
     }
@@ -70,25 +64,22 @@ impl Subexpression {
 
     pub fn name(&self) -> &str {
         match *self.as_element() {
-            HelperExpression(ref ht) => &ht.name,
-            Expression(ref p) => match *p {
-                Parameter::Name(ref s) => s,
-                _ => unreachable!(),
-            },
+            // FIXME: avoid unwrap here
+            Expression(ref ht) => ht.name.as_name().unwrap(),
             _ => unreachable!(),
         }
     }
 
     pub fn params(&self) -> Option<&Vec<Parameter>> {
         match *self.as_element() {
-            HelperExpression(ref ht) => Some(&ht.params),
+            Expression(ref ht) => Some(&ht.params),
             _ => None,
         }
     }
 
     pub fn hash(&self) -> Option<&HashMap<String, Parameter>> {
         match *self.as_element() {
-            HelperExpression(ref ht) => Some(&ht.hash),
+            Expression(ref ht) => Some(&ht.hash),
             _ => None,
         }
     }
@@ -119,13 +110,31 @@ pub enum Parameter {
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct HelperTemplate {
-    pub name: String,
+    pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: HashMap<String, Parameter>,
     pub block_param: Option<BlockParam>,
     pub template: Option<Template>,
     pub inverse: Option<Template>,
     pub block: bool,
+}
+
+impl HelperTemplate {
+    pub(crate) fn with_name(name: String) -> HelperTemplate {
+        HelperTemplate {
+            name: Parameter::Name(name),
+            params: Vec::new(),
+            hash: HashMap::new(),
+            block_param: None,
+            template: None,
+            inverse: None,
+            block: false,
+        }
+    }
+
+    pub(crate) fn is_name_only(&self) -> bool {
+        !self.block && self.params.is_empty() && self.hash.is_empty()
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -137,6 +146,14 @@ pub struct DirectiveTemplate {
 }
 
 impl Parameter {
+    pub fn as_name(&self) -> Option<&str> {
+        if let Parameter::Name(ref n) = self {
+            Some(n)
+        } else {
+            None
+        }
+    }
+
     pub fn into_name(self) -> Option<String> {
         if let Parameter::Name(n) = self {
             Some(n)
@@ -513,7 +530,7 @@ impl Template {
                         match rule {
                             Rule::helper_block_start | Rule::raw_block_start => {
                                 let helper_template = HelperTemplate {
-                                    name: exp.name.into_name().unwrap(),
+                                    name: exp.name,
                                     params: exp.params,
                                     hash: exp.hash,
                                     block_param: exp.block_param,
@@ -570,7 +587,6 @@ impl Template {
                     }
                     Rule::expression
                     | Rule::html_expression
-                    | Rule::helper_expression
                     | Rule::directive_expression
                     | Rule::partial_expression
                     | Rule::helper_block_end
@@ -585,19 +601,14 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         match rule {
-                            Rule::expression => {
-                                let el = Expression(exp.name);
-                                let t = template_stack.front_mut().unwrap();
-                                t.push_element(el, line_no, col_no);
-                            }
                             Rule::html_expression => {
                                 let el = HTMLExpression(exp.name);
                                 let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
-                            Rule::helper_expression => {
+                            Rule::expression => {
                                 let helper_template = HelperTemplate {
-                                    name: exp.name.into_name().unwrap(),
+                                    name: exp.name,
                                     params: exp.params,
                                     hash: exp.hash,
                                     block_param: exp.block_param,
@@ -605,7 +616,7 @@ impl Template {
                                     template: None,
                                     inverse: None,
                                 };
-                                let el = HelperExpression(Box::new(helper_template));
+                                let el = Expression(Box::new(helper_template));
                                 let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
@@ -626,7 +637,7 @@ impl Template {
                             }
                             Rule::helper_block_end | Rule::raw_block_end => {
                                 let mut h = helper_stack.pop_front().unwrap();
-                                let close_tag_name = exp.name.into_name().unwrap();
+                                let close_tag_name = exp.name;
                                 if h.name == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     if h.template.is_some() {
@@ -639,8 +650,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedHelper(
-                                            h.name,
-                                            close_tag_name,
+                                            h.name.into_name().unwrap(),
+                                            close_tag_name.into_name().unwrap(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -725,9 +736,8 @@ impl Template {
 #[derive(PartialEq, Clone, Debug)]
 pub enum TemplateElement {
     RawString(String),
-    Expression(Parameter),
     HTMLExpression(Parameter),
-    HelperExpression(Box<HelperTemplate>),
+    Expression(Box<HelperTemplate>),
     HelperBlock(Box<HelperTemplate>),
     DirectiveExpression(DirectiveTemplate),
     DirectiveBlock(DirectiveTemplate),
@@ -778,7 +788,7 @@ fn test_parse_template() {
     assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
     assert_eq!(
         *t.elements.get(1).unwrap(),
-        Expression(Parameter::Name("title".to_string()))
+        Expression(Box::new(HelperTemplate::with_name("title".to_string())))
     );
 
     assert_eq!(
@@ -788,7 +798,7 @@ fn test_parse_template() {
 
     match *t.elements.get(5).unwrap() {
         HelperBlock(ref h) => {
-            assert_eq!(h.name, "if".to_string());
+            assert_eq!(h.name.as_name().unwrap(), "if".to_string());
             assert_eq!(h.params.len(), 1);
             assert_eq!(h.template.as_ref().unwrap().elements.len(), 1);
         }
@@ -798,8 +808,8 @@ fn test_parse_template() {
     };
 
     match *t.elements.get(7).unwrap() {
-        HelperExpression(ref h) => {
-            assert_eq!(h.name, "foo".to_string());
+        Expression(ref h) => {
+            assert_eq!(h.name.as_name().unwrap(), "foo".to_string());
             assert_eq!(h.params.len(), 1);
             assert_eq!(*(h.params.get(0).unwrap()), Parameter::Name("bar".into()));
         }
@@ -810,7 +820,7 @@ fn test_parse_template() {
 
     match *t.elements.get(9).unwrap() {
         HelperBlock(ref h) => {
-            assert_eq!(h.name, "unless".to_string());
+            assert_eq!(h.name.as_name().unwrap(), "unless".to_string());
             assert_eq!(h.params.len(), 1);
             assert_eq!(h.inverse.as_ref().unwrap().elements.len(), 1);
         }
@@ -839,8 +849,8 @@ fn test_subexpression() {
 
     assert_eq!(t.elements.len(), 4);
     match *t.elements.get(0).unwrap() {
-        HelperExpression(ref h) => {
-            assert_eq!(h.name, "foo".to_owned());
+        Expression(ref h) => {
+            assert_eq!(h.name.as_name().unwrap(), "foo".to_owned());
             assert_eq!(h.params.len(), 1);
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
                 assert_eq!(t.name(), "bar".to_owned());
@@ -854,8 +864,8 @@ fn test_subexpression() {
     };
 
     match *t.elements.get(1).unwrap() {
-        HelperExpression(ref h) => {
-            assert_eq!(h.name, "foo".to_string());
+        Expression(ref h) => {
+            assert_eq!(h.name.as_name().unwrap(), "foo".to_string());
             assert_eq!(h.params.len(), 1);
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
                 assert_eq!(t.name(), "bar".to_owned());
@@ -875,7 +885,7 @@ fn test_subexpression() {
 
     match *t.elements.get(3).unwrap() {
         HelperBlock(ref h) => {
-            assert_eq!(h.name, "if".to_string());
+            assert_eq!(h.name.as_name().unwrap(), "if".to_string());
             assert_eq!(h.params.len(), 1);
             assert_eq!(h.hash.len(), 1);
 
@@ -910,7 +920,10 @@ fn test_white_space_omitter() {
     assert_eq!(t.elements.len(), 4);
 
     assert_eq!(t.elements[0], RawString("hello~".to_string()));
-    assert_eq!(t.elements[1], Expression(Parameter::Name("world".into())));
+    assert_eq!(
+        t.elements[1],
+        Expression(Box::new(HelperTemplate::with_name("world".into())))
+    );
     assert_eq!(t.elements[2], RawString("!".to_string()));
 
     let t2 = Template::compile("{{#if true}}1  {{~ else ~}} 2 {{~/if}}".to_string())
@@ -960,7 +973,7 @@ fn test_raw_helper() {
             assert_eq!(t.elements[2], RawString("world".to_owned()));
             match t.elements[1] {
                 HelperBlock(ref h) => {
-                    assert_eq!(h.name, "raw".to_owned());
+                    assert_eq!(h.name.as_name().unwrap(), "raw".to_owned());
                     if let Some(ref ht) = h.template {
                         assert_eq!(ht.elements.len(), 1);
                         assert_eq!(
@@ -986,7 +999,7 @@ fn test_raw_helper() {
 fn test_literal_parameter_parser() {
     match Template::compile("{{hello 1 name=\"value\" valid=false ref=someref}}") {
         Ok(t) => {
-            if let HelperExpression(ref ht) = t.elements[0] {
+            if let Expression(ref ht) = t.elements[0] {
                 assert_eq!(ht.params[0], Parameter::Literal(json!(1)));
                 assert_eq!(
                     ht.hash["name"],
