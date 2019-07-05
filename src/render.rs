@@ -233,10 +233,25 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn concat_path(&self, path_seg: &str) -> Option<String> {
-        match context::get_in_block_params(&self.block.block_context, path_seg) {
-            Some(BlockParamHolder::Path(paths)) => Some(paths.join("/")),
-            Some(BlockParamHolder::Value(_)) => None,
-            None => Some(format!("{}/{}", self.get_path(), path_seg)),
+        // FIXME:  what if path_seg is a complex path
+        let (path_parts, value_option) = context::parse_json_visitor(
+            self.get_path(),
+            self.get_local_path_root(),
+            path_seg,
+            &self.block.block_context,
+        )
+        .unwrap();
+
+        if value_option.is_some() {
+            None
+        } else {
+            Some(
+                path_parts
+                    .into_iter()
+                    .map(|v| format!("{}", v))
+                    .collect::<Vec<String>>()
+                    .join("/"),
+            )
         }
     }
 

@@ -71,6 +71,6 @@ fn test_nested_each() {
         ],
     });
 
-    let template = "{{#each classes as |class|}}{{#each class.methods as |method|}}{{method.id}}{{/each}}{{/each}}";
+    let template = "{{#each classes as |class|}}{{#each class.methods as |method|}}{{method.id}};{{/each}}{{/each}}";
     assert_eq!(hbs.render_template(template, &data).unwrap(), "1;2;3;4;");
 }
