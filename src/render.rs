@@ -394,6 +394,11 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         self.block
     }
 
+    /// Returns if the helper has either a block param or block param pair
+    pub fn has_block_param(&self) -> bool {
+        self.block_param.is_some()
+    }
+
     /// Returns block param if any
     pub fn block_param(&self) -> Option<&str> {
         if let Some(&BlockParam::Single(Parameter::Name(ref s))) = self.block_param {

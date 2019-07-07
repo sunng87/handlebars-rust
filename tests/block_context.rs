@@ -32,3 +32,17 @@ fn test_root_with_blocks() {
         "{{#*inline \"test\"}}{{b}}:{{@root.b}};{{/inline}}{{#each a}}{{> test}}{{/each}}";
     assert_eq!(hbs.render_template(template, &data).unwrap(), "1:3;2:3;");
 }
+
+#[test]
+fn test_singular_and_pair_block_params() {
+    let hbs = Handlebars::new();
+
+    let data = json!([
+        {"value": 11},
+        {"value": 22},
+    ]);
+
+    let template =
+        "{{#each this as |b index|}}{{b.value}}{{#each this as |value key|}}:{{key}},{{/each}}{{/each}}";
+    assert_eq!(hbs.render_template(template, &data).unwrap(), "11:value,22:value,");
+}

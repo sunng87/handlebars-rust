@@ -56,16 +56,22 @@ impl HelperDef for EachHelper {
                                 local_rc.set_path(new_path);
                             }
 
-                            if let Some(block_param) = h.block_param() {
+                            if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(block_param, local_rc.get_path())?;
+                                params.add_path(bp_val, local_rc.get_path())?;
+
+                                local_rc.push_block_context(params)?;
+                            } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
+                                let mut params = BlockParams::new();
+                                params.add_path(bp_val, local_rc.get_path())?;
+                                params.add_value(bp_index, to_json(i))?;
 
                                 local_rc.push_block_context(params)?;
                             }
 
                             t.render(r, ctx, &mut local_rc, out)?;
 
-                            if h.block_param().is_some() {
+                            if h.has_block_param() {
                                 local_rc.pop_block_context();
                             }
 
@@ -97,7 +103,12 @@ impl HelperDef for EachHelper {
                                 local_rc.set_path(new_path);
                             }
 
-                            if let Some((bp_val, bp_key)) = h.block_param_pair() {
+                            if let Some(bp_val) = h.block_param() {
+                                let mut params = BlockParams::new();
+                                params.add_path(bp_val, local_rc.get_path())?;
+
+                                local_rc.push_block_context(params)?;
+                            } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
                                 params.add_path(bp_val, local_rc.get_path())?;
                                 params.add_value(bp_key, to_json(&k))?;
@@ -107,7 +118,7 @@ impl HelperDef for EachHelper {
 
                             t.render(r, ctx, &mut local_rc, out)?;
 
-                            if h.block_param().is_some() {
+                            if h.has_block_param() {
                                 local_rc.pop_block_context();
                             }
 
