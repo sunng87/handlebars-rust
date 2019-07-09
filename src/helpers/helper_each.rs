@@ -38,7 +38,13 @@ impl HelperDef for EachHelper {
                     (true, &Json::Array(ref list)) => {
                         let len = list.len();
 
-                        let array_path = value.path().and_then(|p| rc.concat_path(p));
+                        let array_path = value.path().map(|p| {
+                            if value.is_absolute_path() {
+                                p.to_string()
+                            } else {
+                                format!("{}/{}", rc.get_path(), p)
+                            }
+                        });
 
                         for (i, _) in list.iter().enumerate().take(len) {
                             let mut local_rc = rc.derive();
@@ -83,7 +89,13 @@ impl HelperDef for EachHelper {
                     }
                     (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
-                        let obj_path = value.path().and_then(|p| rc.concat_path(p));
+                        let obj_path = value.path().map(|p| {
+                            if value.is_absolute_path() {
+                                p.to_string()
+                            } else {
+                                format!("{}/{}", rc.get_path(), p)
+                            }
+                        });
 
                         for (k, _) in obj.iter() {
                             let mut local_rc = rc.derive();

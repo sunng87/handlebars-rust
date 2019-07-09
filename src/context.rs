@@ -8,7 +8,7 @@ use serde_json::value::{to_value, Map, Value as Json};
 
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
-use crate::value::ScopedJson;
+use crate::value::{PathAndJson, ScopedJson};
 
 pub type Object = HashMap<String, Json>;
 
@@ -118,7 +118,7 @@ fn parse_json_visitor<'a, 'b: 'a>(
     path_context: &'a VecDeque<String>,
     relative_path: &'a str,
     block_params: &'b VecDeque<BlockParams>,
-) -> Result<(VecDeque<&'a str>, Option<Json>), RenderError> {
+) -> Result<(VecDeque<&'a str>, Option<&'b BlockParamHolder>), RenderError> {
     let mut path_stack = VecDeque::new();
     let parser = HandlebarsParser::parse(Rule::path, relative_path)
         .map(|p| p.flatten())
@@ -158,7 +158,7 @@ fn parse_json_visitor<'a, 'b: 'a>(
             parse_json_visitor_inner(&mut path_stack, relative_path)?;
             // drop first seg, which is block_param
             path_stack.pop_front();
-            Ok((path_stack, Some(v.clone())))
+            Ok((path_stack, used_block_param))
         }
         Some(BlockParamHolder::Path(ref paths)) => {
             parse_json_visitor_inner(&mut path_stack, relative_path)?;
@@ -169,7 +169,7 @@ fn parse_json_visitor<'a, 'b: 'a>(
                 path_stack.push_front(p)
             }
 
-            Ok((path_stack, None))
+            Ok((path_stack, used_block_param))
         }
         None => {
             parse_json_visitor_inner(&mut path_stack, relative_path)?;
@@ -247,11 +247,14 @@ impl Context {
         relative_path: &str,
         block_params: &VecDeque<BlockParams>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let (paths, block_param_value) =
+        let (paths, block_param_holder) =
             parse_json_visitor(base_path, path_context, relative_path, block_params)?;
 
-        if let Some(block_param_value) = block_param_value {
-            let mut data = Some(&block_param_value);
+        dbg!(block_param_holder);
+        dbg!(&paths);
+
+        if let Some(BlockParamHolder::Value(ref block_param_value)) = block_param_holder {
+            let mut data = Some(block_param_value);
             for p in paths.iter() {
                 data = get_data(data, p)?;
             }
@@ -263,9 +266,16 @@ impl Context {
             for p in paths.iter() {
                 data = get_data(data, p)?;
             }
-            Ok(data
-                .map(|v| ScopedJson::Context(v))
-                .unwrap_or_else(|| ScopedJson::Missing))
+
+            if let Some(BlockParamHolder::Path(_)) = block_param_holder {
+                Ok(data
+                    .map(|v| ScopedJson::BlockContext(v, join(&paths, ".")))
+                    .unwrap_or_else(|| ScopedJson::Missing))
+            } else {
+                Ok(data
+                    .map(|v| ScopedJson::Context(v))
+                    .unwrap_or_else(|| ScopedJson::Missing))
+            }
         }
     }
 
@@ -276,6 +286,19 @@ impl Context {
     pub fn data_mut(&mut self) -> &mut Json {
         &mut self.data
     }
+}
+
+fn join(segs: &VecDeque<&str>, sep: &str) -> String {
+    let mut out = String::new();
+    let mut iter = segs.into_iter();
+    if let Some(fst) = iter.next() {
+        out.push_str(fst);
+        for elt in iter {
+            out.push_str(sep);
+            out.push_str(elt);
+        }
+    }
+    out
 }
 
 #[cfg(test)]

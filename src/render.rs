@@ -232,28 +232,39 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().path = path;
     }
 
+    #[deprecated]
     pub fn concat_path(&self, path_seg: &str) -> Option<String> {
-        // FIXME:  what if path_seg is a complex path
-        let (path_parts, value_option) = context::parse_json_visitor(
-            self.get_path(),
-            self.get_local_path_root(),
-            path_seg,
-            &self.block.block_context,
-        )
-        .unwrap();
-
-        if value_option.is_some() {
-            None
-        } else {
-            Some(
-                path_parts
-                    .into_iter()
-                    .map(|v| format!("{}", v))
-                    .collect::<Vec<String>>()
-                    .join("/"),
-            )
+        match context::get_in_block_params(&self.block.block_context, path_seg) {
+            Some(BlockParamHolder::Path(paths)) => Some(paths.join("/")),
+            Some(BlockParamHolder::Value(_)) => None,
+            None => Some(format!("{}/{}", self.get_path(), path_seg)),
         }
     }
+
+    // pub fn concat_path(&self, path_seg: &str) -> Option<String> {
+    //     dbg!(path_seg);
+    //     // FIXME:  what if path_seg is a complex path
+    //     let (path_parts, value_option) = context::parse_json_visitor(
+    //         self.get_path(),
+    //         self.get_local_path_root(),
+    //         path_seg,
+    //         &self.block.block_context,
+    //     )
+    //     .unwrap();
+    //     dbg!(&path_parts);
+
+    //     if value_option.is_some() {
+    //         None
+    //     } else {
+    //         Some(
+    //             path_parts
+    //                 .into_iter()
+    //                 .map(|v| format!("{}", v))
+    //                 .collect::<Vec<String>>()
+    //                 .join("/"),
+    //         )
+    //     }
+    // }
 
     pub fn get_local_path_root(&self) -> &VecDeque<String> {
         &self.block().local_path_root
@@ -589,7 +600,7 @@ impl Parameter {
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
-        match *self {
+        match self {
             Parameter::Name(ref name) => {
                 if let Some(value) = rc.get_local_var(name) {
                     // local var, @first, @last for example
@@ -610,11 +621,15 @@ impl Parameter {
                         ScopedJson::Derived(json.as_json().clone()),
                     ))
                 } else {
-                    // failback to normal evaluation
-                    Ok(PathAndJson::new(
-                        Some(name.to_owned()),
-                        rc.evaluate(ctx, name)?,
-                    ))
+                    let value = rc.evaluate(ctx, name)?;
+                    if let Some(ref block_context_path) = value.block_context_path() {
+                        Ok(PathAndJson::new_absolute(
+                            Some(block_context_path.to_string()),
+                            value,
+                        ))
+                    } else {
+                        Ok(PathAndJson::new(Some(name.to_owned()), value))
+                    }
                 }
             }
             Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
@@ -1050,7 +1065,7 @@ fn test_key_with_slash() {
         .register_template_string("t", "{{#each .}}{{@key}}: {{this}}\n{{/each}}")
         .is_ok());
 
-    let r = r.render("t", &json!({"/foo": "bar"})).expect("should work");
+    let r = r.render("t", &json!({"/foo": "bar"})).unwrap();
 
     assert_eq!(r, "/foo: bar\n");
 }
