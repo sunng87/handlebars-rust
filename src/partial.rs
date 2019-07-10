@@ -18,8 +18,16 @@ fn render_partial<'reg: 'rc, 'rc>(
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // partial context path
-    if let Some(ref p) = d.param(0) {
-        if let Some(param_path) = p.path().and_then(|p| local_rc.concat_path(p)) {
+    if let Some(ref param_ctx) = d.param(0) {
+        let param_path = param_ctx.path().map(|p| {
+            if param_ctx.is_absolute_path() {
+                p.to_string()
+            } else {
+                format!("{}/{}", local_rc.get_path(), p)
+            }
+        });
+
+        if let Some(param_path) = param_path {
             local_rc.promote_local_vars();
             local_rc.set_path(param_path);
         }

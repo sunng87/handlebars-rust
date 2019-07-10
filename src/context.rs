@@ -8,7 +8,7 @@ use serde_json::value::{to_value, Map, Value as Json};
 
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
-use crate::value::{PathAndJson, ScopedJson};
+use crate::value::ScopedJson;
 
 pub type Object = HashMap<String, Json>;
 
@@ -154,7 +154,7 @@ fn parse_json_visitor<'a, 'b: 'a>(
     }
 
     match used_block_param {
-        Some(BlockParamHolder::Value(ref v)) => {
+        Some(BlockParamHolder::Value(_)) => {
             parse_json_visitor_inner(&mut path_stack, relative_path)?;
             // drop first seg, which is block_param
             path_stack.pop_front();
@@ -249,9 +249,6 @@ impl Context {
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let (paths, block_param_holder) =
             parse_json_visitor(base_path, path_context, relative_path, block_params)?;
-
-        dbg!(block_param_holder);
-        dbg!(&paths);
 
         if let Some(BlockParamHolder::Value(ref block_param_value)) = block_param_holder {
             let mut data = Some(block_param_value);

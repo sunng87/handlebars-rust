@@ -241,31 +241,6 @@ impl<'reg> RenderContext<'reg> {
         }
     }
 
-    // pub fn concat_path(&self, path_seg: &str) -> Option<String> {
-    //     dbg!(path_seg);
-    //     // FIXME:  what if path_seg is a complex path
-    //     let (path_parts, value_option) = context::parse_json_visitor(
-    //         self.get_path(),
-    //         self.get_local_path_root(),
-    //         path_seg,
-    //         &self.block.block_context,
-    //     )
-    //     .unwrap();
-    //     dbg!(&path_parts);
-
-    //     if value_option.is_some() {
-    //         None
-    //     } else {
-    //         Some(
-    //             path_parts
-    //                 .into_iter()
-    //                 .map(|v| format!("{}", v))
-    //                 .collect::<Vec<String>>()
-    //                 .join("/"),
-    //         )
-    //     }
-    // }
-
     pub fn get_local_path_root(&self) -> &VecDeque<String> {
         &self.block().local_path_root
     }
@@ -628,7 +603,12 @@ impl Parameter {
                             value,
                         ))
                     } else {
-                        Ok(PathAndJson::new(Some(name.to_owned()), value))
+                        match value {
+                            // when evaluate result is a derived json, it indicates the
+                            // value is a block context value
+                            ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
+                            _ => Ok(PathAndJson::new(Some(name.to_owned()), value)),
+                        }
                     }
                 }
             }
