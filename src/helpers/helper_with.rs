@@ -35,7 +35,13 @@ impl HelperDef for WithHelper {
                 local_rc.push_local_path_root(local_path_root);
             }
             if not_empty {
-                let new_path = param.path().and_then(|p| local_rc.concat_path(p));
+                let new_path = param.path().map(|p| {
+                    if param.is_absolute_path() {
+                        p.to_string()
+                    } else {
+                        format!("{}/{}", rc.get_path(), p)
+                    }
+                });
                 if let Some(ref new_path) = new_path {
                     local_rc.set_path(new_path.clone());
                 }

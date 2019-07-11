@@ -232,6 +232,7 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().path = path;
     }
 
+    #[deprecated]
     pub fn concat_path(&self, path_seg: &str) -> Option<String> {
         match context::get_in_block_params(&self.block.block_context, path_seg) {
             Some(BlockParamHolder::Path(paths)) => Some(paths.join("/")),
@@ -574,7 +575,7 @@ impl Parameter {
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
-        match *self {
+        match self {
             Parameter::Name(ref name) => {
                 if let Some(value) = rc.get_local_var(name) {
                     // local var, @first, @last for example
@@ -595,11 +596,20 @@ impl Parameter {
                         ScopedJson::Derived(json.as_json().clone()),
                     ))
                 } else {
-                    // failback to normal evaluation
-                    Ok(PathAndJson::new(
-                        Some(name.to_owned()),
-                        rc.evaluate(ctx, name)?,
-                    ))
+                    let value = rc.evaluate(ctx, name)?;
+                    if let Some(ref block_context_path) = value.block_context_path() {
+                        Ok(PathAndJson::new_absolute(
+                            Some(block_context_path.to_string()),
+                            value,
+                        ))
+                    } else {
+                        match value {
+                            // when evaluate result is a derived json, it indicates the
+                            // value is a block context value
+                            ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
+                            _ => Ok(PathAndJson::new(Some(name.to_owned()), value)),
+                        }
+                    }
                 }
             }
             Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
@@ -1035,7 +1045,7 @@ fn test_key_with_slash() {
         .register_template_string("t", "{{#each .}}{{@key}}: {{this}}\n{{/each}}")
         .is_ok());
 
-    let r = r.render("t", &json!({"/foo": "bar"})).expect("should work");
+    let r = r.render("t", &json!({"/foo": "bar"})).unwrap();
 
     assert_eq!(r, "/foo: bar\n");
 }
