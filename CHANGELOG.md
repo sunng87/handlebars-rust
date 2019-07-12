@@ -1,12 +1,18 @@
 # Change Log
 
-## [{{2.0.0}}](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta3...{{2.0.0}}) - {{ 2019-07-02 }}
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/2.0.0...Unreleased) - ReleaseDate
+* [Changed] Fixed issue with block context #275
+* [Changed] Added support for array index in block context #276
+* [Changed] Deprecated RenderContext `concat_path`
+* [Changed] Update hashbrown to 0.5.0
+
+## [2.0.0](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta3...2.0.0) - 2019-07-02
 * [Changed] Fixed more dyn trait warnings
 * [Changed] #80 Fixed support for zero-param helper
 * [Changed] Changed minimum Rust version to 1.32 as required by
   getrandom crate
 
-## [2.0.0-beta.3](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta1...2.0.0-beta.3) - {{ 2019-06-24}}
+## [2.0.0-beta.3](https://github.com/sunng87/handlebars-rust/compare/2.0.0-beta1...2.0.0-beta.3) - 2019-06-24
 
 * [Changed] Block parameter revamp, fixed cases for #260 and #264
 * [Changed] #265 Fixed block parameter order in `each` helper
@@ -14,7 +20,7 @@
 * [Changed] `RenderContext` API update, `evaluate_absolute` removed,
   use `@root` instead
 
-## [2.0.0-beta.1](https://github.com/sunng87/handlebars-rust/compare/1.1.0...2.0.0-beta.1) - {{ 2019-03-16}}
+## [2.0.0-beta.1](https://github.com/sunng87/handlebars-rust/compare/1.1.0...2.0.0-beta.1) - 2019-03-16
 
 * [Changed] Everything changed in yanked 1.2.0
 * [Changed] With Pest updated to 2.1, our minimal rust version is set
