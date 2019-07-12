@@ -39,16 +39,14 @@ impl BlockParamHolder {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct BlockParams {
     data: HashMap<String, BlockParamHolder>,
 }
 
 impl BlockParams {
     pub fn new() -> BlockParams {
-        BlockParams {
-            data: HashMap::new(),
-        }
+        BlockParams::default()
     }
 
     pub fn add_path(&mut self, k: &str, v: &str) -> Result<(), RenderError> {
@@ -287,7 +285,7 @@ impl Context {
 
 fn join(segs: &VecDeque<&str>, sep: &str) -> String {
     let mut out = String::new();
-    let mut iter = segs.into_iter();
+    let mut iter = segs.iter();
     if let Some(fst) = iter.next() {
         out.push_str(fst);
         for elt in iter {

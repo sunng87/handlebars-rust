@@ -308,7 +308,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         }
 
         Ok(Helper {
-            name: name,
+            name,
             params: pv,
             hash: hm,
             template: ht.template.as_ref(),
@@ -765,7 +765,7 @@ impl Renderable for TemplateElement {
                         } else {
                             // strict mode check
                             if registry.strict_mode() {
-                                return Err(RenderError::strict_error(context_json.path()));
+                                Err(RenderError::strict_error(context_json.path()))
                             } else {
                                 Ok(())
                             }

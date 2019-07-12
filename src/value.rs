@@ -88,7 +88,7 @@ pub struct PathAndJson<'reg: 'rc, 'rc> {
 impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
     pub fn new(path: Option<String>, value: ScopedJson<'reg, 'rc>) -> PathAndJson<'reg, 'rc> {
         PathAndJson {
-            path: path.map(|p| Path::Relative(p)),
+            path: path.map(Path::Relative),
             value,
         }
     }
@@ -98,7 +98,7 @@ impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
         value: ScopedJson<'reg, 'rc>,
     ) -> PathAndJson<'reg, 'rc> {
         PathAndJson {
-            path: path.map(|p| Path::Absolute(p)),
+            path: path.map(Path::Absolute),
             value,
         }
     }
