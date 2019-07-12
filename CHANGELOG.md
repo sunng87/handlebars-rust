@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/2.0.0...Unreleased) - ReleaseDate
+## [2.0.1](https://github.com/sunng87/handlebars-rust/compare/2.0.0...2.0.1) - 2019-07-12
 * [Changed] Fixed issue with block context #275
 * [Changed] Added support for array index in block context #276
 * [Changed] Deprecated RenderContext `concat_path`
