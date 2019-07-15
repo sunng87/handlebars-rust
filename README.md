@@ -212,7 +212,7 @@ workaround for cases we don't support.
 ## Handlebars for Web Frameworks
 
 * Iron: [handlebars-iron](https://github.com/sunng87/handlebars-iron)
-* Rocket: [rocket/contrib](https://api.rocket.rs/rocket_contrib/struct.Template.html)
+* Rocket: [rocket/contrib](https://api.rocket.rs/v0.4/rocket_contrib/templates/index.html)
 * Warp: [handlebars
   example](https://github.com/seanmonstar/warp/blob/master/examples/handlebars_template.rs)
 * Tower-web: [Built-in](https://github.com/carllerche/tower-web)
