@@ -5,4 +5,3 @@ pre-release-replacements = [
   {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}"},
   {file="src/lib.rs", search="https://docs.rs/handlebars/[a-z0-9\\.-]+", replace="https://docs.rs/handlebars/{{version}}"},
 ]
-

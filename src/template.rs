@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::convert::From;
 use std::iter::Peekable;
 
@@ -7,7 +7,6 @@ use pest::error::LineColLocation;
 use pest::iterators::Pair;
 use pest::{Parser, Position};
 
-use hashbrown::HashMap;
 use serde_json::value::Value as Json;
 use std::str::FromStr;
 

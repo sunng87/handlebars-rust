@@ -1,6 +1,5 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
-use hashbrown::HashMap;
 use pest::iterators::Pair;
 use pest::Parser;
 use serde::Serialize;
@@ -300,9 +299,8 @@ fn join(segs: &VecDeque<&str>, sep: &str) -> String {
 mod test {
     use crate::context::{self, BlockParams, Context};
     use crate::value::{self};
-    use hashbrown::HashMap;
     use serde_json::value::Map;
-    use std::collections::VecDeque;
+    use std::collections::{HashMap, VecDeque};
 
     #[derive(Serialize)]
     struct Address {

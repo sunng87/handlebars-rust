@@ -1,10 +1,9 @@
 use std::borrow::Borrow;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use hashbrown::HashMap;
 use serde_json::value::Value as Json;
 
 use crate::context::{self, BlockParamHolder, BlockParams, Context};
