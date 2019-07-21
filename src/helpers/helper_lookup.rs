@@ -14,10 +14,10 @@ pub struct LookupHelper;
 impl HelperDef for LookupHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        _: &Registry,
-        _: &Context,
-        _: &mut RenderContext,
+        h: &Helper<'reg, 'rc>,
+        _: &'reg Registry,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let collection_value = h

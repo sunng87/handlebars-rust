@@ -12,10 +12,10 @@ pub struct WithHelper;
 impl HelperDef for WithHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        r: &Registry,
-        ctx: &Context,
-        rc: &mut RenderContext,
+        h: &Helper<'reg, 'rc>,
+        r: &'reg Registry,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let param = h

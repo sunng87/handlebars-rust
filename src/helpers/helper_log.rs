@@ -19,10 +19,10 @@ pub struct LogHelper;
 impl HelperDef for LogHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper,
-        _: &Registry,
-        _: &Context,
-        _: &mut RenderContext,
+        h: &Helper<'reg, 'rc>,
+        _: &'reg Registry,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg>,
         _: &mut dyn Output,
     ) -> HelperResult {
         let param = h
