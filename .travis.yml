@@ -9,9 +9,10 @@ matrix:
     - rust: nightly
     - rust: nightly
       name: clippy-lint
+      before_script:
+        - rustup component add clippy
       script:
-        - cargo install clippy
-        - cargo clippy
+        - cargo clippy -- -D warnings
     - rust: beta
     - rust: stable
     - rust: 1.32.0
