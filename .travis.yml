@@ -7,6 +7,11 @@ env:
 matrix:
   include:
     - rust: nightly
+    - rust: nightly
+      name: clippy-lint
+      script:
+        - cargo install clippy
+        - cargo clippy
     - rust: beta
     - rust: stable
     - rust: 1.32.0
