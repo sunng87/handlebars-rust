@@ -7,7 +7,7 @@ env:
 matrix:
   include:
     - rust: nightly
-    - rust: nightly
+    - rust: stable
       name: clippy-lint
       before_script:
         - rustup component add clippy
