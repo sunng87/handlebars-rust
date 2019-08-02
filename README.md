@@ -1,7 +1,12 @@
 handlebars-rust
 ===============
 
-Rust templating with [Handlebars templating language](https://handlebarsjs.com).
+[Handlebars templating language](https://handlebarsjs.com) implemented
+in Rust and for Rust.
+
+Handlebars-rust is the template engine renders Rust official website
+[rust-lang.org](https://www.rust-lang.org) and [its
+book](https://doc.rust-lang.org/book/).
 
 [![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
 [![](http://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
@@ -150,64 +155,12 @@ You can find a real example for template inheritance in
 
 #### WebAssembly compatible
 
-Handlebars 1.0 can be used in WebAssembly projects with directory
+Handlebars can be used in WebAssembly projects with directory
 source feature disabled. Adding handlebars to your project like this:
 
 ```
-handlebars = { version = "1", features = ["no_dir_source"], default-features = false }
+handlebars = { version = "2", features = ["no_dir_source"], default-features = false }
 ```
-
-#### Strict mode
-
-Handlebars, the language designed to work with JavaScript, has no
-strict restriction on accessing non-existed fields or index. It
-generates empty string for such case. However, in Rust we want a
-little bit strict sometime.
-
-By enabling `strict_mode` on handlebars:
-
-```rust
-handlebars.set_strict_mode(true);
-```
-
-You will get a `RenderError` when accessing field that not exists.
-
-### Limitations
-
-* This implementation is **not fully compatible** with the original
-  javascript version. Specifically, mustache list iteration and null
-  check doesn't work. But you can use `#each` and `#if` for same
-  behavior.
-* You will need to make your data `Serializable` on serde. We don't
-  actually serialize data into JSON string or similar. However, we use
-  JSON data type system in template render process.
-
-### Handlebars-js features supported in Handlebars-rust
-
-* Expression / Block Helpers
-* Built-in helpers
-  * each
-  * if
-  * with
-  * lookup
-  * log
-* Custom helper
-* Parameter and hashes for helper, block params
-* Partials, include, template inheritance
-* Omitting whitespace with `~`
-* Subexpression `{{(foo bar)}}`
-* Json expression `a.b.[0]` and `a.b.[c]`
-* RawHelper syntax `{{{{raw-helper}}}}...{{{{/raw-helper}}}}`
-* Decorator, implemented in Rust way
-
-### JavaScript implementation features we don't have
-
-* Mustache block (use `if`/`each` instead)
-* Chained else
-
-Feel free to report an issue if you find something broken. We aren't
-going to implement all features of handlebars-js, but we should have a
-workaround for cases we don't support.
 
 ## Handlebars for Web Frameworks
 
@@ -216,6 +169,8 @@ workaround for cases we don't support.
 * Warp: [handlebars
   example](https://github.com/seanmonstar/warp/blob/master/examples/handlebars_template.rs)
 * Tower-web: [Built-in](https://github.com/carllerche/tower-web)
+* Actix: [handlebars
+  example](https://github.com/actix/examples/blob/master/template_handlebars/src/main.rs)
 
 ## Using handlebars-rust?
 
