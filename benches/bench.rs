@@ -1,15 +1,24 @@
-#![feature(test)]
-extern crate handlebars;
+#[macro_use]
+extern crate criterion;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
-
-extern crate test;
 
 use std::collections::BTreeMap;
 
+use criterion::Criterion;
 use handlebars::{to_json, Handlebars, Template};
 use serde_json::value::Value as Json;
+
+#[derive(Serialize)]
+struct DataWrapper {
+    v: String,
+}
+
+#[derive(Serialize)]
+struct RowWrapper {
+    real: Vec<DataWrapper>,
+    dummy: Vec<DataWrapper>,
+}
 
 static SOURCE: &'static str = "<html>
   <head>
@@ -53,13 +62,13 @@ fn make_data() -> BTreeMap<String, Json> {
     data
 }
 
-#[bench]
-fn parse_template(b: &mut test::Bencher) {
-    b.iter(|| Template::compile(SOURCE).ok().unwrap());
+fn parse_template(c: &mut Criterion) {
+    c.bench_function("parse_template", move |b| {
+        b.iter(|| Template::compile(SOURCE).ok().unwrap())
+    });
 }
 
-#[bench]
-fn render_template(b: &mut test::Bencher) {
+fn render_template(c: &mut Criterion) {
     let mut handlebars = Handlebars::new();
     handlebars
         .register_template_string("table", SOURCE)
@@ -67,22 +76,12 @@ fn render_template(b: &mut test::Bencher) {
         .expect("Invalid template format");
 
     let data = make_data();
-    b.iter(|| handlebars.render("table", &data).ok().unwrap())
+    c.bench_function("render_template", move |b| {
+        b.iter(|| handlebars.render("table", &data).ok().unwrap())
+    });
 }
 
-#[derive(Serialize)]
-struct DataWrapper {
-    v: String,
-}
-
-#[derive(Serialize)]
-struct RowWrapper {
-    real: Vec<DataWrapper>,
-    dummy: Vec<DataWrapper>,
-}
-
-#[bench]
-fn large_loop_helper(b: &mut test::Bencher) {
+fn large_loop_helper(c: &mut Criterion) {
     let mut handlebars = Handlebars::new();
     handlebars
         .register_template_string("test", "BEFORE\n{{#each real}}{{this.v}}{{/each}}AFTER")
@@ -102,5 +101,11 @@ fn large_loop_helper(b: &mut test::Bencher) {
         })
         .collect();
     let rows = RowWrapper { real, dummy };
-    b.iter(|| handlebars.render("test", &rows).ok().unwrap());
+
+    c.bench_function("large_loop_helper", move |b| {
+        b.iter(|| handlebars.render("test", &rows).ok().unwrap())
+    });
 }
+
+criterion_group!(benches, parse_template, render_template, large_loop_helper);
+criterion_main!(benches);
