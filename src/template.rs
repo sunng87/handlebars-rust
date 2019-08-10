@@ -314,12 +314,9 @@ impl Template {
             }
         });
 
-        if p2.is_some() {
+        if let Some(p2) = p2 {
             it.next();
-            Ok(BlockParam::Pair((
-                Parameter::Name(p1),
-                Parameter::Name(p2.unwrap()),
-            )))
+            Ok(BlockParam::Pair((Parameter::Name(p1), Parameter::Name(p2))))
         } else {
             Ok(BlockParam::Single(Parameter::Name(p1)))
         }
