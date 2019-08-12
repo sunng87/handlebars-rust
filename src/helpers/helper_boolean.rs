@@ -2,8 +2,8 @@
 
 use crate::value::JsonTruthy;
 
-handlebars_helper!(eq: |x: i64, y: i64| x == y);
-handlebars_helper!(ne: |x: i64, y: i64| x != y);
+handlebars_helper!(eq: |x: Json, y: Json| x == y);
+handlebars_helper!(ne: |x: Json, y: Json| x != y);
 handlebars_helper!(gt: |x: i64, y: i64| x > y);
 handlebars_helper!(gte: |x: i64, y: i64| x >= y);
 handlebars_helper!(lt: |x: i64, y: i64| x < y);
@@ -36,10 +36,26 @@ mod test_conditions {
         test_condition("(or (gt 3 5) (gt 5 3))", true);
         test_condition("(not [])", true);
         test_condition("(and null 4)", false);
+    }
+
+    #[test]
+    fn test_eq() {
         test_condition("(eq 5 5)", true);
         test_condition("(eq 5 6)", false);
+        test_condition(r#"(eq "foo" "foo")"#, true);
+        test_condition(r#"(eq "foo" "Foo")"#, false);
+        test_condition(r#"(eq [5] [5])"#, true);
+        test_condition(r#"(eq [5] [4])"#, false);
+        test_condition(r#"(eq 5 "5")"#, false);
+        test_condition(r#"(eq 5 [5])"#, false);
+    }
+
+    #[test]
+    fn test_ne() {
         test_condition("(ne 5 6)", true);
         test_condition("(ne 5 5)", false);
+        test_condition(r#"(ne "foo" "foo")"#, false);
+        test_condition(r#"(ne "foo" "Foo")"#, true);
     }
 
     #[test]
