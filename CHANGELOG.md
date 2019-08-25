@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/2.0.1...Unreleased) - ReleaseDate
+
+* [Changed] Extended `eq` and `ne` helper for all json types #287
+
 ## [2.0.1](https://github.com/sunng87/handlebars-rust/compare/2.0.0...2.0.1) - 2019-07-12
 * [Changed] Fixed issue with block context #275
 * [Changed] Added support for array index in block context #276
