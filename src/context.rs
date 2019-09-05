@@ -12,10 +12,6 @@ use crate::value::ScopedJson;
 
 pub type Object = HashMap<String, Json>;
 
-lazy_static! {
-    static ref EMPTY_VEC_DEQUE: VecDeque<String> = VecDeque::new();
-}
-
 #[derive(Clone, Debug)]
 pub enum BlockParamHolder {
     // a reference to certain context value

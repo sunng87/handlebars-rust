@@ -6,23 +6,17 @@ use std::path::Path;
 use hashbrown::HashMap;
 use serde::Serialize;
 
-use regex::{Captures, Regex};
-
 use crate::context::Context;
 use crate::directives::{self, DirectiveDef};
 use crate::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
-use crate::support::str::StringWriter;
+use crate::support::str::{self, StringWriter};
 use crate::template::Template;
 
 #[cfg(not(feature = "no_dir_source"))]
 use walkdir::{DirEntry, WalkDir};
-
-lazy_static! {
-    static ref DEFAULT_REPLACE: Regex = Regex::new(">|<|\"|&").unwrap();
-}
 
 /// This type represents an *escape fn*, that is a function who's purpose it is
 /// to escape potentially problematic characters in a string.
@@ -34,18 +28,7 @@ pub type EscapeFn = Box<dyn Fn(&str) -> String + Send + Sync>;
 /// The default *escape fn* replaces the characters `&"<>`
 /// with the equivalent html / xml entities.
 pub fn html_escape(data: &str) -> String {
-    DEFAULT_REPLACE
-        .replace_all(data, |cap: &Captures| {
-            match cap.get(0).map(|m| m.as_str()) {
-                Some("<") => "&lt;",
-                Some(">") => "&gt;",
-                Some("\"") => "&quot;",
-                Some("&") => "&amp;",
-                _ => unreachable!(),
-            }
-            .to_owned()
-        })
-        .into_owned()
+    str::escape_html(data)
 }
 
 /// `EscapeFn` that do not change any thing. Useful when using in a non-html

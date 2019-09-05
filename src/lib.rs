@@ -320,9 +320,6 @@
 #![allow(dead_code)]
 #![recursion_limit = "200"]
 
-#[macro_use]
-extern crate lazy_static;
-
 #[cfg(not(feature = "no_logging"))]
 #[macro_use]
 extern crate log;
@@ -341,7 +338,6 @@ extern crate serde_derive;
 #[cfg(test)]
 extern crate tempfile;
 
-extern crate regex;
 extern crate serde;
 #[allow(unused_imports)]
 #[macro_use]
