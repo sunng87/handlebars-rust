@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/2.0.1...Unreleased) - ReleaseDate
+## [2.0.2](https://github.com/sunng87/handlebars-rust/compare/2.0.1...2.0.2) - 2019-09-06
 
 * [Changed] Extended `eq` and `ne` helper for all json types #287
 * [Changed] Removed `regex` and `lazy_static` crate to optimize dependency tree
