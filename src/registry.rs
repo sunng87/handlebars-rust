@@ -15,7 +15,7 @@ use crate::render::{RenderContext, Renderable};
 use crate::support::str::{self, StringWriter};
 use crate::template::Template;
 
-#[cfg(not(feature = "no_dir_source"))]
+#[cfg(feature = "dir_source")]
 use walkdir::{DirEntry, WalkDir};
 
 /// This type represents an *escape fn*, that is a function who's purpose it is
@@ -66,7 +66,7 @@ impl Default for Registry {
     }
 }
 
-#[cfg(not(feature = "no_dir_source"))]
+#[cfg(feature = "dir_source")]
 fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
     let path = entry.path();
 
@@ -200,7 +200,7 @@ impl Registry {
     /// will use their relative name as template name. For example, when `dir_path` is
     /// `templates/` and `tpl_extension` is `.hbs`, the file
     /// `templates/some/path/file.hbs` will be registerd as `some/path/file`.
-    #[cfg(not(feature = "no_dir_source"))]
+    #[cfg(feature = "dir_source")]
     pub fn register_templates_directory<P>(
         &mut self,
         tpl_extension: &'static str,
@@ -486,7 +486,7 @@ mod test {
     }
 
     #[test]
-    #[cfg(not(feature = "no_dir_source"))]
+    #[cfg(feature = "dir_source")]
     fn test_register_templates_directory() {
         let mut r = Registry::new();
         {
