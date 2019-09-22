@@ -433,11 +433,11 @@ mod test {
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
-    #[cfg(not(feature = "no_dir_source"))]
+    #[cfg(feature = "dir_source")]
     use std::fs::{DirBuilder, File};
-    #[cfg(not(feature = "no_dir_source"))]
+    #[cfg(feature = "dir_source")]
     use std::io::Write;
-    #[cfg(not(feature = "no_dir_source"))]
+    #[cfg(feature = "dir_source")]
     use tempfile::tempdir;
 
     #[derive(Clone, Copy)]
