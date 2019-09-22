@@ -4,7 +4,7 @@ handlebars-rust
 [Handlebars templating language](https://handlebarsjs.com) implemented
 in Rust and for Rust.
 
-Handlebars-rust is the template engine renders Rust official website
+Handlebars-rust is the template engine that renders the official Rust website
 [rust-lang.org](https://www.rust-lang.org) and [its
 book](https://doc.rust-lang.org/book/).
 
@@ -46,7 +46,7 @@ If you are not familiar with [handlebars language
 syntax](https://handlebarsjs.com), it is recommended to walk through
 their introduction first.
 
-Check `render` example in the source tree. The example shows you how
+Check the `render` example in the source tree. The example shows you how
 to:
 
 * Create a `Handlebars` registry and register the template from files;
@@ -55,11 +55,11 @@ to:
 * Define and prepare some data;
 * Render it;
 
-Run `cargo run --example render` to see results.
+Run `cargo run --example render` to see results
 (or `RUST_LOG=handlebars=info cargo run --example render` for logging
 output).
 
-Checkout `examples/` for more concrete demos of current API.
+Checkout `examples/` for more concrete demos of the current API.
 
 
 ## Minimum Rust Version Policy
@@ -82,23 +82,23 @@ and clarify in CHANGELOG.
 
 ## Changelog
 
-Change log is available in the source tree named as `CHANGELOG.md`.
+Changelog is available in the source tree named as `CHANGELOG.md`.
 
 ## Contributor Guide
 
 Any contribution to this library is welcomed. To get started into
 development, I have several [Help
 Wanted](https://github.com/sunng87/handlebars-rust/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
-issue, with difficult level labeled. When running into any problem,
+issues, with the difficulty level labeled. When running into any problem,
 feel free to contact me on github.
 
 I'm always looking for maintainers to work together on this library,
-also let me know (via email or anywhere in the issue tracker) if you
+let me know (via email or anywhere in the issue tracker) if you
 want to join.
 
-## Donation
+## Donations
 
-I'm now accepting donation on [liberapay](https://liberapay.com/Sunng/donate),
+I'm now accepting donations on [liberapay](https://liberapay.com/Sunng/donate)
 if you find my work helpful and want to keep it going.
 
 ## Why (this) Handlebars?
@@ -112,12 +112,12 @@ your application without pain.
 
 This library doesn't attempt to use some macro magic to allow you to
 write your template within your rust code. I admit that it's fun to do
-that but it doesn't fit real-world use case.
+that but it doesn't fit real-world use cases.
 
 #### Limited but essential control structure built-in
 
-Only essential control directive `if` and `each` were built-in. This
-prevents you to put too much application logic into your template.
+Only essential control directives `if` and `each` are built-in. This
+prevents you from putting too much application logic into your template.
 
 #### Extensible helper system
 
@@ -146,16 +146,16 @@ Every time I look into a templating system, I will investigate its
 support for [template
 inheritance](https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance).
 
-Template include is not sufficient for template reuse. In most case
+Template include is not sufficient for template reuse. In most cases
 you will need a skeleton of page as parent (header, footer, etc.), and
-embed you page into this parent.
+embed your page into this parent.
 
-You can find a real example for template inheritance in
-`examples/partials.rs`, and templates used by this file.
+You can find a real example of template inheritance in
+`examples/partials.rs` and templates used by this file.
 
 #### WebAssembly compatible
 
-Handlebars can be used in WebAssembly projects with directory
+Handlebars can be used in WebAssembly projects with the directory
 source feature disabled. Adding handlebars to your project like this:
 
 ```
@@ -179,4 +179,4 @@ Add your project to our
 
 ## License
 
-This library (handlebars-rust) is open sourced under MIT License.
+This library (handlebars-rust) is open sourced under the MIT License.
