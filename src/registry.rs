@@ -1,9 +1,9 @@
+use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
-use hashbrown::HashMap;
 use serde::Serialize;
 
 use crate::context::Context;

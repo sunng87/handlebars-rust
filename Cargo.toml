@@ -27,7 +27,6 @@ pest_derive = "2.1.0"
 serde = "1.0.0"
 serde_json = "1.0.39"
 walkdir = { version = "2.2.3", optional = true }
-hashbrown = { version = "0.5.0", features = ["serde"] }
 
 [dev-dependencies]
 env_logger = "0.6.0"
