@@ -342,7 +342,7 @@ extern crate serde;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
-#[cfg(not(feature = "no_dir_source"))]
+#[cfg(feature = "dir_source")]
 extern crate walkdir;
 
 pub use self::context::{BlockParams, Context};
