@@ -40,16 +40,16 @@ pub fn no_escape(data: &str) -> String {
 /// The single entry point of your Handlebars templates
 ///
 /// It maintains compiled templates and registered helpers.
-pub struct Registry {
+pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
-    helpers: HashMap<String, Box<dyn HelperDef + 'static>>,
-    directives: HashMap<String, Box<dyn DirectiveDef + 'static>>,
+    helpers: HashMap<String, Box<dyn HelperDef + 'reg>>,
+    directives: HashMap<String, Box<dyn DirectiveDef + 'reg>>,
     escape_fn: EscapeFn,
     source_map: bool,
     strict_mode: bool,
 }
 
-impl Debug for Registry {
+impl<'reg> Debug for Registry<'reg> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
         f.debug_struct("Handlebars")
             .field("templates", &self.templates)
@@ -60,7 +60,7 @@ impl Debug for Registry {
     }
 }
 
-impl Default for Registry {
+impl<'reg> Default for Registry<'reg> {
     fn default() -> Self {
         Self::new()
     }
@@ -81,8 +81,8 @@ fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
             .unwrap_or(true)
 }
 
-impl Registry {
-    pub fn new() -> Registry {
+impl<'reg> Registry<'reg> {
+    pub fn new() -> Registry<'reg> {
         let r = Registry {
             templates: HashMap::new(),
             helpers: HashMap::new(),
@@ -95,7 +95,7 @@ impl Registry {
         r.setup_builtins()
     }
 
-    fn setup_builtins(mut self) -> Registry {
+    fn setup_builtins(mut self) -> Registry<'reg> {
         self.register_helper("if", Box::new(helpers::IF_HELPER));
         self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
         self.register_helper("each", Box::new(helpers::EACH_HELPER));
@@ -263,8 +263,8 @@ impl Registry {
     pub fn register_helper(
         &mut self,
         name: &str,
-        def: Box<dyn HelperDef + 'static>,
-    ) -> Option<Box<dyn HelperDef + 'static>> {
+        def: Box<dyn HelperDef + 'reg>,
+    ) -> Option<Box<dyn HelperDef + 'reg>> {
         self.helpers.insert(name.to_string(), def)
     }
 
@@ -272,8 +272,8 @@ impl Registry {
     pub fn register_decorator(
         &mut self,
         name: &str,
-        def: Box<dyn DirectiveDef + 'static>,
-    ) -> Option<Box<dyn DirectiveDef + 'static>> {
+        def: Box<dyn DirectiveDef + 'reg>,
+    ) -> Option<Box<dyn DirectiveDef + 'reg>> {
         self.directives.insert(name.to_string(), def)
     }
 
@@ -306,12 +306,12 @@ impl Registry {
     }
 
     /// Return a registered helper
-    pub fn get_helper(&self, name: &str) -> Option<&(dyn HelperDef + 'static)> {
+    pub fn get_helper(&self, name: &str) -> Option<&(dyn HelperDef)> {
         self.helpers.get(name).map(|v| v.as_ref())
     }
 
     /// Return a registered directive, aka decorator
-    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DirectiveDef + 'static)> {
+    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DirectiveDef)> {
         self.directives.get(name).map(|v| v.as_ref())
     }
 
