@@ -99,7 +99,10 @@ want to join.
 ## Donations
 
 I'm now accepting donations on [liberapay](https://liberapay.com/Sunng/donate)
-if you find my work helpful and want to keep it going.
+and [buymeacoffee](https://www.buymeacoffee.com/Sunng) if you find my
+work helpful and want to keep it going.
+
+[![https://www.buymeacoffee.com/assets/img/guidelines/download-assets-3.svg](buymeacoffee)](https://www.buymeacoffee.com/Sunng)
 
 ## Why (this) Handlebars?
 
