@@ -32,8 +32,7 @@ impl HelperDef for LookupHelper {
             Json::Array(ref v) => index
                 .value()
                 .as_u64()
-                .and_then(|u| Some(u as usize))
-                .and_then(|u| v.get(u))
+                .and_then(|u| v.get(u as usize))
                 .unwrap_or(&null),
             Json::Object(ref m) => index
                 .value()

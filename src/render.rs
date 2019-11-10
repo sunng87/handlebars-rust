@@ -596,9 +596,9 @@ impl Parameter {
                     ))
                 } else {
                     let value = rc.evaluate(ctx, name)?;
-                    if let Some(ref block_context_path) = value.block_context_path() {
+                    if let Some(block_context_path) = value.block_context_path() {
                         Ok(PathAndJson::new_absolute(
-                            Some(block_context_path.to_string()),
+                            Some(block_context_path.clone()),
                             value,
                         ))
                     } else {
