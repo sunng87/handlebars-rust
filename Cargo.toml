@@ -46,3 +46,6 @@ maintenance = { status = "actively-developed" }
 [[bench]]
 name = "bench"
 harness = false
+
+[package.metadata.docs.rs]
+all-features = true
