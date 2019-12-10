@@ -228,6 +228,55 @@ impl Context {
             .map(|d| Context { data: d })
     }
 
+    pub fn navigate2<'reg, 'rc>(
+        &'rc self,
+        base_path: &str,
+        path_context: &VecDeque<String>,
+        relative_path: &str,
+        block_params: &VecDeque<BlockParams>,
+        base_value: Option<ScopedJson<'reg, 'rc>>,
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+        if let Some(ScopedJson::Context(json_base_data)) = base_value {
+            if relative_path.starts_with("..") {
+                // visiting data outside base value of the context
+                self.navigate(base_path, path_context, relative_path, block_params)
+            } else {
+                let empty_context = VecDeque::new();
+                let (paths, block_param_holder) =
+                    parse_json_visitor(".", &empty_context, relative_path, block_params)?;
+
+                // TODO: remove duplicated code
+                if let Some(BlockParamHolder::Value(ref block_param_value)) = block_param_holder {
+                    let mut data = Some(block_param_value);
+                    for p in paths.iter() {
+                        data = get_data(data, p)?;
+                    }
+                    Ok(data
+                        .map(|v| ScopedJson::Derived(v.clone()))
+                        .unwrap_or_else(|| ScopedJson::Missing))
+                } else {
+                    let mut data = Some(json_base_data);
+                    for p in paths.iter() {
+                        data = get_data(data, p)?;
+                    }
+
+                    if let Some(BlockParamHolder::Path(_)) = block_param_holder {
+                        Ok(data
+                            .map(|v| ScopedJson::BlockContext(v, join(&paths, ".")))
+                            .unwrap_or_else(|| ScopedJson::Missing))
+                    } else {
+                        Ok(data
+                            .map(|v| ScopedJson::Context(v))
+                            .unwrap_or_else(|| ScopedJson::Missing))
+                    }
+                }
+            }
+        } else {
+            // visiting data when no context value available
+            self.navigate(base_path, path_context, relative_path, block_params)
+        }
+    }
+
     /// Navigate the context with base path and relative path
     /// Typically you will set base path to `RenderContext.get_path()`
     /// and set relative path to helper argument or so.
