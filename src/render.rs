@@ -45,11 +45,13 @@ pub struct RenderContextInner<'reg> {
 }
 
 #[derive(Debug, Clone)]
-pub struct BlockRenderContext {
+pub struct BlockRenderContext<'reg, 'rc> {
     path: String,
     local_path_root: VecDeque<String>,
     // current block context variables
     block_context: VecDeque<BlockParams>,
+    // the based value of current context
+    local_base_value: Option<ScopedJson<'reg, 'rc>>,
 }
 
 impl BlockRenderContext {
