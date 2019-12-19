@@ -66,6 +66,47 @@ pub struct Context {
     data: Json,
 }
 
+pub fn parse_json_path<'a>(path: &'a str) -> Result<VecDeque<&'a str>, RenderError> {
+    let mut path_stack = VecDeque::new();
+    let parsed_path = HandlebarsParser::parse(Rule::path, path)
+        .map(|p| p.flatten())
+        .map_err(|_| RenderError::new("Invalid JSON path"))?;
+
+    let mut seg_stack: VecDeque<Pair<Rule>> = VecDeque::new();
+
+    // FIXME: @root handling
+    for seg in parsed_path {
+        if seg.as_str() == "@root" {
+            seg_stack.clear();
+            path_stack.clear();
+            continue;
+        }
+
+        match seg.as_rule() {
+            Rule::path_up => {
+                path_stack.pop_back();
+                if let Some(p) = seg_stack.pop_back() {
+                    // also pop array index like [1]
+                    if p.as_rule() == Rule::path_raw_id {
+                        seg_stack.pop_back();
+                    }
+                }
+            }
+            Rule::path_id | Rule::path_raw_id => {
+                seg_stack.push_back(seg);
+            }
+            _ => {}
+        }
+    }
+
+    for i in seg_stack {
+        let span = i.as_span();
+        path_stack.push_back(&path[span.start()..span.end()]);
+    }
+
+    Ok(path_stack)
+}
+
 fn parse_json_visitor_inner<'a>(
     path_stack: &mut VecDeque<&'a str>,
     path: &'a str,
