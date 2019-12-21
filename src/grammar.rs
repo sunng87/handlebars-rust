@@ -285,6 +285,7 @@ fn test_path() {
         "a.[]", // empty key
         "././[/foo]",
         "[foo]",
+        "@root/a/b",
     ];
     for i in s.iter() {
         assert_rule_match!(Rule::path, i);
