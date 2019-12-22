@@ -366,6 +366,7 @@ mod directives;
 mod error;
 mod grammar;
 mod helpers;
+mod json;
 mod output;
 mod partial;
 mod registry;

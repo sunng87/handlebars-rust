@@ -1,12 +1,12 @@
 use std::collections::{HashMap, VecDeque};
 
-use pest::iterators::Pair;
 use pest::Parser;
 use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
 
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
+use crate::json::path::*;
 use crate::value::ScopedJson;
 
 pub type Object = HashMap<String, Json>;
@@ -24,13 +24,8 @@ impl BlockParamHolder {
         BlockParamHolder::Value(v)
     }
 
-    pub fn path(r: &str) -> Result<BlockParamHolder, RenderError> {
-        let mut path_stack: VecDeque<&str> = VecDeque::new();
-        parse_json_visitor_inner(&mut path_stack, r)?;
-
-        Ok(BlockParamHolder::Path(
-            path_stack.iter().cloned().map(|v| v.to_owned()).collect(),
-        ))
+    pub fn path(r: Vec<String>) -> Result<BlockParamHolder, RenderError> {
+        Ok(BlockParamHolder::Path(r))
     }
 }
 
@@ -44,7 +39,7 @@ impl BlockParams {
         BlockParams::default()
     }
 
-    pub fn add_path(&mut self, k: &str, v: &str) -> Result<(), RenderError> {
+    pub fn add_path(&mut self, k: &str, v: Vec<String>) -> Result<(), RenderError> {
         self.data.insert(k.to_owned(), BlockParamHolder::path(v)?);
         Ok(())
     }
@@ -66,15 +61,12 @@ pub struct Context {
     data: Json,
 }
 
-/// TODO: doc
-pub enum PathSeg<'a> {
-    Named(&'a str),
-    Ruled(Rule),
-}
+#[derive(Default)]
+pub struct ResolvedPath<'b>(Vec<String>, Option<&'b BlockParamHolder>);
 
 // from json path to a deque of
-pub fn parse_json_path<'a>(path: &'a str) -> Result<VecDeque<PathSeg<'a>>, RenderError> {
-    let mut path_stack = VecDeque::new();
+pub fn parse_json_path<'a>(path: &'a str) -> Result<Vec<PathSeg<'a>>, RenderError> {
+    let mut path_stack = Vec::new();
     let parsed_path = HandlebarsParser::parse(Rule::path, path)
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new("Invalid JSON path"))?;
@@ -83,13 +75,13 @@ pub fn parse_json_path<'a>(path: &'a str) -> Result<VecDeque<PathSeg<'a>>, Rende
         match seg.as_rule() {
             Rule::path_root => {
                 // path_stack.clear();
-                path_stack.push_back(PathSeg::Ruled(Rule::path_root));
+                path_stack.push(PathSeg::Ruled(Rule::path_root));
             }
             Rule::path_up => {
-                path_stack.push_back(PathSeg::Ruled(Rule::path_up));
+                path_stack.push(PathSeg::Ruled(Rule::path_up));
             }
             Rule::path_id | Rule::path_raw_id => {
-                path_stack.push_back(PathSeg::Named(seg.as_str()));
+                path_stack.push(PathSeg::Named(seg.as_str()));
             }
             _ => {
                 continue;
@@ -100,61 +92,19 @@ pub fn parse_json_path<'a>(path: &'a str) -> Result<VecDeque<PathSeg<'a>>, Rende
     Ok(path_stack)
 }
 
-// TODO: remove this
-fn parse_json_visitor_inner<'a>(
-    path_stack: &mut VecDeque<&'a str>,
-    path: &'a str,
-) -> Result<(), RenderError> {
-    let parsed_path = HandlebarsParser::parse(Rule::path, path)
-        .map(|p| p.flatten())
-        .map_err(|_| RenderError::new("Invalid JSON path"))?;
-
-    let mut seg_stack: VecDeque<Pair<Rule>> = VecDeque::new();
-    for seg in parsed_path {
-        if seg.as_str() == "@root" {
-            seg_stack.clear();
-            path_stack.clear();
-            continue;
-        }
-
-        match seg.as_rule() {
-            Rule::path_up => {
-                path_stack.pop_back();
-                if let Some(p) = seg_stack.pop_back() {
-                    // also pop array index like [1]
-                    if p.as_rule() == Rule::path_raw_id {
-                        seg_stack.pop_back();
-                    }
-                }
-            }
-            Rule::path_id | Rule::path_raw_id => {
-                seg_stack.push_back(seg);
-            }
-            _ => {}
-        }
-    }
-
-    for i in seg_stack {
-        let span = i.as_span();
-        path_stack.push_back(&path[span.start()..span.end()]);
-    }
-    Ok(())
-}
-
-// WIP:
 fn parse_json_visitor<'a, 'b: 'a>(
-    base_path: VecDeque<&'a str>,
-    path_context: VecDeque<Vec<&'a str>>,
-    relative_path: VecDeque<PathSeg<'a>>,
-    block_params: VecDeque<BlockParams>,
-) -> Result<(Vec<&'a str>, Option<&'b BlockParamHolder>), RenderError> {
+    base_path: &Vec<String>,
+    path_context: &VecDeque<Vec<String>>,
+    relative_path: &Vec<PathSeg<'a>>,
+    block_params: &'b VecDeque<BlockParams>,
+) -> Result<ResolvedPath<'b>, RenderError> {
     let mut path_stack = Vec::new();
 
     let mut path_context_depth: i64 = -1;
     let mut used_block_param = None;
     let mut from_root = false;
 
-    // deal with block param and  "../../" in relative path
+    // peek relative_path for block param, @root and  "../../"
     for path_seg in relative_path {
         match path_seg {
             PathSeg::Named(the_path) => {
@@ -174,40 +124,28 @@ fn parse_json_visitor<'a, 'b: 'a>(
         }
     }
 
-    // if the relative path is a block_param_value, skip base_path and context check
-    if used_block_param.is_none() {
-        if path_context_depth >= 0 {
-            if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
-                path_stack.extend(context_base_path);
-            } else {
-                path_stack.extend(base_path);
-            }
-        } else if !from_root {
-            path_stack.extend(base_path);
-        }
-    }
-
     match used_block_param {
-        Some(BlockParamHolder::Value(_)) => {
-            parse_json_visitor_inner(&mut path_stack, relative_path)?;
-            // drop first seg, which is block_param
-            path_stack.pop_front();
-            Ok((path_stack, used_block_param))
-        }
+        Some(BlockParamHolder::Value(_)) => Ok(ResolvedPath(path_stack, used_block_param)),
         Some(BlockParamHolder::Path(ref paths)) => {
-            parse_json_visitor_inner(&mut path_stack, relative_path)?;
-            // drop first seg, which is block_param
-            path_stack.pop_front();
+            path_stack.extend_from_slice(paths);
+            merge_json_path(&mut path_stack, relative_path);
 
-            for p in paths.iter().rev() {
-                path_stack.push_front(p)
-            }
-
-            Ok((path_stack, used_block_param))
+            Ok(ResolvedPath(path_stack, used_block_param))
         }
         None => {
-            parse_json_visitor_inner(&mut path_stack, relative_path)?;
-            Ok((path_stack, None))
+            if path_context_depth >= 0 {
+                if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
+                    path_stack.extend_from_slice(context_base_path);
+                } else {
+                    // TODO: is this correct behaviour?
+                    path_stack.extend_from_slice(base_path);
+                }
+            } else if !from_root {
+                path_stack.extend_from_slice(base_path);
+            }
+
+            merge_json_path(&mut path_stack, relative_path);
+            Ok(ResolvedPath(path_stack, None))
         }
     }
 }
@@ -276,13 +214,14 @@ impl Context {
     /// If you want to navigate from top level, set the base path to `"."`
     pub fn navigate<'reg, 'rc>(
         &'rc self,
-        base_path: &str,
-        path_context: &VecDeque<String>,
+        base_path: &Vec<String>,
+        path_context: &VecDeque<Vec<String>>,
         relative_path: &str,
         block_params: &VecDeque<BlockParams>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let (paths, block_param_holder) =
-            parse_json_visitor(base_path, path_context, relative_path, block_params)?;
+        let parsed_relative_path = parse_json_path(relative_path)?;
+        let ResolvedPath(paths, block_param_holder) =
+            parse_json_visitor(base_path, path_context, &parsed_relative_path, block_params)?;
 
         if let Some(BlockParamHolder::Value(ref block_param_value)) = block_param_holder {
             let mut data = Some(block_param_value);
@@ -300,11 +239,11 @@ impl Context {
 
             if let Some(BlockParamHolder::Path(_)) = block_param_holder {
                 Ok(data
-                    .map(|v| ScopedJson::BlockContext(v, join(&paths, ".")))
+                    .map(|v| ScopedJson::BlockContext(v, paths))
                     .unwrap_or_else(|| ScopedJson::Missing))
             } else {
                 Ok(data
-                    .map(|v| ScopedJson::Context(v))
+                    .map(|v| ScopedJson::Context(v, paths))
                     .unwrap_or_else(|| ScopedJson::Missing))
             }
         }

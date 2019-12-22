@@ -13,10 +13,12 @@ pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 pub enum ScopedJson<'reg: 'rc, 'rc> {
     Constant(&'reg Json),
     Derived(Json),
-    Context(&'rc Json),
+    // represents a json reference to context value and its full path
+    Context(&'rc Json, Vec<String>),
     // represents a block param json with resolve full path
     // this path is different from `PathAndJson`
-    BlockContext(&'rc Json, String),
+    // TODO: merge this with context?
+    BlockContext(&'rc Json, Vec<String>),
     Missing,
 }
 
@@ -26,7 +28,7 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
         match self {
             ScopedJson::Constant(j) => j,
             ScopedJson::Derived(ref j) => j,
-            ScopedJson::Context(j) => j,
+            ScopedJson::Context(j, _) => j,
             ScopedJson::BlockContext(j, _) => j,
             _ => &DEFAULT_VALUE,
         }
@@ -48,9 +50,9 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
         ScopedJson::Derived(v.clone())
     }
 
-    pub fn block_context_path(&self) -> Option<&String> {
+    pub fn context_path(&self) -> Option<&Vec<String>> {
         match self {
-            ScopedJson::BlockContext(_, ref p) => Some(p),
+            ScopedJson::BlockContext(_, ref p) | ScopedJson::Context(_, ref p) => Some(p),
             _ => None,
         }
     }

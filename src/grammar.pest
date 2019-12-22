@@ -109,5 +109,5 @@ path_root = { "@root" }
 path_current = { "this" | "." }
 path_item = _{ path_id|path_current|path_key }
 
-path_inline = _{ (path_root|path_up)* ~ path_item ~ (path_sep ~  path_item)* }
+path_inline = _{ path_root? ~ path_up* ~ path_item ~ (path_sep ~  path_item)* }
 path = _{ path_inline ~ EOI }
