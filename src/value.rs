@@ -64,66 +64,40 @@ impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'reg, 'rc> {
     }
 }
 
-#[derive(Debug)]
-enum Path {
-    Relative(String),
-    Absolute(String),
-}
-
-impl Path {
-    pub fn get(&self) -> &String {
-        match self {
-            Path::Relative(ref s) => s,
-            Path::Absolute(ref s) => s,
-        }
-    }
-}
-
 /// Json wrapper that holds the Json value and reference path information
 ///
 #[derive(Debug)]
 pub struct PathAndJson<'reg: 'rc, 'rc> {
-    path: Option<Path>,
+    relative_path: Option<String>,
     value: ScopedJson<'reg, 'rc>,
 }
 
 impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
-    pub fn new(path: Option<String>, value: ScopedJson<'reg, 'rc>) -> PathAndJson<'reg, 'rc> {
-        PathAndJson {
-            path: path.map(Path::Relative),
-            value,
-        }
-    }
-
-    pub fn new_absolute(
-        path: Option<String>,
+    pub fn new(
+        relative_path: Option<String>,
         value: ScopedJson<'reg, 'rc>,
     ) -> PathAndJson<'reg, 'rc> {
         PathAndJson {
-            path: path.map(Path::Absolute),
+            relative_path,
             value,
         }
     }
 
     /// Returns relative path when the value is referenced
     /// If the value is from a literal, the path is `None`
-    pub fn path(&self) -> Option<&String> {
-        self.path.as_ref().map(|p| p.get())
+    pub fn relative_path(&self) -> Option<&String> {
+        self.relative_path.as_ref()
     }
 
-    /// Return root level of this path if any
-    pub fn path_root(&self) -> Option<&str> {
-        self.path
-            .as_ref()
-            .and_then(|p| p.get().split(|c| c == '.' || c == '/').nth(0))
+    /// Returns full path to this value if any
+    pub fn context_path(&self) -> Option<&Vec<String>> {
+        self.value.context_path()
     }
 
-    pub fn is_absolute_path(&self) -> bool {
-        match self.path {
-            Some(Path::Absolute(_)) => true,
-            _ => false,
-        }
-    }
+    // /// Return root level of this path if any
+    // pub fn path_root(&self) -> Option<&String> {
+    //     self.context_path().and_then(|p| p.get().get(0))
+    // }
 
     /// Returns the value
     pub fn value(&self) -> &Json {

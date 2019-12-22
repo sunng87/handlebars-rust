@@ -44,21 +44,17 @@ pub struct RenderContextInner<'reg> {
     disable_escape: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct BlockRenderContext {
-    path: String,
-    local_path_root: VecDeque<String>,
+    path: Vec<String>,
+    local_path_root: VecDeque<Vec<String>>,
     // current block context variables
     block_context: VecDeque<BlockParams>,
 }
 
 impl BlockRenderContext {
     fn new() -> BlockRenderContext {
-        BlockRenderContext {
-            path: ".".to_owned(),
-            local_path_root: VecDeque::new(),
-            block_context: VecDeque::new(),
-        }
+        BlockRenderContext::default()
     }
 }
 
@@ -223,28 +219,19 @@ impl<'reg> RenderContext<'reg> {
         self.inner_mut().disable_escape = disable
     }
 
-    pub fn get_path(&self) -> &String {
+    pub fn get_path(&self) -> &Vec<String> {
         &self.block().path
     }
 
-    pub fn set_path(&mut self, path: String) {
+    pub fn set_path(&mut self, path: Vec<String>) {
         self.block_mut().path = path;
     }
 
-    #[deprecated]
-    pub fn concat_path(&self, path_seg: &str) -> Option<String> {
-        match context::get_in_block_params(&self.block.block_context, path_seg) {
-            Some(BlockParamHolder::Path(paths)) => Some(paths.join("/")),
-            Some(BlockParamHolder::Value(_)) => None,
-            None => Some(format!("{}/{}", self.get_path(), path_seg)),
-        }
-    }
-
-    pub fn get_local_path_root(&self) -> &VecDeque<String> {
+    pub fn get_local_path_root(&self) -> &VecDeque<Vec<String>> {
         &self.block().local_path_root
     }
 
-    pub fn push_local_path_root(&mut self, path: String) {
+    pub fn push_local_path_root(&mut self, path: Vec<String>) {
         self.block_mut().local_path_root.push_front(path)
     }
 
@@ -596,18 +583,12 @@ impl Parameter {
                     ))
                 } else {
                     let value = rc.evaluate(ctx, name)?;
-                    if let Some(block_context_path) = value.block_context_path() {
-                        Ok(PathAndJson::new_absolute(
-                            Some(block_context_path.clone()),
-                            value,
-                        ))
-                    } else {
-                        match value {
-                            // when evaluate result is a derived json, it indicates the
-                            // value is a block context value
-                            ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
-                            _ => Ok(PathAndJson::new(Some(name.to_owned()), value)),
-                        }
+
+                    match value {
+                        // when evaluate result is a derived json, it indicates the
+                        // value is a block context value
+                        ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
+                        _ => Ok(PathAndJson::new(Some(name.to_owned()), value)),
                     }
                 }
             }
@@ -764,7 +745,7 @@ impl Renderable for TemplateElement {
                         } else {
                             // strict mode check
                             if registry.strict_mode() {
-                                Err(RenderError::strict_error(context_json.path()))
+                                Err(RenderError::strict_error(context_json.relative_path()))
                             } else {
                                 Ok(())
                             }
@@ -790,7 +771,7 @@ impl Renderable for TemplateElement {
 
                 // strict mode check
                 if registry.strict_mode() && context_json.is_value_missing() {
-                    return Err(RenderError::strict_error(context_json.path()));
+                    return Err(RenderError::strict_error(context_json.relative_path()));
                 }
 
                 let rendered = context_json.value().render();

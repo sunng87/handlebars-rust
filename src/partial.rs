@@ -19,19 +19,11 @@ fn render_partial<'reg: 'rc, 'rc>(
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
-        let param_path = param_ctx.path().map(|p| {
-            if param_ctx.is_absolute_path() {
-                p.to_string()
-            } else {
-                format!("{}/{}", local_rc.get_path(), p)
-            }
-        });
-
-        if let Some(param_path) = param_path {
+        if let Some(p) = param_ctx.context_path() {
             local_rc.promote_local_vars();
-            local_rc.set_path(param_path);
+            local_rc.set_path(p.clone());
         }
-    };
+    }
 
     // @partial-block
     if let Some(t) = d.template() {
