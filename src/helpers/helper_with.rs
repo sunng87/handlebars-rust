@@ -4,6 +4,7 @@ use crate::helpers::{HelperDef, HelperResult};
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
+use crate::util::empty_or_none;
 use crate::value::JsonTruthy;
 
 #[derive(Clone, Copy)]
@@ -23,6 +24,8 @@ impl HelperDef for WithHelper {
             .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
         rc.promote_local_vars();
+        // FIXME: path_root
+        let local_path_root = empty_or_none(rc.get_path());
 
         let result = {
             let mut local_rc = rc.derive();
@@ -30,26 +33,20 @@ impl HelperDef for WithHelper {
             let not_empty = param.value().is_truthy(false);
             let template = if not_empty { h.template() } else { h.inverse() };
 
-            if let Some(path_root) = param.path_root() {
-                let local_path_root = format!("{}/{}", local_rc.get_path(), path_root);
-                local_rc.push_local_path_root(local_path_root);
+            if let Some(path_root) = local_path_root {
+                local_rc.push_local_path_root(path_root.to_vec());
             }
+
             if not_empty {
-                let new_path = param.path().map(|p| {
-                    if param.is_absolute_path() {
-                        p.to_string()
-                    } else {
-                        format!("{}/{}", rc.get_path(), p)
-                    }
-                });
-                if let Some(ref new_path) = new_path {
+                let new_path = param.context_path();
+                if let Some(new_path) = new_path {
                     local_rc.set_path(new_path.clone());
                 }
 
                 if let Some(block_param) = h.block_param() {
                     let mut params = BlockParams::new();
                     if new_path.is_some() {
-                        params.add_path(block_param, local_rc.get_path())?;
+                        params.add_path(block_param, local_rc.get_path().clone())?;
                     } else {
                         params.add_value(block_param, param.value().clone())?;
                     }
@@ -62,15 +59,6 @@ impl HelperDef for WithHelper {
                 Some(t) => t.render(r, ctx, &mut local_rc, out),
                 None => Ok(()),
             };
-
-            if h.block_param().is_some() {
-                local_rc.pop_block_context();
-            }
-
-            if param.path_root().is_some() {
-                local_rc.pop_local_path_root();
-            }
-
             result
         };
 

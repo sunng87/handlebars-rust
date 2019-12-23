@@ -2,7 +2,7 @@ use crate::grammar::Rule;
 
 /// TODO: doc
 #[derive(Debug)]
-pub(crate) enum PathSeg<'a> {
+pub enum PathSeg<'a> {
     Named(&'a str),
     Ruled(Rule),
 }
@@ -17,6 +17,7 @@ pub(crate) fn merge_json_path<'a>(path_stack: &mut Vec<String>, relative_path: &
             PathSeg::Ruled(Rule::path_up) => {
                 path_stack.pop();
             }
+            _ => {}
         }
     }
 }

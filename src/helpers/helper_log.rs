@@ -37,7 +37,7 @@ impl HelperDef for LogHelper {
             log!(
                 log_level,
                 "{}: {}",
-                param.path().unwrap_or(&"".to_owned()),
+                param.relative_path().unwrap_or(&"".to_owned()),
                 param.value().render()
             )
         } else {

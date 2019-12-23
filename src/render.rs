@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use serde_json::value::Value as Json;
 
-use crate::context::{self, BlockParamHolder, BlockParams, Context};
+use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
 use crate::output::{Output, StringOutput};

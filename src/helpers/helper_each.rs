@@ -6,6 +6,7 @@ use crate::helpers::{HelperDef, HelperResult};
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
+use crate::util::{copy_on_push_vec, empty_or_none};
 use crate::value::{to_json, JsonTruthy};
 
 #[derive(Clone, Copy)]
@@ -29,27 +30,20 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => {
                 rc.promote_local_vars();
-                let local_path_root = value
-                    .path_root()
-                    .map(|p| format!("{}/{}", rc.get_path(), p));
+                // FIXME: path_root
+                let local_path_root = empty_or_none(rc.get_path());
 
                 debug!("each value {:?}", value.value());
                 let rendered = match (value.value().is_truthy(false), value.value()) {
                     (true, &Json::Array(ref list)) => {
                         let len = list.len();
 
-                        let array_path = value.path().map(|p| {
-                            if value.is_absolute_path() {
-                                p.to_string()
-                            } else {
-                                format!("{}/{}", rc.get_path(), p)
-                            }
-                        });
+                        let array_path = value.context_path();
 
                         for (i, _) in list.iter().enumerate().take(len) {
                             let mut local_rc = rc.derive();
-                            if let Some(ref p) = local_path_root {
-                                local_rc.push_local_path_root(p.clone());
+                            if let Some(p) = local_path_root {
+                                local_rc.push_local_path_root(p.to_vec());
                             }
 
                             local_rc.set_local_var("@first".to_string(), to_json(i == 0usize));
@@ -57,19 +51,17 @@ impl HelperDef for EachHelper {
                             local_rc.set_local_var("@index".to_string(), to_json(i));
 
                             if let Some(ref p) = array_path {
-                                let new_path = format!("{}/[{}]", p, i);
-                                debug!("each path {:?}", new_path);
-                                local_rc.set_path(new_path);
+                                local_rc.set_path(copy_on_push_vec(p, i.to_string()))
                             }
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, local_rc.get_path())?;
+                                params.add_path(bp_val, local_rc.get_path().clone())?;
 
                                 local_rc.push_block_context(params)?;
                             } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, local_rc.get_path())?;
+                                params.add_path(bp_val, local_rc.get_path().clone())?;
                                 params.add_value(bp_index, to_json(i))?;
 
                                 local_rc.push_block_context(params)?;
@@ -89,19 +81,13 @@ impl HelperDef for EachHelper {
                     }
                     (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
-                        let obj_path = value.path().map(|p| {
-                            if value.is_absolute_path() {
-                                p.to_string()
-                            } else {
-                                format!("{}/{}", rc.get_path(), p)
-                            }
-                        });
+                        let obj_path = value.context_path();
 
                         for (k, _) in obj.iter() {
                             let mut local_rc = rc.derive();
 
                             if let Some(ref p) = local_path_root {
-                                local_rc.push_local_path_root(p.clone());
+                                local_rc.push_local_path_root(p.to_vec());
                             }
                             local_rc.set_local_var("@first".to_string(), to_json(first));
                             if first {
@@ -111,18 +97,17 @@ impl HelperDef for EachHelper {
                             local_rc.set_local_var("@key".to_string(), to_json(k));
 
                             if let Some(ref p) = obj_path {
-                                let new_path = format!("{}/[{}]", p, k);
-                                local_rc.set_path(new_path);
+                                local_rc.set_path(copy_on_push_vec(p, k.clone()));
                             }
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, local_rc.get_path())?;
+                                params.add_path(bp_val, local_rc.get_path().clone())?;
 
                                 local_rc.push_block_context(params)?;
                             } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, local_rc.get_path())?;
+                                params.add_path(bp_val, local_rc.get_path().clone())?;
                                 params.add_value(bp_key, to_json(&k))?;
 
                                 local_rc.push_block_context(params)?;

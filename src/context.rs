@@ -24,8 +24,8 @@ impl BlockParamHolder {
         BlockParamHolder::Value(v)
     }
 
-    pub fn path(r: Vec<String>) -> Result<BlockParamHolder, RenderError> {
-        Ok(BlockParamHolder::Path(r))
+    pub fn path(r: Vec<String>) -> BlockParamHolder {
+        BlockParamHolder::Path(r)
     }
 }
 
@@ -40,7 +40,7 @@ impl BlockParams {
     }
 
     pub fn add_path(&mut self, k: &str, v: Vec<String>) -> Result<(), RenderError> {
-        self.data.insert(k.to_owned(), BlockParamHolder::path(v)?);
+        self.data.insert(k.to_owned(), BlockParamHolder::path(v));
         Ok(())
     }
 
