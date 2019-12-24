@@ -13,8 +13,8 @@ pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 pub enum ScopedJson<'reg: 'rc, 'rc> {
     Constant(&'reg Json),
     Derived(Json),
-    // represents a json reference to context value and its full path
-    Context(&'rc Json, Vec<String>),
+    // represents a json reference to context value, its full path, and current root path
+    Context(&'rc Json, Vec<String>, Vec<String>),
     // represents a block param json with resolve full path
     // this path is different from `PathAndJson`
     // TODO: merge this with context?
@@ -28,7 +28,7 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
         match self {
             ScopedJson::Constant(j) => j,
             ScopedJson::Derived(ref j) => j,
-            ScopedJson::Context(j, _) => j,
+            ScopedJson::Context(j, _, _) => j,
             ScopedJson::BlockContext(j, _) => j,
             _ => &DEFAULT_VALUE,
         }
@@ -52,7 +52,14 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
 
     pub fn context_path(&self) -> Option<&Vec<String>> {
         match self {
-            ScopedJson::BlockContext(_, ref p) | ScopedJson::Context(_, ref p) => Some(p),
+            ScopedJson::BlockContext(_, ref p) | ScopedJson::Context(_, ref p, _) => Some(p),
+            _ => None,
+        }
+    }
+
+    pub fn path_root(&self) -> Option<&Vec<String>> {
+        match self {
+            ScopedJson::Context(_, _, ref p) => Some(p),
             _ => None,
         }
     }
@@ -94,10 +101,10 @@ impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
         self.value.context_path()
     }
 
-    // /// Return root level of this path if any
-    // pub fn path_root(&self) -> Option<&String> {
-    //     self.context_path().and_then(|p| p.get().get(0))
-    // }
+    /// Return root level of this path if any
+    pub fn path_root(&self) -> Option<&Vec<String>> {
+        self.value.path_root()
+    }
 
     /// Returns the value
     pub fn value(&self) -> &Json {

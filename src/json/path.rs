@@ -7,7 +7,7 @@ pub enum PathSeg<'a> {
     Ruled(Rule),
 }
 
-pub(crate) fn merge_json_path<'a>(path_stack: &mut Vec<String>, relative_path: &Vec<PathSeg<'a>>) {
+pub(crate) fn merge_json_path<'a>(path_stack: &mut Vec<String>, relative_path: &[PathSeg<'a>]) {
     for seg in relative_path {
         match seg {
             PathSeg::Named(s) => {

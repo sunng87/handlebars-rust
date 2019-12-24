@@ -6,7 +6,7 @@ use crate::helpers::{HelperDef, HelperResult};
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
-use crate::util::{copy_on_push_vec, empty_or_none};
+use crate::util::copy_on_push_vec;
 use crate::value::{to_json, JsonTruthy};
 
 #[derive(Clone, Copy)]
@@ -30,8 +30,7 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => {
                 rc.promote_local_vars();
-                // FIXME: path_root
-                let local_path_root = empty_or_none(rc.get_path());
+                let local_path_root = value.path_root();
 
                 debug!("each value {:?}", value.value());
                 let rendered = match (value.value().is_truthy(false), value.value()) {

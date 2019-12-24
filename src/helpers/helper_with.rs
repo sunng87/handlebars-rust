@@ -4,7 +4,6 @@ use crate::helpers::{HelperDef, HelperResult};
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
-use crate::util::empty_or_none;
 use crate::value::JsonTruthy;
 
 #[derive(Clone, Copy)]
@@ -24,8 +23,7 @@ impl HelperDef for WithHelper {
             .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
         rc.promote_local_vars();
-        // FIXME: path_root
-        let local_path_root = empty_or_none(rc.get_path());
+        let local_path_root = param.path_root();
 
         let result = {
             let mut local_rc = rc.derive();
