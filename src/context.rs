@@ -477,6 +477,7 @@ mod test {
         block_param
             .add_path("z", ["0".to_owned(), "a".to_owned()].to_vec())
             .unwrap();
+        block_param.add_value("t", json!("good")).unwrap();
 
         let mut block_params = VecDeque::new();
         block_params.push_front(block_param);
@@ -486,6 +487,12 @@ mod test {
                 .unwrap()
                 .render(),
             "2".to_string()
+        );
+        assert_eq!(
+            ctx.navigate(&Vec::new(), &VecDeque::new(), "t", &block_params)
+                .unwrap()
+                .render(),
+            "good".to_string()
         );
     }
 }
