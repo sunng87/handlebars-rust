@@ -1,8 +1,7 @@
 use crate::grammar::Rule;
 
-/// TODO: doc
 #[derive(Debug)]
-pub enum PathSeg<'a> {
+pub(crate) enum PathSeg<'a> {
     Named(&'a str),
     Ruled(Rule),
 }

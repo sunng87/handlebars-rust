@@ -65,7 +65,7 @@ pub struct Context {
 pub struct ResolvedPath<'b>(Vec<String>, Option<&'b BlockParamHolder>);
 
 // from json path to a deque of
-pub fn parse_json_path<'a>(path: &'a str) -> Result<Vec<PathSeg<'a>>, RenderError> {
+fn parse_json_path<'a>(path: &'a str) -> Result<Vec<PathSeg<'a>>, RenderError> {
     let mut path_stack = Vec::new();
     let parsed_path = HandlebarsParser::parse(Rule::path, path)
         .map(|p| p.flatten())
