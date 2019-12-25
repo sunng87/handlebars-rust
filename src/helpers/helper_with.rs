@@ -53,11 +53,10 @@ impl HelperDef for WithHelper {
                 }
             }
 
-            let result = match template {
+            match template {
                 Some(t) => t.render(r, ctx, &mut local_rc, out),
                 None => Ok(()),
-            };
-            result
+            }
         };
 
         rc.demote_local_vars();

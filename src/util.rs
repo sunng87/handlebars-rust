@@ -1,4 +1,4 @@
-pub(crate) fn empty_or_none<T>(input: &Vec<T>) -> Option<&Vec<T>> {
+pub(crate) fn empty_or_none<T>(input: &[T]) -> Option<&[T]> {
     if input.is_empty() {
         None
     } else {
@@ -6,7 +6,7 @@ pub(crate) fn empty_or_none<T>(input: &Vec<T>) -> Option<&Vec<T>> {
     }
 }
 
-pub(crate) fn copy_on_push_vec<T>(input: &Vec<T>, el: T) -> Vec<T>
+pub(crate) fn copy_on_push_vec<T>(input: &[T], el: T) -> Vec<T>
 where
     T: Clone,
 {

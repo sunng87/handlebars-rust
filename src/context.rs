@@ -66,11 +66,11 @@ pub struct ResolvedPath<'b>(Vec<String>, Option<&'b BlockParamHolder>);
 
 // from json path to a deque of
 fn parse_json_path<'a>(path: &'a str) -> Result<Vec<PathSeg<'a>>, RenderError> {
-    let mut path_stack = Vec::new();
     let parsed_path = HandlebarsParser::parse(Rule::path, path)
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new("Invalid JSON path"))?;
 
+    let mut path_stack = Vec::with_capacity(5);
     for seg in parsed_path {
         match seg.as_rule() {
             Rule::path_root => {
@@ -97,7 +97,7 @@ fn parse_json_visitor<'a, 'b: 'a>(
     relative_path: &[PathSeg<'a>],
     block_params: &'b VecDeque<BlockParams>,
 ) -> Result<ResolvedPath<'b>, RenderError> {
-    let mut path_stack = Vec::new();
+    let mut path_stack = Vec::with_capacity(base_path.len() + 5);
 
     let mut path_context_depth: i64 = -1;
     let mut used_block_param = None;
@@ -241,7 +241,7 @@ impl Context {
                     .map(|v| ScopedJson::BlockContext(v, paths))
                     .unwrap_or_else(|| ScopedJson::Missing))
             } else {
-                let path_root = if parsed_relative_path.len() > 0 {
+                let path_root = if parsed_relative_path.is_empty() {
                     let ResolvedPath(path_root, _) = parse_json_visitor(
                         base_path,
                         path_context,

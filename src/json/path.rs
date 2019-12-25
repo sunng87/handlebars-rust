@@ -10,7 +10,7 @@ pub(crate) fn merge_json_path<'a>(path_stack: &mut Vec<String>, relative_path: &
     for seg in relative_path {
         match seg {
             PathSeg::Named(s) => {
-                path_stack.push(s.to_string());
+                path_stack.push((*s).to_string());
             }
             PathSeg::Ruled(Rule::path_root) => {}
             PathSeg::Ruled(Rule::path_up) => {
