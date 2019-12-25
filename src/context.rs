@@ -475,7 +475,9 @@ mod test {
 
         let ctx = Context::wraps(&m).unwrap();
         let mut block_param = BlockParams::new();
-        block_param.add_path("z", "[0].a").unwrap();
+        block_param
+            .add_path("z", ["0".to_owned(), "a".to_owned()].to_vec())
+            .unwrap();
 
         let mut block_params = VecDeque::new();
         block_params.push_front(block_param);
