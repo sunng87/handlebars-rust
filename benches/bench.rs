@@ -20,6 +20,11 @@ struct RowWrapper {
     dummy: Vec<DataWrapper>,
 }
 
+#[derive(Serialize)]
+struct NestedRowWrapper {
+    parent: Vec<Vec<DataWrapper>>,
+}
+
 static SOURCE: &'static str = "<html>
   <head>
     <title>{{year}}</title>
@@ -89,13 +94,11 @@ fn large_loop_helper(c: &mut Criterion) {
         .expect("Invalid template format");
 
     let real: Vec<DataWrapper> = (1..1000)
-        .into_iter()
         .map(|i| DataWrapper {
             v: format!("n={}", i),
         })
         .collect();
     let dummy: Vec<DataWrapper> = (1..1000)
-        .into_iter()
         .map(|i| DataWrapper {
             v: format!("n={}", i),
         })
@@ -107,5 +110,38 @@ fn large_loop_helper(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, parse_template, render_template, large_loop_helper);
+fn large_nested_loop(c: &mut Criterion) {
+    let mut handlebars = Handlebars::new();
+    handlebars
+        .register_template_string(
+            "test",
+            "BEFORE\n{{#each parent as |child|}}{{#each child}}{{this.v}}{{/each}}{{/each}}AFTER",
+        )
+        .ok()
+        .expect("Invalid template format");
+
+    let parent: Vec<Vec<DataWrapper>> = (1..100)
+        .map(|_| {
+            (1..10)
+                .map(|v| DataWrapper {
+                    v: format!("v={}", v),
+                })
+                .collect()
+        })
+        .collect();
+
+    let rows = NestedRowWrapper { parent };
+
+    c.bench_function("large_nested_loop", move |b| {
+        b.iter(|| handlebars.render("test", &rows).ok().unwrap())
+    });
+}
+
+criterion_group!(
+    benches,
+    parse_template,
+    render_template,
+    large_loop_helper,
+    large_nested_loop
+);
 criterion_main!(benches);
