@@ -241,7 +241,7 @@ impl Context {
                     .map(|v| ScopedJson::BlockContext(v, paths))
                     .unwrap_or_else(|| ScopedJson::Missing))
             } else {
-                let path_root = if parsed_relative_path.is_empty() {
+                let path_root = if !parsed_relative_path.is_empty() {
                     let ResolvedPath(path_root, _) = parse_json_visitor(
                         base_path,
                         path_context,
