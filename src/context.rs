@@ -241,12 +241,18 @@ impl Context {
                     .map(|v| ScopedJson::BlockContext(v, paths))
                     .unwrap_or_else(|| ScopedJson::Missing))
             } else {
-                let ResolvedPath(path_root, _) = parse_json_visitor(
-                    base_path,
-                    path_context,
-                    &parsed_relative_path[..1],
-                    block_params,
-                )?;
+                let path_root = if parsed_relative_path.len() > 0 {
+                    let ResolvedPath(path_root, _) = parse_json_visitor(
+                        base_path,
+                        path_context,
+                        &parsed_relative_path[..1],
+                        block_params,
+                    )?;
+                    Some(path_root)
+                } else {
+                    None
+                };
+
                 Ok(data
                     .map(|v| ScopedJson::Context(v, paths, path_root))
                     .unwrap_or_else(|| ScopedJson::Missing))
