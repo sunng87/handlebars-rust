@@ -74,7 +74,6 @@ pub fn parse_json_path<'a>(path: &'a str) -> Result<Vec<PathSeg<'a>>, RenderErro
     for seg in parsed_path {
         match seg.as_rule() {
             Rule::path_root => {
-                // path_stack.clear();
                 path_stack.push(PathSeg::Ruled(Rule::path_root));
             }
             Rule::path_up => {
@@ -128,7 +127,7 @@ fn parse_json_visitor<'a, 'b: 'a>(
         Some(BlockParamHolder::Value(_)) => Ok(ResolvedPath(path_stack, used_block_param)),
         Some(BlockParamHolder::Path(ref paths)) => {
             path_stack.extend_from_slice(paths);
-            merge_json_path(&mut path_stack, relative_path);
+            merge_json_path(&mut path_stack, &relative_path[1..]);
 
             Ok(ResolvedPath(path_stack, used_block_param))
         }
@@ -245,7 +244,7 @@ impl Context {
                 let ResolvedPath(path_root, _) = parse_json_visitor(
                     base_path,
                     path_context,
-                    &parsed_relative_path[0..1],
+                    &parsed_relative_path[..1],
                     block_params,
                 )?;
                 Ok(data
@@ -483,7 +482,9 @@ mod test {
         block_params.push_front(block_param);
 
         assert_eq!(
-            navigate_from_root(&ctx, "z.[1]").unwrap().render(),
+            ctx.navigate(&Vec::new(), &VecDeque::new(), "z.[1]", &block_params)
+                .unwrap()
+                .render(),
             "2".to_string()
         );
     }
