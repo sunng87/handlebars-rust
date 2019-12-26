@@ -26,37 +26,45 @@ impl HelperDef for WithHelper {
         let local_path_root = param.path_root();
 
         let result = {
-            let mut local_rc = rc.derive();
-
             let not_empty = param.value().is_truthy(false);
             let template = if not_empty { h.template() } else { h.inverse() };
 
             if let Some(path_root) = local_path_root {
-                local_rc.push_local_path_root(path_root.to_vec());
+                rc.push_local_path_root(path_root.to_vec());
             }
 
             if not_empty {
                 let new_path = param.context_path();
                 if let Some(new_path) = new_path {
-                    local_rc.set_path(new_path.clone());
+                    rc.set_path(new_path.clone());
                 }
 
                 if let Some(block_param) = h.block_param() {
                     let mut params = BlockParams::new();
                     if new_path.is_some() {
-                        params.add_path(block_param, local_rc.get_path().clone())?;
+                        params.add_path(block_param, rc.get_path().clone())?;
                     } else {
                         params.add_value(block_param, param.value().clone())?;
                     }
 
-                    local_rc.push_block_context(params)?;
+                    rc.push_block_context(params)?;
                 }
             }
 
-            match template {
-                Some(t) => t.render(r, ctx, &mut local_rc, out),
+            let result = match template {
+                Some(t) => t.render(r, ctx, rc, out),
                 None => Ok(()),
+            };
+
+            if h.has_block_param() {
+                rc.pop_block_context();
             }
+
+            if local_path_root.is_some() {
+                rc.pop_local_path_root();
+            }
+
+            result
         };
 
         rc.demote_local_vars();
