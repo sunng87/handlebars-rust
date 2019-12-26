@@ -40,40 +40,39 @@ impl HelperDef for EachHelper {
                         let array_path = value.context_path();
 
                         for (i, _) in list.iter().enumerate().take(len) {
-                            let mut local_rc = rc.derive();
                             if let Some(p) = local_path_root {
-                                local_rc.push_local_path_root(p.to_vec());
+                                rc.push_local_path_root(p.to_vec());
                             }
 
-                            local_rc.set_local_var("@first".to_string(), to_json(i == 0usize));
-                            local_rc.set_local_var("@last".to_string(), to_json(i == len - 1));
-                            local_rc.set_local_var("@index".to_string(), to_json(i));
+                            rc.set_local_var("@first".to_string(), to_json(i == 0usize));
+                            rc.set_local_var("@last".to_string(), to_json(i == len - 1));
+                            rc.set_local_var("@index".to_string(), to_json(i));
 
                             if let Some(ref p) = array_path {
-                                local_rc.set_path(copy_on_push_vec(p, i.to_string()))
+                                rc.set_path(copy_on_push_vec(p, i.to_string()))
                             }
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, local_rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.get_path().clone())?;
 
-                                local_rc.push_block_context(params)?;
+                                rc.push_block_context(params)?;
                             } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, local_rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.get_path().clone())?;
                                 params.add_value(bp_index, to_json(i))?;
 
-                                local_rc.push_block_context(params)?;
+                                rc.push_block_context(params)?;
                             }
 
-                            t.render(r, ctx, &mut local_rc, out)?;
+                            t.render(r, ctx, rc, out)?;
 
                             if h.has_block_param() {
-                                local_rc.pop_block_context();
+                                rc.pop_block_context();
                             }
 
                             if local_path_root.is_some() {
-                                local_rc.pop_local_path_root();
+                                rc.pop_local_path_root();
                             }
                         }
                         Ok(())
@@ -83,43 +82,41 @@ impl HelperDef for EachHelper {
                         let obj_path = value.context_path();
 
                         for (k, _) in obj.iter() {
-                            let mut local_rc = rc.derive();
-
                             if let Some(ref p) = local_path_root {
-                                local_rc.push_local_path_root(p.to_vec());
+                                rc.push_local_path_root(p.to_vec());
                             }
-                            local_rc.set_local_var("@first".to_string(), to_json(first));
+                            rc.set_local_var("@first".to_string(), to_json(first));
                             if first {
                                 first = false;
                             }
 
-                            local_rc.set_local_var("@key".to_string(), to_json(k));
+                            rc.set_local_var("@key".to_string(), to_json(k));
 
                             if let Some(ref p) = obj_path {
-                                local_rc.set_path(copy_on_push_vec(p, k.clone()));
+                                rc.set_path(copy_on_push_vec(p, k.clone()));
                             }
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, local_rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.get_path().clone())?;
 
-                                local_rc.push_block_context(params)?;
+                                rc.push_block_context(params)?;
                             } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, local_rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.get_path().clone())?;
                                 params.add_value(bp_key, to_json(&k))?;
 
-                                local_rc.push_block_context(params)?;
+                                rc.push_block_context(params)?;
                             }
 
-                            t.render(r, ctx, &mut local_rc, out)?;
+                            t.render(r, ctx, rc, out)?;
 
                             if h.has_block_param() {
-                                local_rc.pop_block_context();
+                                rc.pop_block_context();
                             }
 
                             if local_path_root.is_some() {
-                                local_rc.pop_local_path_root();
+                                rc.pop_local_path_root();
                             }
                         }
 
