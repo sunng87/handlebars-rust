@@ -79,10 +79,6 @@ impl<'reg> RenderContext<'reg> {
         }
     }
 
-    pub fn derive(&self) -> RenderContext<'reg> {
-        self.clone()
-    }
-
     pub fn new_for_block(&self) -> RenderContext<'reg> {
         let inner = self.inner.clone();
         let block = Rc::new(BlockRenderContext::new());
