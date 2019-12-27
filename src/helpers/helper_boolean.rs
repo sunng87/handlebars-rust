@@ -1,6 +1,6 @@
 //! Helpers for boolean operations
 
-use crate::value::JsonTruthy;
+use crate::json::value::JsonTruthy;
 
 handlebars_helper!(eq: |x: Json, y: Json| x == y);
 handlebars_helper!(ne: |x: Json, y: Json| x != y);
@@ -75,5 +75,4 @@ mod test_conditions {
             .unwrap();
         assert_eq!(&result, "ipsum");
     }
-
 }

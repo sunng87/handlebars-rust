@@ -7,7 +7,7 @@ use serde_json::value::{to_value, Map, Value as Json};
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
 use crate::json::path::*;
-use crate::value::ScopedJson;
+use crate::json::value::ScopedJson;
 
 pub type Object = HashMap<String, Json>;
 
@@ -286,7 +286,7 @@ fn join(segs: &VecDeque<&str>, sep: &str) -> String {
 mod test {
     use crate::context::{self, BlockParams, Context};
     use crate::error::RenderError;
-    use crate::value::{self, ScopedJson};
+    use crate::json::value::{self, ScopedJson};
     use serde_json::value::Map;
     use std::collections::{HashMap, VecDeque};
 

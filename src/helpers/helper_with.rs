@@ -1,10 +1,10 @@
 use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
+use crate::json::value::JsonTruthy;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
-use crate::value::JsonTruthy;
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
@@ -76,8 +76,8 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 
 #[cfg(test)]
 mod test {
+    use crate::json::value::to_json;
     use crate::registry::Registry;
-    use crate::value::to_json;
 
     #[derive(Serialize)]
     struct Address {

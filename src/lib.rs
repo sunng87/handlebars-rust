@@ -349,12 +349,12 @@ pub use self::context::{BlockParams, Context};
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::helpers::{HelperDef, HelperResult};
+pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 pub use self::output::Output;
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
 pub use self::render::{Directive as Decorator, Evaluable, Helper, RenderContext, Renderable};
 pub use self::support::str::StringWriter;
 pub use self::template::Template;
-pub use self::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 
 #[doc(hidden)]
 pub use self::serde_json::Value as JsonValue;
@@ -374,4 +374,3 @@ mod render;
 mod support;
 pub mod template;
 mod util;
-mod value;

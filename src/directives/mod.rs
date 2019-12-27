@@ -95,10 +95,10 @@ mod inline;
 mod test {
     use crate::context::Context;
     use crate::error::RenderError;
+    use crate::json::value::{as_string, to_json};
     use crate::output::Output;
     use crate::registry::Registry;
     use crate::render::{Directive, Helper, RenderContext};
-    use crate::value::{as_string, to_json};
 
     #[test]
     fn test_register_decorator() {

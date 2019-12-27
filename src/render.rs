@@ -9,6 +9,7 @@ use serde_json::value::Value as Json;
 use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
+use crate::json::value::{JsonRender, PathAndJson, ScopedJson};
 use crate::output::{Output, StringOutput};
 use crate::partial;
 use crate::registry::Registry;
@@ -17,7 +18,6 @@ use crate::template::{
     BlockParam, DirectiveTemplate, HelperTemplate, Parameter, Template, TemplateElement,
     TemplateMapping,
 };
-use crate::value::{JsonRender, PathAndJson, ScopedJson};
 
 /// The context of a render call
 ///
@@ -896,7 +896,7 @@ fn test_template() {
 
 #[test]
 fn test_render_context_promotion_and_demotion() {
-    use crate::value::to_json;
+    use crate::json::value::to_json;
     let mut render_context = RenderContext::new(None);
 
     render_context.set_local_var("@index".to_string(), to_json(0));

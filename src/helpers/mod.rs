@@ -1,9 +1,9 @@
 use crate::context::Context;
 use crate::error::RenderError;
+use crate::json::value::ScopedJson;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
-use crate::value::ScopedJson;
 
 pub use self::helper_each::EACH_HELPER;
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
@@ -152,10 +152,10 @@ mod test {
     use crate::context::Context;
     use crate::error::RenderError;
     use crate::helpers::HelperDef;
+    use crate::json::value::JsonRender;
     use crate::output::Output;
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext, Renderable};
-    use crate::value::JsonRender;
 
     #[derive(Clone, Copy)]
     struct MetaHelper;

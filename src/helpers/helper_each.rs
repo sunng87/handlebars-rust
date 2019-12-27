@@ -3,11 +3,11 @@ use serde_json::value::Value as Json;
 use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
+use crate::json::value::{to_json, JsonTruthy};
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
-use crate::value::{to_json, JsonTruthy};
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;
@@ -146,9 +146,8 @@ pub static EACH_HELPER: EachHelper = EachHelper;
 
 #[cfg(test)]
 mod test {
+    use crate::json::value::to_json;
     use crate::registry::Registry;
-    use crate::value::to_json;
-
     use serde_json::value::Value as Json;
     use std::collections::BTreeMap;
     use std::str::FromStr;
