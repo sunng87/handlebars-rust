@@ -13,10 +13,12 @@ pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 pub enum ScopedJson<'reg: 'rc, 'rc> {
     Constant(&'reg Json),
     Derived(Json),
-    Context(&'rc Json),
+    // represents a json reference to context value, its full path, and current root path
+    Context(&'rc Json, Vec<String>, Option<Vec<String>>),
     // represents a block param json with resolve full path
     // this path is different from `PathAndJson`
-    BlockContext(&'rc Json, String),
+    // TODO: merge this with context?
+    BlockContext(&'rc Json, Vec<String>),
     Missing,
 }
 
@@ -26,7 +28,7 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
         match self {
             ScopedJson::Constant(j) => j,
             ScopedJson::Derived(ref j) => j,
-            ScopedJson::Context(j) => j,
+            ScopedJson::Context(j, _, _) => j,
             ScopedJson::BlockContext(j, _) => j,
             _ => &DEFAULT_VALUE,
         }
@@ -48,9 +50,16 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
         ScopedJson::Derived(v.clone())
     }
 
-    pub fn block_context_path(&self) -> Option<&String> {
+    pub fn context_path(&self) -> Option<&Vec<String>> {
         match self {
-            ScopedJson::BlockContext(_, ref p) => Some(p),
+            ScopedJson::BlockContext(_, ref p) | ScopedJson::Context(_, ref p, _) => Some(p),
+            _ => None,
+        }
+    }
+
+    pub fn path_root(&self) -> Option<&Vec<String>> {
+        match self {
+            ScopedJson::Context(_, _, ref p) => p.as_ref(),
             _ => None,
         }
     }
@@ -62,65 +71,39 @@ impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'reg, 'rc> {
     }
 }
 
-#[derive(Debug)]
-enum Path {
-    Relative(String),
-    Absolute(String),
-}
-
-impl Path {
-    pub fn get(&self) -> &String {
-        match self {
-            Path::Relative(ref s) => s,
-            Path::Absolute(ref s) => s,
-        }
-    }
-}
-
 /// Json wrapper that holds the Json value and reference path information
 ///
 #[derive(Debug)]
 pub struct PathAndJson<'reg: 'rc, 'rc> {
-    path: Option<Path>,
+    relative_path: Option<String>,
     value: ScopedJson<'reg, 'rc>,
 }
 
 impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
-    pub fn new(path: Option<String>, value: ScopedJson<'reg, 'rc>) -> PathAndJson<'reg, 'rc> {
-        PathAndJson {
-            path: path.map(Path::Relative),
-            value,
-        }
-    }
-
-    pub fn new_absolute(
-        path: Option<String>,
+    pub fn new(
+        relative_path: Option<String>,
         value: ScopedJson<'reg, 'rc>,
     ) -> PathAndJson<'reg, 'rc> {
         PathAndJson {
-            path: path.map(Path::Absolute),
+            relative_path,
             value,
         }
     }
 
     /// Returns relative path when the value is referenced
     /// If the value is from a literal, the path is `None`
-    pub fn path(&self) -> Option<&String> {
-        self.path.as_ref().map(|p| p.get())
+    pub fn relative_path(&self) -> Option<&String> {
+        self.relative_path.as_ref()
+    }
+
+    /// Returns full path to this value if any
+    pub fn context_path(&self) -> Option<&Vec<String>> {
+        self.value.context_path()
     }
 
     /// Return root level of this path if any
-    pub fn path_root(&self) -> Option<&str> {
-        self.path
-            .as_ref()
-            .and_then(|p| p.get().split(|c| c == '.' || c == '/').nth(0))
-    }
-
-    pub fn is_absolute_path(&self) -> bool {
-        match self.path {
-            Some(Path::Absolute(_)) => true,
-            _ => false,
-        }
+    pub fn path_root(&self) -> Option<&Vec<String>> {
+        self.value.path_root()
     }
 
     /// Returns the value

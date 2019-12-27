@@ -685,7 +685,7 @@ mod test {
         );
     }
 
-    use crate::value::ScopedJson;
+    use crate::json::value::ScopedJson;
     struct GenMissingHelper;
     impl HelperDef for GenMissingHelper {
         fn call_inner<'reg: 'rc, 'rc>(

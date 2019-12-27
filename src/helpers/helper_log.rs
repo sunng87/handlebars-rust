@@ -2,11 +2,11 @@ use crate::context::Context;
 #[cfg(not(feature = "no_logging"))]
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
+#[cfg(not(feature = "no_logging"))]
+use crate::json::value::JsonRender;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
-#[cfg(not(feature = "no_logging"))]
-use crate::value::JsonRender;
 #[cfg(not(feature = "no_logging"))]
 use log::Level;
 #[cfg(not(feature = "no_logging"))]
@@ -37,7 +37,7 @@ impl HelperDef for LogHelper {
             log!(
                 log_level,
                 "{}: {}",
-                param.path().unwrap_or(&"".to_owned()),
+                param.relative_path().unwrap_or(&"".to_owned()),
                 param.value().render()
             )
         } else {

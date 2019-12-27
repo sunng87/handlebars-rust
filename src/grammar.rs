@@ -273,11 +273,11 @@ fn test_path() {
         "a.[0].[1].[2]",
         "a.[abc]",
         "a/v/c.d.s",
-        "a.[0]/b/c/../d",
-        "a.[bb c]/b/c/../d",
+        "a.[0]/b/c/d",
+        "a.[bb c]/b/c/d",
         "a.[0].[#hello]",
         "../a/b.[0].[1]",
-        "./this.[0]/[1]/this/../a",
+        "./this.[0]/[1]/this/a",
         "./this_name",
         "./goo/[/bar]",
         "a.[你好]",
@@ -285,6 +285,7 @@ fn test_path() {
         "a.[]", // empty key
         "././[/foo]",
         "[foo]",
+        "@root/a/b",
     ];
     for i in s.iter() {
         assert_rule_match!(Rule::path, i);

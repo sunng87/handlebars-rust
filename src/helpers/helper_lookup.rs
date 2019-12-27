@@ -3,10 +3,10 @@ use serde_json::value::Value as Json;
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
+use crate::json::value::JsonRender;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
-use crate::value::JsonRender;
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
