@@ -29,6 +29,7 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => {
+                let saved_path = rc.get_path().to_vec();
                 rc.promote_local_vars();
                 let local_path_root = value.path_root();
                 if let Some(p) = local_path_root {
@@ -131,6 +132,7 @@ impl HelperDef for EachHelper {
                 }
 
                 rc.demote_local_vars();
+                rc.set_path(saved_path);
                 rendered
             }
             None => Ok(()),
@@ -392,5 +394,21 @@ mod test {
         assert!(r0.contains("#special key: 3"));
         assert!(r0.contains("😂: 4"));
         assert!(r0.contains("me.dot.key: 5"));
+    }
+
+    #[test]
+    fn test_base_path_after_each() {
+        let mut handlebars = Registry::new();
+        assert!(handlebars
+            .register_template_string("t0", "{{#each a}}{{this}}{{/each}} {{b}}")
+            .is_ok());
+        let data = json!({
+            "a": [1, 2, 3, 4],
+            "b": "good",
+        });
+
+        let r0 = handlebars.render("t0", &data).ok().unwrap();
+
+        assert_eq!("1234 good", r0);
     }
 }
