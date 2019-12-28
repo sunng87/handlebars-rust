@@ -78,10 +78,6 @@ impl HelperDef for EachHelper {
                         let mut first: bool = true;
                         let obj_path = value.context_path();
 
-                        if let Some(ref p) = local_path_root {
-                            rc.push_local_path_root(p.to_vec());
-                        }
-
                         for (k, _) in obj.iter() {
                             rc.set_local_var("@first".to_string(), to_json(first));
                             if first {
