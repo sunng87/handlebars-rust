@@ -31,6 +31,9 @@ impl HelperDef for EachHelper {
             Some(t) => {
                 rc.promote_local_vars();
                 let local_path_root = value.path_root();
+                if let Some(p) = local_path_root {
+                    rc.push_local_path_root(p.to_vec());
+                }
 
                 debug!("each value {:?}", value.value());
                 let rendered = match (value.value().is_truthy(false), value.value()) {
@@ -40,10 +43,6 @@ impl HelperDef for EachHelper {
                         let array_path = value.context_path();
 
                         for (i, _) in list.iter().enumerate().take(len) {
-                            if let Some(p) = local_path_root {
-                                rc.push_local_path_root(p.to_vec());
-                            }
-
                             rc.set_local_var("@first".to_string(), to_json(i == 0usize));
                             rc.set_local_var("@last".to_string(), to_json(i == len - 1));
                             rc.set_local_var("@index".to_string(), to_json(i));
@@ -70,21 +69,19 @@ impl HelperDef for EachHelper {
                             if h.has_block_param() {
                                 rc.pop_block_context();
                             }
-
-                            if local_path_root.is_some() {
-                                rc.pop_local_path_root();
-                            }
                         }
+
                         Ok(())
                     }
                     (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
                         let obj_path = value.context_path();
 
+                        if let Some(ref p) = local_path_root {
+                            rc.push_local_path_root(p.to_vec());
+                        }
+
                         for (k, _) in obj.iter() {
-                            if let Some(ref p) = local_path_root {
-                                rc.push_local_path_root(p.to_vec());
-                            }
                             rc.set_local_var("@first".to_string(), to_json(first));
                             if first {
                                 first = false;
@@ -114,12 +111,7 @@ impl HelperDef for EachHelper {
                             if h.has_block_param() {
                                 rc.pop_block_context();
                             }
-
-                            if local_path_root.is_some() {
-                                rc.pop_local_path_root();
-                            }
                         }
-
                         Ok(())
                     }
                     (false, _) => {
@@ -133,6 +125,10 @@ impl HelperDef for EachHelper {
                         value.value()
                     ))),
                 };
+
+                if local_path_root.is_some() {
+                    rc.pop_local_path_root();
+                }
 
                 rc.demote_local_vars();
                 rendered
