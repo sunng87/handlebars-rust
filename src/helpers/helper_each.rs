@@ -29,8 +29,12 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => {
+                let saved_path = rc.get_path().to_vec();
                 rc.promote_local_vars();
                 let local_path_root = value.path_root();
+                if let Some(p) = local_path_root {
+                    rc.push_local_path_root(p.to_vec());
+                }
 
                 debug!("each value {:?}", value.value());
                 let rendered = match (value.value().is_truthy(false), value.value()) {
@@ -40,10 +44,6 @@ impl HelperDef for EachHelper {
                         let array_path = value.context_path();
 
                         for (i, _) in list.iter().enumerate().take(len) {
-                            if let Some(p) = local_path_root {
-                                rc.push_local_path_root(p.to_vec());
-                            }
-
                             rc.set_local_var("@first".to_string(), to_json(i == 0usize));
                             rc.set_local_var("@last".to_string(), to_json(i == len - 1));
                             rc.set_local_var("@index".to_string(), to_json(i));
@@ -70,21 +70,19 @@ impl HelperDef for EachHelper {
                             if h.has_block_param() {
                                 rc.pop_block_context();
                             }
-
-                            if local_path_root.is_some() {
-                                rc.pop_local_path_root();
-                            }
                         }
+
                         Ok(())
                     }
                     (true, &Json::Object(ref obj)) => {
                         let mut first: bool = true;
                         let obj_path = value.context_path();
 
+                        if let Some(ref p) = local_path_root {
+                            rc.push_local_path_root(p.to_vec());
+                        }
+
                         for (k, _) in obj.iter() {
-                            if let Some(ref p) = local_path_root {
-                                rc.push_local_path_root(p.to_vec());
-                            }
                             rc.set_local_var("@first".to_string(), to_json(first));
                             if first {
                                 first = false;
@@ -114,12 +112,7 @@ impl HelperDef for EachHelper {
                             if h.has_block_param() {
                                 rc.pop_block_context();
                             }
-
-                            if local_path_root.is_some() {
-                                rc.pop_local_path_root();
-                            }
                         }
-
                         Ok(())
                     }
                     (false, _) => {
@@ -134,7 +127,12 @@ impl HelperDef for EachHelper {
                     ))),
                 };
 
+                if local_path_root.is_some() {
+                    rc.pop_local_path_root();
+                }
+
                 rc.demote_local_vars();
+                rc.set_path(saved_path);
                 rendered
             }
             None => Ok(()),
@@ -396,5 +394,21 @@ mod test {
         assert!(r0.contains("#special key: 3"));
         assert!(r0.contains("😂: 4"));
         assert!(r0.contains("me.dot.key: 5"));
+    }
+
+    #[test]
+    fn test_base_path_after_each() {
+        let mut handlebars = Registry::new();
+        assert!(handlebars
+            .register_template_string("t0", "{{#each a}}{{this}}{{/each}} {{b}}")
+            .is_ok());
+        let data = json!({
+            "a": [1, 2, 3, 4],
+            "b": "good",
+        });
+
+        let r0 = handlebars.render("t0", &data).ok().unwrap();
+
+        assert_eq!("1234 good", r0);
     }
 }
