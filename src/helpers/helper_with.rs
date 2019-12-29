@@ -216,6 +216,7 @@ mod test {
         assert_eq!(r1.ok().unwrap(), "2727".to_string());
 
         let r2 = handlebars.render("t2", &people);
+        dbg!(&r2);
         assert_eq!(r2.ok().unwrap(), "01".to_string());
     }
 

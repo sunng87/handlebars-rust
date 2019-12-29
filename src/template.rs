@@ -10,7 +10,7 @@ use serde_json::value::Value as Json;
 
 use crate::error::{TemplateError, TemplateErrorReason};
 use crate::grammar::{HandlebarsParser, Rule};
-use crate::json::path::{parse_json_path_from_iter, Path, PathSeg};
+use crate::json::path::{parse_json_path_from_iter, Path};
 
 use self::TemplateElement::*;
 
@@ -123,9 +123,9 @@ pub struct HelperTemplate {
 
 impl HelperTemplate {
     // test only
-    pub(crate) fn with_path(path: Vec<PathSeg>) -> HelperTemplate {
+    pub(crate) fn with_path(path: Path) -> HelperTemplate {
         HelperTemplate {
-            name: Parameter::Path(Path::new(path)),
+            name: Parameter::Path(path),
             params: Vec::with_capacity(5),
             hash: HashMap::new(),
             block_param: None,
@@ -152,18 +152,7 @@ impl Parameter {
     pub fn as_name(&self) -> Option<&str> {
         match self {
             Parameter::Name(ref n) => Some(n),
-            Parameter::Path(Path::Relative(ref segs)) => {
-                // when path has only 1 segment
-                if segs.len() == 1 {
-                    if let Some(PathSeg::Named(ref n)) = segs.get(0) {
-                        Some(n)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            }
+            Parameter::Path(ref p) => Some(p.raw()),
             _ => None,
         }
     }
@@ -230,7 +219,7 @@ impl Template {
             }
             Rule::reference => {
                 let paths = parse_json_path_from_iter(it, name_span.end());
-                Ok(Parameter::Path(Path::new(paths)))
+                Ok(Parameter::Path(Path::new(name_span.as_str(), paths)))
             }
             Rule::subexpression => {
                 Template::parse_subexpression(source, it.by_ref(), name_span.end())
@@ -256,7 +245,7 @@ impl Template {
         let result = match param_rule {
             Rule::reference => {
                 let path_segs = parse_json_path_from_iter(it, param_span.end());
-                Parameter::Path(Path::new(path_segs))
+                Parameter::Path(Path::new(param_span.as_str(), path_segs))
             }
             Rule::literal => {
                 let s = param_span.as_str();
@@ -461,7 +450,7 @@ impl Template {
             TemplateError::of(TemplateErrorReason::InvalidSyntax).at(source, line_no, col_no)
         })?;
 
-        dbg!(parser_queue.clone());
+        // dbg!(parser_queue.clone());
 
         // remove escape from our pair queue
         let mut it = parser_queue
@@ -783,7 +772,6 @@ fn test_parse_escaped_block_raw_string() {
 
 #[test]
 fn test_parse_template() {
-    use crate::json::path::PathSeg;
     let source = "<h1>{{title}} 你好</h1> {{{content}}}
 {{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}中文你好
 {{#unless true}}kitkat{{^}}lollipop{{/unless}}";
@@ -794,9 +782,9 @@ fn test_parse_template() {
     assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
     assert_eq!(
         *t.elements.get(1).unwrap(),
-        Expression(Box::new(HelperTemplate::with_path(
-            [PathSeg::Named("title".to_owned())].to_vec()
-        )))
+        Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+            &["title"]
+        ))))
     );
 
     assert_eq!(
@@ -821,7 +809,7 @@ fn test_parse_template() {
             assert_eq!(h.params.len(), 1);
             assert_eq!(
                 *(h.params.get(0).unwrap()),
-                Parameter::Path(Path::new([PathSeg::Named("bar".to_owned())].to_vec()))
+                Parameter::Path(Path::with_named_paths(&["bar"]))
             )
         }
         _ => {
@@ -933,9 +921,9 @@ fn test_white_space_omitter() {
     assert_eq!(t.elements[0], RawString("hello~".to_string()));
     assert_eq!(
         t.elements[1],
-        Expression(Box::new(HelperTemplate::with_path(
-            [PathSeg::Named("world".into())].to_vec()
-        )))
+        Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+            &["world"]
+        ))))
     );
     assert_eq!(t.elements[2], RawString("!".to_string()));
 

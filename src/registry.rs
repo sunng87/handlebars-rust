@@ -670,7 +670,6 @@ mod test {
         );
 
         let data2 = json!([1, 2, 3]);
-        dbg!(r.render_template("accessing valid array index {{this.[2]}}", &data2));
         assert!(r
             .render_template("accessing valid array index {{this.[2]}}", &data2)
             .is_ok());

@@ -14,16 +14,23 @@ pub enum PathSeg {
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Path {
-    Relative(Vec<PathSeg>),
-    Local((usize, String)),
+    Relative((Vec<PathSeg>, String)),
+    Local((usize, String, String)),
 }
 
 impl Path {
-    pub(crate) fn new(segs: Vec<PathSeg>) -> Path {
+    pub(crate) fn new(raw: &str, segs: Vec<PathSeg>) -> Path {
         if let Some((level, name)) = get_local_path_and_level(&segs) {
-            Path::Local((level, name))
+            Path::Local((level, name, raw.to_owned()))
         } else {
-            Path::Relative(segs)
+            Path::Relative((segs, raw.to_owned()))
+        }
+    }
+
+    pub(crate) fn raw(&self) -> &str {
+        match self {
+            Path::Relative((_, ref raw)) => raw,
+            Path::Local((_, _, ref raw)) => raw,
         }
     }
 
@@ -33,7 +40,7 @@ impl Path {
             .into_iter()
             .map(|n| PathSeg::Named(n.to_string()))
             .collect();
-        Path::Relative(segs)
+        Path::Relative((segs, name_segs.join("/")))
     }
 }
 
