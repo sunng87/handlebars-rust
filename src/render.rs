@@ -153,7 +153,7 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn get_local_var(&self, name: &str) -> Option<&Json> {
-        if !name.starts_with("@") {
+        if !name.starts_with('@') {
             return None;
         }
 
