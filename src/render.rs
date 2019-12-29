@@ -9,6 +9,7 @@ use serde_json::value::Value as Json;
 use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
+use crate::json::path::{Path, PathSeg};
 use crate::json::value::{JsonRender, PathAndJson, ScopedJson};
 use crate::output::{Output, StringOutput};
 use crate::partial;
@@ -120,7 +121,7 @@ impl<'reg> RenderContext<'reg> {
     pub fn evaluate<'rc>(
         &self,
         context: &'rc Context,
-        path: &str,
+        path: &[PathSeg],
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         context.navigate(
             self.get_path(),
@@ -152,24 +153,11 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().local_variables.pop_front();
     }
 
-    pub fn get_local_var(&self, name: &str) -> Option<&Json> {
-        if !name.starts_with('@') {
-            return None;
-        }
-
-        // manual path parsing
-        // count how many ../ in the var name and extract the real name
-        let mut level = 0;
-        let mut name_index = 1;
-        while name[name_index..].starts_with("../") {
-            level += 1;
-            name_index += 3;
-        }
-
+    pub fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
         self.block()
             .local_variables
             .get(level)
-            .and_then(|m| m.get(&format!("@{}", &name[name_index..])))
+            .and_then(|m| m.get(&format!("@{}", &name)))
     }
 
     pub fn is_current_template(&self, p: &str) -> bool {
@@ -547,8 +535,10 @@ impl Parameter {
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
-        match *self {
+        match self {
             Parameter::Name(ref name) => Ok(name.to_owned()),
+            // FIXME: return error or join path?
+            Parameter::Path(_) => Ok("".to_string()),
             Parameter::Subexpression(_) => {
                 self.expand(registry, ctx, rc).map(|v| v.value().render())
             }
@@ -564,32 +554,35 @@ impl Parameter {
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             Parameter::Name(ref name) => {
-                if let Some(value) = rc.get_local_var(name) {
-                    // local var, @first, @last for example
-                    // here we count it as derived value, and simply clone it
-                    // to bypass lifetime issue
-                    Ok(PathAndJson::new(
-                        Some(name.to_owned()),
-                        ScopedJson::Derived(value.clone()),
-                    ))
-                } else if let Some(rc_context) = rc.context() {
+                // FIXME: raise error when expanding with name?
+                Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Missing))
+            }
+            Parameter::Path(Path::Local((level, name))) => {
+                if let Some(value) = rc.get_local_var(*level, &name) {
+                    Ok(PathAndJson::new(None, ScopedJson::Derived(value.clone())))
+                } else {
+                    Ok(PathAndJson::new(None, ScopedJson::Missing))
+                }
+            }
+            Parameter::Path(Path::Relative(ref segs)) => {
+                if let Some(rc_context) = rc.context() {
                     // the context is modified from a decorator
                     // use the modified one
-                    let json = rc.evaluate(rc_context.borrow(), name)?;
+                    let json = rc.evaluate(rc_context.borrow(), segs)?;
                     // the data is fetched from mutable reference render_context
                     // so we have to clone it to bypass lifetime check
                     Ok(PathAndJson::new(
-                        Some(name.to_owned()),
+                        None, // TODO: right path
                         ScopedJson::Derived(json.as_json().clone()),
                     ))
                 } else {
-                    let value = rc.evaluate(ctx, name)?;
+                    let value = rc.evaluate(ctx, segs)?;
 
                     match value {
                         // when evaluate result is a derived json, it indicates the
                         // value is a block context value
                         ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
-                        _ => Ok(PathAndJson::new(Some(name.to_owned()), value)),
+                        _ => Ok(PathAndJson::new(None, value)),
                     }
                 }
             }

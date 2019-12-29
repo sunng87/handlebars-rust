@@ -25,7 +25,7 @@ symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"@"|"-"|"_"|'\u{80}'..'\u{7ff}'|'\
 path_char = _{ "/" }
 
 identifier = @{ symbol_char+ }
-reference = @{ "@"? ~ path_inline }
+reference = @{ path_inline }
 name = _{ subexpression | reference }
 
 param = { !(keywords ~ !symbol_char) ~ (literal | reference | subexpression) }
@@ -108,6 +108,6 @@ path_key = _{ "[" ~  path_raw_id ~ "]" }
 path_root = { "@root" }
 path_current = { "this" | "." }
 path_item = _{ path_id|path_current|path_key }
-
-path_inline = _{ (path_root ~ path_sep)? ~ (path_up ~ path_sep)*  ~ path_item ~ (path_sep ~  path_item)* }
+path_local = { "@" }
+path_inline = _{ (path_root ~ path_sep)? ~ path_local? ~ (path_up ~ path_sep)*  ~ path_item ~ (path_sep ~  path_item)* }
 path = _{ path_inline ~ EOI }

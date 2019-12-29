@@ -38,7 +38,7 @@ fn render_partial<'reg: 'rc, 'rc>(
             .iter()
             .map(|(k, v)| (k.clone(), v.value().clone()))
             .collect::<HashMap<String, Json>>();
-        let partial_context = merge_json(local_rc.evaluate(ctx, ".")?.as_json(), &hash_ctx);
+        let partial_context = merge_json(local_rc.evaluate(ctx, &[])?.as_json(), &hash_ctx);
         let ctx = Context::wraps(&partial_context)?;
         let mut partial_rc = local_rc.new_for_block();
         t.render(r, &ctx, &mut partial_rc, out)

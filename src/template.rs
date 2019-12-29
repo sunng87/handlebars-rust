@@ -1,16 +1,16 @@
 use std::collections::{HashMap, VecDeque};
 use std::convert::From;
 use std::iter::Peekable;
+use std::str::FromStr;
 
-use crate::grammar::{HandlebarsParser, Rule};
 use pest::error::LineColLocation;
 use pest::iterators::Pair;
 use pest::{Parser, Position};
-
 use serde_json::value::Value as Json;
-use std::str::FromStr;
 
 use crate::error::{TemplateError, TemplateErrorReason};
+use crate::grammar::{HandlebarsParser, Rule};
+use crate::json::path::{parse_json_path_from_iter, Path};
 
 use self::TemplateElement::*;
 
@@ -102,7 +102,10 @@ pub struct ExpressionSpec {
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Parameter {
+    // for helper name only
     Name(String),
+    // for expression, helper param and hash
+    Path(Path),
     Literal(Json),
     Subexpression(Subexpression),
 }
@@ -122,7 +125,7 @@ impl HelperTemplate {
     pub(crate) fn with_name(name: String) -> HelperTemplate {
         HelperTemplate {
             name: Parameter::Name(name),
-            params: Vec::new(),
+            params: Vec::with_capacity(5),
             hash: HashMap::new(),
             block_param: None,
             template: None,
@@ -223,8 +226,12 @@ impl Template {
         let rule = name_node.as_rule();
         let name_span = name_node.as_span();
         match rule {
-            Rule::identifier | Rule::reference | Rule::invert_tag_item => {
+            Rule::identifier | Rule::invert_tag_item => {
                 Ok(Parameter::Name(name_span.as_str().to_owned()))
+            }
+            Rule::reference => {
+                let paths = parse_json_path_from_iter(it, name_span.end());
+                Ok(Parameter::Path(Path::new(paths)))
             }
             Rule::subexpression => {
                 Template::parse_subexpression(source, it.by_ref(), name_span.end())
@@ -248,7 +255,10 @@ impl Template {
         let param_rule = param.as_rule();
         let param_span = param.as_span();
         let result = match param_rule {
-            Rule::reference => Parameter::Name(param_span.as_str().to_owned()),
+            Rule::reference => {
+                let path_segs = parse_json_path_from_iter(it, param_span.end());
+                Parameter::Path(Path::new(path_segs))
+            }
             Rule::literal => {
                 let s = param_span.as_str();
                 if let Ok(json) = Json::from_str(s) {
