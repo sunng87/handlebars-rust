@@ -39,9 +39,9 @@ impl Subexpression {
     ) -> Subexpression {
         Subexpression {
             element: Box::new(Expression(Box::new(HelperTemplate {
-                name: name,
-                params: params,
-                hash: hash,
+                name,
+                params,
+                hash,
                 template: None,
                 inverse: None,
                 block_param: None,
@@ -622,9 +622,9 @@ impl Template {
                                     template: None,
                                 };
                                 let el = if rule == Rule::directive_expression {
-                                    DirectiveExpression(directive)
+                                    DirectiveExpression(Box::new(directive))
                                 } else {
-                                    PartialExpression(directive)
+                                    PartialExpression(Box::new(directive))
                                 };
                                 let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
@@ -659,9 +659,9 @@ impl Template {
                                     d.template = Some(prev_t);
                                     let t = template_stack.front_mut().unwrap();
                                     if rule == Rule::directive_block_end {
-                                        t.elements.push(DirectiveBlock(d));
+                                        t.elements.push(DirectiveBlock(Box::new(d)));
                                     } else {
-                                        t.elements.push(PartialBlock(d));
+                                        t.elements.push(PartialBlock(Box::new(d)));
                                     }
                                 } else {
                                     return Err(TemplateError::of(
@@ -733,10 +733,10 @@ pub enum TemplateElement {
     HTMLExpression(Parameter),
     Expression(Box<HelperTemplate>),
     HelperBlock(Box<HelperTemplate>),
-    DirectiveExpression(DirectiveTemplate),
-    DirectiveBlock(DirectiveTemplate),
-    PartialExpression(DirectiveTemplate),
-    PartialBlock(DirectiveTemplate),
+    DirectiveExpression(Box<DirectiveTemplate>),
+    DirectiveBlock(Box<DirectiveTemplate>),
+    PartialExpression(Box<DirectiveTemplate>),
+    PartialBlock(Box<DirectiveTemplate>),
     Comment(String),
 }
 

@@ -37,8 +37,8 @@ impl Path {
     /// for test only
     pub(crate) fn with_named_paths(name_segs: &[&str]) -> Path {
         let segs = name_segs
-            .into_iter()
-            .map(|n| PathSeg::Named(n.to_string()))
+            .iter()
+            .map(|n| PathSeg::Named((*n).to_string()))
             .collect();
         Path::Relative((segs, name_segs.join("/")))
     }
@@ -104,10 +104,10 @@ where
         it.next();
     }
 
-    return path_stack;
+    path_stack
 }
 
-pub(crate) fn merge_json_path<'a>(path_stack: &mut Vec<String>, relative_path: &[PathSeg]) {
+pub(crate) fn merge_json_path(path_stack: &mut Vec<String>, relative_path: &[PathSeg]) {
     for seg in relative_path {
         match seg {
             PathSeg::Named(s) => {
