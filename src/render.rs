@@ -537,8 +537,10 @@ impl Parameter {
     ) -> Result<String, RenderError> {
         match self {
             Parameter::Name(ref name) => Ok(name.to_owned()),
-            // FIXME: return error or join path?
-            Parameter::Path(_) => Ok("".to_string()),
+            Parameter::Path(_) => Ok(self
+                .as_name()
+                .map(|n| n.to_owned())
+                .unwrap_or("".to_owned())),
             Parameter::Subexpression(_) => {
                 self.expand(registry, ctx, rc).map(|v| v.value().render())
             }
@@ -590,6 +592,7 @@ impl Parameter {
             Parameter::Subexpression(ref t) => match *t.as_element() {
                 Expression(ref ht) => {
                     if ht.is_name_only() {
+                        dbg!(&ht.name);
                         ht.name.expand(registry, ctx, rc)
                     } else {
                         let name = ht.name.expand_as_name(registry, ctx, rc)?;
@@ -826,7 +829,9 @@ fn test_raw_string() {
 #[test]
 fn test_expression() {
     let r = Registry::new();
-    let element = Expression(Box::new(HelperTemplate::with_name("hello".to_owned())));
+    let element = Expression(Box::new(HelperTemplate::with_path(
+        [PathSeg::Named("hello".to_owned())].to_vec(),
+    )));
 
     let mut out = StringOutput::new();
     let mut m: HashMap<String, String> = HashMap::new();
@@ -847,7 +852,7 @@ fn test_expression() {
 #[test]
 fn test_html_expression() {
     let r = Registry::new();
-    let element = HTMLExpression(Parameter::Name("hello".into()));
+    let element = HTMLExpression(Parameter::Path(Path::with_named_paths(&["hello"])));
 
     let mut out = StringOutput::new();
     let mut m: HashMap<String, String> = HashMap::new();
@@ -873,7 +878,9 @@ fn test_template() {
 
     let elements: Vec<TemplateElement> = vec![
         RawString("<h1>".to_string()),
-        Expression(Box::new(HelperTemplate::with_name("hello".to_owned()))),
+        Expression(Box::new(HelperTemplate::with_path(
+            [PathSeg::Named("hello".to_owned())].to_vec(),
+        ))),
         RawString("</h1>".to_string()),
         Comment("".to_string()),
     ];
@@ -901,16 +908,14 @@ fn test_render_context_promotion_and_demotion() {
 
     render_context.promote_local_vars();
     assert_eq!(
-        render_context
-            .get_local_var(&"@../index".to_string())
-            .unwrap(),
+        render_context.get_local_var(1, "index").unwrap(),
         &to_json(0)
     );
 
     render_context.demote_local_vars();
 
     assert_eq!(
-        render_context.get_local_var(&"@index".to_string()).unwrap(),
+        render_context.get_local_var(0, "index").unwrap(),
         &to_json(0)
     );
 }

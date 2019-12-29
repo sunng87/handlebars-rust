@@ -10,7 +10,7 @@ use serde_json::value::Value as Json;
 
 use crate::error::{TemplateError, TemplateErrorReason};
 use crate::grammar::{HandlebarsParser, Rule};
-use crate::json::path::{parse_json_path_from_iter, Path};
+use crate::json::path::{parse_json_path_from_iter, Path, PathSeg};
 
 use self::TemplateElement::*;
 
@@ -33,15 +33,15 @@ pub struct Subexpression {
 
 impl Subexpression {
     pub fn new(
-        name: String,
-        params: &[Parameter],
-        hash: &HashMap<String, Parameter>,
+        name: Parameter,
+        params: Vec<Parameter>,
+        hash: HashMap<String, Parameter>,
     ) -> Subexpression {
         Subexpression {
             element: Box::new(Expression(Box::new(HelperTemplate {
-                name: Parameter::Name(name),
-                params: params.to_owned(),
-                hash: hash.clone(),
+                name: name,
+                params: params,
+                hash: hash,
                 template: None,
                 inverse: None,
                 block_param: None,
@@ -122,9 +122,10 @@ pub struct HelperTemplate {
 }
 
 impl HelperTemplate {
-    pub(crate) fn with_name(name: String) -> HelperTemplate {
+    // test only
+    pub(crate) fn with_path(path: Vec<PathSeg>) -> HelperTemplate {
         HelperTemplate {
-            name: Parameter::Name(name),
+            name: Parameter::Path(Path::new(path)),
             params: Vec::with_capacity(5),
             hash: HashMap::new(),
             block_param: None,
@@ -149,18 +150,21 @@ pub struct DirectiveTemplate {
 
 impl Parameter {
     pub fn as_name(&self) -> Option<&str> {
-        if let Parameter::Name(ref n) = self {
-            Some(n)
-        } else {
-            None
-        }
-    }
-
-    pub fn into_name(self) -> Option<String> {
-        if let Parameter::Name(n) = self {
-            Some(n)
-        } else {
-            None
+        match self {
+            Parameter::Name(ref n) => Some(n),
+            Parameter::Path(Path::Relative(ref segs)) => {
+                // when path has only 1 segment
+                if segs.len() == 1 {
+                    if let Some(PathSeg::Named(ref n)) = segs.get(0) {
+                        Some(n)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+            _ => None,
         }
     }
 
@@ -202,16 +206,11 @@ impl Template {
         I: Iterator<Item = Pair<'a, Rule>>,
     {
         let espec = Template::parse_expression(source, it.by_ref(), limit)?;
-        if let Parameter::Name(name) = espec.name {
-            Ok(Parameter::Subexpression(Subexpression::new(
-                name,
-                &espec.params,
-                &espec.hash,
-            )))
-        } else {
-            // line/col no
-            Err(TemplateError::of(TemplateErrorReason::NestedSubexpression))
-        }
+        Ok(Parameter::Subexpression(Subexpression::new(
+            espec.name,
+            espec.params,
+            espec.hash,
+        )))
     }
 
     fn parse_name<'a, I>(
@@ -462,7 +461,7 @@ impl Template {
             TemplateError::of(TemplateErrorReason::InvalidSyntax).at(source, line_no, col_no)
         })?;
 
-        // println!("{:?}", parser_queue.clone());
+        dbg!(parser_queue.clone());
 
         // remove escape from our pair queue
         let mut it = parser_queue
@@ -643,8 +642,8 @@ impl Template {
                             }
                             Rule::helper_block_end | Rule::raw_block_end => {
                                 let mut h = helper_stack.pop_front().unwrap();
-                                let close_tag_name = exp.name;
-                                if h.name == close_tag_name {
+                                let close_tag_name = exp.name.as_name();
+                                if h.name.as_name() == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     if h.template.is_some() {
                                         h.inverse = Some(prev_t);
@@ -656,8 +655,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedHelper(
-                                            h.name.into_name().unwrap(),
-                                            close_tag_name.into_name().unwrap(),
+                                            h.name.as_name().unwrap().into(),
+                                            close_tag_name.unwrap().into(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -665,8 +664,8 @@ impl Template {
                             }
                             Rule::directive_block_end | Rule::partial_block_end => {
                                 let mut d = directive_stack.pop_front().unwrap();
-                                let close_tag_name = exp.name;
-                                if d.name == close_tag_name {
+                                let close_tag_name = exp.name.as_name();
+                                if d.name.as_name() == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     d.template = Some(prev_t);
                                     let t = template_stack.front_mut().unwrap();
@@ -678,8 +677,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedDirective(
-                                            d.name,
-                                            close_tag_name,
+                                            d.name.as_name().unwrap().into(),
+                                            close_tag_name.unwrap().into(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -784,6 +783,7 @@ fn test_parse_escaped_block_raw_string() {
 
 #[test]
 fn test_parse_template() {
+    use crate::json::path::PathSeg;
     let source = "<h1>{{title}} 你好</h1> {{{content}}}
 {{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}中文你好
 {{#unless true}}kitkat{{^}}lollipop{{/unless}}";
@@ -794,12 +794,14 @@ fn test_parse_template() {
     assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
     assert_eq!(
         *t.elements.get(1).unwrap(),
-        Expression(Box::new(HelperTemplate::with_name("title".to_string())))
+        Expression(Box::new(HelperTemplate::with_path(
+            [PathSeg::Named("title".to_owned())].to_vec()
+        )))
     );
 
     assert_eq!(
         *t.elements.get(3).unwrap(),
-        HTMLExpression(Parameter::Name("content".to_string()))
+        HTMLExpression(Parameter::Path(Path::with_named_paths(&["content"])))
     );
 
     match *t.elements.get(5).unwrap() {
@@ -817,7 +819,10 @@ fn test_parse_template() {
         Expression(ref h) => {
             assert_eq!(h.name.as_name().unwrap(), "foo".to_string());
             assert_eq!(h.params.len(), 1);
-            assert_eq!(*(h.params.get(0).unwrap()), Parameter::Name("bar".into()));
+            assert_eq!(
+                *(h.params.get(0).unwrap()),
+                Parameter::Path(Path::new([PathSeg::Named("bar".to_owned())].to_vec()))
+            )
         }
         _ => {
             panic!("Helper expression here");
@@ -875,8 +880,8 @@ fn test_subexpression() {
             assert_eq!(h.params.len(), 1);
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
                 assert_eq!(t.name(), "bar".to_owned());
-                if let Some(&Parameter::Name(ref n)) = t.params().unwrap().get(0) {
-                    assert_eq!(n, "baz");
+                if let Some(Parameter::Path(p)) = t.params().unwrap().get(0) {
+                    assert_eq!(p, &Path::with_named_paths(&["baz"]));
                 } else {
                     panic!("non-empty param expected ");
                 }
@@ -897,8 +902,8 @@ fn test_subexpression() {
 
             if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
                 assert_eq!(t.name(), "baz".to_owned());
-                if let Some(&Parameter::Name(ref n)) = t.params().unwrap().get(0) {
-                    assert_eq!(n, "bar");
+                if let Some(Parameter::Path(p)) = t.params().unwrap().get(0) {
+                    assert_eq!(p, &Path::with_named_paths(&["bar"]));
                 } else {
                     panic!("non-empty param expected ");
                 }
@@ -928,7 +933,9 @@ fn test_white_space_omitter() {
     assert_eq!(t.elements[0], RawString("hello~".to_string()));
     assert_eq!(
         t.elements[1],
-        Expression(Box::new(HelperTemplate::with_name("world".into())))
+        Expression(Box::new(HelperTemplate::with_path(
+            [PathSeg::Named("world".into())].to_vec()
+        )))
     );
     assert_eq!(t.elements[2], RawString("!".to_string()));
 
@@ -1012,7 +1019,10 @@ fn test_literal_parameter_parser() {
                     Parameter::Literal(Json::String("value".to_owned()))
                 );
                 assert_eq!(ht.hash["valid"], Parameter::Literal(Json::Bool(false)));
-                assert_eq!(ht.hash["ref"], Parameter::Name("someref".to_owned()));
+                assert_eq!(
+                    ht.hash["ref"],
+                    Parameter::Path(Path::with_named_paths(&["someref"]))
+                );
             }
         }
         Err(e) => panic!("{}", e),
@@ -1087,7 +1097,7 @@ fn test_directive() {
         Err(e) => panic!("{}", e),
         Ok(t) => {
             if let DirectiveExpression(ref de) = t.elements[1] {
-                assert_eq!(de.name, Parameter::Name("ssh".to_owned()));
+                assert_eq!(de.name.as_name(), Some("ssh"));
                 assert_eq!(de.template, None);
             }
         }
@@ -1097,7 +1107,7 @@ fn test_directive() {
         Err(e) => panic!("{}", e),
         Ok(t) => {
             if let PartialExpression(ref de) = t.elements[1] {
-                assert_eq!(de.name, Parameter::Name("ssh".to_owned()));
+                assert_eq!(de.name.as_name(), Some("ssh"));
                 assert_eq!(de.template, None);
             }
         }

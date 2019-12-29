@@ -257,6 +257,7 @@ fn join(segs: &VecDeque<&str>, sep: &str) -> String {
 mod test {
     use crate::context::{self, BlockParams, Context};
     use crate::error::RenderError;
+    use crate::json::path::parse_json_path;
     use crate::json::value::{self, ScopedJson};
     use serde_json::value::Map;
     use std::collections::{HashMap, VecDeque};
@@ -265,7 +266,13 @@ mod test {
         ctx: &'rc Context,
         path: &str,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        ctx.navigate(&Vec::new(), &VecDeque::new(), path, &VecDeque::new())
+        let relative_path = parse_json_path(path).unwrap();
+        ctx.navigate(
+            &Vec::new(),
+            &VecDeque::new(),
+            &relative_path,
+            &VecDeque::new(),
+        )
     }
 
     #[derive(Serialize)]
@@ -432,7 +439,7 @@ mod test {
             ctx.navigate(
                 &["a".to_owned(), "b".to_owned()],
                 &VecDeque::new(),
-                "@root/b",
+                &parse_json_path("@root/b").unwrap(),
                 &VecDeque::new()
             )
             .unwrap()
@@ -460,15 +467,25 @@ mod test {
         block_params.push_front(block_param);
 
         assert_eq!(
-            ctx.navigate(&Vec::new(), &VecDeque::new(), "z.[1]", &block_params)
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                &Vec::new(),
+                &VecDeque::new(),
+                &parse_json_path("z.[1]").unwrap(),
+                &block_params
+            )
+            .unwrap()
+            .render(),
             "2".to_string()
         );
         assert_eq!(
-            ctx.navigate(&Vec::new(), &VecDeque::new(), "t", &block_params)
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                &Vec::new(),
+                &VecDeque::new(),
+                &parse_json_path("t").unwrap(),
+                &block_params
+            )
+            .unwrap()
+            .render(),
             "good".to_string()
         );
     }

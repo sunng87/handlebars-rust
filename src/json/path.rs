@@ -26,6 +26,15 @@ impl Path {
             Path::Relative(segs)
         }
     }
+
+    /// for test only
+    pub(crate) fn with_named_paths(name_segs: &[&str]) -> Path {
+        let segs = name_segs
+            .into_iter()
+            .map(|n| PathSeg::Named(n.to_string()))
+            .collect();
+        Path::Relative(segs)
+    }
 }
 
 // from json path to a deque of
@@ -82,9 +91,7 @@ where
             Rule::path_id | Rule::path_raw_id => {
                 path_stack.push(PathSeg::Named(n.as_str().to_string()));
             }
-            _ => {
-                continue;
-            }
+            _ => {}
         }
 
         it.next();
