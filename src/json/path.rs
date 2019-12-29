@@ -34,28 +34,10 @@ pub(crate) fn parse_json_path(path: &str) -> Result<Vec<PathSeg>, RenderError> {
         .map(|p| p.flatten())
         .map_err(|_| RenderError::new("Invalid JSON path"))?;
 
-    let mut path_stack = Vec::with_capacity(5);
-    for seg in parsed_path {
-        match seg.as_rule() {
-            Rule::path_root => {
-                path_stack.push(PathSeg::Ruled(Rule::path_root));
-            }
-            Rule::path_local => {
-                path_stack.push(PathSeg::Ruled(Rule::path_local));
-            }
-            Rule::path_up => {
-                path_stack.push(PathSeg::Ruled(Rule::path_up));
-            }
-            Rule::path_id | Rule::path_raw_id => {
-                path_stack.push(PathSeg::Named(seg.as_str().to_string()));
-            }
-            _ => {
-                continue;
-            }
-        }
-    }
-
-    Ok(path_stack)
+    Ok(parse_json_path_from_iter(
+        &mut parsed_path.peekable(),
+        path.len(),
+    ))
 }
 
 fn get_local_path_and_level(paths: &[PathSeg]) -> Option<(usize, String)> {
@@ -87,10 +69,12 @@ where
             break;
         }
 
-        // FIXME: remove duplicate code
         match n.as_rule() {
             Rule::path_root => {
                 path_stack.push(PathSeg::Ruled(Rule::path_root));
+            }
+            Rule::path_local => {
+                path_stack.push(PathSeg::Ruled(Rule::path_local));
             }
             Rule::path_up => {
                 path_stack.push(PathSeg::Ruled(Rule::path_up));
