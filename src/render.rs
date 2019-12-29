@@ -36,7 +36,6 @@ pub struct RenderContext<'reg> {
 pub struct RenderContextInner<'reg> {
     partials: HashMap<String, &'reg Template>,
     local_helpers: HashMap<String, Rc<Box<dyn HelperDef + 'static>>>,
-    local_variables: HashMap<String, Json>,
     /// current template name
     current_template: Option<&'reg String>,
     /// root template name
@@ -50,11 +49,15 @@ pub struct BlockRenderContext {
     local_path_root: VecDeque<Vec<String>>,
     // current block context variables
     block_context: VecDeque<BlockParams>,
+    // local variables in current context
+    local_variables: VecDeque<HashMap<String, Json>>,
 }
 
 impl BlockRenderContext {
     fn new() -> BlockRenderContext {
-        BlockRenderContext::default()
+        let mut block = BlockRenderContext::default();
+        block.local_variables.push_front(HashMap::new());
+        block
     }
 }
 
@@ -63,7 +66,6 @@ impl<'reg> RenderContext<'reg> {
     pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg> {
         let inner = Rc::new(RenderContextInner {
             partials: HashMap::new(),
-            local_variables: HashMap::new(),
             local_helpers: HashMap::new(),
             current_template: None,
             root_template,
@@ -137,33 +139,37 @@ impl<'reg> RenderContext<'reg> {
     }
 
     pub fn set_local_var(&mut self, name: String, value: Json) {
-        self.inner_mut().local_variables.insert(name, value);
-    }
-
-    pub fn clear_local_vars(&mut self) {
-        self.inner_mut().local_variables.clear();
+        if let Some(m) = self.block_mut().local_variables.front_mut() {
+            m.insert(name, value);
+        }
     }
 
     pub fn promote_local_vars(&mut self) {
-        let mut new_map: HashMap<String, Json> = HashMap::new();
-        for (key, v) in &self.inner().local_variables {
-            new_map.insert(format!("@../{}", &key[1..]), v.clone());
-        }
-        self.inner_mut().local_variables = new_map;
+        self.block_mut().local_variables.push_front(HashMap::new());
     }
 
     pub fn demote_local_vars(&mut self) {
-        let mut new_map: HashMap<String, Json> = HashMap::new();
-        for (key, v) in &self.inner().local_variables {
-            if key.starts_with("@../") {
-                new_map.insert(format!("@{}", &key[4..]), v.clone());
-            }
-        }
-        self.inner_mut().local_variables = new_map;
+        self.block_mut().local_variables.pop_front();
     }
 
     pub fn get_local_var(&self, name: &str) -> Option<&Json> {
-        self.inner().local_variables.get(name)
+        if !name.starts_with('@') {
+            return None;
+        }
+
+        // manual path parsing
+        // count how many ../ in the var name and extract the real name
+        let mut level = 0;
+        let mut name_index = 1;
+        while name[name_index..].starts_with("../") {
+            level += 1;
+            name_index += 3;
+        }
+
+        self.block()
+            .local_variables
+            .get(level)
+            .and_then(|m| m.get(&format!("@{}", &name[name_index..])))
     }
 
     pub fn is_current_template(&self, p: &str) -> bool {
@@ -249,7 +255,6 @@ impl<'reg> fmt::Debug for RenderContextInner<'reg> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.debug_struct("RenderContextInner")
             .field("partials", &self.partials)
-            .field("local_variables", &self.local_variables)
             .field("root_template", &self.root_template)
             .field("current_template", &self.current_template)
             .field("disable_eacape", &self.disable_escape)
@@ -902,7 +907,6 @@ fn test_render_context_promotion_and_demotion() {
     render_context.set_local_var("@index".to_string(), to_json(0));
 
     render_context.promote_local_vars();
-
     assert_eq!(
         render_context
             .get_local_var(&"@../index".to_string())

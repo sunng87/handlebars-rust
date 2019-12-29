@@ -248,19 +248,13 @@ mod test {
         let r0 = handlebars
             .render(
                 "t0",
-                &({
-                    let mut rv = BTreeMap::new();
-                    rv.insert("foo".to_owned(), {
-                        let mut rv = BTreeMap::new();
-                        rv.insert("value".to_owned(), "bar".to_owned());
-                        rv
-                    });
-                    rv.insert("".to_owned(), {
-                        let mut rv = BTreeMap::new();
-                        rv.insert("value".to_owned(), "baz".to_owned());
-                        rv
-                    });
-                    rv
+                &json!({
+                    "foo": {
+                        "value": "bar"
+                    },
+                    "": {
+                        "value": "baz"
+                    }
                 }),
             )
             .unwrap();
