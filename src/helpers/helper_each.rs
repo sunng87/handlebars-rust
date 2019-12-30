@@ -44,12 +44,21 @@ impl HelperDef for EachHelper {
                         let array_path = value.context_path();
 
                         for (i, _) in list.iter().enumerate().take(len) {
-                            rc.set_local_var("@first".to_string(), to_json(i == 0usize));
-                            rc.set_local_var("@last".to_string(), to_json(i == len - 1));
+                            let is_first = i == 0usize;
+                            let is_last = i == len - 1;
+
+                            rc.set_local_var("@first".to_string(), to_json(is_first));
+                            rc.set_local_var("@last".to_string(), to_json(is_last));
                             rc.set_local_var("@index".to_string(), to_json(i));
 
                             if let Some(ref p) = array_path {
-                                rc.set_path(copy_on_push_vec(p, i.to_string()))
+                                if is_first {
+                                    rc.set_path(copy_on_push_vec(p, i.to_string()))
+                                } else {
+                                    if let Some(ptr) = rc.base_path_mut().last_mut() {
+                                        *ptr = i.to_string();
+                                    }
+                                }
                             }
 
                             if let Some(bp_val) = h.block_param() {
@@ -75,19 +84,21 @@ impl HelperDef for EachHelper {
                         Ok(())
                     }
                     (true, &Json::Object(ref obj)) => {
-                        let mut first: bool = true;
+                        let mut is_first = true;
                         let obj_path = value.context_path();
 
                         for (k, _) in obj.iter() {
-                            rc.set_local_var("@first".to_string(), to_json(first));
-                            if first {
-                                first = false;
-                            }
-
+                            rc.set_local_var("@first".to_string(), to_json(is_first));
                             rc.set_local_var("@key".to_string(), to_json(k));
 
                             if let Some(ref p) = obj_path {
-                                rc.set_path(copy_on_push_vec(p, k.clone()));
+                                if is_first {
+                                    rc.set_path(copy_on_push_vec(p, k.clone()));
+                                } else {
+                                    if let Some(ptr) = rc.base_path_mut().last_mut() {
+                                        *ptr = k.clone();
+                                    }
+                                }
                             }
 
                             if let Some(bp_val) = h.block_param() {
@@ -107,6 +118,10 @@ impl HelperDef for EachHelper {
 
                             if h.has_block_param() {
                                 rc.pop_block_context();
+                            }
+
+                            if is_first {
+                                is_first = false;
                             }
                         }
                         Ok(())

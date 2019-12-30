@@ -217,6 +217,10 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().path = path;
     }
 
+    pub fn base_path_mut(&mut self) -> &mut Vec<String> {
+        &mut self.block_mut().path
+    }
+
     pub fn get_local_path_root(&self) -> &VecDeque<Vec<String>> {
         &self.block().local_path_root
     }
