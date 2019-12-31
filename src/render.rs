@@ -9,6 +9,7 @@ use serde_json::value::Value as Json;
 use crate::context::{BlockParams, Context};
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
+use crate::json::path::{Path, PathSeg};
 use crate::json::value::{JsonRender, PathAndJson, ScopedJson};
 use crate::output::{Output, StringOutput};
 use crate::partial;
@@ -120,10 +121,10 @@ impl<'reg> RenderContext<'reg> {
     pub fn evaluate<'rc>(
         &self,
         context: &'rc Context,
-        path: &str,
+        path: &[PathSeg],
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         context.navigate(
-            self.get_path(),
+            self.base_path(),
             self.get_local_path_root(),
             path,
             &self.block.block_context,
@@ -152,24 +153,11 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().local_variables.pop_front();
     }
 
-    pub fn get_local_var(&self, name: &str) -> Option<&Json> {
-        if !name.starts_with('@') {
-            return None;
-        }
-
-        // manual path parsing
-        // count how many ../ in the var name and extract the real name
-        let mut level = 0;
-        let mut name_index = 1;
-        while name[name_index..].starts_with("../") {
-            level += 1;
-            name_index += 3;
-        }
-
+    pub fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
         self.block()
             .local_variables
             .get(level)
-            .and_then(|m| m.get(&format!("@{}", &name[name_index..])))
+            .and_then(|m| m.get(&format!("@{}", &name)))
     }
 
     pub fn is_current_template(&self, p: &str) -> bool {
@@ -221,12 +209,12 @@ impl<'reg> RenderContext<'reg> {
         self.inner_mut().disable_escape = disable
     }
 
-    pub fn get_path(&self) -> &Vec<String> {
+    pub fn base_path(&self) -> &Vec<String> {
         &self.block().path
     }
 
-    pub fn set_path(&mut self, path: Vec<String>) {
-        self.block_mut().path = path;
+    pub fn base_path_mut(&mut self) -> &mut Vec<String> {
+        &mut self.block_mut().path
     }
 
     pub fn get_local_path_root(&self) -> &VecDeque<Vec<String>> {
@@ -547,8 +535,9 @@ impl Parameter {
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg>,
     ) -> Result<String, RenderError> {
-        match *self {
+        match self {
             Parameter::Name(ref name) => Ok(name.to_owned()),
+            Parameter::Path(ref p) => Ok(p.raw().to_owned()),
             Parameter::Subexpression(_) => {
                 self.expand(registry, ctx, rc).map(|v| v.value().render())
             }
@@ -564,32 +553,41 @@ impl Parameter {
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             Parameter::Name(ref name) => {
-                if let Some(value) = rc.get_local_var(name) {
-                    // local var, @first, @last for example
-                    // here we count it as derived value, and simply clone it
-                    // to bypass lifetime issue
+                // FIXME: raise error when expanding with name?
+                Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Missing))
+            }
+            Parameter::Path(Path::Local((level, name, raw))) => {
+                // local var, @first, @last for example
+                // here we count it as derived value, and simply clone it
+                // to bypass lifetime issue
+                if let Some(value) = rc.get_local_var(*level, &name) {
                     Ok(PathAndJson::new(
-                        Some(name.to_owned()),
+                        Some(raw.to_owned()),
                         ScopedJson::Derived(value.clone()),
                     ))
-                } else if let Some(rc_context) = rc.context() {
+                } else {
+                    Ok(PathAndJson::new(Some(raw.to_owned()), ScopedJson::Missing))
+                }
+            }
+            Parameter::Path(Path::Relative((ref segs, raw))) => {
+                if let Some(rc_context) = rc.context() {
                     // the context is modified from a decorator
                     // use the modified one
-                    let json = rc.evaluate(rc_context.borrow(), name)?;
+                    let json = rc.evaluate(rc_context.borrow(), segs)?;
                     // the data is fetched from mutable reference render_context
                     // so we have to clone it to bypass lifetime check
                     Ok(PathAndJson::new(
-                        Some(name.to_owned()),
+                        Some(raw.to_owned()),
                         ScopedJson::Derived(json.as_json().clone()),
                     ))
                 } else {
-                    let value = rc.evaluate(ctx, name)?;
+                    let value = rc.evaluate(ctx, segs)?;
 
                     match value {
                         // when evaluate result is a derived json, it indicates the
                         // value is a block context value
                         ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
-                        _ => Ok(PathAndJson::new(Some(name.to_owned()), value)),
+                        _ => Ok(PathAndJson::new(Some(raw.to_owned()), value)),
                     }
                 }
             }
@@ -783,6 +781,7 @@ impl Renderable for TemplateElement {
             DirectiveExpression(_) | DirectiveBlock(_) => self.eval(registry, ctx, rc),
             PartialExpression(ref dt) | PartialBlock(ref dt) => {
                 let di = Directive::try_from_template(dt, registry, ctx, rc)?;
+
                 partial::expand_partial(&di, registry, ctx, rc, out)
             }
             _ => Ok(()),
@@ -833,7 +832,9 @@ fn test_raw_string() {
 #[test]
 fn test_expression() {
     let r = Registry::new();
-    let element = Expression(Box::new(HelperTemplate::with_name("hello".to_owned())));
+    let element = Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+        &["hello"],
+    ))));
 
     let mut out = StringOutput::new();
     let mut m: HashMap<String, String> = HashMap::new();
@@ -854,7 +855,7 @@ fn test_expression() {
 #[test]
 fn test_html_expression() {
     let r = Registry::new();
-    let element = HTMLExpression(Parameter::Name("hello".into()));
+    let element = HTMLExpression(Parameter::Path(Path::with_named_paths(&["hello"])));
 
     let mut out = StringOutput::new();
     let mut m: HashMap<String, String> = HashMap::new();
@@ -880,7 +881,9 @@ fn test_template() {
 
     let elements: Vec<TemplateElement> = vec![
         RawString("<h1>".to_string()),
-        Expression(Box::new(HelperTemplate::with_name("hello".to_owned()))),
+        Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+            &["hello"],
+        )))),
         RawString("</h1>".to_string()),
         Comment("".to_string()),
     ];
@@ -908,16 +911,14 @@ fn test_render_context_promotion_and_demotion() {
 
     render_context.promote_local_vars();
     assert_eq!(
-        render_context
-            .get_local_var(&"@../index".to_string())
-            .unwrap(),
+        render_context.get_local_var(1, "index").unwrap(),
         &to_json(0)
     );
 
     render_context.demote_local_vars();
 
     assert_eq!(
-        render_context.get_local_var(&"@index".to_string()).unwrap(),
+        render_context.get_local_var(0, "index").unwrap(),
         &to_json(0)
     );
 }
@@ -1022,7 +1023,7 @@ fn test_key_with_slash() {
     let mut r = Registry::new();
 
     assert!(r
-        .register_template_string("t", "{{#each .}}{{@key}}: {{this}}\n{{/each}}")
+        .register_template_string("t", "{{#each this}}{{@key}}: {{this}}\n{{/each}}")
         .is_ok());
 
     let r = r.render("t", &json!({"/foo": "bar"})).unwrap();

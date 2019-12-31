@@ -29,7 +29,7 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => {
-                let saved_path = rc.get_path().to_vec();
+                let saved_path = rc.base_path().to_vec();
                 rc.promote_local_vars();
                 let local_path_root = value.path_root();
                 if let Some(p) = local_path_root {
@@ -44,22 +44,29 @@ impl HelperDef for EachHelper {
                         let array_path = value.context_path();
 
                         for (i, _) in list.iter().enumerate().take(len) {
-                            rc.set_local_var("@first".to_string(), to_json(i == 0usize));
-                            rc.set_local_var("@last".to_string(), to_json(i == len - 1));
+                            let is_first = i == 0usize;
+                            let is_last = i == len - 1;
+
+                            rc.set_local_var("@first".to_string(), to_json(is_first));
+                            rc.set_local_var("@last".to_string(), to_json(is_last));
                             rc.set_local_var("@index".to_string(), to_json(i));
 
                             if let Some(ref p) = array_path {
-                                rc.set_path(copy_on_push_vec(p, i.to_string()))
+                                if is_first {
+                                    *rc.base_path_mut() = copy_on_push_vec(p, i.to_string());
+                                } else if let Some(ptr) = rc.base_path_mut().last_mut() {
+                                    *ptr = i.to_string();
+                                }
                             }
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.base_path().clone())?;
 
                                 rc.push_block_context(params)?;
                             } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.base_path().clone())?;
                                 params.add_value(bp_index, to_json(i))?;
 
                                 rc.push_block_context(params)?;
@@ -75,29 +82,29 @@ impl HelperDef for EachHelper {
                         Ok(())
                     }
                     (true, &Json::Object(ref obj)) => {
-                        let mut first: bool = true;
+                        let mut is_first = true;
                         let obj_path = value.context_path();
 
                         for (k, _) in obj.iter() {
-                            rc.set_local_var("@first".to_string(), to_json(first));
-                            if first {
-                                first = false;
-                            }
-
+                            rc.set_local_var("@first".to_string(), to_json(is_first));
                             rc.set_local_var("@key".to_string(), to_json(k));
 
                             if let Some(ref p) = obj_path {
-                                rc.set_path(copy_on_push_vec(p, k.clone()));
+                                if is_first {
+                                    *rc.base_path_mut() = copy_on_push_vec(p, k.clone());
+                                } else if let Some(ptr) = rc.base_path_mut().last_mut() {
+                                    *ptr = k.clone();
+                                }
                             }
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.base_path().clone())?;
 
                                 rc.push_block_context(params)?;
                             } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.base_path().clone())?;
                                 params.add_value(bp_key, to_json(&k))?;
 
                                 rc.push_block_context(params)?;
@@ -107,6 +114,10 @@ impl HelperDef for EachHelper {
 
                             if h.has_block_param() {
                                 rc.pop_block_context();
+                            }
+
+                            if is_first {
+                                is_first = false;
                             }
                         }
                         Ok(())
@@ -128,7 +139,7 @@ impl HelperDef for EachHelper {
                 }
 
                 rc.demote_local_vars();
-                rc.set_path(saved_path);
+                *rc.base_path_mut() = saved_path;
                 rendered
             }
             None => Ok(()),

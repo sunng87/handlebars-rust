@@ -1,11 +1,10 @@
 use std::collections::{HashMap, VecDeque};
 
-use pest::Parser;
 use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
 
 use crate::error::RenderError;
-use crate::grammar::{HandlebarsParser, Rule};
+use crate::grammar::Rule;
 use crate::json::path::*;
 use crate::json::value::ScopedJson;
 
@@ -64,37 +63,10 @@ pub struct Context {
 #[derive(Default)]
 pub struct ResolvedPath<'b>(Vec<String>, Option<&'b BlockParamHolder>);
 
-// from json path to a deque of
-fn parse_json_path<'a>(path: &'a str) -> Result<Vec<PathSeg<'a>>, RenderError> {
-    let parsed_path = HandlebarsParser::parse(Rule::path, path)
-        .map(|p| p.flatten())
-        .map_err(|_| RenderError::new("Invalid JSON path"))?;
-
-    let mut path_stack = Vec::with_capacity(5);
-    for seg in parsed_path {
-        match seg.as_rule() {
-            Rule::path_root => {
-                path_stack.push(PathSeg::Ruled(Rule::path_root));
-            }
-            Rule::path_up => {
-                path_stack.push(PathSeg::Ruled(Rule::path_up));
-            }
-            Rule::path_id | Rule::path_raw_id => {
-                path_stack.push(PathSeg::Named(seg.as_str()));
-            }
-            _ => {
-                continue;
-            }
-        }
-    }
-
-    Ok(path_stack)
-}
-
-fn parse_json_visitor<'a, 'b: 'a>(
+fn parse_json_visitor<'b>(
     base_path: &[String],
     path_context: &VecDeque<Vec<String>>,
-    relative_path: &[PathSeg<'a>],
+    relative_path: &[PathSeg],
     block_params: &'b VecDeque<BlockParams>,
 ) -> Result<ResolvedPath<'b>, RenderError> {
     let mut path_stack = Vec::with_capacity(base_path.len() + 5);
@@ -215,12 +187,11 @@ impl Context {
         &'rc self,
         base_path: &[String],
         path_context: &VecDeque<Vec<String>>,
-        relative_path: &str,
+        relative_path: &[PathSeg],
         block_params: &VecDeque<BlockParams>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let parsed_relative_path = parse_json_path(relative_path)?;
         let ResolvedPath(paths, block_param_holder) =
-            parse_json_visitor(base_path, path_context, &parsed_relative_path, block_params)?;
+            parse_json_visitor(base_path, path_context, &relative_path, block_params)?;
 
         if let Some(BlockParamHolder::Value(ref block_param_value)) = block_param_holder {
             let mut data = Some(block_param_value);
@@ -241,11 +212,11 @@ impl Context {
                     .map(|v| ScopedJson::BlockContext(v, paths))
                     .unwrap_or_else(|| ScopedJson::Missing))
             } else {
-                let path_root = if !parsed_relative_path.is_empty() {
+                let path_root = if !relative_path.is_empty() {
                     let ResolvedPath(path_root, _) = parse_json_visitor(
                         base_path,
                         path_context,
-                        &parsed_relative_path[..1],
+                        &relative_path[..1],
                         block_params,
                     )?;
                     Some(path_root)
@@ -286,6 +257,7 @@ fn join(segs: &VecDeque<&str>, sep: &str) -> String {
 mod test {
     use crate::context::{self, BlockParams, Context};
     use crate::error::RenderError;
+    use crate::json::path::parse_json_path;
     use crate::json::value::{self, ScopedJson};
     use serde_json::value::Map;
     use std::collections::{HashMap, VecDeque};
@@ -294,7 +266,13 @@ mod test {
         ctx: &'rc Context,
         path: &str,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        ctx.navigate(&Vec::new(), &VecDeque::new(), path, &VecDeque::new())
+        let relative_path = parse_json_path(path).unwrap();
+        ctx.navigate(
+            &Vec::new(),
+            &VecDeque::new(),
+            &relative_path,
+            &VecDeque::new(),
+        )
     }
 
     #[derive(Serialize)]
@@ -461,7 +439,7 @@ mod test {
             ctx.navigate(
                 &["a".to_owned(), "b".to_owned()],
                 &VecDeque::new(),
-                "@root/b",
+                &parse_json_path("@root/b").unwrap(),
                 &VecDeque::new()
             )
             .unwrap()
@@ -489,15 +467,25 @@ mod test {
         block_params.push_front(block_param);
 
         assert_eq!(
-            ctx.navigate(&Vec::new(), &VecDeque::new(), "z.[1]", &block_params)
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                &Vec::new(),
+                &VecDeque::new(),
+                &parse_json_path("z.[1]").unwrap(),
+                &block_params
+            )
+            .unwrap()
+            .render(),
             "2".to_string()
         );
         assert_eq!(
-            ctx.navigate(&Vec::new(), &VecDeque::new(), "t", &block_params)
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                &Vec::new(),
+                &VecDeque::new(),
+                &parse_json_path("t").unwrap(),
+                &block_params
+            )
+            .unwrap()
+            .render(),
             "good".to_string()
         );
     }

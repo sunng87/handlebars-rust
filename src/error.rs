@@ -7,8 +7,6 @@ use serde_json::error::Error as SerdeError;
 #[cfg(feature = "dir_source")]
 use walkdir::Error as WalkdirError;
 
-use crate::template::Parameter;
-
 /// Error when rendering data on template.
 #[derive(Debug)]
 pub struct RenderError {
@@ -104,7 +102,7 @@ quick_error! {
                 open, closed)
             description("wrong name of closing helper")
         }
-        MismatchingClosedDirective(open: Parameter, closed: Parameter) {
+        MismatchingClosedDirective(open: String, closed: String) {
             display("directive {:?} was opened, but {:?} is closing",
                 open, closed)
             description("wrong name of closing directive")

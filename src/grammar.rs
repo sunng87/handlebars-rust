@@ -277,13 +277,13 @@ fn test_path() {
         "a.[bb c]/b/c/d",
         "a.[0].[#hello]",
         "../a/b.[0].[1]",
-        "./this.[0]/[1]/this/a",
+        "this.[0]/[1]/this/a",
         "./this_name",
         "./goo/[/bar]",
         "a.[你好]",
         "a.[10].[#comment]",
         "a.[]", // empty key
-        "././[/foo]",
+        "./[/foo]",
         "[foo]",
         "@root/a/b",
     ];
