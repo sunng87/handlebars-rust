@@ -14,7 +14,7 @@ pub struct RenderError {
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    cause: Option<Box<dyn Error + Send + Sync>>,
+    cause: Option<Box<dyn Error + 'static>>,
 }
 
 impl fmt::Display for RenderError {
@@ -36,12 +36,8 @@ impl fmt::Display for RenderError {
 }
 
 impl Error for RenderError {
-    fn description(&self) -> &str {
-        &self.desc[..]
-    }
-
-    fn cause(&self) -> Option<&dyn Error> {
-        self.cause.as_ref().map(|e| &**e as &dyn Error)
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.cause.as_ref().map(|e| &**e)
     }
 }
 
@@ -86,7 +82,7 @@ impl RenderError {
     where
         E: Error + Send + Sync + 'static,
     {
-        let mut e = RenderError::new(cause.description());
+        let mut e = RenderError::new(cause.to_string());
         e.cause = Some(Box::new(cause));
 
         e
@@ -100,7 +96,6 @@ quick_error! {
         MismatchingClosedHelper(open: String, closed: String) {
             display("helper {:?} was opened, but {:?} is closing",
                 open, closed)
-            description("wrong name of closing helper")
         }
         MismatchingClosedDirective(open: String, closed: String) {
             display("directive {:?} was opened, but {:?} is closing",
@@ -109,15 +104,12 @@ quick_error! {
         }
         InvalidSyntax {
             display("invalid handlebars syntax.")
-            description("invalid handlebars syntax")
         }
         InvalidParam (param: String) {
             display("invalid parameter {:?}", param)
-            description("invalid parameter")
         }
         NestedSubexpression {
             display("nested subexpression is not supported")
-            description("nested subexpression is not supported")
         }
     }
 }
@@ -156,11 +148,7 @@ impl TemplateError {
     }
 }
 
-impl Error for TemplateError {
-    fn description(&self) -> &str {
-        self.reason.description()
-    }
-}
+impl Error for TemplateError {}
 
 fn template_segment(template_str: &str, line: usize, col: usize) -> String {
     let range = 3;
@@ -214,12 +202,10 @@ quick_error! {
         TemplateError(err: TemplateError) {
             from()
             cause(err)
-            description(err.description())
             display("{}", err)
         }
         IOError(err: IOError, name: String) {
             cause(err)
-            description(err.description())
             display("Template \"{}\": {}", name, err)
         }
     }
@@ -242,18 +228,15 @@ quick_error! {
         TemplateError(err: TemplateError) {
             from()
             cause(err)
-            description(err.description())
             display("{}", err)
         }
         RenderError(err: RenderError) {
             from()
             cause(err)
-            description(err.description())
             display("{}", err)
         }
         IOError(err: IOError, name: String) {
             cause(err)
-            description(err.description())
             display("Template \"{}\": {}", name, err)
         }
     }
