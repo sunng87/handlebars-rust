@@ -21,7 +21,7 @@ fn render_partial<'reg: 'rc, 'rc>(
     if let Some(ref param_ctx) = d.param(0) {
         if let Some(p) = param_ctx.context_path() {
             local_rc.promote_local_vars();
-            local_rc.set_path(p.clone());
+            *local_rc.base_path_mut() = p.clone();
         }
     }
 

@@ -124,7 +124,7 @@ impl<'reg> RenderContext<'reg> {
         path: &[PathSeg],
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         context.navigate(
-            self.get_path(),
+            self.base_path(),
             self.get_local_path_root(),
             path,
             &self.block.block_context,
@@ -209,12 +209,8 @@ impl<'reg> RenderContext<'reg> {
         self.inner_mut().disable_escape = disable
     }
 
-    pub fn get_path(&self) -> &Vec<String> {
+    pub fn base_path(&self) -> &Vec<String> {
         &self.block().path
-    }
-
-    pub fn set_path(&mut self, path: Vec<String>) {
-        self.block_mut().path = path;
     }
 
     pub fn base_path_mut(&mut self) -> &mut Vec<String> {

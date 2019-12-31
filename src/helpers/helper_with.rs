@@ -22,7 +22,7 @@ impl HelperDef for WithHelper {
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
-        let saved_base_path = rc.get_path().to_vec();
+        let saved_base_path = rc.base_path().to_vec();
         rc.promote_local_vars();
 
         let not_empty = param.value().is_truthy(false);
@@ -36,13 +36,13 @@ impl HelperDef for WithHelper {
         if not_empty {
             let new_path = param.context_path();
             if let Some(new_path) = new_path {
-                rc.set_path(new_path.clone());
+                *rc.base_path_mut() = new_path.clone();
             }
 
             if let Some(block_param) = h.block_param() {
                 let mut params = BlockParams::new();
                 if new_path.is_some() {
-                    params.add_path(block_param, rc.get_path().clone())?;
+                    params.add_path(block_param, rc.base_path().clone())?;
                 } else {
                     params.add_value(block_param, param.value().clone())?;
                 }
@@ -65,7 +65,7 @@ impl HelperDef for WithHelper {
         }
 
         rc.demote_local_vars();
-        rc.set_path(saved_base_path);
+        *rc.base_path_mut() = saved_base_path;
         result
     }
 }

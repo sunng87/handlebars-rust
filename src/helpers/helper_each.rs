@@ -29,7 +29,7 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => {
-                let saved_path = rc.get_path().to_vec();
+                let saved_path = rc.base_path().to_vec();
                 rc.promote_local_vars();
                 let local_path_root = value.path_root();
                 if let Some(p) = local_path_root {
@@ -53,7 +53,7 @@ impl HelperDef for EachHelper {
 
                             if let Some(ref p) = array_path {
                                 if is_first {
-                                    rc.set_path(copy_on_push_vec(p, i.to_string()))
+                                    *rc.base_path_mut() = copy_on_push_vec(p, i.to_string());
                                 } else if let Some(ptr) = rc.base_path_mut().last_mut() {
                                     *ptr = i.to_string();
                                 }
@@ -61,12 +61,12 @@ impl HelperDef for EachHelper {
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.base_path().clone())?;
 
                                 rc.push_block_context(params)?;
                             } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.base_path().clone())?;
                                 params.add_value(bp_index, to_json(i))?;
 
                                 rc.push_block_context(params)?;
@@ -91,7 +91,7 @@ impl HelperDef for EachHelper {
 
                             if let Some(ref p) = obj_path {
                                 if is_first {
-                                    rc.set_path(copy_on_push_vec(p, k.clone()));
+                                    *rc.base_path_mut() = copy_on_push_vec(p, k.clone());
                                 } else if let Some(ptr) = rc.base_path_mut().last_mut() {
                                     *ptr = k.clone();
                                 }
@@ -99,12 +99,12 @@ impl HelperDef for EachHelper {
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.base_path().clone())?;
 
                                 rc.push_block_context(params)?;
                             } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                 let mut params = BlockParams::new();
-                                params.add_path(bp_val, rc.get_path().clone())?;
+                                params.add_path(bp_val, rc.base_path().clone())?;
                                 params.add_value(bp_key, to_json(&k))?;
 
                                 rc.push_block_context(params)?;
@@ -139,7 +139,7 @@ impl HelperDef for EachHelper {
                 }
 
                 rc.demote_local_vars();
-                rc.set_path(saved_path);
+                *rc.base_path_mut() = saved_path;
                 rendered
             }
             None => Ok(()),
