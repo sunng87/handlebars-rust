@@ -54,10 +54,8 @@ impl HelperDef for EachHelper {
                             if let Some(ref p) = array_path {
                                 if is_first {
                                     rc.set_path(copy_on_push_vec(p, i.to_string()))
-                                } else {
-                                    if let Some(ptr) = rc.base_path_mut().last_mut() {
-                                        *ptr = i.to_string();
-                                    }
+                                } else if let Some(ptr) = rc.base_path_mut().last_mut() {
+                                    *ptr = i.to_string();
                                 }
                             }
 
@@ -94,10 +92,8 @@ impl HelperDef for EachHelper {
                             if let Some(ref p) = obj_path {
                                 if is_first {
                                     rc.set_path(copy_on_push_vec(p, k.clone()));
-                                } else {
-                                    if let Some(ptr) = rc.base_path_mut().last_mut() {
-                                        *ptr = k.clone();
-                                    }
+                                } else if let Some(ptr) = rc.base_path_mut().last_mut() {
+                                    *ptr = k.clone();
                                 }
                             }
 
