@@ -84,7 +84,7 @@ impl RenderError {
     where
         E: Error + Send + Sync + 'static,
     {
-        let mut e = RenderError::new(cause.description());
+        let mut e = RenderError::new(cause.to_string());
         e.cause = Some(Box::new(cause));
 
         e
@@ -150,11 +150,7 @@ impl TemplateError {
     }
 }
 
-impl Error for TemplateError {
-    fn description(&self) -> &str {
-        self.reason.description()
-    }
-}
+impl Error for TemplateError {}
 
 fn template_segment(template_str: &str, line: usize, col: usize) -> String {
     let range = 3;
