@@ -255,7 +255,7 @@ impl<'reg> fmt::Debug for RenderContextInner<'reg> {
 pub struct Helper<'reg: 'rc, 'rc> {
     name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
-    hash: HashMap<String, PathAndJson<'reg, 'rc>>,
+    hash: HashMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
     inverse: Option<&'reg Template>,
     block_param: Option<&'reg BlockParam>,
@@ -279,7 +279,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         let mut hm = HashMap::new();
         for (k, p) in &ht.hash {
             let r = p.expand(registry, context, render_context)?;
-            hm.insert(k.clone(), r);
+            hm.insert(k.as_ref(), r);
         }
 
         Ok(Helper {
@@ -326,7 +326,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &HashMap<String, PathAndJson<'reg, 'rc>> {
+    pub fn hash(&self) -> &HashMap<&'reg str, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
@@ -401,7 +401,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
 pub struct Directive<'reg: 'rc, 'rc> {
     name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
-    hash: HashMap<String, PathAndJson<'reg, 'rc>>,
+    hash: HashMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
 }
 
@@ -423,7 +423,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
         let mut hm = HashMap::new();
         for (k, p) in &dt.hash {
             let r = p.expand(registry, context, render_context)?;
-            hm.insert(k.clone(), r);
+            hm.insert(k.as_ref(), r);
         }
 
         Ok(Directive {
@@ -450,7 +450,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &HashMap<String, PathAndJson<'reg, 'rc>> {
+    pub fn hash(&self) -> &HashMap<&'reg str, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
