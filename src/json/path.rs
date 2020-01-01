@@ -12,6 +12,20 @@ pub enum PathSeg {
     Ruled(Rule),
 }
 
+impl PathSeg {
+    ///
+    pub fn parse(path: &str) -> Result<Vec<PathSeg>, RenderError> {
+        let parsed_path = HandlebarsParser::parse(Rule::path, path)
+            .map(|p| p.flatten())
+            .map_err(|_| RenderError::new("Invalid JSON path"))?;
+
+        Ok(parse_json_path_from_iter(
+            &mut parsed_path.peekable(),
+            path.len(),
+        ))
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum Path {
     Relative((Vec<PathSeg>, String)),
@@ -42,18 +56,6 @@ impl Path {
             .collect();
         Path::Relative((segs, name_segs.join("/")))
     }
-}
-
-// from json path to a deque of
-pub(crate) fn parse_json_path(path: &str) -> Result<Vec<PathSeg>, RenderError> {
-    let parsed_path = HandlebarsParser::parse(Rule::path, path)
-        .map(|p| p.flatten())
-        .map_err(|_| RenderError::new("Invalid JSON path"))?;
-
-    Ok(parse_json_path_from_iter(
-        &mut parsed_path.peekable(),
-        path.len(),
-    ))
 }
 
 fn get_local_path_and_level(paths: &[PathSeg]) -> Option<(usize, String)> {

@@ -257,7 +257,7 @@ fn join(segs: &VecDeque<&str>, sep: &str) -> String {
 mod test {
     use crate::context::{self, BlockParams, Context};
     use crate::error::RenderError;
-    use crate::json::path::parse_json_path;
+    use crate::json::path::PathSeg;
     use crate::json::value::{self, ScopedJson};
     use serde_json::value::Map;
     use std::collections::{HashMap, VecDeque};
@@ -266,7 +266,7 @@ mod test {
         ctx: &'rc Context,
         path: &str,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let relative_path = parse_json_path(path).unwrap();
+        let relative_path = PathSeg::parse(path).unwrap();
         ctx.navigate(
             &Vec::new(),
             &VecDeque::new(),
@@ -439,7 +439,7 @@ mod test {
             ctx.navigate(
                 &["a".to_owned(), "b".to_owned()],
                 &VecDeque::new(),
-                &parse_json_path("@root/b").unwrap(),
+                &PathSeg::parse("@root/b").unwrap(),
                 &VecDeque::new()
             )
             .unwrap()
@@ -470,7 +470,7 @@ mod test {
             ctx.navigate(
                 &Vec::new(),
                 &VecDeque::new(),
-                &parse_json_path("z.[1]").unwrap(),
+                &PathSeg::parse("z.[1]").unwrap(),
                 &block_params
             )
             .unwrap()
@@ -481,7 +481,7 @@ mod test {
             ctx.navigate(
                 &Vec::new(),
                 &VecDeque::new(),
-                &parse_json_path("t").unwrap(),
+                &PathSeg::parse("t").unwrap(),
                 &block_params
             )
             .unwrap()

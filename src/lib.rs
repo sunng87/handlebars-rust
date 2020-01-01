@@ -350,6 +350,7 @@ pub use self::context::{BlockParams, Context};
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::helpers::{HelperDef, HelperResult};
+pub use self::json::path::{Path, PathSeg};
 pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 pub use self::output::Output;
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
