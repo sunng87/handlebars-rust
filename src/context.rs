@@ -29,22 +29,22 @@ impl BlockParamHolder {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct BlockParams {
-    data: HashMap<String, BlockParamHolder>,
+pub struct BlockParams<'reg> {
+    data: HashMap<&'reg str, BlockParamHolder>,
 }
 
-impl BlockParams {
-    pub fn new() -> BlockParams {
+impl<'reg> BlockParams<'reg> {
+    pub fn new() -> BlockParams<'reg> {
         BlockParams::default()
     }
 
-    pub fn add_path(&mut self, k: &str, v: Vec<String>) -> Result<(), RenderError> {
-        self.data.insert(k.to_owned(), BlockParamHolder::path(v));
+    pub fn add_path(&mut self, k: &'reg str, v: Vec<String>) -> Result<(), RenderError> {
+        self.data.insert(k, BlockParamHolder::path(v));
         Ok(())
     }
 
-    pub fn add_value(&mut self, k: &str, v: Json) -> Result<(), RenderError> {
-        self.data.insert(k.to_owned(), BlockParamHolder::value(v));
+    pub fn add_value(&mut self, k: &'reg str, v: Json) -> Result<(), RenderError> {
+        self.data.insert(k, BlockParamHolder::value(v));
         Ok(())
     }
 
@@ -152,14 +152,14 @@ pub(crate) fn get_in_block_params<'a>(
     None
 }
 
-pub fn merge_json(base: &Json, addition: &Object) -> Json {
+pub(crate) fn merge_json(base: &Json, addition: &HashMap<&&str, &Json>) -> Json {
     let mut base_map = match base {
         Json::Object(ref m) => m.clone(),
         _ => Map::new(),
     };
 
     for (k, v) in addition.iter() {
-        base_map.insert(k.clone(), v.clone());
+        base_map.insert((*k).to_string(), (*v).clone());
     }
 
     Json::Object(base_map)
@@ -367,7 +367,8 @@ mod test {
         let map = json!({ "age": 4 });
         let s = "hello".to_owned();
         let mut hash = HashMap::new();
-        hash.insert("tag".to_owned(), value::to_json("h1"));
+        let v = value::to_json("h1");
+        hash.insert(&"tag", &v);
 
         let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
         assert_eq!(
