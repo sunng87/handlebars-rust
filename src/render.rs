@@ -28,7 +28,7 @@ use crate::template::{
 #[derive(Clone, Debug)]
 pub struct RenderContext<'reg> {
     inner: Rc<RenderContextInner<'reg>>,
-    block: Rc<BlockRenderContext>,
+    block: Rc<BlockRenderContext<'reg>>,
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
 }
@@ -45,17 +45,17 @@ pub struct RenderContextInner<'reg> {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct BlockRenderContext {
+pub struct BlockRenderContext<'reg> {
     path: Vec<String>,
     local_path_root: VecDeque<Vec<String>>,
     // current block context variables
-    block_context: VecDeque<BlockParams>,
+    block_context: VecDeque<BlockParams<'reg>>,
     // local variables in current context
     local_variables: VecDeque<HashMap<String, Json>>,
 }
 
-impl BlockRenderContext {
-    fn new() -> BlockRenderContext {
+impl<'reg> BlockRenderContext<'reg> {
+    fn new() -> BlockRenderContext<'reg> {
         let mut block = BlockRenderContext::default();
         block.local_variables.push_front(HashMap::new());
         block
@@ -106,7 +106,7 @@ impl<'reg> RenderContext<'reg> {
         self.block.borrow()
     }
 
-    fn block_mut(&mut self) -> &mut BlockRenderContext {
+    fn block_mut(&mut self) -> &mut BlockRenderContext<'reg> {
         Rc::make_mut(&mut self.block)
     }
 
@@ -229,7 +229,10 @@ impl<'reg> RenderContext<'reg> {
         self.block_mut().local_path_root.pop_front();
     }
 
-    pub fn push_block_context(&mut self, current_context: BlockParams) -> Result<(), RenderError> {
+    pub fn push_block_context(
+        &mut self,
+        current_context: BlockParams<'reg>,
+    ) -> Result<(), RenderError> {
         self.block_mut().block_context.push_front(current_context);
         Ok(())
     }
@@ -255,7 +258,7 @@ impl<'reg> fmt::Debug for RenderContextInner<'reg> {
 pub struct Helper<'reg: 'rc, 'rc> {
     name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
-    hash: HashMap<String, PathAndJson<'reg, 'rc>>,
+    hash: HashMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
     inverse: Option<&'reg Template>,
     block_param: Option<&'reg BlockParam>,
@@ -279,7 +282,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         let mut hm = HashMap::new();
         for (k, p) in &ht.hash {
             let r = p.expand(registry, context, render_context)?;
-            hm.insert(k.clone(), r);
+            hm.insert(k.as_ref(), r);
         }
 
         Ok(Helper {
@@ -326,7 +329,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &HashMap<String, PathAndJson<'reg, 'rc>> {
+    pub fn hash(&self) -> &HashMap<&'reg str, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
@@ -376,7 +379,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 
     /// Returns block param if any
-    pub fn block_param(&self) -> Option<&str> {
+    pub fn block_param(&self) -> Option<&'reg str> {
         if let Some(&BlockParam::Single(Parameter::Name(ref s))) = self.block_param {
             Some(s)
         } else {
@@ -385,7 +388,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 
     /// Return block param pair (for example |key, val|) if any
-    pub fn block_param_pair(&self) -> Option<(&str, &str)> {
+    pub fn block_param_pair(&self) -> Option<(&'reg str, &'reg str)> {
         if let Some(&BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
             self.block_param
         {
@@ -401,7 +404,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
 pub struct Directive<'reg: 'rc, 'rc> {
     name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
-    hash: HashMap<String, PathAndJson<'reg, 'rc>>,
+    hash: HashMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
 }
 
@@ -423,7 +426,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
         let mut hm = HashMap::new();
         for (k, p) in &dt.hash {
             let r = p.expand(registry, context, render_context)?;
-            hm.insert(k.clone(), r);
+            hm.insert(k.as_ref(), r);
         }
 
         Ok(Directive {
@@ -450,7 +453,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &HashMap<String, PathAndJson<'reg, 'rc>> {
+    pub fn hash(&self) -> &HashMap<&'reg str, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
