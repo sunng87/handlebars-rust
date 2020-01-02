@@ -159,7 +159,7 @@ pub(crate) fn merge_json(base: &Json, addition: &HashMap<&&str, &Json>) -> Json 
     };
 
     for (k, v) in addition.iter() {
-        base_map.insert((*k).to_string(), (*v).clone());
+        base_map.insert((*(*k)).to_string(), (*v).clone());
     }
 
     Json::Object(base_map)
