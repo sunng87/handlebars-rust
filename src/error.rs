@@ -100,7 +100,6 @@ quick_error! {
         MismatchingClosedDirective(open: String, closed: String) {
             display("directive {:?} was opened, but {:?} is closing",
                 open, closed)
-            description("wrong name of closing directive")
         }
         InvalidSyntax {
             display("invalid handlebars syntax.")
