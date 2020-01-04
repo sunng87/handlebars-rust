@@ -1,5 +1,10 @@
 # Change Log
 
+## [2.0.3](https://github.com/sunng87/handlebars-rust/compare/2.0.2...2.0.3) - 2020-01-04
+
+* [Fixed] deprecated warnings on rust 1.42 nightly, due to changes in
+  `Error` trait
+
 ## [2.0.2](https://github.com/sunng87/handlebars-rust/compare/2.0.1...2.0.2) - 2019-09-06
 
 * [Changed] Extended `eq` and `ne` helper for all json types #287
