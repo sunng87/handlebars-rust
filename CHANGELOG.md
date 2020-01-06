@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/2.0.3...Unreleased) - ReleaseDate
+## [2.0.4](https://github.com/sunng87/handlebars-rust/compare/2.0.3...2.0.4) - 2020-01-06
 
 * [Fixed] `RenderError` should be `Send` and `Sync` #304
 
