@@ -16,7 +16,7 @@ pub struct RenderError {
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    cause: Option<Box<dyn Error + 'static>>,
+    cause: Option<Box<dyn Error + Send + Sync + 'static>>,
 }
 
 impl fmt::Display for RenderError {
@@ -39,7 +39,7 @@ impl fmt::Display for RenderError {
 
 impl Error for RenderError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        self.cause.as_ref().map(|e| &**e)
+        self.cause.as_ref().map(|e| &**e as &(dyn Error + 'static))
     }
 }
 
