@@ -2,12 +2,39 @@
 extern crate criterion;
 #[macro_use]
 extern crate serde_derive;
+extern crate cpuprofiler;
 
 use std::collections::BTreeMap;
+use std::fs::create_dir_all;
+use std::path::Path;
 
+use cpuprofiler::PROFILER;
+use criterion::profiler::Profiler;
 use criterion::Criterion;
 use handlebars::{to_json, Handlebars, Template};
 use serde_json::value::Value as Json;
+
+struct CpuProfiler;
+
+impl Profiler for CpuProfiler {
+    fn start_profiling(&mut self, benchmark_id: &str, benchmark_dir: &Path) {
+        create_dir_all(&benchmark_dir).unwrap();
+        let result = benchmark_dir.join(format!("{}.profile", benchmark_id));
+        PROFILER
+            .lock()
+            .unwrap()
+            .start(result.to_str().unwrap())
+            .unwrap();
+    }
+
+    fn stop_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
+        PROFILER.lock().unwrap().stop().unwrap();
+    }
+}
+
+fn profiled() -> Criterion {
+    Criterion::default().with_profiler(CpuProfiler)
+}
 
 #[derive(Serialize)]
 struct DataWrapper {
@@ -138,10 +165,8 @@ fn large_nested_loop(c: &mut Criterion) {
 }
 
 criterion_group!(
-    benches,
-    parse_template,
-    render_template,
-    large_loop_helper,
-    large_nested_loop
+    name = benches;
+    config = profiled();
+    targets = parse_template, render_template, large_loop_helper, large_nested_loop
 );
 criterion_main!(benches);

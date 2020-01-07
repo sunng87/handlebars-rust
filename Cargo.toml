@@ -34,6 +34,7 @@ maplit = "1.0.0"
 serde_derive = "1.0.75"
 tempfile = "3.0.0"
 criterion = "0.3"
+cpuprofiler = "0.0.4"
 
 [features]
 dir_source = ["walkdir"]
