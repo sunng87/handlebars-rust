@@ -121,6 +121,15 @@ impl<'reg> RenderContext<'reg> {
     pub fn evaluate<'rc>(
         &self,
         context: &'rc Context,
+        relative_path: &str,
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+        let path_segs = PathSeg::parse(relative_path)?;
+        self.evaluate2(context, &path_segs)
+    }
+
+    pub(crate) fn evaluate2<'rc>(
+        &self,
+        context: &'rc Context,
         path: &[PathSeg],
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         context.navigate(
@@ -576,7 +585,7 @@ impl Parameter {
                 if let Some(rc_context) = rc.context() {
                     // the context is modified from a decorator
                     // use the modified one
-                    let json = rc.evaluate(rc_context.borrow(), segs)?;
+                    let json = rc.evaluate2(rc_context.borrow(), segs)?;
                     // the data is fetched from mutable reference render_context
                     // so we have to clone it to bypass lifetime check
                     Ok(PathAndJson::new(
@@ -584,7 +593,7 @@ impl Parameter {
                         ScopedJson::Derived(json.as_json().clone()),
                     ))
                 } else {
-                    let value = rc.evaluate(ctx, segs)?;
+                    let value = rc.evaluate2(ctx, segs)?;
 
                     match value {
                         // when evaluate result is a derived json, it indicates the
