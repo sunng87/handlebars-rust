@@ -19,7 +19,7 @@ matrix:
     - rust: nightly
       name: minimal-versions
       script:
-        - cargo -Z minimal-versions test --verbose
+        - cargo -Z minimal-versions build --verbose
   exclude:
     - rust: nightly
       env: TASK=build
