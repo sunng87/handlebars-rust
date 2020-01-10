@@ -80,7 +80,7 @@ pub trait HelperDef: Send + Sync {
         _: &Helper<'reg, 'rc>,
         _: &'reg Registry,
         _: &'rc Context,
-        _: &mut RenderContext<'reg>,
+        _: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
@@ -90,7 +90,7 @@ pub trait HelperDef: Send + Sync {
         h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, ctx, rc)? {
@@ -113,7 +113,7 @@ impl<
                 &Helper<'reg, 'rc>,
                 &'reg Registry,
                 &'rc Context,
-                &mut RenderContext<'reg>,
+                &mut RenderContext<'reg, 'rc>,
                 &mut dyn Output,
             ) -> HelperResult,
     > HelperDef for F
@@ -123,7 +123,7 @@ impl<
         h: &Helper<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
         (*self)(h, r, ctx, rc, out)

@@ -26,9 +26,9 @@ use crate::template::{
 /// content is written to.
 ///
 #[derive(Clone, Debug)]
-pub struct RenderContext<'reg> {
+pub struct RenderContext<'reg, 'rc> {
     inner: Rc<RenderContextInner<'reg>>,
-    block: Rc<BlockRenderContext<'reg>>,
+    block: Rc<BlockRenderContext<'reg, 'rc>>,
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
 }
@@ -45,8 +45,9 @@ pub struct RenderContextInner<'reg> {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct BlockRenderContext<'reg> {
+pub struct BlockRenderContext<'reg, 'rc> {
     path: Vec<String>,
+    block_root: Option<&'rc Json>,
     local_path_root: VecDeque<Vec<String>>,
     // current block context variables
     block_context: VecDeque<BlockParams<'reg>>,
@@ -54,17 +55,17 @@ pub struct BlockRenderContext<'reg> {
     local_variables: VecDeque<HashMap<String, Json>>,
 }
 
-impl<'reg> BlockRenderContext<'reg> {
-    fn new() -> BlockRenderContext<'reg> {
+impl<'reg, 'rc> BlockRenderContext<'reg, 'rc> {
+    fn new() -> BlockRenderContext<'reg, 'rc> {
         let mut block = BlockRenderContext::default();
         block.local_variables.push_front(HashMap::new());
         block
     }
 }
 
-impl<'reg> RenderContext<'reg> {
+impl<'reg, 'rc> RenderContext<'reg, 'rc> {
     /// Create a render context from a `Write`
-    pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg> {
+    pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg, 'rc> {
         let inner = Rc::new(RenderContextInner {
             partials: HashMap::new(),
             local_helpers: HashMap::new(),
@@ -82,7 +83,7 @@ impl<'reg> RenderContext<'reg> {
         }
     }
 
-    pub fn new_for_block(&self) -> RenderContext<'reg> {
+    pub fn new_for_block(&self) -> RenderContext<'reg, 'rc> {
         let inner = self.inner.clone();
         let block = Rc::new(BlockRenderContext::new());
         let modified_context = self.modified_context.clone();
@@ -106,7 +107,7 @@ impl<'reg> RenderContext<'reg> {
         self.block.borrow()
     }
 
-    fn block_mut(&mut self) -> &mut BlockRenderContext<'reg> {
+    fn block_mut(&mut self) -> &mut BlockRenderContext<'reg, 'rc> {
         Rc::make_mut(&mut self.block)
     }
 
@@ -118,7 +119,7 @@ impl<'reg> RenderContext<'reg> {
         self.modified_context = Some(Rc::new(ctx))
     }
 
-    pub fn evaluate<'rc>(
+    pub fn evaluate(
         &self,
         context: &'rc Context,
         relative_path: &str,
@@ -127,7 +128,7 @@ impl<'reg> RenderContext<'reg> {
         self.evaluate2(context, &path_segs)
     }
 
-    pub(crate) fn evaluate2<'rc>(
+    pub(crate) fn evaluate2(
         &self,
         context: &'rc Context,
         path: &[PathSeg],
@@ -279,7 +280,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
         ht: &'reg HelperTemplate,
         registry: &'reg Registry,
         context: &'rc Context,
-        render_context: &mut RenderContext<'reg>,
+        render_context: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Helper<'reg, 'rc>, RenderError> {
         let name = ht.name.expand_as_name(registry, context, render_context)?;
         let mut pv = Vec::with_capacity(ht.params.len());
@@ -422,7 +423,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
         dt: &'reg DirectiveTemplate,
         registry: &'reg Registry,
         context: &'rc Context,
-        render_context: &mut RenderContext<'reg>,
+        render_context: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Directive<'reg, 'rc>, RenderError> {
         let name = dt.name.expand_as_name(registry, context, render_context)?;
 
@@ -484,7 +485,7 @@ pub trait Renderable {
         &'reg self,
         registry: &'reg Registry,
         context: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> Result<(), RenderError>;
 
@@ -493,7 +494,7 @@ pub trait Renderable {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
         self.render(registry, ctx, rc, &mut so)?;
@@ -507,7 +508,7 @@ pub trait Evaluable {
         &'reg self,
         registry: &'reg Registry,
         context: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<(), RenderError>;
 }
 
@@ -516,7 +517,7 @@ fn call_helper_for_value<'reg: 'rc, 'rc>(
     ht: &Helper<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg>,
+    rc: &mut RenderContext<'reg, 'rc>,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
     if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
         Ok(PathAndJson::new(None, result))
@@ -545,7 +546,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<String, RenderError> {
         match self {
             Parameter::Name(ref name) => Ok(name.to_owned()),
@@ -561,7 +562,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             Parameter::Name(ref name) => {
@@ -643,7 +644,7 @@ impl Renderable for Template {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         rc.set_current_template_name(self.name.as_ref());
@@ -678,7 +679,7 @@ impl Evaluable for Template {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<(), RenderError> {
         let iter = self.elements.iter();
         let mut idx = 0;
@@ -710,7 +711,7 @@ fn render_helper<'reg: 'rc, 'rc>(
     ht: &'reg HelperTemplate,
     registry: &'reg Registry,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg>,
+    rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
@@ -736,7 +737,7 @@ impl Renderable for TemplateElement {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         match *self {
@@ -806,7 +807,7 @@ impl Evaluable for TemplateElement {
         &'reg self,
         registry: &'reg Registry,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<(), RenderError> {
         match *self {
             DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {

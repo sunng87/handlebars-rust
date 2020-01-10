@@ -14,7 +14,7 @@ fn render_partial<'reg: 'rc, 'rc>(
     d: &Directive<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    local_rc: &mut RenderContext<'reg>,
+    local_rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // partial context path
@@ -49,7 +49,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Directive<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg>,
+    rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
