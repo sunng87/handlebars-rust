@@ -448,8 +448,8 @@ mod test {
             &self,
             h: &Helper<'reg, 'rc>,
             r: &'reg Registry,
-            ctx: &Context,
-            rc: &mut RenderContext<'reg>,
+            ctx: &'rc Context,
+            rc: &mut RenderContext<'reg, 'rc>,
             out: &mut dyn Output,
         ) -> Result<(), RenderError> {
             h.template().unwrap().render(r, ctx, rc, out)
@@ -693,7 +693,7 @@ mod test {
             _: &Helper<'reg, 'rc>,
             _: &'reg Registry,
             _: &'rc Context,
-            _: &mut RenderContext<'reg>,
+            _: &mut RenderContext,
         ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
             Ok(Some(ScopedJson::Missing))
         }

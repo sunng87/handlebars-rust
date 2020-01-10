@@ -50,8 +50,8 @@ pub type HelperResult = Result<(), RenderError>;
 /// fn dummy_block<'reg, 'rc>(
 ///     h: &Helper<'reg, 'rc>,
 ///     r: &'reg Handlebars,
-///     ctx: &Context,
-///     rc: &mut RenderContext<'reg>,
+///     ctx: &'rc Context,
+///     rc: &mut RenderContext<'reg, 'rc>,
 ///     out: &mut dyn Output,
 /// ) -> HelperResult {
 ///     h.template()
@@ -165,8 +165,8 @@ mod test {
             &self,
             h: &Helper<'reg, 'rc>,
             r: &'reg Registry,
-            ctx: &Context,
-            rc: &mut RenderContext<'reg>,
+            ctx: &'rc Context,
+            rc: &mut RenderContext<'reg, 'rc>,
             out: &mut dyn Output,
         ) -> Result<(), RenderError> {
             let v = h.param(0).unwrap();
