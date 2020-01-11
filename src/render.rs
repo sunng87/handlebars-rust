@@ -6,7 +6,8 @@ use std::rc::Rc;
 
 use serde_json::value::Value as Json;
 
-use crate::context::{BlockParams, Context};
+use crate::block::BlockContext;
+use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
 use crate::json::path::{Path, PathSeg};
@@ -26,9 +27,9 @@ use crate::template::{
 /// content is written to.
 ///
 #[derive(Clone, Debug)]
-pub struct RenderContext<'reg, 'rc> {
+pub struct RenderContext<'reg: 'rc, 'rc> {
     inner: Rc<RenderContextInner<'reg>>,
-    block: Rc<BlockRenderContext<'reg, 'rc>>,
+    blocks: VecDeque<BlockContext<'reg, 'rc>>,
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
 }
@@ -44,26 +45,7 @@ pub struct RenderContextInner<'reg> {
     disable_escape: bool,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct BlockRenderContext<'reg, 'rc> {
-    path: Vec<String>,
-    block_root: Option<&'rc Json>,
-    local_path_root: VecDeque<Vec<String>>,
-    // current block context variables
-    block_context: VecDeque<BlockParams<'reg>>,
-    // local variables in current context
-    local_variables: VecDeque<HashMap<String, Json>>,
-}
-
-impl<'reg, 'rc> BlockRenderContext<'reg, 'rc> {
-    fn new() -> BlockRenderContext<'reg, 'rc> {
-        let mut block = BlockRenderContext::default();
-        block.local_variables.push_front(HashMap::new());
-        block
-    }
-}
-
-impl<'reg, 'rc> RenderContext<'reg, 'rc> {
+impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// Create a render context from a `Write`
     pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg, 'rc> {
         let inner = Rc::new(RenderContextInner {
@@ -74,25 +56,47 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
             disable_escape: false,
         });
 
-        let block = Rc::new(BlockRenderContext::new());
+        let blocks = VecDeque::with_capacity(5);
+        blocks.push_front(BlockContext::new());
+
         let modified_context = None;
         RenderContext {
             inner,
-            block,
+            blocks,
             modified_context,
         }
     }
 
-    pub fn new_for_block(&self) -> RenderContext<'reg, 'rc> {
+    // TODO: better name
+    pub(crate) fn new_for_block(&self) -> RenderContext<'reg, 'rc> {
         let inner = self.inner.clone();
-        let block = Rc::new(BlockRenderContext::new());
+
+        let blocks = VecDeque::new();
+        blocks.push_front(BlockContext::new());
+
         let modified_context = self.modified_context.clone();
 
         RenderContext {
             inner,
-            block,
+            blocks,
             modified_context,
         }
+    }
+
+    pub fn push_block(&mut self, block: BlockContext<'reg, 'rc>) {
+        self.blocks.push_front(block);
+    }
+
+    pub fn pop_block(&mut self) {
+        self.blocks.pop_back();
+    }
+
+    pub fn block(&self) -> Option<&BlockContext> {
+        self.blocks.front()
+    }
+
+    pub fn block_mut(&mut self) -> Option<&mut BlockContext<'reg, 'rc>> {
+        self.blocks.front_mut()
     }
 
     fn inner(&self) -> &RenderContextInner<'reg> {
@@ -101,14 +105,6 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
 
     fn inner_mut(&mut self) -> &mut RenderContextInner<'reg> {
         Rc::make_mut(&mut self.inner)
-    }
-
-    fn block(&self) -> &BlockRenderContext {
-        self.block.borrow()
-    }
-
-    fn block_mut(&mut self) -> &mut BlockRenderContext<'reg, 'rc> {
-        Rc::make_mut(&mut self.block)
     }
 
     pub fn context(&self) -> Option<Rc<Context>> {
@@ -133,12 +129,7 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
         context: &'rc Context,
         path: &[PathSeg],
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        context.navigate(
-            self.base_path(),
-            self.get_local_path_root(),
-            path,
-            &self.block.block_context,
-        )
+        context.navigate(path, &self.blocks)
     }
 
     pub fn get_partial(&self, name: &str) -> Option<&&Template> {
@@ -149,25 +140,10 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
         self.inner_mut().partials.insert(name, result);
     }
 
-    pub fn set_local_var(&mut self, name: String, value: Json) {
-        if let Some(m) = self.block_mut().local_variables.front_mut() {
-            m.insert(name, value);
-        }
-    }
-
-    pub fn promote_local_vars(&mut self) {
-        self.block_mut().local_variables.push_front(HashMap::new());
-    }
-
-    pub fn demote_local_vars(&mut self) {
-        self.block_mut().local_variables.pop_front();
-    }
-
     pub fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
-        self.block()
-            .local_variables
+        self.blocks
             .get(level)
-            .and_then(|m| m.get(&format!("@{}", &name)))
+            .and_then(|blk| blk.get_local_var(&format!("@{}", &name)))
     }
 
     pub fn is_current_template(&self, p: &str) -> bool {
@@ -217,38 +193,6 @@ impl<'reg, 'rc> RenderContext<'reg, 'rc> {
 
     pub fn set_disable_escape(&mut self, disable: bool) {
         self.inner_mut().disable_escape = disable
-    }
-
-    pub fn base_path(&self) -> &Vec<String> {
-        &self.block().path
-    }
-
-    pub fn base_path_mut(&mut self) -> &mut Vec<String> {
-        &mut self.block_mut().path
-    }
-
-    pub fn get_local_path_root(&self) -> &VecDeque<Vec<String>> {
-        &self.block().local_path_root
-    }
-
-    pub fn push_local_path_root(&mut self, path: Vec<String>) {
-        self.block_mut().local_path_root.push_front(path)
-    }
-
-    pub fn pop_local_path_root(&mut self) {
-        self.block_mut().local_path_root.pop_front();
-    }
-
-    pub fn push_block_context(
-        &mut self,
-        current_context: BlockParams<'reg>,
-    ) -> Result<(), RenderError> {
-        self.block_mut().block_context.push_front(current_context);
-        Ok(())
-    }
-
-    pub fn pop_block_context(&mut self) {
-        self.block_mut().block_context.pop_front();
     }
 }
 
