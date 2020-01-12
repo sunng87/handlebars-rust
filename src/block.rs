@@ -76,15 +76,35 @@ impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
         &self.base_path
     }
 
+    pub fn base_path_mut(&mut self) -> &mut Vec<String> {
+        &mut self.base_path
+    }
+
     pub fn base_value(&self) -> Option<&'rc Json> {
         self.base_value
+    }
+
+    pub fn base_value_mut(&mut self) -> &mut Option<&'rc Json> {
+        &mut self.base_value
+    }
+
+    pub fn set_base_value(&mut self, value: &'rc Json) {
+        self.base_value = Some(value);
     }
 
     pub fn get_block_param(&self, block_param_name: &str) -> Option<&BlockParamHolder> {
         self.block_params.get(block_param_name)
     }
 
+    pub fn set_block_params(&mut self, block_params: BlockParams<'reg>) {
+        self.block_params = block_params;
+    }
+
     pub fn local_path_root(&self) -> &Vec<String> {
         &self.local_path_root
+    }
+
+    pub fn set_local_path_root(&mut self, path_root: Vec<String>) {
+        self.local_path_root = path_root;
     }
 }
