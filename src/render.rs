@@ -127,7 +127,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub(crate) fn evaluate2(
         &self,
         context: &'rc Context,
-        path: &[PathSeg],
+        path: &'rc [PathSeg],
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         context.navigate(path, &self.blocks)
     }

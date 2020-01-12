@@ -18,16 +18,30 @@ pub struct Context {
     data: Json,
 }
 
-pub enum ResolvedPath<'rc> {
-    AbsolutePath(Vec<&'rc str>),
-    RelativePath(Vec<&'rc str>),
-    BlockParamValue(Vec<&'rc str>, &'rc Json),
+pub enum ResolvedPath {
+    // FIXME: change to borrowed when possible
+    // full path
+    AbsolutePath(Vec<String>),
+    // relative path and path root
+    RelativePath(Vec<String>),
+    // relative path against block param value
+    BlockParamValue(Vec<String>, Json),
+}
+
+impl ResolvedPath {
+    fn full_path(self) -> Option<Vec<String>> {
+        match self {
+            ResolvedPath::AbsolutePath(p) => Some(p),
+            _ => None,
+        }
+    }
 }
 
 fn parse_json_visitor<'reg: 'rc, 'rc>(
     relative_path: &'rc [PathSeg],
-    block_contexts: &'rc VecDeque<BlockContext<'reg, 'rc>>,
-) -> Result<ResolvedPath<'rc>, RenderError> {
+    block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
+    always_for_absolute_path: bool,
+) -> Result<ResolvedPath, RenderError> {
     let mut path_context_depth: i64 = -1;
     let mut with_block_param = None;
     let mut from_root = false;
@@ -56,26 +70,26 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
     match with_block_param {
         Some(BlockParamHolder::Value(ref value)) => {
             merge_json_path(&mut path_stack, &relative_path[1..]);
-            Ok(ResolvedPath::BlockParamValue(path_stack, value))
+            Ok(ResolvedPath::BlockParamValue(path_stack, value.clone()))
         }
         Some(BlockParamHolder::Path(ref paths)) => {
             // TODO: if this path equals base_path, skip this step and make it a ResolvedPath::RelativePath
-            path_stack.extend(paths.iter().map(|s| s.as_str()));
+            path_stack.extend_from_slice(paths);
             merge_json_path(&mut path_stack, &relative_path[1..]);
 
             Ok(ResolvedPath::AbsolutePath(path_stack))
         }
         None => {
             if path_context_depth >= 0 {
-                if let Some(context_base_path) = block_contexts
+                if let Some(ref context_base_path) = block_contexts
                     .get(path_context_depth as usize)
                     .map(|blk| blk.local_path_root())
                 {
-                    path_stack.extend(context_base_path.iter().map(|s| s.as_str()));
+                    path_stack.extend_from_slice(context_base_path);
                 } else {
                     // TODO: is this correct behaviour?
-                    if let Some(base_path) = block_contexts.front().map(|blk| blk.base_path()) {
-                        path_stack.extend(base_path.iter().map(|s| s.as_str()));
+                    if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                        path_stack.extend_from_slice(base_path);
                     }
                 }
                 merge_json_path(&mut path_stack, relative_path);
@@ -84,8 +98,16 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
                 merge_json_path(&mut path_stack, relative_path);
                 Ok(ResolvedPath::AbsolutePath(path_stack))
             } else {
-                merge_json_path(&mut path_stack, relative_path);
-                Ok(ResolvedPath::RelativePath(path_stack))
+                if always_for_absolute_path {
+                    if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                        path_stack.extend_from_slice(base_path);
+                    }
+                    merge_json_path(&mut path_stack, relative_path);
+                    Ok(ResolvedPath::AbsolutePath(path_stack))
+                } else {
+                    merge_json_path(&mut path_stack, relative_path);
+                    Ok(ResolvedPath::RelativePath(path_stack))
+                }
             }
         }
     }
@@ -155,10 +177,10 @@ impl Context {
     /// If you want to navigate from top level, set the base path to `"."`
     pub(crate) fn navigate<'reg, 'rc>(
         &'rc self,
-        relative_path: &[PathSeg],
+        relative_path: &'rc [PathSeg],
         block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let resolved_visitor = parse_json_visitor(&relative_path, block_contexts)?;
+        let resolved_visitor = parse_json_visitor(&relative_path, block_contexts, false)?;
 
         match resolved_visitor {
             ResolvedPath::AbsolutePath(paths) => {
@@ -168,9 +190,7 @@ impl Context {
                 }
 
                 let path_root = if !relative_path.is_empty() {
-                    // TODO
-                    let path_root = parse_json_visitor(&relative_path[..1], block_contexts)?;
-                    Some(path_root)
+                    parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
                 } else {
                     None
                 };
@@ -186,9 +206,7 @@ impl Context {
                 }
 
                 let path_root = if !relative_path.is_empty() {
-                    // TODO
-                    let path_root = parse_json_visitor(&relative_path[..1], block_contexts)?;
-                    Some(path_root)
+                    parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
                 } else {
                     None
                 };
@@ -198,7 +216,7 @@ impl Context {
                     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::BlockParamValue(paths, value) => {
-                let mut ptr = Some(value);
+                let mut ptr = Some(&value);
                 for p in paths.iter() {
                     ptr = get_data(ptr, p)?;
                 }

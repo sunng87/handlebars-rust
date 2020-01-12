@@ -109,11 +109,11 @@ where
     path_stack
 }
 
-pub(crate) fn merge_json_path<'a>(path_stack: &mut Vec<&'a str>, relative_path: &'a [PathSeg]) {
+pub(crate) fn merge_json_path<'a>(path_stack: &mut Vec<String>, relative_path: &'a [PathSeg]) {
     for seg in relative_path {
         match seg {
             PathSeg::Named(ref s) => {
-                path_stack.push(s);
+                path_stack.push(s.to_owned());
             }
             PathSeg::Ruled(Rule::path_root) => {}
             PathSeg::Ruled(Rule::path_up) => {
