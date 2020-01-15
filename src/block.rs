@@ -80,17 +80,18 @@ impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
         &mut self.base_path
     }
 
-    pub fn base_value(&self) -> Option<&'rc Json> {
-        self.base_value
-    }
+    // TODO: disable for lifetime issue
+    // pub fn base_value(&self) -> Option<&'rc Json> {
+    //     self.base_value
+    // }
 
-    pub fn base_value_mut(&mut self) -> &mut Option<&'rc Json> {
-        &mut self.base_value
-    }
+    // pub fn base_value_mut(&mut self) -> &mut Option<&'rc Json> {
+    //     &mut self.base_value
+    // }
 
-    pub fn set_base_value(&mut self, value: &'rc Json) {
-        self.base_value = Some(value);
-    }
+    // pub fn set_base_value(&mut self, value: &'rc Json) {
+    //     self.base_value = Some(value);
+    // }
 
     pub fn get_block_param(&self, block_param_name: &str) -> Option<&BlockParamHolder> {
         self.block_params.get(block_param_name)

@@ -34,7 +34,8 @@ impl HelperDef for EachHelper {
 
                 if let Some(path) = value.context_path() {
                     *block_context.base_path_mut() = path.to_vec();
-                    block_context.set_base_value(value.value());
+                    // TODO: disable base value support for now.
+                    // block_context.set_base_value(value.value());
                 }
 
                 let local_path_root = value.path_root();

@@ -180,7 +180,8 @@ impl Context {
         relative_path: &'rc [PathSeg],
         block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let resolved_visitor = parse_json_visitor(&relative_path, block_contexts, false)?;
+        // always use absolute at the moment until we get base_value lifetime issue fixed
+        let resolved_visitor = parse_json_visitor(&relative_path, block_contexts, true)?;
 
         match resolved_visitor {
             ResolvedPath::AbsolutePath(paths) => {
@@ -200,20 +201,22 @@ impl Context {
                     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::RelativePath(paths) => {
-                let mut ptr = block_contexts.front().and_then(|blk| blk.base_value());
-                for p in paths.iter() {
-                    ptr = get_data(ptr, p)?;
-                }
+                // relative path is disabled for now
+                unreachable!()
+                // let mut ptr = block_contexts.front().and_then(|blk| blk.base_value());
+                // for p in paths.iter() {
+                //     ptr = get_data(ptr, p)?;
+                // }
 
-                let path_root = if !relative_path.is_empty() {
-                    parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
-                } else {
-                    None
-                };
+                // let path_root = if !relative_path.is_empty() {
+                //     parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
+                // } else {
+                //     None
+                // };
 
-                Ok(ptr
-                    .map(|v| ScopedJson::Context(v, paths, path_root))
-                    .unwrap_or_else(|| ScopedJson::Missing))
+                // Ok(ptr
+                //     .map(|v| ScopedJson::Context(v, paths, path_root))
+                //     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::BlockParamValue(paths, value) => {
                 let mut ptr = Some(&value);
