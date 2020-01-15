@@ -1,4 +1,5 @@
-use crate::context::{BlockParams, Context};
+use crate::block::{BlockContext, BlockParams};
+use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 use crate::json::value::JsonTruthy;
@@ -22,33 +23,34 @@ impl HelperDef for WithHelper {
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
-        let saved_base_path = rc.base_path().to_vec();
-        rc.promote_local_vars();
-
         let not_empty = param.value().is_truthy(false);
         let template = if not_empty { h.template() } else { h.inverse() };
 
-        let local_path_root = param.path_root();
-        if let Some(path_root) = local_path_root {
-            rc.push_local_path_root(path_root.to_vec());
-        }
-
         if not_empty {
+            let mut block = BlockContext::new();
+
+            let local_path_root = param.path_root();
+            if let Some(path_root) = local_path_root {
+                block.set_local_path_root(path_root.to_vec());
+            }
+
             let new_path = param.context_path();
             if let Some(new_path) = new_path {
-                *rc.base_path_mut() = new_path.clone();
+                *block.base_path_mut() = new_path.clone();
             }
 
             if let Some(block_param) = h.block_param() {
                 let mut params = BlockParams::new();
                 if new_path.is_some() {
-                    params.add_path(block_param, rc.base_path().clone())?;
+                    params.add_path(block_param, block.base_path().clone())?;
                 } else {
                     params.add_value(block_param, param.value().clone())?;
                 }
 
-                rc.push_block_context(params)?;
+                block.set_block_params(params);
             }
+
+            rc.push_block(block);
         }
 
         let result = match template {
@@ -56,16 +58,9 @@ impl HelperDef for WithHelper {
             None => Ok(()),
         };
 
-        if h.has_block_param() {
-            rc.pop_block_context();
+        if not_empty {
+            rc.pop_block();
         }
-
-        if local_path_root.is_some() {
-            rc.pop_local_path_root();
-        }
-
-        rc.demote_local_vars();
-        *rc.base_path_mut() = saved_base_path;
         result
     }
 }

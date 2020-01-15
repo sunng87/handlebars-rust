@@ -3,7 +3,7 @@ use std::collections::{HashMap, VecDeque};
 use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
 
-use crate::block::{BlockContext, BlockParamHolder, BlockParams};
+use crate::block::{BlockContext, BlockParamHolder};
 use crate::error::RenderError;
 use crate::grammar::Rule;
 use crate::json::path::*;
