@@ -97,17 +97,15 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
             } else if from_root {
                 merge_json_path(&mut path_stack, relative_path);
                 Ok(ResolvedPath::AbsolutePath(path_stack))
-            } else {
-                if always_for_absolute_path {
-                    if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
-                        path_stack.extend_from_slice(base_path);
-                    }
-                    merge_json_path(&mut path_stack, relative_path);
-                    Ok(ResolvedPath::AbsolutePath(path_stack))
-                } else {
-                    merge_json_path(&mut path_stack, relative_path);
-                    Ok(ResolvedPath::RelativePath(path_stack))
+            } else if always_for_absolute_path {
+                if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                    path_stack.extend_from_slice(base_path);
                 }
+                merge_json_path(&mut path_stack, relative_path);
+                Ok(ResolvedPath::AbsolutePath(path_stack))
+            } else {
+                merge_json_path(&mut path_stack, relative_path);
+                Ok(ResolvedPath::RelativePath(path_stack))
             }
         }
     }
