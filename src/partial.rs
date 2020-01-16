@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use serde_json::value::Value as Json;
 
+use crate::block::BlockContext;
 use crate::context::{merge_json, Context};
 use crate::error::RenderError;
 use crate::output::Output;
@@ -17,11 +18,12 @@ fn render_partial<'reg: 'rc, 'rc>(
     local_rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
+    let mut block = BlockContext::new();
+
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
         if let Some(p) = param_ctx.context_path() {
-            local_rc.promote_local_vars();
-            *local_rc.base_path_mut() = p.clone();
+            *block.base_path_mut() = p.clone();
         }
     }
 
@@ -30,7 +32,9 @@ fn render_partial<'reg: 'rc, 'rc>(
         local_rc.set_partial("@partial-block".to_owned(), t);
     }
 
-    if d.hash().is_empty() {
+    local_rc.push_block(block);
+
+    let result = if d.hash().is_empty() {
         t.render(r, ctx, local_rc, out)
     } else {
         let hash_ctx = d
@@ -42,7 +46,12 @@ fn render_partial<'reg: 'rc, 'rc>(
         let ctx = Context::wraps(&partial_context)?;
         let mut partial_rc = local_rc.new_for_block();
         t.render(r, &ctx, &mut partial_rc, out)
-    }
+    };
+
+    local_rc.pop_block();
+    local_rc.remove_partial("@partial-block");
+
+    result
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(

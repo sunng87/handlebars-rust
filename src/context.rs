@@ -38,7 +38,7 @@ impl ResolvedPath {
 }
 
 fn parse_json_visitor<'reg: 'rc, 'rc>(
-    relative_path: &'rc [PathSeg],
+    relative_path: &[PathSeg],
     block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
     always_for_absolute_path: bool,
 ) -> Result<ResolvedPath, RenderError> {
@@ -177,7 +177,7 @@ impl Context {
     /// If you want to navigate from top level, set the base path to `"."`
     pub(crate) fn navigate<'reg, 'rc>(
         &'rc self,
-        relative_path: &'rc [PathSeg],
+        relative_path: &[PathSeg],
         block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         // always use absolute at the moment until we get base_value lifetime issue fixed
@@ -200,7 +200,7 @@ impl Context {
                     .map(|v| ScopedJson::Context(v, paths, path_root))
                     .unwrap_or_else(|| ScopedJson::Missing))
             }
-            ResolvedPath::RelativePath(paths) => {
+            ResolvedPath::RelativePath(_paths) => {
                 // relative path is disabled for now
                 unreachable!()
                 // let mut ptr = block_contexts.front().and_then(|blk| blk.base_value());

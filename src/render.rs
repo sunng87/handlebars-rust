@@ -56,7 +56,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             disable_escape: false,
         });
 
-        let blocks = VecDeque::with_capacity(5);
+        let mut blocks = VecDeque::with_capacity(5);
         blocks.push_front(BlockContext::new());
 
         let modified_context = None;
@@ -71,7 +71,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub(crate) fn new_for_block(&self) -> RenderContext<'reg, 'rc> {
         let inner = self.inner.clone();
 
-        let blocks = VecDeque::new();
+        let mut blocks = VecDeque::with_capacity(2);
         blocks.push_front(BlockContext::new());
 
         let modified_context = self.modified_context.clone();
@@ -127,7 +127,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub(crate) fn evaluate2(
         &self,
         context: &'rc Context,
-        path: &'rc [PathSeg],
+        path: &[PathSeg],
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         context.navigate(path, &self.blocks)
     }
@@ -138,6 +138,10 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     pub fn set_partial(&mut self, name: String, result: &'reg Template) {
         self.inner_mut().partials.insert(name, result);
+    }
+
+    pub fn remove_partial(&mut self, name: &str) {
+        self.inner_mut().partials.remove(name);
     }
 
     pub fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
