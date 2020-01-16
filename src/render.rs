@@ -88,7 +88,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     pub fn pop_block(&mut self) {
-        self.blocks.pop_back();
+        self.blocks.pop_front();
     }
 
     pub fn block(&self) -> Option<&BlockContext> {
@@ -147,7 +147,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
         self.blocks
             .get(level)
-            .and_then(|blk| blk.get_local_var(&format!("@{}", &name)))
+            .and_then(|blk| blk.get_local_var(&name))
     }
 
     pub fn is_current_template(&self, p: &str) -> bool {
@@ -867,16 +867,18 @@ fn test_template() {
 fn test_render_context_promotion_and_demotion() {
     use crate::json::value::to_json;
     let mut render_context = RenderContext::new(None);
+    let mut block = BlockContext::new();
 
-    render_context.set_local_var("@index".to_string(), to_json(0));
+    block.set_local_var("@index".to_string(), to_json(0));
+    render_context.push_block(block);
 
-    render_context.promote_local_vars();
+    render_context.push_block(BlockContext::new());
     assert_eq!(
         render_context.get_local_var(1, "index").unwrap(),
         &to_json(0)
     );
 
-    render_context.demote_local_vars();
+    render_context.pop_block();
 
     assert_eq!(
         render_context.get_local_var(0, "index").unwrap(),

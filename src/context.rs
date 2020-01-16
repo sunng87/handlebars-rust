@@ -18,7 +18,8 @@ pub struct Context {
     data: Json,
 }
 
-pub enum ResolvedPath {
+#[derive(Debug)]
+enum ResolvedPath {
     // FIXME: change to borrowed when possible
     // full path
     AbsolutePath(Vec<String>),
@@ -252,7 +253,8 @@ fn join(segs: &VecDeque<&str>, sep: &str) -> String {
 
 #[cfg(test)]
 mod test {
-    use crate::context::{self, BlockParams, Context};
+    use crate::block::{BlockContext, BlockParams};
+    use crate::context::{self, Context};
     use crate::error::RenderError;
     use crate::json::path::PathSeg;
     use crate::json::value::{self, ScopedJson};
@@ -264,12 +266,7 @@ mod test {
         path: &str,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let relative_path = PathSeg::parse(path).unwrap();
-        ctx.navigate(
-            &Vec::new(),
-            &VecDeque::new(),
-            &relative_path,
-            &VecDeque::new(),
-        )
+        ctx.navigate(&relative_path, &VecDeque::new())
     }
 
     #[derive(Serialize)]
@@ -433,15 +430,16 @@ mod test {
             "b": 2
         });
         let ctx = Context::wraps(&m).unwrap();
+        let mut block = BlockContext::new();
+        *block.base_path_mut() = ["a".to_owned(), "b".to_owned()].to_vec();
+
+        let mut blocks = VecDeque::new();
+        blocks.push_front(block);
+
         assert_eq!(
-            ctx.navigate(
-                &["a".to_owned(), "b".to_owned()],
-                &VecDeque::new(),
-                &PathSeg::parse("@root/b").unwrap(),
-                &VecDeque::new()
-            )
-            .unwrap()
-            .render(),
+            ctx.navigate(&PathSeg::parse("@root/b").unwrap(), &blocks)
+                .unwrap()
+                .render(),
             "2".to_string()
         );
     }
@@ -455,35 +453,28 @@ mod test {
         }]);
 
         let ctx = Context::wraps(&m).unwrap();
-        let mut block_param = BlockParams::new();
-        block_param
+        let mut block_params = BlockParams::new();
+        block_params
             .add_path("z", ["0".to_owned(), "a".to_owned()].to_vec())
             .unwrap();
-        block_param.add_value("t", json!("good")).unwrap();
+        block_params.add_value("t", json!("good")).unwrap();
 
-        let mut block_params = VecDeque::new();
-        block_params.push_front(block_param);
+        let mut block = BlockContext::new();
+        block.set_block_params(block_params);
+
+        let mut blocks = VecDeque::new();
+        blocks.push_front(block);
 
         assert_eq!(
-            ctx.navigate(
-                &Vec::new(),
-                &VecDeque::new(),
-                &PathSeg::parse("z.[1]").unwrap(),
-                &block_params
-            )
-            .unwrap()
-            .render(),
+            ctx.navigate(&PathSeg::parse("z.[1]").unwrap(), &blocks)
+                .unwrap()
+                .render(),
             "2".to_string()
         );
         assert_eq!(
-            ctx.navigate(
-                &Vec::new(),
-                &VecDeque::new(),
-                &PathSeg::parse("t").unwrap(),
-                &block_params
-            )
-            .unwrap()
-            .render(),
+            ctx.navigate(&PathSeg::parse("t").unwrap(), &blocks)
+                .unwrap()
+                .render(),
             "good".to_string()
         );
     }

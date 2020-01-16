@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use serde_json::value::Value as Json;
 
-use crate::block::BlockContext;
 use crate::context::{merge_json, Context};
 use crate::error::RenderError;
 use crate::output::Output;
@@ -18,11 +17,9 @@ fn render_partial<'reg: 'rc, 'rc>(
     local_rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    let mut block = BlockContext::new();
-
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
-        if let Some(p) = param_ctx.context_path() {
+        if let (Some(p), Some(block)) = (param_ctx.context_path(), local_rc.block_mut()) {
             *block.base_path_mut() = p.clone();
         }
     }
@@ -31,8 +28,6 @@ fn render_partial<'reg: 'rc, 'rc>(
     if let Some(t) = d.template() {
         local_rc.set_partial("@partial-block".to_owned(), t);
     }
-
-    local_rc.push_block(block);
 
     let result = if d.hash().is_empty() {
         t.render(r, ctx, local_rc, out)
@@ -48,7 +43,6 @@ fn render_partial<'reg: 'rc, 'rc>(
         t.render(r, &ctx, &mut partial_rc, out)
     };
 
-    local_rc.pop_block();
     local_rc.remove_partial("@partial-block");
 
     result
