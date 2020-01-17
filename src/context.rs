@@ -3,55 +3,13 @@ use std::collections::{HashMap, VecDeque};
 use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
 
+use crate::block::{BlockContext, BlockParamHolder};
 use crate::error::RenderError;
 use crate::grammar::Rule;
 use crate::json::path::*;
 use crate::json::value::ScopedJson;
 
 pub type Object = HashMap<String, Json>;
-
-#[derive(Clone, Debug)]
-pub enum BlockParamHolder {
-    // a reference to certain context value
-    Path(Vec<String>),
-    // an actual value holder
-    Value(Json),
-}
-
-impl BlockParamHolder {
-    pub fn value(v: Json) -> BlockParamHolder {
-        BlockParamHolder::Value(v)
-    }
-
-    pub fn path(r: Vec<String>) -> BlockParamHolder {
-        BlockParamHolder::Path(r)
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct BlockParams<'reg> {
-    data: HashMap<&'reg str, BlockParamHolder>,
-}
-
-impl<'reg> BlockParams<'reg> {
-    pub fn new() -> BlockParams<'reg> {
-        BlockParams::default()
-    }
-
-    pub fn add_path(&mut self, k: &'reg str, v: Vec<String>) -> Result<(), RenderError> {
-        self.data.insert(k, BlockParamHolder::path(v));
-        Ok(())
-    }
-
-    pub fn add_value(&mut self, k: &'reg str, v: Json) -> Result<(), RenderError> {
-        self.data.insert(k, BlockParamHolder::value(v));
-        Ok(())
-    }
-
-    pub fn get(&self, k: &str) -> Option<&BlockParamHolder> {
-        self.data.get(k)
-    }
-}
 
 /// The context wrap data you render on your templates.
 ///
@@ -60,27 +18,41 @@ pub struct Context {
     data: Json,
 }
 
-#[derive(Default)]
-pub struct ResolvedPath<'b>(Vec<String>, Option<&'b BlockParamHolder>);
+#[derive(Debug)]
+enum ResolvedPath {
+    // FIXME: change to borrowed when possible
+    // full path
+    AbsolutePath(Vec<String>),
+    // relative path and path root
+    RelativePath(Vec<String>),
+    // relative path against block param value
+    BlockParamValue(Vec<String>, Json),
+}
 
-fn parse_json_visitor<'b>(
-    base_path: &[String],
-    path_context: &VecDeque<Vec<String>>,
+impl ResolvedPath {
+    fn full_path(self) -> Option<Vec<String>> {
+        match self {
+            ResolvedPath::AbsolutePath(p) => Some(p),
+            _ => None,
+        }
+    }
+}
+
+fn parse_json_visitor<'reg: 'rc, 'rc>(
     relative_path: &[PathSeg],
-    block_params: &'b VecDeque<BlockParams>,
-) -> Result<ResolvedPath<'b>, RenderError> {
-    let mut path_stack = Vec::with_capacity(base_path.len() + 5);
-
+    block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
+    always_for_absolute_path: bool,
+) -> Result<ResolvedPath, RenderError> {
     let mut path_context_depth: i64 = -1;
-    let mut used_block_param = None;
+    let mut with_block_param = None;
     let mut from_root = false;
 
     // peek relative_path for block param, @root and  "../../"
     for path_seg in relative_path {
         match path_seg {
             PathSeg::Named(the_path) => {
-                if let Some(holder) = get_in_block_params(&block_params, the_path) {
-                    used_block_param = Some(holder);
+                if let Some(holder) = get_in_block_params(&block_contexts, the_path) {
+                    with_block_param = Some(holder);
                 }
                 break;
             }
@@ -95,28 +67,47 @@ fn parse_json_visitor<'b>(
         }
     }
 
-    match used_block_param {
-        Some(BlockParamHolder::Value(_)) => Ok(ResolvedPath(path_stack, used_block_param)),
+    let mut path_stack = Vec::with_capacity(relative_path.len() + 5);
+    match with_block_param {
+        Some(BlockParamHolder::Value(ref value)) => {
+            merge_json_path(&mut path_stack, &relative_path[1..]);
+            Ok(ResolvedPath::BlockParamValue(path_stack, value.clone()))
+        }
         Some(BlockParamHolder::Path(ref paths)) => {
+            // TODO: if this path equals base_path, skip this step and make it a ResolvedPath::RelativePath
             path_stack.extend_from_slice(paths);
             merge_json_path(&mut path_stack, &relative_path[1..]);
 
-            Ok(ResolvedPath(path_stack, used_block_param))
+            Ok(ResolvedPath::AbsolutePath(path_stack))
         }
         None => {
             if path_context_depth >= 0 {
-                if let Some(context_base_path) = path_context.get(path_context_depth as usize) {
+                if let Some(ref context_base_path) = block_contexts
+                    .get(path_context_depth as usize)
+                    .map(|blk| blk.local_path_root())
+                {
                     path_stack.extend_from_slice(context_base_path);
                 } else {
                     // TODO: is this correct behaviour?
+                    if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                        path_stack.extend_from_slice(base_path);
+                    }
+                }
+                merge_json_path(&mut path_stack, relative_path);
+                Ok(ResolvedPath::AbsolutePath(path_stack))
+            } else if from_root {
+                merge_json_path(&mut path_stack, relative_path);
+                Ok(ResolvedPath::AbsolutePath(path_stack))
+            } else if always_for_absolute_path {
+                if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
                     path_stack.extend_from_slice(base_path);
                 }
-            } else if !from_root {
-                path_stack.extend_from_slice(base_path);
+                merge_json_path(&mut path_stack, relative_path);
+                Ok(ResolvedPath::AbsolutePath(path_stack))
+            } else {
+                merge_json_path(&mut path_stack, relative_path);
+                Ok(ResolvedPath::RelativePath(path_stack))
             }
-
-            merge_json_path(&mut path_stack, relative_path);
-            Ok(ResolvedPath(path_stack, None))
         }
     }
 }
@@ -138,12 +129,12 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
     Ok(result)
 }
 
-pub(crate) fn get_in_block_params<'a>(
-    block_contexts: &'a VecDeque<BlockParams>,
+fn get_in_block_params<'a>(
+    block_contexts: &'a VecDeque<BlockContext>,
     p: &str,
 ) -> Option<&'a BlockParamHolder> {
     for bc in block_contexts {
-        let v = bc.get(p);
+        let v = bc.get_block_param(p);
         if v.is_some() {
             return v;
         }
@@ -183,49 +174,56 @@ impl Context {
     /// and set relative path to helper argument or so.
     ///
     /// If you want to navigate from top level, set the base path to `"."`
-    pub fn navigate<'reg, 'rc>(
+    pub(crate) fn navigate<'reg, 'rc>(
         &'rc self,
-        base_path: &[String],
-        path_context: &VecDeque<Vec<String>>,
         relative_path: &[PathSeg],
-        block_params: &VecDeque<BlockParams>,
+        block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let ResolvedPath(paths, block_param_holder) =
-            parse_json_visitor(base_path, path_context, &relative_path, block_params)?;
+        // always use absolute at the moment until we get base_value lifetime issue fixed
+        let resolved_visitor = parse_json_visitor(&relative_path, block_contexts, true)?;
 
-        if let Some(BlockParamHolder::Value(ref block_param_value)) = block_param_holder {
-            let mut data = Some(block_param_value);
-            for p in paths.iter() {
-                data = get_data(data, p)?;
-            }
-            Ok(data
-                .map(|v| ScopedJson::Derived(v.clone()))
-                .unwrap_or_else(|| ScopedJson::Missing))
-        } else {
-            let mut data = Some(self.data());
-            for p in paths.iter() {
-                data = get_data(data, p)?;
-            }
+        match resolved_visitor {
+            ResolvedPath::AbsolutePath(paths) => {
+                let mut ptr = Some(self.data());
+                for p in paths.iter() {
+                    ptr = get_data(ptr, p)?;
+                }
 
-            if let Some(BlockParamHolder::Path(_)) = block_param_holder {
-                Ok(data
-                    .map(|v| ScopedJson::BlockContext(v, paths))
-                    .unwrap_or_else(|| ScopedJson::Missing))
-            } else {
                 let path_root = if !relative_path.is_empty() {
-                    let ResolvedPath(path_root, _) = parse_json_visitor(
-                        base_path,
-                        path_context,
-                        &relative_path[..1],
-                        block_params,
-                    )?;
-                    Some(path_root)
+                    parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
                 } else {
                     None
                 };
 
-                Ok(data
+                Ok(ptr
                     .map(|v| ScopedJson::Context(v, paths, path_root))
+                    .unwrap_or_else(|| ScopedJson::Missing))
+            }
+            ResolvedPath::RelativePath(_paths) => {
+                // relative path is disabled for now
+                unreachable!()
+                // let mut ptr = block_contexts.front().and_then(|blk| blk.base_value());
+                // for p in paths.iter() {
+                //     ptr = get_data(ptr, p)?;
+                // }
+
+                // let path_root = if !relative_path.is_empty() {
+                //     parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
+                // } else {
+                //     None
+                // };
+
+                // Ok(ptr
+                //     .map(|v| ScopedJson::Context(v, paths, path_root))
+                //     .unwrap_or_else(|| ScopedJson::Missing))
+            }
+            ResolvedPath::BlockParamValue(paths, value) => {
+                let mut ptr = Some(&value);
+                for p in paths.iter() {
+                    ptr = get_data(ptr, p)?;
+                }
+                Ok(ptr
+                    .map(|v| ScopedJson::Derived(v.clone()))
                     .unwrap_or_else(|| ScopedJson::Missing))
             }
         }
@@ -255,7 +253,8 @@ fn join(segs: &VecDeque<&str>, sep: &str) -> String {
 
 #[cfg(test)]
 mod test {
-    use crate::context::{self, BlockParams, Context};
+    use crate::block::{BlockContext, BlockParams};
+    use crate::context::{self, Context};
     use crate::error::RenderError;
     use crate::json::path::PathSeg;
     use crate::json::value::{self, ScopedJson};
@@ -267,12 +266,7 @@ mod test {
         path: &str,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let relative_path = PathSeg::parse(path).unwrap();
-        ctx.navigate(
-            &Vec::new(),
-            &VecDeque::new(),
-            &relative_path,
-            &VecDeque::new(),
-        )
+        ctx.navigate(&relative_path, &VecDeque::new())
     }
 
     #[derive(Serialize)]
@@ -436,15 +430,16 @@ mod test {
             "b": 2
         });
         let ctx = Context::wraps(&m).unwrap();
+        let mut block = BlockContext::new();
+        *block.base_path_mut() = ["a".to_owned(), "b".to_owned()].to_vec();
+
+        let mut blocks = VecDeque::new();
+        blocks.push_front(block);
+
         assert_eq!(
-            ctx.navigate(
-                &["a".to_owned(), "b".to_owned()],
-                &VecDeque::new(),
-                &PathSeg::parse("@root/b").unwrap(),
-                &VecDeque::new()
-            )
-            .unwrap()
-            .render(),
+            ctx.navigate(&PathSeg::parse("@root/b").unwrap(), &blocks)
+                .unwrap()
+                .render(),
             "2".to_string()
         );
     }
@@ -458,35 +453,28 @@ mod test {
         }]);
 
         let ctx = Context::wraps(&m).unwrap();
-        let mut block_param = BlockParams::new();
-        block_param
+        let mut block_params = BlockParams::new();
+        block_params
             .add_path("z", ["0".to_owned(), "a".to_owned()].to_vec())
             .unwrap();
-        block_param.add_value("t", json!("good")).unwrap();
+        block_params.add_value("t", json!("good")).unwrap();
 
-        let mut block_params = VecDeque::new();
-        block_params.push_front(block_param);
+        let mut block = BlockContext::new();
+        block.set_block_params(block_params);
+
+        let mut blocks = VecDeque::new();
+        blocks.push_front(block);
 
         assert_eq!(
-            ctx.navigate(
-                &Vec::new(),
-                &VecDeque::new(),
-                &PathSeg::parse("z.[1]").unwrap(),
-                &block_params
-            )
-            .unwrap()
-            .render(),
+            ctx.navigate(&PathSeg::parse("z.[1]").unwrap(), &blocks)
+                .unwrap()
+                .render(),
             "2".to_string()
         );
         assert_eq!(
-            ctx.navigate(
-                &Vec::new(),
-                &VecDeque::new(),
-                &PathSeg::parse("t").unwrap(),
-                &block_params
-            )
-            .unwrap()
-            .render(),
+            ctx.navigate(&PathSeg::parse("t").unwrap(), &blocks)
+                .unwrap()
+                .render(),
             "good".to_string()
         );
     }

@@ -9,7 +9,7 @@ impl<'a> HelperDef for HelperWithBorrowedData<'a> {
         _: &Helper<'_reg, '_rc>,
         _: &'_reg Handlebars,
         _: &Context,
-        _: &mut RenderContext<'_reg>,
+        _: &mut RenderContext,
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         out.write(self.0).map_err(RenderError::from)

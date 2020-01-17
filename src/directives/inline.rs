@@ -23,7 +23,7 @@ impl DirectiveDef for InlineDirective {
         d: &Directive<'reg, 'rc>,
         _: &'reg Registry,
         _: &'rc Context,
-        rc: &mut RenderContext<'reg>,
+        rc: &mut RenderContext<'reg, 'rc>,
     ) -> DirectiveResult {
         let name = get_name(d)?;
 

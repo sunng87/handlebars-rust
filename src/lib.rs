@@ -346,7 +346,8 @@ extern crate serde_json;
 #[cfg(feature = "dir_source")]
 extern crate walkdir;
 
-pub use self::context::{BlockParams, Context};
+pub use self::block::{BlockContext, BlockParams};
+pub use self::context::Context;
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::helpers::{HelperDef, HelperResult};
@@ -363,6 +364,7 @@ pub use self::serde_json::Value as JsonValue;
 
 #[macro_use]
 mod macros;
+mod block;
 mod context;
 mod directives;
 mod error;

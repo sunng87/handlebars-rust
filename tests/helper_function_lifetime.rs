@@ -4,7 +4,7 @@ fn ifcond<'reg, 'rc>(
     h: &Helper<'reg, 'rc>,
     handle: &'reg Handlebars,
     ctx: &'rc Context,
-    render_ctx: &mut RenderContext<'reg>,
+    render_ctx: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     let cond = h

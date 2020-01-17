@@ -14,14 +14,13 @@ fn render_partial<'reg: 'rc, 'rc>(
     d: &Directive<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    local_rc: &mut RenderContext<'reg>,
+    local_rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
-        if let Some(p) = param_ctx.context_path() {
-            local_rc.promote_local_vars();
-            *local_rc.base_path_mut() = p.clone();
+        if let (Some(p), Some(block)) = (param_ctx.context_path(), local_rc.block_mut()) {
+            *block.base_path_mut() = p.clone();
         }
     }
 
@@ -30,7 +29,7 @@ fn render_partial<'reg: 'rc, 'rc>(
         local_rc.set_partial("@partial-block".to_owned(), t);
     }
 
-    if d.hash().is_empty() {
+    let result = if d.hash().is_empty() {
         t.render(r, ctx, local_rc, out)
     } else {
         let hash_ctx = d
@@ -42,14 +41,18 @@ fn render_partial<'reg: 'rc, 'rc>(
         let ctx = Context::wraps(&partial_context)?;
         let mut partial_rc = local_rc.new_for_block();
         t.render(r, &ctx, &mut partial_rc, out)
-    }
+    };
+
+    local_rc.remove_partial("@partial-block");
+
+    result
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Directive<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg>,
+    rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
