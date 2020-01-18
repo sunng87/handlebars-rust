@@ -189,14 +189,8 @@ impl Context {
                     ptr = get_data(ptr, p)?;
                 }
 
-                let path_root = if !relative_path.is_empty() {
-                    parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
-                } else {
-                    None
-                };
-
                 Ok(ptr
-                    .map(|v| ScopedJson::Context(v, paths, path_root))
+                    .map(|v| ScopedJson::Context(v, paths))
                     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::RelativePath(_paths) => {
@@ -207,14 +201,8 @@ impl Context {
                 //     ptr = get_data(ptr, p)?;
                 // }
 
-                // let path_root = if !relative_path.is_empty() {
-                //     parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
-                // } else {
-                //     None
-                // };
-
                 // Ok(ptr
-                //     .map(|v| ScopedJson::Context(v, paths, path_root))
+                //     .map(|v| ScopedJson::Context(v, paths))
                 //     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::BlockParamValue(paths, value) => {
