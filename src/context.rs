@@ -113,10 +113,6 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
 }
 
 fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, RenderError> {
-    if p == "this" {
-        return Ok(d);
-    }
-
     let result = match d {
         Some(&Json::Array(ref l)) => p
             .parse::<usize>()

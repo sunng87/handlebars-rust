@@ -98,7 +98,10 @@ where
                 path_stack.push(PathSeg::Ruled(Rule::path_up));
             }
             Rule::path_id | Rule::path_raw_id => {
-                path_stack.push(PathSeg::Named(n.as_str().to_string()));
+                let name = n.as_str();
+                if name != "this" {
+                    path_stack.push(PathSeg::Named(name.to_string()));
+                }
             }
             _ => {}
         }
