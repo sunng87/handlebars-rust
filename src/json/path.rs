@@ -116,9 +116,7 @@ pub(crate) fn merge_json_path<'a>(path_stack: &mut Vec<String>, relative_path: &
                 path_stack.push(s.to_owned());
             }
             PathSeg::Ruled(Rule::path_root) => {}
-            PathSeg::Ruled(Rule::path_up) => {
-                path_stack.pop();
-            }
+            PathSeg::Ruled(Rule::path_up) => {}
             _ => {}
         }
     }

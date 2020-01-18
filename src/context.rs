@@ -43,7 +43,7 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
     block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
     always_for_absolute_path: bool,
 ) -> Result<ResolvedPath, RenderError> {
-    let mut path_context_depth: i64 = -1;
+    let mut path_context_depth: i64 = 0;
     let mut with_block_param = None;
     let mut from_root = false;
 
@@ -81,10 +81,10 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
             Ok(ResolvedPath::AbsolutePath(path_stack))
         }
         None => {
-            if path_context_depth >= 0 {
+            if path_context_depth > 0 {
                 if let Some(ref context_base_path) = block_contexts
                     .get(path_context_depth as usize)
-                    .map(|blk| blk.local_path_root())
+                    .map(|blk| blk.base_path())
                 {
                     path_stack.extend_from_slice(context_base_path);
                 } else {
