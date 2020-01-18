@@ -1,6 +1,6 @@
 sign-commit = true
 pre-release-replacements = [
-  {file="CHANGELOG.md", search="Unreleased", replace="{{version}}", min=0},
-  {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=0},
+  {file="CHANGELOG.md", search="Unreleased", replace="{{version}}", prerelease=false},
+  {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", prerelease=false},
   {file="src/lib.rs", search="https://docs.rs/handlebars/[a-z0-9\\.-]+", replace="https://docs.rs/handlebars/{{version}}"},
 ]
