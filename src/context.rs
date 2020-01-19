@@ -19,30 +19,21 @@ pub struct Context {
 }
 
 #[derive(Debug)]
-enum ResolvedPath {
+enum ResolvedPath<'a> {
     // FIXME: change to borrowed when possible
     // full path
     AbsolutePath(Vec<String>),
     // relative path and path root
     RelativePath(Vec<String>),
     // relative path against block param value
-    BlockParamValue(Vec<String>, Json),
+    BlockParamValue(Vec<String>, &'a Json),
 }
 
-impl ResolvedPath {
-    fn full_path(self) -> Option<Vec<String>> {
-        match self {
-            ResolvedPath::AbsolutePath(p) => Some(p),
-            _ => None,
-        }
-    }
-}
-
-fn parse_json_visitor<'reg: 'rc, 'rc>(
+fn parse_json_visitor<'a>(
     relative_path: &[PathSeg],
-    block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
+    block_contexts: &'a VecDeque<BlockContext>,
     always_for_absolute_path: bool,
-) -> Result<ResolvedPath, RenderError> {
+) -> Result<ResolvedPath<'a>, RenderError> {
     let mut path_context_depth: i64 = 0;
     let mut with_block_param = None;
     let mut from_root = false;
@@ -71,7 +62,7 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
     match with_block_param {
         Some(BlockParamHolder::Value(ref value)) => {
             merge_json_path(&mut path_stack, &relative_path[1..]);
-            Ok(ResolvedPath::BlockParamValue(path_stack, value.clone()))
+            Ok(ResolvedPath::BlockParamValue(path_stack, value))
         }
         Some(BlockParamHolder::Path(ref paths)) => {
             // TODO: if this path equals base_path, skip this step and make it a ResolvedPath::RelativePath
@@ -202,7 +193,7 @@ impl Context {
                 //     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::BlockParamValue(paths, value) => {
-                let mut ptr = Some(&value);
+                let mut ptr = Some(value);
                 for p in paths.iter() {
                     ptr = get_data(ptr, p)?;
                 }
