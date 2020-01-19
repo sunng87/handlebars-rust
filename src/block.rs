@@ -52,7 +52,6 @@ impl<'reg> BlockParams<'reg> {
 pub struct BlockContext<'reg: 'rc, 'rc> {
     base_path: Vec<String>,
     base_value: Option<&'rc Json>,
-    local_path_root: Vec<String>,
     // current block context variables
     block_params: BlockParams<'reg>,
     // local variables in current context
@@ -99,13 +98,5 @@ impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
 
     pub fn set_block_params(&mut self, block_params: BlockParams<'reg>) {
         self.block_params = block_params;
-    }
-
-    pub fn local_path_root(&self) -> &Vec<String> {
-        &self.local_path_root
-    }
-
-    pub fn set_local_path_root(&mut self, path_root: Vec<String>) {
-        self.local_path_root = path_root;
     }
 }

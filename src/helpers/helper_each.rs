@@ -38,10 +38,6 @@ impl HelperDef for EachHelper {
                     // block_context.set_base_value(value.value());
                 }
 
-                let local_path_root = value.path_root();
-                if let Some(p) = local_path_root {
-                    block_context.set_local_path_root(p.to_vec());
-                }
                 rc.push_block(block_context);
 
                 let rendered = match (value.value().is_truthy(false), value.value()) {

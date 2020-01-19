@@ -59,10 +59,10 @@ mod test {
     fn test_lookup() {
         let mut handlebars = Registry::new();
         assert!(handlebars
-            .register_template_string("t0", "{{#each v1}}{{lookup ../../v2 @index}}{{/each}}")
+            .register_template_string("t0", "{{#each v1}}{{lookup ../v2 @index}}{{/each}}")
             .is_ok());
         assert!(handlebars
-            .register_template_string("t1", "{{#each v1}}{{lookup ../../v2 1}}{{/each}}")
+            .register_template_string("t1", "{{#each v1}}{{lookup ../v2 1}}{{/each}}")
             .is_ok());
         assert!(handlebars
             .register_template_string("t2", "{{lookup kk \"a\"}}")

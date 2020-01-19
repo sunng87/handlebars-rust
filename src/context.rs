@@ -43,7 +43,7 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
     block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
     always_for_absolute_path: bool,
 ) -> Result<ResolvedPath, RenderError> {
-    let mut path_context_depth: i64 = -1;
+    let mut path_context_depth: i64 = 0;
     let mut with_block_param = None;
     let mut from_root = false;
 
@@ -81,10 +81,10 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
             Ok(ResolvedPath::AbsolutePath(path_stack))
         }
         None => {
-            if path_context_depth >= 0 {
+            if path_context_depth > 0 {
                 if let Some(ref context_base_path) = block_contexts
                     .get(path_context_depth as usize)
-                    .map(|blk| blk.local_path_root())
+                    .map(|blk| blk.base_path())
                 {
                     path_stack.extend_from_slice(context_base_path);
                 } else {
@@ -113,10 +113,6 @@ fn parse_json_visitor<'reg: 'rc, 'rc>(
 }
 
 fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, RenderError> {
-    if p == "this" {
-        return Ok(d);
-    }
-
     let result = match d {
         Some(&Json::Array(ref l)) => p
             .parse::<usize>()
@@ -189,14 +185,8 @@ impl Context {
                     ptr = get_data(ptr, p)?;
                 }
 
-                let path_root = if !relative_path.is_empty() {
-                    parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
-                } else {
-                    None
-                };
-
                 Ok(ptr
-                    .map(|v| ScopedJson::Context(v, paths, path_root))
+                    .map(|v| ScopedJson::Context(v, paths))
                     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::RelativePath(_paths) => {
@@ -207,14 +197,8 @@ impl Context {
                 //     ptr = get_data(ptr, p)?;
                 // }
 
-                // let path_root = if !relative_path.is_empty() {
-                //     parse_json_visitor(&relative_path[..1], block_contexts, true)?.full_path()
-                // } else {
-                //     None
-                // };
-
                 // Ok(ptr
-                //     .map(|v| ScopedJson::Context(v, paths, path_root))
+                //     .map(|v| ScopedJson::Context(v, paths))
                 //     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::BlockParamValue(paths, value) => {

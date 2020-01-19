@@ -29,11 +29,6 @@ impl HelperDef for WithHelper {
         if not_empty {
             let mut block = BlockContext::new();
 
-            let local_path_root = param.path_root();
-            if let Some(path_root) = local_path_root {
-                block.set_local_path_root(path_root.to_vec());
-            }
-
             let new_path = param.context_path();
             if let Some(new_path) = new_path {
                 *block.base_path_mut() = new_path.clone();
