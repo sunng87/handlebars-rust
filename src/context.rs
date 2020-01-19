@@ -8,6 +8,7 @@ use crate::error::RenderError;
 use crate::grammar::Rule;
 use crate::json::path::*;
 use crate::json::value::ScopedJson;
+use crate::util::extend;
 
 pub type Object = HashMap<String, Json>;
 
@@ -66,7 +67,7 @@ fn parse_json_visitor<'a>(
         }
         Some(BlockParamHolder::Path(ref paths)) => {
             // TODO: if this path equals base_path, skip this step and make it a ResolvedPath::RelativePath
-            path_stack.extend_from_slice(paths);
+            extend(&mut path_stack, paths);
             merge_json_path(&mut path_stack, &relative_path[1..]);
 
             Ok(ResolvedPath::AbsolutePath(path_stack))
@@ -77,11 +78,11 @@ fn parse_json_visitor<'a>(
                     .get(path_context_depth as usize)
                     .map(|blk| blk.base_path())
                 {
-                    path_stack.extend_from_slice(context_base_path);
+                    extend(&mut path_stack, context_base_path);
                 } else {
                     // TODO: is this correct behaviour?
                     if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
-                        path_stack.extend_from_slice(base_path);
+                        extend(&mut path_stack, base_path);
                     }
                 }
                 merge_json_path(&mut path_stack, relative_path);
@@ -90,8 +91,8 @@ fn parse_json_visitor<'a>(
                 merge_json_path(&mut path_stack, relative_path);
                 Ok(ResolvedPath::AbsolutePath(path_stack))
             } else if always_for_absolute_path {
-                if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
-                    path_stack.extend_from_slice(base_path);
+                if let Some(base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                    extend(&mut path_stack, base_path);
                 }
                 merge_json_path(&mut path_stack, relative_path);
                 Ok(ResolvedPath::AbsolutePath(path_stack))
@@ -156,11 +157,7 @@ impl Context {
             .map(|d| Context { data: d })
     }
 
-    /// Navigate the context with base path and relative path
-    /// Typically you will set base path to `RenderContext.get_path()`
-    /// and set relative path to helper argument or so.
-    ///
-    /// If you want to navigate from top level, set the base path to `"."`
+    /// Navigate the context with relative path and block scopes
     pub(crate) fn navigate<'reg, 'rc>(
         &'rc self,
         relative_path: &[PathSeg],
@@ -211,19 +208,6 @@ impl Context {
     pub fn data_mut(&mut self) -> &mut Json {
         &mut self.data
     }
-}
-
-fn join(segs: &VecDeque<&str>, sep: &str) -> String {
-    let mut out = String::new();
-    let mut iter = segs.iter();
-    if let Some(fst) = iter.next() {
-        out.push_str(fst);
-        for elt in iter {
-            out.push_str(sep);
-            out.push_str(elt);
-        }
-    }
-    out
 }
 
 #[cfg(test)]
