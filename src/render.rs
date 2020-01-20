@@ -1,5 +1,5 @@
 use std::borrow::Borrow;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -36,8 +36,8 @@ pub struct RenderContext<'reg: 'rc, 'rc> {
 
 #[derive(Clone)]
 pub struct RenderContextInner<'reg> {
-    partials: HashMap<String, &'reg Template>,
-    local_helpers: HashMap<String, Rc<Box<dyn HelperDef + 'static>>>,
+    partials: BTreeMap<String, &'reg Template>,
+    local_helpers: BTreeMap<String, Rc<Box<dyn HelperDef + 'static>>>,
     /// current template name
     current_template: Option<&'reg String>,
     /// root template name
@@ -49,8 +49,8 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// Create a render context from a `Write`
     pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg, 'rc> {
         let inner = Rc::new(RenderContextInner {
-            partials: HashMap::new(),
-            local_helpers: HashMap::new(),
+            partials: BTreeMap::new(),
+            local_helpers: BTreeMap::new(),
             current_template: None,
             root_template,
             disable_escape: false,
@@ -216,7 +216,7 @@ impl<'reg> fmt::Debug for RenderContextInner<'reg> {
 pub struct Helper<'reg: 'rc, 'rc> {
     name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
-    hash: HashMap<&'reg str, PathAndJson<'reg, 'rc>>,
+    hash: BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
     inverse: Option<&'reg Template>,
     block_param: Option<&'reg BlockParam>,
@@ -237,7 +237,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
             pv.push(r);
         }
 
-        let mut hm = HashMap::new();
+        let mut hm = BTreeMap::new();
         for (k, p) in &ht.hash {
             let r = p.expand(registry, context, render_context)?;
             hm.insert(k.as_ref(), r);
@@ -287,7 +287,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &HashMap<&'reg str, PathAndJson<'reg, 'rc>> {
+    pub fn hash(&self) -> &BTreeMap<&'reg str, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
@@ -362,7 +362,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
 pub struct Directive<'reg: 'rc, 'rc> {
     name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
-    hash: HashMap<&'reg str, PathAndJson<'reg, 'rc>>,
+    hash: BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
 }
 
@@ -381,7 +381,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
             pv.push(r);
         }
 
-        let mut hm = HashMap::new();
+        let mut hm = BTreeMap::new();
         for (k, p) in &dt.hash {
             let r = p.expand(registry, context, render_context)?;
             hm.insert(k.as_ref(), r);
@@ -411,7 +411,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
     }
 
     /// Returns hash, resolved within the context
-    pub fn hash(&self) -> &HashMap<&'reg str, PathAndJson<'reg, 'rc>> {
+    pub fn hash(&self) -> &BTreeMap<&'reg str, PathAndJson<'reg, 'rc>> {
         &self.hash
     }
 
@@ -798,7 +798,7 @@ fn test_expression() {
     ))));
 
     let mut out = StringOutput::new();
-    let mut m: HashMap<String, String> = HashMap::new();
+    let mut m: BTreeMap<String, String> = BTreeMap::new();
     let value = "<p></p>".to_string();
     m.insert("hello".to_string(), value);
     let ctx = Context::wraps(&m).unwrap();
@@ -819,7 +819,7 @@ fn test_html_expression() {
     let element = HTMLExpression(Parameter::Path(Path::with_named_paths(&["hello"])));
 
     let mut out = StringOutput::new();
-    let mut m: HashMap<String, String> = HashMap::new();
+    let mut m: BTreeMap<String, String> = BTreeMap::new();
     let value = "world";
     m.insert("hello".to_string(), value.to_string());
     let ctx = Context::wraps(&m).unwrap();
@@ -835,7 +835,7 @@ fn test_html_expression() {
 fn test_template() {
     let r = Registry::new();
     let mut out = StringOutput::new();
-    let mut m: HashMap<String, String> = HashMap::new();
+    let mut m: BTreeMap<String, String> = BTreeMap::new();
     let value = "world".to_string();
     m.insert("hello".to_string(), value);
     let ctx = Context::wraps(&m).unwrap();
@@ -893,7 +893,7 @@ fn test_render_subexpression() {
     let r = Registry::new();
     let mut sw = StringWriter::new();
 
-    let mut m: HashMap<String, String> = HashMap::new();
+    let mut m: BTreeMap<String, String> = BTreeMap::new();
     m.insert("hello".to_string(), "world".to_string());
     m.insert("world".to_string(), "nice".to_string());
     m.insert("const".to_string(), "truthy".to_string());
@@ -931,7 +931,7 @@ fn test_render_subexpression_issue_115() {
     );
 
     let mut sw = StringWriter::new();
-    let mut m: HashMap<String, String> = HashMap::new();
+    let mut m: BTreeMap<String, String> = BTreeMap::new();
     m.insert("a".to_string(), "123".to_string());
 
     {
@@ -946,7 +946,7 @@ fn test_render_subexpression_issue_115() {
 #[test]
 fn test_render_error_line_no() {
     let mut r = Registry::new();
-    let m: HashMap<String, String> = HashMap::new();
+    let m: BTreeMap<String, String> = BTreeMap::new();
 
     let name = "invalid_template";
     assert!(r

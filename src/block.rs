@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use serde_json::value::Value as Json;
 
@@ -24,7 +24,7 @@ impl BlockParamHolder {
 
 #[derive(Clone, Debug, Default)]
 pub struct BlockParams<'reg> {
-    data: HashMap<&'reg str, BlockParamHolder>,
+    data: BTreeMap<&'reg str, BlockParamHolder>,
 }
 
 impl<'reg> BlockParams<'reg> {
@@ -55,7 +55,7 @@ pub struct BlockContext<'reg: 'rc, 'rc> {
     // current block context variables
     block_params: BlockParams<'reg>,
     // local variables in current context
-    local_variables: HashMap<String, Json>,
+    local_variables: BTreeMap<String, Json>,
 }
 
 impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
