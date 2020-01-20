@@ -67,7 +67,12 @@ fn parse_json_visitor<'a>(
         }
         Some(BlockParamHolder::Path(ref paths)) => {
             // TODO: if this path equals base_path, skip this step and make it a ResolvedPath::RelativePath
-            extend(&mut path_stack, paths);
+            if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                extend(&mut path_stack, base_path);
+            }
+            if !paths.is_empty() {
+                extend(&mut path_stack, paths);
+            }
             merge_json_path(&mut path_stack, &relative_path[1..]);
 
             Ok(ResolvedPath::AbsolutePath(path_stack))

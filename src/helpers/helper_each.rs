@@ -66,12 +66,12 @@ impl HelperDef for EachHelper {
 
                                 if let Some(bp_val) = h.block_param() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, block.base_path().clone())?;
+                                    params.add_path(bp_val, Vec::with_capacity(0))?;
 
                                     block.set_block_params(params);
                                 } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, block.base_path().clone())?;
+                                    params.add_path(bp_val, Vec::with_capacity(0))?;
                                     params.add_value(bp_index, to_json(i))?;
 
                                     block.set_block_params(params);
@@ -104,12 +104,12 @@ impl HelperDef for EachHelper {
 
                                 if let Some(bp_val) = h.block_param() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, block.base_path().clone())?;
+                                    params.add_path(bp_val, Vec::with_capacity(0))?;
 
                                     block.set_block_params(params);
                                 } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, block.base_path().clone())?;
+                                    params.add_path(bp_val, Vec::with_capacity(0))?;
                                     params.add_value(bp_key, to_json(&k))?;
 
                                     block.set_block_params(params);

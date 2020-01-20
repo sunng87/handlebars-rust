@@ -37,7 +37,7 @@ impl HelperDef for WithHelper {
             if let Some(block_param) = h.block_param() {
                 let mut params = BlockParams::new();
                 if new_path.is_some() {
-                    params.add_path(block_param, block.base_path().clone())?;
+                    params.add_path(block_param, Vec::with_capacity(0))?;
                 } else {
                     params.add_value(block_param, param.value().clone())?;
                 }
