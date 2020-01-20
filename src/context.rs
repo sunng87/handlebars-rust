@@ -43,8 +43,8 @@ fn parse_json_visitor<'a>(
     for path_seg in relative_path {
         match path_seg {
             PathSeg::Named(the_path) => {
-                if let Some(holder) = get_in_block_params(&block_contexts, the_path) {
-                    with_block_param = Some(holder);
+                if let Some((holder, base_path)) = get_in_block_params(&block_contexts, the_path) {
+                    with_block_param = Some((holder, base_path));
                 }
                 break;
             }
@@ -61,15 +61,12 @@ fn parse_json_visitor<'a>(
 
     let mut path_stack = Vec::with_capacity(relative_path.len() + 5);
     match with_block_param {
-        Some(BlockParamHolder::Value(ref value)) => {
+        Some((BlockParamHolder::Value(ref value), _)) => {
             merge_json_path(&mut path_stack, &relative_path[1..]);
             Ok(ResolvedPath::BlockParamValue(path_stack, value))
         }
-        Some(BlockParamHolder::Path(ref paths)) => {
-            // TODO: if this path equals base_path, skip this step and make it a ResolvedPath::RelativePath
-            if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
-                extend(&mut path_stack, base_path);
-            }
+        Some((BlockParamHolder::Path(ref paths), base_path)) => {
+            extend(&mut path_stack, base_path);
             if !paths.is_empty() {
                 extend(&mut path_stack, paths);
             }
@@ -125,11 +122,11 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
 fn get_in_block_params<'a>(
     block_contexts: &'a VecDeque<BlockContext>,
     p: &str,
-) -> Option<&'a BlockParamHolder> {
+) -> Option<(&'a BlockParamHolder, &'a Vec<String>)> {
     for bc in block_contexts {
         let v = bc.get_block_param(p);
         if v.is_some() {
-            return v;
+            return v.map(|v| (v, bc.base_path()));
         }
     }
 
