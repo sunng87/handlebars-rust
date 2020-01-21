@@ -2,38 +2,53 @@
 extern crate criterion;
 #[macro_use]
 extern crate serde_derive;
-extern crate cpuprofiler;
 
 use std::collections::BTreeMap;
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, File};
+use std::io::Write;
 use std::path::Path;
 
-use cpuprofiler::PROFILER;
 use criterion::profiler::Profiler;
 use criterion::Criterion;
 use handlebars::{to_json, Handlebars, Template};
+use pprof::ProfilerGuard;
+use prost::Message;
 use serde_json::value::Value as Json;
 
-struct CpuProfiler;
+#[derive(Default)]
+struct CpuProfiler<'a> {
+    guard: Option<ProfilerGuard<'a>>,
+}
 
-impl Profiler for CpuProfiler {
-    fn start_profiling(&mut self, benchmark_id: &str, benchmark_dir: &Path) {
+impl<'a> Profiler for CpuProfiler<'a> {
+    fn start_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
         create_dir_all(&benchmark_dir).unwrap();
-        let result = benchmark_dir.join(format!("{}.profile", benchmark_id));
-        PROFILER
-            .lock()
-            .unwrap()
-            .start(result.to_str().unwrap())
-            .unwrap();
+
+        let guard = ProfilerGuard::new(100).unwrap();
+        self.guard = Some(guard);
     }
 
-    fn stop_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
-        PROFILER.lock().unwrap().stop().unwrap();
+    fn stop_profiling(&mut self, benchmark_id: &str, benchmark_dir: &Path) {
+        if let Ok(ref report) = self.guard.as_ref().unwrap().report().build() {
+            let fg_file_name = benchmark_dir.join(format!("{}.svg", benchmark_id));
+            let fg_file = File::create(fg_file_name).unwrap();
+            report.flamegraph(fg_file).unwrap();
+
+            let pb_file_name = benchmark_dir.join(format!("{}.pb", benchmark_id));
+            let mut pb_file = File::create(pb_file_name).unwrap();
+            let profile = report.pprof().unwrap();
+
+            let mut content = Vec::new();
+            profile.encode(&mut content).unwrap();
+            pb_file.write_all(&content).unwrap();
+        };
+
+        self.guard = None;
     }
 }
 
 fn profiled() -> Criterion {
-    Criterion::default().with_profiler(CpuProfiler)
+    Criterion::default().with_profiler(CpuProfiler::default())
 }
 
 #[derive(Serialize)]
