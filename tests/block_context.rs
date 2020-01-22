@@ -74,3 +74,33 @@ fn test_nested_each() {
     let template = "{{#each classes as |class|}}{{#each class.methods as |method|}}{{method.id}};{{/each}}{{/each}}";
     assert_eq!(hbs.render_template(template, &data).unwrap(), "1;2;3;4;");
 }
+
+#[test]
+fn test_referencing_block_param_from_upper_scope() {
+    let hbs = Handlebars::new();
+
+    let data = json!({
+        "classes": [
+            {
+                "methods": [
+                    {"id": 1},
+                    {"id": 2}
+                ],
+                "private": false
+            },
+            {
+                "methods": [
+                    {"id": 3},
+                    {"id": 4}
+                ],
+                "private": true
+            },
+        ],
+    });
+
+    let template = "{{#each classes as |class|}}{{#each class.methods as |method|}}{{class.private}}|{{method.id}};{{/each}}{{/each}}";
+    assert_eq!(
+        hbs.render_template(template, &data).unwrap(),
+        "false|1;false|2;true|3;true|4;"
+    );
+}
