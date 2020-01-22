@@ -12,11 +12,13 @@ pub enum PathSeg {
     Ruled(Rule),
 }
 
+/// Represents the Json path in templates.
+///
+/// It can be either a local variable like `@first`, `../@index`,
+/// or a normal relative path like `a/b/c`.
 #[derive(PartialEq, Clone, Debug)]
 pub enum Path {
-    //
     Relative((Vec<PathSeg>, String)),
-    //
     Local((usize, String, String)),
 }
 

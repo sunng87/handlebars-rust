@@ -135,6 +135,7 @@ impl JsonRender for Json {
     }
 }
 
+/// Convert any serializable data into Serde Json type
 pub fn to_json<T>(src: T) -> Json
 where
     T: Serialize,

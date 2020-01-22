@@ -96,7 +96,7 @@ macro_rules! error {
 /// This macro is defined if the `logging` feature is not set.
 ///
 /// It ignores all logging calls inside the library.
-#[cfg(not(feature = "logging"))]
+#[cfg(feature = "no_logging")]
 #[macro_export]
 macro_rules! info {
     (target: $target:expr, $($arg:tt)*) => {};

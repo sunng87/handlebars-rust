@@ -83,18 +83,25 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         }
     }
 
+    /// Push a block context into render context stack. This is typically
+    /// called when you entering a block scope.
     pub fn push_block(&mut self, block: BlockContext<'reg, 'rc>) {
         self.blocks.push_front(block);
     }
 
+    /// Pop and drop current block context.
+    /// This is typically called when leaving a block scope.
     pub fn pop_block(&mut self) {
         self.blocks.pop_front();
     }
 
+    /// Borrow a reference to current block context
     pub fn block(&self) -> Option<&BlockContext> {
         self.blocks.front()
     }
 
+    /// Borrow a mutable reference to current block context in order to
+    /// modify some data.
     pub fn block_mut(&mut self) -> Option<&mut BlockContext<'reg, 'rc>> {
         self.blocks.front_mut()
     }
@@ -107,14 +114,23 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         Rc::make_mut(&mut self.inner)
     }
 
+    /// Get the modified context data if any
     pub fn context(&self) -> Option<Rc<Context>> {
         self.modified_context.clone()
     }
 
+    /// Set new context data into the render process.
+    /// This is typically called in directives where user can modify
+    /// the data they were rendering.
     pub fn set_context(&mut self, ctx: Context) {
         self.modified_context = Some(Rc::new(ctx))
     }
 
+    /// Evaluate a Json path in current scope.
+    ///
+    /// Typically you don't need to evaluate it by your self.
+    /// The Helper and Directive API will provide your evaluated value of
+    /// their parameters and hash data.
     pub fn evaluate(
         &self,
         context: &'rc Context,
@@ -138,24 +154,28 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         }
     }
 
+    /// Get registered partial in this render context
     pub fn get_partial(&self, name: &str) -> Option<&&Template> {
         self.inner().partials.get(name)
     }
 
-    pub fn set_partial(&mut self, name: String, result: &'reg Template) {
-        self.inner_mut().partials.insert(name, result);
+    /// Register a partial for this context
+    pub fn set_partial(&mut self, name: String, partial: &'reg Template) {
+        self.inner_mut().partials.insert(name, partial);
     }
 
+    /// Remove a registered partial
     pub fn remove_partial(&mut self, name: &str) {
         self.inner_mut().partials.remove(name);
     }
 
-    pub fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
+    fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
         self.blocks
             .get(level)
             .and_then(|blk| blk.get_local_var(&name))
     }
 
+    /// Test if given template name is current template.
     pub fn is_current_template(&self, p: &str) -> bool {
         self.inner()
             .current_template
@@ -163,6 +183,9 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             .unwrap_or(false)
     }
 
+    /// Register a helper in this render context.
+    /// This is a feature provided by Directive where you can create
+    /// temporary helpers.
     pub fn register_local_helper(
         &mut self,
         name: &str,
@@ -173,34 +196,41 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             .insert(name.to_string(), Rc::new(def))
     }
 
+    /// Remove a helper from render context
     pub fn unregister_local_helper(&mut self, name: &str) {
         self.inner_mut().local_helpers.remove(name);
     }
 
+    /// Attemp to get a helper from current render context.
     pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<dyn HelperDef + 'static>>> {
         self.inner().local_helpers.get(name).cloned()
     }
 
+    /// Returns the current template name.
+    /// Note that the name can be vary from root template when you are rendering
+    /// from partials.
     pub fn get_current_template_name(&self) -> Option<&'reg String> {
         self.inner().current_template
     }
 
+    /// Set the current template name.
     pub fn set_current_template_name(&mut self, name: Option<&'reg String>) {
         self.inner_mut().current_template = name;
     }
 
+    /// Get root template name if any.
+    /// This is the template name that you call `render` from `Handlebars`.
     pub fn get_root_template_name(&self) -> Option<&'reg String> {
         self.inner().root_template
     }
 
-    pub fn set_root_template_name(&mut self, name: Option<&'reg String>) {
-        self.inner_mut().root_template = name;
-    }
-
+    /// Get the escape toggle
     pub fn is_disable_escape(&self) -> bool {
         self.inner().disable_escape
     }
 
+    /// Set the escape toggle.
+    /// When toggle is on, escape_fn will be called when rendering.
     pub fn set_disable_escape(&mut self, disable: bool) {
         self.inner_mut().disable_escape = disable
     }
@@ -217,7 +247,7 @@ impl<'reg> fmt::Debug for RenderContextInner<'reg> {
     }
 }
 
-// Render-time Helper data when using in a helper definition
+/// Render-time Helper data when using in a helper definition
 #[derive(Debug)]
 pub struct Helper<'reg: 'rc, 'rc> {
     name: String,
@@ -363,7 +393,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 }
 
-// Render-time Directive data when using in a directive definition
+/// Render-time Directive data when using in a directive definition
 #[derive(Debug)]
 pub struct Directive<'reg: 'rc, 'rc> {
     name: String,
@@ -535,41 +565,6 @@ impl Parameter {
                     Ok(PathAndJson::new(Some(path.raw().to_owned()), result))
                 }
             }
-            // Parameter::Path(Path::Local((level, name, raw))) => {
-            //     // local var, @first, @last for example
-            //     // here we count it as derived value, and simply clone it
-            //     // to bypass lifetime issue
-            //     if let Some(value) = rc.get_local_var(*level, &name) {
-            //         Ok(PathAndJson::new(
-            //             Some(raw.to_owned()),
-            //             ScopedJson::Derived(value.clone()),
-            //         ))
-            //     } else {
-            //         Ok(PathAndJson::new(Some(raw.to_owned()), ScopedJson::Missing))
-            //     }
-            // }
-            // Parameter::Path(Path::Relative((ref segs, raw))) => {
-            //     if let Some(rc_context) = rc.context() {
-            //         // the context is modified from a decorator
-            //         // use the modified one
-            //         let json = rc.evaluate2(rc_context.borrow(), segs)?;
-            //         // the data is fetched from mutable reference render_context
-            //         // so we have to clone it to bypass lifetime check
-            //         Ok(PathAndJson::new(
-            //             Some(raw.to_owned()),
-            //             ScopedJson::Derived(json.as_json().clone()),
-            //         ))
-            //     } else {
-            //         let value = rc.evaluate2(ctx, segs)?;
-
-            //         match value {
-            //             // when evaluate result is a derived json, it indicates the
-            //             // value is a block context value
-            //             ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
-            //             _ => Ok(PathAndJson::new(Some(raw.to_owned()), value)),
-            //         }
-            //     }
-            // }
             Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
             Parameter::Subexpression(ref t) => match *t.as_element() {
                 Expression(ref ht) => {

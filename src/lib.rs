@@ -36,45 +36,46 @@
 //! I recommend you to walk through handlebars.js' [intro page](http://handlebarsjs.com)
 //! if you are not quite familiar with the template language itself.
 //!
-//! ## Rational: Why (this) Handlebars?
+//! ## Features
 //!
 //! Handlebars is a real-world templating system that you can use to build
 //! your application without pain.
 //!
-//! ### Features
-//!
-//! #### Isolation of Rust and HTML
+//! ### Isolation of Rust and HTML
 //!
 //! This library doesn't attempt to use some macro magic to allow you to
-//! write your template within your rust code. I admit that it's fun (and feel cool) to do
+//! write your template within your rust code. I admit that it's fun to do
 //! that but it doesn't fit real-world use case in my opinion.
 //!
-//! #### Limited but essential control structure built-in
+//! ### Limited but essential control structure built-in
 //!
 //! Only essential control directive `if` and `each` were built-in. This
 //! prevents you to put too much application logic into your template.
 //!
-//! #### Extensible helper system
+//! ### Extensible helper system
 //!
 //! You can write your own helper with Rust! It can be a block helper or
 //! inline helper. Put you logic into the helper and don't repeat
 //! yourself.
 //!
-//! #### Template inheritance
+//! The built-in helpers like `if` and `each` were written with these
+//! helper APIs and the APIs are fully available to developers.
+//!
+//! ### Template inheritance
 //!
 //! Every time I look into a templating system, I will investigate its
 //! support for [template inheritance][t].
 //!
 //! [t]: https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance
 //!
-//! Template include is not enough. In most case you will need a skeleton
+//! Template inclusion is not enough. In most case you will need a skeleton
 //! of page as parent (header, footer, etc.), and embed you page into this
 //! parent.
 //!
 //! You can find a real example for template inheritance in
 //! `examples/partials.rs`, and templates used by this file.
 //!
-//! #### Strict mode
+//! ### Strict mode
 //!
 //! Handlebars, the language designed to work with JavaScript, has no
 //! strict restriction on accessing non-existed fields or index. It
@@ -91,9 +92,9 @@
 //!
 //! You will get a `RenderError` when accessing fields that not exists.
 //!
-//! ### Limitations
+//! ## Limitations
 //!
-//! #### Compatibility with JavaScript version
+//! ### Compatibility with original JavaScript version
 //!
 //! This implementation is **not fully compatible** with the original javascript version.
 //!
@@ -107,13 +108,13 @@
 //! Feel free to fire an issue on [github](https://github.com/sunng87/handlebars-rust/issues) if
 //! you find missing features.
 //!
-//! #### Static typed
+//! ### Types
 //!
 //! As a static typed language, it's a little verbose to use handlebars.
 //! Handlebars templating language is designed against JSON data type. In rust,
-//! we will convert user's structs, vectors or maps to JSON type in order to use
-//! in template. You have to make sure your data implements the `Serialize` trait
-//! from the [Serde](https://serde.rs) project.
+//! we will convert user's structs, vectors or maps into SerDe-Json's `Value` type
+//! in order to use in template. You have to make sure your data implements the
+//! `Serialize` trait from the [Serde](https://serde.rs) project.
 //!
 //! ## Usage
 //!
@@ -351,7 +352,7 @@ pub use self::context::Context;
 pub use self::directives::DirectiveDef as DecoratorDef;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::helpers::{HelperDef, HelperResult};
-pub use self::json::path::{Path, PathSeg};
+pub use self::json::path::Path;
 pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 pub use self::output::Output;
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};

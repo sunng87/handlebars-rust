@@ -196,6 +196,7 @@ impl fmt::Display for TemplateError {
 }
 
 quick_error! {
+    /// A combined error type for `TemplateError` and `IOError`
     #[derive(Debug)]
     pub enum TemplateFileError {
         TemplateError(err: TemplateError) {
@@ -222,6 +223,7 @@ impl From<WalkdirError> for TemplateFileError {
 }
 
 quick_error! {
+    /// A combined error type for `TemplateError`, `IOError` and `RenderError`
     #[derive(Debug)]
     pub enum TemplateRenderError {
         TemplateError(err: TemplateError) {

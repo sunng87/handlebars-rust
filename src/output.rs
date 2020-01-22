@@ -1,6 +1,9 @@
 use std::io::{Error as IOError, Write};
 use std::string::FromUtf8Error;
 
+/// The Output API.
+///
+/// Handlebars uses this trait to define rendered output.
 pub trait Output {
     fn write(&mut self, seg: &str) -> Result<(), IOError>;
 }
