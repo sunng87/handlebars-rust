@@ -15,10 +15,6 @@ pub enum ScopedJson<'reg: 'rc, 'rc> {
     Derived(Json),
     // represents a json reference to context value, its full path
     Context(&'rc Json, Vec<String>),
-    // represents a block param json with resolve full path
-    // this path is different from `PathAndJson`
-    // TODO: merge this with context?
-    BlockContext(&'rc Json, Vec<String>),
     Missing,
 }
 
@@ -29,7 +25,6 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
             ScopedJson::Constant(j) => j,
             ScopedJson::Derived(ref j) => j,
             ScopedJson::Context(j, _) => j,
-            ScopedJson::BlockContext(j, _) => j,
             _ => &DEFAULT_VALUE,
         }
     }
@@ -52,7 +47,7 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
 
     pub fn context_path(&self) -> Option<&Vec<String>> {
         match self {
-            ScopedJson::BlockContext(_, ref p) | ScopedJson::Context(_, ref p) => Some(p),
+            ScopedJson::Context(_, ref p) => Some(p),
             _ => None,
         }
     }
