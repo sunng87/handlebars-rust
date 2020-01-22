@@ -17,7 +17,7 @@ use crate::partial;
 use crate::registry::Registry;
 use crate::template::TemplateElement::*;
 use crate::template::{
-    BlockParam, DirectiveTemplate, HelperTemplate, Parameter, Template, TemplateElement,
+    BlockParam, DecoratorTemplate, HelperTemplate, Parameter, Template, TemplateElement,
     TemplateMapping,
 };
 
@@ -120,7 +120,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Set new context data into the render process.
-    /// This is typically called in directives where user can modify
+    /// This is typically called in decorators where user can modify
     /// the data they were rendering.
     pub fn set_context(&mut self, ctx: Context) {
         self.modified_context = Some(Rc::new(ctx))
@@ -129,7 +129,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// Evaluate a Json path in current scope.
     ///
     /// Typically you don't need to evaluate it by your self.
-    /// The Helper and Directive API will provide your evaluated value of
+    /// The Helper and Decorator API will provide your evaluated value of
     /// their parameters and hash data.
     pub fn evaluate(
         &self,
@@ -184,7 +184,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Register a helper in this render context.
-    /// This is a feature provided by Directive where you can create
+    /// This is a feature provided by Decorator where you can create
     /// temporary helpers.
     pub fn register_local_helper(
         &mut self,
@@ -393,22 +393,22 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
     }
 }
 
-/// Render-time Directive data when using in a directive definition
+/// Render-time Decorator data when using in a decorator definition
 #[derive(Debug)]
-pub struct Directive<'reg: 'rc, 'rc> {
+pub struct Decorator<'reg: 'rc, 'rc> {
     name: String,
     params: Vec<PathAndJson<'reg, 'rc>>,
     hash: BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
 }
 
-impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
+impl<'reg: 'rc, 'rc> Decorator<'reg, 'rc> {
     fn try_from_template(
-        dt: &'reg DirectiveTemplate,
+        dt: &'reg DecoratorTemplate,
         registry: &'reg Registry,
         context: &'rc Context,
         render_context: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Directive<'reg, 'rc>, RenderError> {
+    ) -> Result<Decorator<'reg, 'rc>, RenderError> {
         let name = dt.name.expand_as_name(registry, context, render_context)?;
 
         let mut pv = Vec::with_capacity(dt.params.len());
@@ -423,7 +423,7 @@ impl<'reg: 'rc, 'rc> Directive<'reg, 'rc> {
             hm.insert(k.as_ref(), r);
         }
 
-        Ok(Directive {
+        Ok(Decorator {
             name,
             params: pv,
             hash: hm,
@@ -486,7 +486,7 @@ pub trait Renderable {
     }
 }
 
-/// Evaluate directive or decorator
+/// Evaluate decorator or decorator
 pub trait Evaluable {
     fn eval<'reg: 'rc, 'rc>(
         &'reg self,
@@ -752,9 +752,9 @@ impl Renderable for TemplateElement {
                 Ok(())
             }
             HelperBlock(ref ht) => render_helper(ht, registry, ctx, rc, out),
-            DirectiveExpression(_) | DirectiveBlock(_) => self.eval(registry, ctx, rc),
+            DecoratorExpression(_) | DecoratorBlock(_) => self.eval(registry, ctx, rc),
             PartialExpression(ref dt) | PartialBlock(ref dt) => {
-                let di = Directive::try_from_template(dt, registry, ctx, rc)?;
+                let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
 
                 partial::expand_partial(&di, registry, ctx, rc, out)
             }
@@ -771,12 +771,12 @@ impl Evaluable for TemplateElement {
         rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<(), RenderError> {
         match *self {
-            DirectiveExpression(ref dt) | DirectiveBlock(ref dt) => {
-                let di = Directive::try_from_template(dt, registry, ctx, rc)?;
+            DecoratorExpression(ref dt) | DecoratorBlock(ref dt) => {
+                let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
                 match registry.get_decorator(di.name()) {
                     Some(d) => d.call(&di, registry, ctx, rc),
                     None => Err(RenderError::new(format!(
-                        "Directive not defined: {:?}",
+                        "Decorator not defined: {:?}",
                         dt.name
                     ))),
                 }

@@ -1,15 +1,15 @@
 use crate::context::Context;
-use crate::directives::{DirectiveDef, DirectiveResult};
+use crate::decorators::{DecoratorDef, DecoratorResult};
 use crate::error::RenderError;
 use crate::registry::Registry;
-use crate::render::{Directive, RenderContext};
+use crate::render::{Decorator, RenderContext};
 
 #[derive(Clone, Copy)]
-pub struct InlineDirective;
+pub struct InlineDecorator;
 
-fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg, 'rc>) -> Result<&'rc str, RenderError> {
+fn get_name<'reg: 'rc, 'rc>(d: &'rc Decorator<'reg, 'rc>) -> Result<&'rc str, RenderError> {
     d.param(0)
-        .ok_or_else(|| RenderError::new("Param required for directive \"inline\""))
+        .ok_or_else(|| RenderError::new("Param required for decorator \"inline\""))
         .and_then(|v| {
             v.value()
                 .as_str()
@@ -17,14 +17,14 @@ fn get_name<'reg: 'rc, 'rc>(d: &'rc Directive<'reg, 'rc>) -> Result<&'rc str, Re
         })
 }
 
-impl DirectiveDef for InlineDirective {
+impl DecoratorDef for InlineDecorator {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        d: &Directive<'reg, 'rc>,
+        d: &Decorator<'reg, 'rc>,
         _: &'reg Registry,
         _: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
-    ) -> DirectiveResult {
+    ) -> DecoratorResult {
         let name = get_name(d)?;
 
         let template = d
@@ -36,7 +36,7 @@ impl DirectiveDef for InlineDirective {
     }
 }
 
-pub static INLINE_DIRECTIVE: InlineDirective = InlineDirective;
+pub static INLINE_DECORATOR: InlineDecorator = InlineDecorator;
 
 #[cfg(test)]
 mod test {

@@ -141,7 +141,7 @@ impl HelperTemplate {
 }
 
 #[derive(PartialEq, Clone, Debug)]
-pub struct DirectiveTemplate {
+pub struct DecoratorTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: HashMap<String, Parameter>,
@@ -437,7 +437,7 @@ impl Template {
     pub fn compile2<S: AsRef<str>>(source: S, mapping: bool) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
-        let mut directive_stack: VecDeque<DirectiveTemplate> = VecDeque::new();
+        let mut decorator_stack: VecDeque<DecoratorTemplate> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
 
         let mut omit_pro_ws = false;
@@ -517,7 +517,7 @@ impl Template {
                     }
                     Rule::helper_block_start
                     | Rule::raw_block_start
-                    | Rule::directive_block_start
+                    | Rule::decorator_block_start
                     | Rule::partial_block_start => {
                         let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
 
@@ -534,14 +534,14 @@ impl Template {
                                 };
                                 helper_stack.push_front(helper_template);
                             }
-                            Rule::directive_block_start | Rule::partial_block_start => {
-                                let directive = DirectiveTemplate {
+                            Rule::decorator_block_start | Rule::partial_block_start => {
+                                let decorator = DecoratorTemplate {
                                     name: exp.name,
                                     params: exp.params,
                                     hash: exp.hash,
                                     template: None,
                                 };
-                                directive_stack.push_front(directive);
+                                decorator_stack.push_front(decorator);
                             }
                             _ => unreachable!(),
                         }
@@ -581,11 +581,11 @@ impl Template {
                     }
                     Rule::expression
                     | Rule::html_expression
-                    | Rule::directive_expression
+                    | Rule::decorator_expression
                     | Rule::partial_expression
                     | Rule::helper_block_end
                     | Rule::raw_block_end
-                    | Rule::directive_block_end
+                    | Rule::decorator_block_end
                     | Rule::partial_block_end => {
                         let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
                         if exp.omit_pre_ws {
@@ -614,17 +614,17 @@ impl Template {
                                 let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
-                            Rule::directive_expression | Rule::partial_expression => {
-                                let directive = DirectiveTemplate {
+                            Rule::decorator_expression | Rule::partial_expression => {
+                                let decorator = DecoratorTemplate {
                                     name: exp.name,
                                     params: exp.params,
                                     hash: exp.hash,
                                     template: None,
                                 };
-                                let el = if rule == Rule::directive_expression {
-                                    DirectiveExpression(Box::new(directive))
+                                let el = if rule == Rule::decorator_expression {
+                                    DecoratorExpression(Box::new(decorator))
                                 } else {
-                                    PartialExpression(Box::new(directive))
+                                    PartialExpression(Box::new(decorator))
                                 };
                                 let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
@@ -651,21 +651,21 @@ impl Template {
                                     .at(source, line_no, col_no));
                                 }
                             }
-                            Rule::directive_block_end | Rule::partial_block_end => {
-                                let mut d = directive_stack.pop_front().unwrap();
+                            Rule::decorator_block_end | Rule::partial_block_end => {
+                                let mut d = decorator_stack.pop_front().unwrap();
                                 let close_tag_name = exp.name.as_name();
                                 if d.name.as_name() == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     d.template = Some(prev_t);
                                     let t = template_stack.front_mut().unwrap();
-                                    if rule == Rule::directive_block_end {
-                                        t.elements.push(DirectiveBlock(Box::new(d)));
+                                    if rule == Rule::decorator_block_end {
+                                        t.elements.push(DecoratorBlock(Box::new(d)));
                                     } else {
                                         t.elements.push(PartialBlock(Box::new(d)));
                                     }
                                 } else {
                                     return Err(TemplateError::of(
-                                        TemplateErrorReason::MismatchingClosedDirective(
+                                        TemplateErrorReason::MismatchingClosedDecorator(
                                             d.name.as_name().unwrap().into(),
                                             close_tag_name.unwrap().into(),
                                         ),
@@ -733,10 +733,10 @@ pub enum TemplateElement {
     HTMLExpression(Parameter),
     Expression(Box<HelperTemplate>),
     HelperBlock(Box<HelperTemplate>),
-    DirectiveExpression(Box<DirectiveTemplate>),
-    DirectiveBlock(Box<DirectiveTemplate>),
-    PartialExpression(Box<DirectiveTemplate>),
-    PartialBlock(Box<DirectiveTemplate>),
+    DecoratorExpression(Box<DecoratorTemplate>),
+    DecoratorBlock(Box<DecoratorTemplate>),
+    PartialExpression(Box<DecoratorTemplate>),
+    PartialBlock(Box<DecoratorTemplate>),
     Comment(String),
 }
 
@@ -1080,11 +1080,11 @@ fn test_block_param() {
 }
 
 #[test]
-fn test_directive() {
+fn test_decorator() {
     match Template::compile("hello {{* ssh}} world") {
         Err(e) => panic!("{}", e),
         Ok(t) => {
-            if let DirectiveExpression(ref de) = t.elements[1] {
+            if let DecoratorExpression(ref de) = t.elements[1] {
                 assert_eq!(de.name.as_name(), Some("ssh"));
                 assert_eq!(de.template, None);
             }
@@ -1104,7 +1104,7 @@ fn test_directive() {
     match Template::compile("{{#*inline \"hello\"}}expand to hello{{/inline}}{{> hello}}") {
         Err(e) => panic!("{}", e),
         Ok(t) => {
-            if let DirectiveBlock(ref db) = t.elements[0] {
+            if let DecoratorBlock(ref db) = t.elements[0] {
                 assert_eq!(db.name, Parameter::Name("inline".to_owned()));
                 assert_eq!(
                     db.params[0],

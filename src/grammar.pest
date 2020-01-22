@@ -46,7 +46,7 @@ expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~
 html_expression = { "{{{" ~ pre_whitespace_omitter? ~ name ~
 pro_whitespace_omitter? ~ "}}}" }
 
-directive_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
+decorator_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
 pro_whitespace_omitter? ~ "}}" }
 partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
                      ~ pro_whitespace_omitter? ~ "}}" }
@@ -60,12 +60,12 @@ helper_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
 helper_block = _{ helper_block_start ~ template ~
                   (invert_tag ~ template)? ~ helper_block_end }
 
-directive_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ "*"
+decorator_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ "*"
                         ~ exp_line ~ pro_whitespace_omitter? ~ "}}" }
-directive_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
+decorator_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
                         pro_whitespace_omitter? ~ "}}" }
-directive_block = _{ directive_block_start ~ template ~
-                     directive_block_end }
+decorator_block = _{ decorator_block_start ~ template ~
+                     decorator_block_end }
 
 partial_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ ">"
                         ~ partial_exp_line ~ pro_whitespace_omitter? ~ "}}" }
@@ -90,8 +90,8 @@ template = { (
             raw_block |
             hbs_comment |
             hbs_comment_compact |
-            directive_expression |
-            directive_block |
+            decorator_expression |
+            decorator_block |
             partial_expression |
             partial_block )* }
 

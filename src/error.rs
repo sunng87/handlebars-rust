@@ -97,8 +97,8 @@ quick_error! {
             display("helper {:?} was opened, but {:?} is closing",
                 open, closed)
         }
-        MismatchingClosedDirective(open: String, closed: String) {
-            display("directive {:?} was opened, but {:?} is closing",
+        MismatchingClosedDecorator(open: String, closed: String) {
+            display("decorator {:?} was opened, but {:?} is closing",
                 open, closed)
         }
         InvalidSyntax {
