@@ -110,7 +110,7 @@ impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
     /// Block paramters needed to be supported by the block helper.
     /// The typical syntax for block parameter is:
     ///
-    /// ```no_run
+    /// ```skip
     /// {{#myblock param1 as |block_param1|}}
     ///    ...
     /// {{/myblock}}
