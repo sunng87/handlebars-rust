@@ -10,7 +10,7 @@ use crate::block::BlockContext;
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
-use crate::json::path::{Path, PathSeg};
+use crate::json::path::Path;
 use crate::json::value::{JsonRender, PathAndJson, ScopedJson};
 use crate::output::{Output, StringOutput};
 use crate::partial;
@@ -120,16 +120,22 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         context: &'rc Context,
         relative_path: &str,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let path_segs = PathSeg::parse(relative_path)?;
-        self.evaluate2(context, &path_segs)
+        let path = Path::parse(relative_path)?;
+        self.evaluate2(context, &path)
     }
 
     pub(crate) fn evaluate2(
         &self,
         context: &'rc Context,
-        path: &[PathSeg],
+        path: &Path,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        context.navigate(path, &self.blocks)
+        match path {
+            Path::Local((level, name, _)) => Ok(self
+                .get_local_var(*level, name)
+                .map(|v| ScopedJson::Derived(v.clone()))
+                .unwrap_or_else(|| ScopedJson::Missing)),
+            Path::Relative((segs, _)) => context.navigate(segs, &self.blocks),
+        }
     }
 
     pub fn get_partial(&self, name: &str) -> Option<&&Template> {
@@ -517,41 +523,53 @@ impl Parameter {
                 // FIXME: raise error when expanding with name?
                 Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Missing))
             }
-            Parameter::Path(Path::Local((level, name, raw))) => {
-                // local var, @first, @last for example
-                // here we count it as derived value, and simply clone it
-                // to bypass lifetime issue
-                if let Some(value) = rc.get_local_var(*level, &name) {
-                    Ok(PathAndJson::new(
-                        Some(raw.to_owned()),
-                        ScopedJson::Derived(value.clone()),
-                    ))
-                } else {
-                    Ok(PathAndJson::new(Some(raw.to_owned()), ScopedJson::Missing))
-                }
-            }
-            Parameter::Path(Path::Relative((ref segs, raw))) => {
+            Parameter::Path(ref path) => {
                 if let Some(rc_context) = rc.context() {
-                    // the context is modified from a decorator
-                    // use the modified one
-                    let json = rc.evaluate2(rc_context.borrow(), segs)?;
-                    // the data is fetched from mutable reference render_context
-                    // so we have to clone it to bypass lifetime check
+                    let result = rc.evaluate2(rc_context.borrow(), path)?;
                     Ok(PathAndJson::new(
-                        Some(raw.to_owned()),
-                        ScopedJson::Derived(json.as_json().clone()),
+                        Some(path.raw().to_owned()),
+                        ScopedJson::Derived(result.as_json().clone()),
                     ))
                 } else {
-                    let value = rc.evaluate2(ctx, segs)?;
-
-                    match value {
-                        // when evaluate result is a derived json, it indicates the
-                        // value is a block context value
-                        ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
-                        _ => Ok(PathAndJson::new(Some(raw.to_owned()), value)),
-                    }
+                    let result = rc.evaluate2(ctx, path)?;
+                    Ok(PathAndJson::new(Some(path.raw().to_owned()), result))
                 }
             }
+            // Parameter::Path(Path::Local((level, name, raw))) => {
+            //     // local var, @first, @last for example
+            //     // here we count it as derived value, and simply clone it
+            //     // to bypass lifetime issue
+            //     if let Some(value) = rc.get_local_var(*level, &name) {
+            //         Ok(PathAndJson::new(
+            //             Some(raw.to_owned()),
+            //             ScopedJson::Derived(value.clone()),
+            //         ))
+            //     } else {
+            //         Ok(PathAndJson::new(Some(raw.to_owned()), ScopedJson::Missing))
+            //     }
+            // }
+            // Parameter::Path(Path::Relative((ref segs, raw))) => {
+            //     if let Some(rc_context) = rc.context() {
+            //         // the context is modified from a decorator
+            //         // use the modified one
+            //         let json = rc.evaluate2(rc_context.borrow(), segs)?;
+            //         // the data is fetched from mutable reference render_context
+            //         // so we have to clone it to bypass lifetime check
+            //         Ok(PathAndJson::new(
+            //             Some(raw.to_owned()),
+            //             ScopedJson::Derived(json.as_json().clone()),
+            //         ))
+            //     } else {
+            //         let value = rc.evaluate2(ctx, segs)?;
+
+            //         match value {
+            //             // when evaluate result is a derived json, it indicates the
+            //             // value is a block context value
+            //             ScopedJson::Derived(_) => Ok(PathAndJson::new(None, value)),
+            //             _ => Ok(PathAndJson::new(Some(raw.to_owned()), value)),
+            //         }
+            //     }
+            // }
             Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
             Parameter::Subexpression(ref t) => match *t.as_element() {
                 Expression(ref ht) => {

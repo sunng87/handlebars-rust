@@ -12,23 +12,11 @@ pub enum PathSeg {
     Ruled(Rule),
 }
 
-impl PathSeg {
-    ///
-    pub fn parse(path: &str) -> Result<Vec<PathSeg>, RenderError> {
-        let parsed_path = HandlebarsParser::parse(Rule::path, path)
-            .map(|p| p.flatten())
-            .map_err(|_| RenderError::new("Invalid JSON path"))?;
-
-        Ok(parse_json_path_from_iter(
-            &mut parsed_path.peekable(),
-            path.len(),
-        ))
-    }
-}
-
 #[derive(PartialEq, Clone, Debug)]
 pub enum Path {
+    //
     Relative((Vec<PathSeg>, String)),
+    //
     Local((usize, String, String)),
 }
 
@@ -41,6 +29,16 @@ impl Path {
         }
     }
 
+    pub fn parse(raw: &str) -> Result<Path, RenderError> {
+        HandlebarsParser::parse(Rule::path, raw)
+            .map(|p| {
+                let parsed = p.flatten();
+                let segs = parse_json_path_from_iter(&mut parsed.peekable(), raw.len());
+                Ok(Path::new(raw, segs))
+            })
+            .map_err(|_| RenderError::new("Invalid JSON path"))?
+    }
+
     pub(crate) fn raw(&self) -> &str {
         match self {
             Path::Relative((_, ref raw)) => raw,
@@ -48,13 +46,25 @@ impl Path {
         }
     }
 
-    /// for test only
+    pub(crate) fn current() -> Path {
+        Path::Relative((Vec::with_capacity(0), "".to_owned()))
+    }
+
+    // for test only
     pub(crate) fn with_named_paths(name_segs: &[&str]) -> Path {
         let segs = name_segs
             .iter()
             .map(|n| PathSeg::Named((*n).to_string()))
             .collect();
         Path::Relative((segs, name_segs.join("/")))
+    }
+
+    // for test only
+    pub(crate) fn segs(&self) -> Option<&[PathSeg]> {
+        match self {
+            Path::Relative((segs, _)) => Some(segs),
+            _ => None,
+        }
     }
 }
 

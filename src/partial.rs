@@ -4,6 +4,7 @@ use serde_json::value::Value as Json;
 
 use crate::context::{merge_json, Context};
 use crate::error::RenderError;
+use crate::json::path::Path;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Directive, Evaluable, RenderContext, Renderable};
@@ -37,7 +38,9 @@ fn render_partial<'reg: 'rc, 'rc>(
             .iter()
             .map(|(k, v)| (k, v.value()))
             .collect::<HashMap<&&str, &Json>>();
-        let partial_context = merge_json(local_rc.evaluate2(ctx, &[])?.as_json(), &hash_ctx);
+        let current_path = Path::current();
+        let partial_context =
+            merge_json(local_rc.evaluate2(ctx, &current_path)?.as_json(), &hash_ctx);
         let ctx = Context::wraps(&partial_context)?;
         let mut partial_rc = local_rc.new_for_block();
         t.render(r, &ctx, &mut partial_rc, out)

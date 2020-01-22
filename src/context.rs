@@ -217,7 +217,7 @@ mod test {
     use crate::block::{BlockContext, BlockParams};
     use crate::context::{self, Context};
     use crate::error::RenderError;
-    use crate::json::path::PathSeg;
+    use crate::json::path::Path;
     use crate::json::value::{self, ScopedJson};
     use serde_json::value::Map;
     use std::collections::{HashMap, VecDeque};
@@ -226,8 +226,8 @@ mod test {
         ctx: &'rc Context,
         path: &str,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
-        let relative_path = PathSeg::parse(path).unwrap();
-        ctx.navigate(&relative_path, &VecDeque::new())
+        let relative_path = Path::parse(path).unwrap();
+        ctx.navigate(relative_path.segs().unwrap(), &VecDeque::new())
     }
 
     #[derive(Serialize)]
@@ -398,7 +398,7 @@ mod test {
         blocks.push_front(block);
 
         assert_eq!(
-            ctx.navigate(&PathSeg::parse("@root/b").unwrap(), &blocks)
+            ctx.navigate(&Path::parse("@root/b").unwrap().segs().unwrap(), &blocks)
                 .unwrap()
                 .render(),
             "2".to_string()
@@ -427,13 +427,13 @@ mod test {
         blocks.push_front(block);
 
         assert_eq!(
-            ctx.navigate(&PathSeg::parse("z.[1]").unwrap(), &blocks)
+            ctx.navigate(&Path::parse("z.[1]").unwrap().segs().unwrap(), &blocks)
                 .unwrap()
                 .render(),
             "2".to_string()
         );
         assert_eq!(
-            ctx.navigate(&PathSeg::parse("t").unwrap(), &blocks)
+            ctx.navigate(&Path::parse("t").unwrap().segs().unwrap(), &blocks)
                 .unwrap()
                 .render(),
             "good".to_string()
