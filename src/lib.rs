@@ -349,14 +349,14 @@ extern crate walkdir;
 
 pub use self::block::{BlockContext, BlockParams};
 pub use self::context::Context;
-pub use self::directives::DirectiveDef as DecoratorDef;
+pub use self::decorators::DecoratorDef;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::json::path::Path;
 pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 pub use self::output::Output;
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
-pub use self::render::{Directive as Decorator, Evaluable, Helper, RenderContext, Renderable};
+pub use self::render::{Decorator, Evaluable, Helper, RenderContext, Renderable};
 pub use self::template::Template;
 
 #[doc(hidden)]
@@ -366,7 +366,7 @@ pub use self::serde_json::Value as JsonValue;
 mod macros;
 mod block;
 mod context;
-mod directives;
+mod decorators;
 mod error;
 mod grammar;
 mod helpers;

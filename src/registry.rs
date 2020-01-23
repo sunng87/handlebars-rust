@@ -7,7 +7,7 @@ use std::path::Path;
 use serde::Serialize;
 
 use crate::context::Context;
-use crate::directives::{self, DirectiveDef};
+use crate::decorators::{self, DecoratorDef};
 use crate::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
@@ -43,7 +43,7 @@ pub fn no_escape(data: &str) -> String {
 pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<dyn HelperDef + 'reg>>,
-    directives: HashMap<String, Box<dyn DirectiveDef + 'reg>>,
+    decorators: HashMap<String, Box<dyn DecoratorDef + 'reg>>,
     escape_fn: EscapeFn,
     source_map: bool,
     strict_mode: bool,
@@ -54,7 +54,7 @@ impl<'reg> Debug for Registry<'reg> {
         f.debug_struct("Handlebars")
             .field("templates", &self.templates)
             .field("helpers", &self.helpers.keys())
-            .field("directives", &self.directives.keys())
+            .field("decorators", &self.decorators.keys())
             .field("source_map", &self.source_map)
             .finish()
     }
@@ -86,7 +86,7 @@ impl<'reg> Registry<'reg> {
         let r = Registry {
             templates: HashMap::new(),
             helpers: HashMap::new(),
-            directives: HashMap::new(),
+            decorators: HashMap::new(),
             escape_fn: Box::new(html_escape),
             source_map: true,
             strict_mode: false,
@@ -114,7 +114,7 @@ impl<'reg> Registry<'reg> {
         self.register_helper("or", Box::new(helpers::helper_boolean::or));
         self.register_helper("not", Box::new(helpers::helper_boolean::not));
 
-        self.register_decorator("inline", Box::new(directives::INLINE_DIRECTIVE));
+        self.register_decorator("inline", Box::new(decorators::INLINE_DECORATOR));
         self
     }
 
@@ -272,9 +272,9 @@ impl<'reg> Registry<'reg> {
     pub fn register_decorator(
         &mut self,
         name: &str,
-        def: Box<dyn DirectiveDef + 'reg>,
-    ) -> Option<Box<dyn DirectiveDef + 'reg>> {
-        self.directives.insert(name.to_string(), def)
+        def: Box<dyn DecoratorDef + 'reg>,
+    ) -> Option<Box<dyn DecoratorDef + 'reg>> {
+        self.decorators.insert(name.to_string(), def)
     }
 
     /// Register a new *escape fn* to be used from now on by this registry.
@@ -310,9 +310,9 @@ impl<'reg> Registry<'reg> {
         self.helpers.get(name).map(|v| v.as_ref())
     }
 
-    /// Return a registered directive, aka decorator
-    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DirectiveDef)> {
-        self.directives.get(name).map(|v| v.as_ref())
+    /// Return a registered decorator, aka decorator
+    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DecoratorDef)> {
+        self.decorators.get(name).map(|v| v.as_ref())
     }
 
     /// Return all templates registered

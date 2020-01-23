@@ -7,12 +7,12 @@ use crate::error::RenderError;
 use crate::json::path::Path;
 use crate::output::Output;
 use crate::registry::Registry;
-use crate::render::{Directive, Evaluable, RenderContext, Renderable};
+use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
 
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
-    d: &Directive<'reg, 'rc>,
+    d: &Decorator<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
     local_rc: &mut RenderContext<'reg, 'rc>,
@@ -52,7 +52,7 @@ fn render_partial<'reg: 'rc, 'rc>(
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
-    d: &Directive<'reg, 'rc>,
+    d: &Decorator<'reg, 'rc>,
     r: &'reg Registry,
     ctx: &'rc Context,
     rc: &mut RenderContext<'reg, 'rc>,

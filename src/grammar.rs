@@ -293,22 +293,22 @@ fn test_path() {
 }
 
 #[test]
-fn test_directive_expression() {
+fn test_decorator_expression() {
     let s = vec!["{{* ssh}}", "{{~* ssh}}"];
     for i in s.iter() {
-        assert_rule!(Rule::directive_expression, i);
+        assert_rule!(Rule::decorator_expression, i);
     }
 }
 
 #[test]
-fn test_directive_block() {
+fn test_decorator_block() {
     let s = vec![
         "{{#* inline}}something{{/inline}}",
         "{{~#* inline}}hello{{/inline}}",
         "{{#* inline \"partialname\"}}something{{/inline}}",
     ];
     for i in s.iter() {
-        assert_rule!(Rule::directive_block, i);
+        assert_rule!(Rule::decorator_block, i);
     }
 }
 

@@ -1,15 +1,15 @@
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::registry::Registry;
-use crate::render::{Directive, RenderContext};
+use crate::render::{Decorator, RenderContext};
 
-pub use self::inline::INLINE_DIRECTIVE;
+pub use self::inline::INLINE_DECORATOR;
 
-pub type DirectiveResult = Result<(), RenderError>;
+pub type DecoratorResult = Result<(), RenderError>;
 
 /// Decorator Definition
 ///
-/// Implement this trait to define your own decorators or directives. Currently
+/// Implement this trait to define your own decorators or decorators. Currently
 /// decorator shares same definition with helper.
 ///
 /// In handlebars, it is recommended to use decorator to change context data and update helper
@@ -56,35 +56,35 @@ pub type DirectiveResult = Result<(), RenderError>;
 /// }
 /// ```
 ///
-pub trait DirectiveDef: Send + Sync {
+pub trait DecoratorDef: Send + Sync {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
-        d: &Directive<'reg, 'rc>,
+        d: &Decorator<'reg, 'rc>,
         r: &'reg Registry,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
-    ) -> DirectiveResult;
+    ) -> DecoratorResult;
 }
 
-/// implement DirectiveDef for bare function so we can use function as directive
+/// implement DecoratorDef for bare function so we can use function as decorator
 impl<
         F: Send
             + Sync
             + for<'reg, 'rc> Fn(
-                &Directive<'reg, 'rc>,
+                &Decorator<'reg, 'rc>,
                 &'reg Registry,
                 &'rc Context,
                 &mut RenderContext,
-            ) -> DirectiveResult,
-    > DirectiveDef for F
+            ) -> DecoratorResult,
+    > DecoratorDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
-        d: &Directive<'reg, 'rc>,
+        d: &Decorator<'reg, 'rc>,
         reg: &'reg Registry,
         ctx: &'rc Context,
         rc: &mut RenderContext,
-    ) -> DirectiveResult {
+    ) -> DecoratorResult {
         (*self)(d, reg, ctx, rc)
     }
 }
@@ -98,7 +98,7 @@ mod test {
     use crate::json::value::{as_string, to_json};
     use crate::output::Output;
     use crate::registry::Registry;
-    use crate::render::{Directive, Helper, RenderContext};
+    use crate::render::{Decorator, Helper, RenderContext};
 
     #[test]
     fn test_register_decorator() {
@@ -116,7 +116,7 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |_: &Directive,
+                |_: &Decorator,
                  _: &Registry,
                  _: &Context,
                  _: &mut RenderContext|
@@ -141,7 +141,7 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |_: &Directive,
+                |_: &Decorator,
                  _: &Registry,
                  ctx: &Context,
                  rc: &mut RenderContext|
@@ -169,7 +169,7 @@ mod test {
         handlebars.register_decorator(
             "bar",
             Box::new(
-                |d: &Directive,
+                |d: &Decorator,
                  _: &Registry,
                  _: &Context,
                  rc: &mut RenderContext|
@@ -247,7 +247,7 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |d: &Directive,
+                |d: &Decorator,
                  _: &Registry,
                  _: &Context,
                  rc: &mut RenderContext|
@@ -284,7 +284,7 @@ mod test {
         handlebars.register_decorator(
             "bar",
             Box::new(
-                |_: &Directive,
+                |_: &Decorator,
                  _: &Registry,
                  _: &Context,
                  rc: &mut RenderContext|
