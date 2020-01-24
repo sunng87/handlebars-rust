@@ -1,6 +1,15 @@
 # Change Log
 
-## [3.0.0-beta.6](https://github.com/sunng87/handlebars-rust/compare/2.0.3...3.0.0-beta.6) - 2020-01-18
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/2.0.3...Unreleased) - ReelaseDate
+
+* [Changed] Added lifetime specifier to `Handlebars` structure allowing helper definition to have non-static borrowed data #282
+* [Changed] Removed hashbrown dependency #279
+* [Changed] Features has been reorganized. `dir_source` were turned off by default. #289
+* [Changed] Refactored `RenderContext` API to improve performance up to 5x over `2.0`
+* [Added] Add new `BlockContext` API for helper developer to store block scope state #307
+* [Fixed] `RenderError` should be `Send` and `Sync` #304
+
+## [2.0.4](https://github.com/sunng87/handlebars-rust/compare/2.0.3...2.0.4) - 2020-01-06
 
 * [Fixed] `RenderError` should be `Send` and `Sync` #304
 
