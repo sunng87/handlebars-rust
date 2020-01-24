@@ -22,9 +22,11 @@ object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
 
 symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
+partial_symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'|"/"}
 path_char = _{ "/" }
 
 identifier = @{ symbol_char+ }
+partial_identifier = @{ partial_symbol_char+ }
 reference = ${ path_inline }
 
 name = _{ subexpression | reference }
@@ -33,7 +35,7 @@ param = { !(keywords ~ !symbol_char) ~ (literal | reference | subexpression) }
 hash = { identifier ~ "=" ~ param }
 block_param = { "as" ~ "|" ~ identifier ~ identifier? ~ "|"}
 exp_line = _{ identifier ~ (hash|param)* ~ block_param?}
-partial_exp_line = _{ (identifier ~ (hash|param)+) | name }
+partial_exp_line = _{ (partial_identifier ~ (hash|param)+) | name }
 
 subexpression = { "(" ~ ((identifier ~ (hash|param)+) | reference)  ~ ")" }
 
