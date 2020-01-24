@@ -73,6 +73,7 @@ and clarify in CHANGELOG.
 
 | Handlebars version range | Minimum Rust version |
 | --- | --- |
+| ~3.0.0 | 1.32 |
 | ~2.0.0 | 1.32 |
 | ~1.1.0 | 1.30 |
 | ~1.0.0 | 1.23 |
@@ -159,12 +160,7 @@ You can find a real example of template inheritance in
 
 #### WebAssembly compatible
 
-Handlebars can be used in WebAssembly projects with the directory
-source feature disabled. Adding handlebars to your project like this:
-
-```
-handlebars = { version = "2", features = ["no_dir_source"], default-features = false }
-```
+Handlebars 3.0 can be used in WebAssembly projects.
 
 ## Handlebars for Web Frameworks
 
