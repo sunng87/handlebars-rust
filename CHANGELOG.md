@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/2.0.3...Unreleased) - ReleaseDate
+## [3.0.0](https://github.com/sunng87/handlebars-rust/compare/2.0.3...3.0.0) - 2020-01-24
 
 * [Changed] Added lifetime specifier to `Handlebars` structure allowing helper definition to have non-static borrowed data #282
 * [Changed] Removed hashbrown dependency #279

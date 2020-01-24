@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/handlebars/3.0.0-beta.6")]
+#![doc(html_root_url = "https://docs.rs/handlebars/3.0.0")]
 #![deny(warnings)]
 //! # Handlebars
 //!
