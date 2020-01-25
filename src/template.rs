@@ -214,7 +214,7 @@ impl Template {
         let rule = name_node.as_rule();
         let name_span = name_node.as_span();
         match rule {
-            Rule::identifier | Rule::invert_tag_item => {
+            Rule::identifier | Rule::partial_identifier | Rule::invert_tag_item => {
                 Ok(Parameter::Name(name_span.as_str().to_owned()))
             }
             Rule::reference => {
