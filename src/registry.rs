@@ -50,7 +50,7 @@ pub struct Registry<'reg> {
 }
 
 impl<'reg> Debug for Registry<'reg> {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("Handlebars")
             .field("templates", &self.templates)
             .field("helpers", &self.helpers.keys())
@@ -447,7 +447,7 @@ mod test {
         fn call<'reg: 'rc, 'rc>(
             &self,
             h: &Helper<'reg, 'rc>,
-            r: &'reg Registry,
+            r: &'reg Registry<'reg>,
             ctx: &'rc Context,
             rc: &mut RenderContext<'reg, 'rc>,
             out: &mut dyn Output,
@@ -691,9 +691,9 @@ mod test {
         fn call_inner<'reg: 'rc, 'rc>(
             &self,
             _: &Helper<'reg, 'rc>,
-            _: &'reg Registry,
+            _: &'reg Registry<'reg>,
             _: &'rc Context,
-            _: &mut RenderContext,
+            _: &mut RenderContext<'reg, 'rc>,
         ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
             Ok(Some(ScopedJson::Missing))
         }
@@ -707,10 +707,10 @@ mod test {
         r.register_helper(
             "check_missing",
             Box::new(
-                |h: &Helper,
-                 _: &Registry,
+                |h: &Helper<'_, '_>,
+                 _: &Registry<'_>,
                  _: &Context,
-                 _: &mut RenderContext,
+                 _: &mut RenderContext<'_, '_>,
                  _: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let value = h.param(0).unwrap();

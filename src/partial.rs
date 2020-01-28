@@ -13,7 +13,7 @@ use crate::template::Template;
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
     d: &Decorator<'reg, 'rc>,
-    r: &'reg Registry,
+    r: &'reg Registry<'reg>,
     ctx: &'rc Context,
     local_rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
@@ -53,7 +53,7 @@ fn render_partial<'reg: 'rc, 'rc>(
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Decorator<'reg, 'rc>,
-    r: &'reg Registry,
+    r: &'reg Registry<'reg>,
     ctx: &'rc Context,
     rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,

@@ -18,7 +18,7 @@ pub struct RenderError {
 }
 
 impl fmt::Display for RenderError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         match (self.line_no, self.column_no) {
             (Some(line), Some(col)) => write!(
                 f,
@@ -176,7 +176,7 @@ fn template_segment(template_str: &str, line: usize, col: usize) -> String {
 }
 
 impl fmt::Display for TemplateError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         match (self.line_no, self.column_no, &self.segment) {
             (Some(line), Some(col), &Some(ref seg)) => writeln!(
                 f,

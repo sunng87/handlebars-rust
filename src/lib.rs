@@ -320,6 +320,7 @@
 //!
 
 #![allow(dead_code)]
+#![warn(rust_2018_idioms)]
 #![recursion_limit = "200"]
 
 #[cfg(not(feature = "no_logging"))]
@@ -329,7 +330,6 @@ extern crate log;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
-extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 #[macro_use]
@@ -337,10 +337,7 @@ extern crate quick_error;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_derive;
-#[cfg(test)]
-extern crate tempfile;
 
-extern crate serde;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;

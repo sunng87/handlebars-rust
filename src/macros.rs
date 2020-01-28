@@ -31,9 +31,9 @@ macro_rules! handlebars_helper {
             fn call_inner<'reg: 'rc, 'rc>(
                 &self,
                 h: &$crate::Helper<'reg, 'rc>,
-                _: &'reg $crate::Handlebars,
+                _: &'reg $crate::Handlebars<'reg>,
                 _: &'rc $crate::Context,
-                _: &mut $crate::RenderContext,
+                _: &mut $crate::RenderContext<'reg, 'rc>,
             ) -> Result<Option<$crate::ScopedJson<'reg, 'rc>>, $crate::RenderError> {
                 let mut param_idx = 0;
 

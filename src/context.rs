@@ -30,9 +30,9 @@ enum ResolvedPath<'a> {
     BlockParamValue(Vec<String>, &'a Json),
 }
 
-fn parse_json_visitor<'a>(
+fn parse_json_visitor<'a, 'reg: 'rc, 'rc>(
     relative_path: &[PathSeg],
-    block_contexts: &'a VecDeque<BlockContext>,
+    block_contexts: &'a VecDeque<BlockContext<'reg, 'rc>>,
     always_for_absolute_path: bool,
 ) -> Result<ResolvedPath<'a>, RenderError> {
     let mut path_context_depth: i64 = 0;
@@ -119,8 +119,8 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
     Ok(result)
 }
 
-fn get_in_block_params<'a>(
-    block_contexts: &'a VecDeque<BlockContext>,
+fn get_in_block_params<'a, 'reg: 'rc, 'rc>(
+    block_contexts: &'a VecDeque<BlockContext<'reg, 'rc>>,
     p: &str,
 ) -> Option<(&'a BlockParamHolder, &'a Vec<String>)> {
     for bc in block_contexts {

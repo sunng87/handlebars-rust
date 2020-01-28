@@ -15,7 +15,7 @@ impl HelperDef for LookupHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
-        _: &'reg Registry,
+        _: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,

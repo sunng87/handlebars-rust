@@ -32,7 +32,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut Output)
+/// fn upper(h: &Helper<'_, '_>, _: &Handlebars<'_>, _: &Context, rc: &mut RenderContext<'_, '_>, out: &mut Output)
 ///     -> HelperResult {
 ///    // get parameter from helper or throw an error
 ///    let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
@@ -50,7 +50,7 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 /// fn dummy_block<'reg, 'rc>(
 ///     h: &Helper<'reg, 'rc>,
-///     r: &'reg Handlebars,
+///     r: &'reg Handlebars<'reg>,
 ///     ctx: &'rc Context,
 ///     rc: &mut RenderContext<'reg, 'rc>,
 ///     out: &mut dyn Output,
@@ -79,7 +79,7 @@ pub trait HelperDef: Send + Sync {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         _: &Helper<'reg, 'rc>,
-        _: &'reg Registry,
+        _: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
@@ -89,7 +89,7 @@ pub trait HelperDef: Send + Sync {
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
-        r: &'reg Registry,
+        r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
@@ -112,7 +112,7 @@ impl<
             + Sync
             + for<'reg, 'rc> Fn(
                 &Helper<'reg, 'rc>,
-                &'reg Registry,
+                &'reg Registry<'reg>,
                 &'rc Context,
                 &mut RenderContext<'reg, 'rc>,
                 &mut dyn Output,
@@ -122,7 +122,7 @@ impl<
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
-        r: &'reg Registry,
+        r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
@@ -165,7 +165,7 @@ mod test {
         fn call<'reg: 'rc, 'rc>(
             &self,
             h: &Helper<'reg, 'rc>,
-            r: &'reg Registry,
+            r: &'reg Registry<'reg>,
             ctx: &'rc Context,
             rc: &mut RenderContext<'reg, 'rc>,
             out: &mut dyn Output,
@@ -216,10 +216,10 @@ mod test {
         handlebars.register_helper(
             "helperMissing",
             Box::new(
-                |h: &Helper,
-                 _: &Registry,
+                |h: &Helper<'_, '_>,
+                 _: &Registry<'_>,
                  _: &Context,
-                 _: &mut RenderContext,
+                 _: &mut RenderContext<'_, '_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
@@ -231,10 +231,10 @@ mod test {
         handlebars.register_helper(
             "foo",
             Box::new(
-                |h: &Helper,
-                 _: &Registry,
+                |h: &Helper<'_, '_>,
+                 _: &Registry<'_>,
                  _: &Context,
-                 _: &mut RenderContext,
+                 _: &mut RenderContext<'_, '_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let output = format!("{}", h.hash_get("value").unwrap().value().render());

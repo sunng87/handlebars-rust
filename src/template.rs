@@ -434,7 +434,10 @@ impl Template {
         }
     }
 
-    pub fn compile2<S: AsRef<str>>(source: S, mapping: bool) -> Result<Template, TemplateError> {
+    pub fn compile2<'a, S: AsRef<str> + 'a>(
+        source: S,
+        mapping: bool,
+    ) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut decorator_stack: VecDeque<DecoratorTemplate> = VecDeque::new();
@@ -457,7 +460,7 @@ impl Template {
             .flatten()
             .filter(|p| p.as_rule() != Rule::escape)
             .peekable();
-        let mut end_pos: Option<Position> = None;
+        let mut end_pos: Option<Position<'_>> = None;
         loop {
             if let Some(pair) = it.next() {
                 let prev_end = end_pos.as_ref().map(|p| p.pos()).unwrap_or(0);

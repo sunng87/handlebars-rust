@@ -21,7 +21,7 @@ impl DecoratorDef for InlineDecorator {
     fn call<'reg: 'rc, 'rc>(
         &self,
         d: &Decorator<'reg, 'rc>,
-        _: &'reg Registry,
+        _: &'reg Registry<'reg>,
         _: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
     ) -> DecoratorResult {

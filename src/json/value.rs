@@ -62,7 +62,7 @@ impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'reg, 'rc> {
 /// Json wrapper that holds the Json value and reference path information
 ///
 #[derive(Debug)]
-pub struct PathAndJson<'reg: 'rc, 'rc> {
+pub struct PathAndJson<'reg, 'rc> {
     relative_path: Option<String>,
     value: ScopedJson<'reg, 'rc>,
 }
