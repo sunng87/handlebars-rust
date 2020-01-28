@@ -1,7 +1,6 @@
 language: rust
 
 env:
-  # - TASK=build
   - TASK=test
 
 matrix:
@@ -16,19 +15,12 @@ matrix:
     - rust: beta
     - rust: stable
     - rust: 1.32.0
+      script:
+        - cargo build
     - rust: nightly
       name: minimal-versions
       script:
         - cargo -Z minimal-versions build --verbose
-  exclude:
-    - rust: nightly
-      env: TASK=build
-    - rust: beta
-      env: TASK=build
-    - rust: stable
-      env: TASK=build
-    # - rust: 1.23.0
-    #   env: TASK=test
 
 script:
   - cargo $TASK --verbose
