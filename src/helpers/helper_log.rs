@@ -32,7 +32,7 @@ impl HelperDef for LogHelper {
                 if let Some(ref relative_path) = p.relative_path() {
                     format!("{}: {}", relative_path, p.value().render())
                 } else {
-                    format!("{}", p.value().render())
+                    p.value().render()
                 }
             })
             .collect::<Vec<String>>()
