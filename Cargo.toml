@@ -34,8 +34,7 @@ maplit = "1.0.0"
 serde_derive = "1.0.75"
 tempfile = "3.0.0"
 criterion = "0.3"
-pprof = { version = "0.3", features = ["flamegraph", "protobuf"] }
-prost = "0.5"
+pprof = { version = "0.3.13", features = ["flamegraph", "protobuf"] }
 
 [features]
 dir_source = ["walkdir"]
