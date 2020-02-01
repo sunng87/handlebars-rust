@@ -713,23 +713,16 @@ impl Renderable for TemplateElement {
             Expression(ref ht) => {
                 // test if the expression is to render some value
                 if ht.is_name_only() {
-                    let context_json = ht.name.expand(registry, ctx, rc)?;
-                    if context_json.is_value_missing() {
-                        let helper_name = ht.name.expand_as_name(registry, ctx, rc)?;
-                        // no such value, try lookup if it's a helper
-                        if helper_exists(&helper_name, registry, rc) {
-                            render_helper(ht, registry, ctx, rc, out)
-                        } else {
-                            // strict mode check
-                            if registry.strict_mode() {
-                                Err(RenderError::strict_error(context_json.relative_path()))
-                            } else {
-                                Ok(())
-                            }
-                        }
+                    let helper_name = ht.name.expand_as_name(registry, ctx, rc)?;
+                    if helper_exists(&helper_name, registry, rc) {
+                        render_helper(ht, registry, ctx, rc, out)
                     } else {
-                        let rendered = context_json.value().render();
+                        let context_json = ht.name.expand(registry, ctx, rc)?;
+                        if context_json.is_value_missing() && registry.strict_mode() {
+                            return Err(RenderError::strict_error(context_json.relative_path()));
+                        }
 
+                        let rendered = context_json.value().render();
                         let output = if !rc.is_disable_escape() {
                             registry.get_escape_fn()(&rendered)
                         } else {
@@ -1042,17 +1035,19 @@ fn test_zero_args_heler() {
         .unwrap();
     r.register_template_string("t1", "Output name: {{first_name}}")
         .unwrap();
+    r.register_template_string("t2", "Output name: {{./name}}")
+        .unwrap();
 
     // when "name" is available in context, use context first
     assert_eq!(
         r.render("t0", &json!({"name": "Alex"})).unwrap(),
-        "Output name: Alex".to_owned()
+        "Output name: N/A".to_owned()
     );
 
     // when "name" is unavailable, call helper with same name
     assert_eq!(
-        r.render("t0", &json!({})).unwrap(),
-        "Output name: N/A".to_owned()
+        r.render("t2", &json!({"name": "Alex"})).unwrap(),
+        "Output name: Alex".to_owned()
     );
 
     // output nothing when neither context nor helper available
