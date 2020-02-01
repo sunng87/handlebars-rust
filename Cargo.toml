@@ -29,7 +29,7 @@ serde_json = "1.0.39"
 walkdir = { version = "2.2.3", optional = true }
 
 [dev-dependencies]
-env_logger = "0.6.0"
+env_logger = "0.7.1"
 maplit = "1.0.0"
 serde_derive = "1.0.75"
 tempfile = "3.0.0"
