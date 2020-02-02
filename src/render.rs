@@ -21,8 +21,8 @@ use crate::template::{
     TemplateMapping,
 };
 
-const HELPER_MISSING: &'static str = "helperMissing";
-const BLOCK_HELPER_MISSING: &'static str = "blockHelperMissing";
+const HELPER_MISSING: &str = "helperMissing";
+const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
 
 /// The context of a render call
 ///
@@ -546,7 +546,7 @@ impl Parameter {
             Parameter::Subexpression(_) => self
                 .expand(registry, ctx, rc)
                 .map(|v| v.value().render())
-                .map(|s| Cow::Owned(s)),
+                .map(Cow::Owned),
             Parameter::Literal(ref j) => Ok(Cow::Owned(j.render())),
         }
     }
