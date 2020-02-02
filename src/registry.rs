@@ -310,6 +310,11 @@ impl<'reg> Registry<'reg> {
         self.helpers.get(name).map(|v| v.as_ref())
     }
 
+    #[inline]
+    pub(crate) fn has_helper(&self, name: &str) -> bool {
+        self.helpers.contains_key(name)
+    }
+
     /// Return a registered decorator, aka decorator
     pub fn get_decorator(&self, name: &str) -> Option<&(dyn DecoratorDef)> {
         self.decorators.get(name).map(|v| v.as_ref())
