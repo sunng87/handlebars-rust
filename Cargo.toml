@@ -13,10 +13,9 @@ documentation = "https://docs.rs/crate/handlebars/"
 readme = "README.md"
 edition = "2018"
 
-[lib]
-
+[[bin]]
 name = "handlebars"
-path = "src/lib.rs"
+path = "src/wasm.rs"
 
 [dependencies]
 
