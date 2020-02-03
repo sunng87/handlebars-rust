@@ -200,6 +200,9 @@ impl<'reg> Registry<'reg> {
     /// will use their relative name as template name. For example, when `dir_path` is
     /// `templates/` and `tpl_extension` is `.hbs`, the file
     /// `templates/some/path/file.hbs` will be registerd as `some/path/file`.
+    ///
+    /// This method is not available by default.
+    /// You will need to enable the `dir_source` feature to use it.
     #[cfg(feature = "dir_source")]
     pub fn register_templates_directory<P>(
         &mut self,
