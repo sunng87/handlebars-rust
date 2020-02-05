@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::ops::Deref;
@@ -20,6 +20,9 @@ use crate::template::{
     BlockParam, DecoratorTemplate, HelperTemplate, Parameter, Template, TemplateElement,
     TemplateMapping,
 };
+
+const HELPER_MISSING: &str = "helperMissing";
+const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
 
 /// The context of a render call
 ///
@@ -206,6 +209,11 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.inner().local_helpers.get(name).cloned()
     }
 
+    #[inline]
+    fn has_local_helper(&self, name: &str) -> bool {
+        self.inner.local_helpers.contains_key(name)
+    }
+
     /// Returns the current template name.
     /// Note that the name can be vary from root template when you are rendering
     /// from partials.
@@ -250,7 +258,7 @@ impl<'reg> fmt::Debug for RenderContextInner<'reg> {
 /// Render-time Helper data when using in a helper definition
 #[derive(Debug)]
 pub struct Helper<'reg, 'rc> {
-    name: String,
+    name: Cow<'reg, str>,
     params: Vec<PathAndJson<'reg, 'rc>>,
     hash: BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
@@ -396,7 +404,7 @@ impl<'reg: 'rc, 'rc> Helper<'reg, 'rc> {
 /// Render-time Decorator data when using in a decorator definition
 #[derive(Debug)]
 pub struct Decorator<'reg, 'rc> {
-    name: String,
+    name: Cow<'reg, str>,
     params: Vec<PathAndJson<'reg, 'rc>>,
     hash: BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
@@ -432,8 +440,8 @@ impl<'reg: 'rc, 'rc> Decorator<'reg, 'rc> {
     }
 
     /// Returns helper name
-    pub fn name(&self) -> &String {
-        &self.name
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
     }
 
     /// Returns all helper params, resolved within the context
@@ -531,14 +539,15 @@ impl Parameter {
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<String, RenderError> {
+    ) -> Result<Cow<'reg, str>, RenderError> {
         match self {
-            Parameter::Name(ref name) => Ok(name.to_owned()),
-            Parameter::Path(ref p) => Ok(p.raw().to_owned()),
-            Parameter::Subexpression(_) => {
-                self.expand(registry, ctx, rc).map(|v| v.value().render())
-            }
-            Parameter::Literal(ref j) => Ok(j.render()),
+            Parameter::Name(ref name) => Ok(Cow::Borrowed(name)),
+            Parameter::Path(ref p) => Ok(Cow::Borrowed(p.raw())),
+            Parameter::Subexpression(_) => self
+                .expand(registry, ctx, rc)
+                .map(|v| v.value().render())
+                .map(Cow::Owned),
+            Parameter::Literal(ref j) => Ok(Cow::Owned(j.render())),
         }
     }
 
@@ -582,9 +591,9 @@ impl Parameter {
                                 .get_helper(&name)
                                 .or_else(|| {
                                     registry.get_helper(if ht.block {
-                                        "blockHelperMissing"
+                                        BLOCK_HELPER_MISSING
                                     } else {
-                                        "helperMissing"
+                                        HELPER_MISSING
                                     })
                                 })
                                 .ok_or_else(|| {
@@ -669,7 +678,7 @@ fn helper_exists<'reg: 'rc, 'rc>(
     reg: &Registry<'reg>,
     rc: &RenderContext<'reg, 'rc>,
 ) -> bool {
-    rc.get_local_helper(name).is_some() || reg.get_helper(name).is_some()
+    rc.has_local_helper(name) || reg.has_helper(name)
 }
 
 fn render_helper<'reg: 'rc, 'rc>(
@@ -687,9 +696,9 @@ fn render_helper<'reg: 'rc, 'rc>(
             .get_helper(h.name())
             .or_else(|| {
                 registry.get_helper(if ht.block {
-                    "blockHelperMissing"
+                    BLOCK_HELPER_MISSING
                 } else {
-                    "helperMissing"
+                    HELPER_MISSING
                 })
             })
             .ok_or_else(|| RenderError::new(format!("Helper not defined: {:?}", ht.name)))
@@ -713,30 +722,33 @@ impl Renderable for TemplateElement {
             Expression(ref ht) => {
                 // test if the expression is to render some value
                 if ht.is_name_only() {
-                    let context_json = ht.name.expand(registry, ctx, rc)?;
-                    if context_json.is_value_missing() {
-                        let helper_name = ht.name.expand_as_name(registry, ctx, rc)?;
-                        // no such value, try lookup if it's a helper
-                        if helper_exists(&helper_name, registry, rc) {
-                            render_helper(ht, registry, ctx, rc, out)
-                        } else {
-                            // strict mode check
+                    let helper_name = ht.name.expand_as_name(registry, ctx, rc)?;
+                    if helper_exists(&helper_name, registry, rc) {
+                        render_helper(ht, registry, ctx, rc, out)
+                    } else {
+                        let context_json = ht.name.expand(registry, ctx, rc)?;
+                        if context_json.is_value_missing() {
                             if registry.strict_mode() {
                                 Err(RenderError::strict_error(context_json.relative_path()))
                             } else {
-                                Ok(())
+                                // helper missing
+                                if let Some(hook) = registry.get_helper(HELPER_MISSING) {
+                                    let h = Helper::try_from_template(ht, registry, ctx, rc)?;
+                                    hook.call(&h, registry, ctx, rc, out)
+                                } else {
+                                    Ok(())
+                                }
                             }
-                        }
-                    } else {
-                        let rendered = context_json.value().render();
-
-                        let output = if !rc.is_disable_escape() {
-                            registry.get_escape_fn()(&rendered)
                         } else {
-                            rendered
-                        };
-                        out.write(output.as_ref())?;
-                        Ok(())
+                            let rendered = context_json.value().render();
+                            let output = if !rc.is_disable_escape() {
+                                registry.get_escape_fn()(&rendered)
+                            } else {
+                                rendered
+                            };
+                            out.write(output.as_ref())?;
+                            Ok(())
+                        }
                     }
                 } else {
                     // this is a helper expression
@@ -1042,26 +1054,46 @@ fn test_zero_args_heler() {
         .unwrap();
     r.register_template_string("t1", "Output name: {{first_name}}")
         .unwrap();
+    r.register_template_string("t2", "Output name: {{./name}}")
+        .unwrap();
 
     // when "name" is available in context, use context first
     assert_eq!(
         r.render("t0", &json!({"name": "Alex"})).unwrap(),
-        "Output name: Alex".to_owned()
+        "Output name: N/A"
     );
 
     // when "name" is unavailable, call helper with same name
     assert_eq!(
-        r.render("t0", &json!({})).unwrap(),
-        "Output name: N/A".to_owned()
+        r.render("t2", &json!({"name": "Alex"})).unwrap(),
+        "Output name: Alex"
     );
 
     // output nothing when neither context nor helper available
     assert_eq!(
         r.render("t1", &json!({"name": "Alex"})).unwrap(),
-        "Output name: ".to_owned()
+        "Output name: "
     );
 
     // generate error in strict mode for above case
     r.set_strict_mode(true);
     assert!(r.render("t1", &json!({"name": "Alex"})).is_err());
+
+    // output nothing when helperMissing was defined
+    r.set_strict_mode(false);
+    r.register_helper(
+        "helperMissing",
+        Box::new(
+            |_: &Helper<'_, '_>,
+             _: &Registry<'_>,
+             _: &Context,
+             _: &mut RenderContext<'_, '_>,
+             out: &mut dyn Output|
+             -> Result<(), RenderError> { out.write("Default").map_err(Into::into) },
+        ),
+    );
+    assert_eq!(
+        r.render("t1", &json!({"name": "Alex"})).unwrap(),
+        "Output name: Default"
+    );
 }
