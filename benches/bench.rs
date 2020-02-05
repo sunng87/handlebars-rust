@@ -11,7 +11,8 @@ use std::path::Path;
 use criterion::profiler::Profiler;
 use criterion::Criterion;
 use handlebars::{to_json, Handlebars, Template};
-use pprof::{Message, ProfilerGuard};
+use pprof::protos::Message;
+use pprof::ProfilerGuard;
 use serde_json::value::Value as Json;
 
 #[derive(Default)]
