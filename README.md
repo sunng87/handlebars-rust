@@ -162,7 +162,9 @@ You can find a real example of template inheritance in
 
 Handlebars 3.0 can be used in WebAssembly projects.
 
-## Handlebars for Web Frameworks
+## Related Projects
+
+### Web frameworks
 
 * Iron: [handlebars-iron](https://github.com/sunng87/handlebars-iron)
 * Rocket: [rocket/contrib](https://api.rocket.rs/v0.4/rocket_contrib/templates/index.html)
@@ -171,6 +173,10 @@ Handlebars 3.0 can be used in WebAssembly projects.
 * Tower-web: [Built-in](https://github.com/carllerche/tower-web)
 * Actix: [handlebars
   example](https://github.com/actix/examples/blob/master/template_handlebars/src/main.rs)
+
+### Helpers
+
+* [Handlebars Misc Helpers](https://github.com/davidB/handlebars_misc_helpers)
 
 ## Using handlebars-rust?
 
