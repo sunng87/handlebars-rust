@@ -1,7 +1,7 @@
 language: rust
 
 env:
-  - TASK=test
+  - TASK=test RUSTFLAGS="-D warnings"
 
 matrix:
   include:
@@ -23,6 +23,6 @@ matrix:
         - cargo -Z minimal-versions build --verbose
 
 script:
-  - cargo $TASK -D warnings --verbose
-  - cargo $TASK -D warnings --no-default-features --features no_logging --verbose
-  - cargo $TASK -D warnings --no-default-features --features dir_source --verbose
+  - cargo $TASK --verbose
+  - cargo $TASK --no-default-features --features no_logging --verbose
+  - cargo $TASK --no-default-features --features dir_source --verbose
