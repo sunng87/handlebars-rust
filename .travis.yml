@@ -2,6 +2,7 @@ language: rust
 
 env:
   - TASK=test
+  - RUSTFLAGS="-D warnings"
 
 matrix:
   include:
