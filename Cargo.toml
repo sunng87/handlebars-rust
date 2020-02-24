@@ -1,5 +1,4 @@
 [package]
-
 name = "handlebars"
 version = "3.0.2-alpha.0"
 authors = ["Ning Sun <sunng@pm.me>"]
@@ -14,12 +13,14 @@ readme = "README.md"
 edition = "2018"
 
 [lib]
-
 name = "handlebars"
 path = "src/lib.rs"
 
-[dependencies]
+[[bin]]
+name = "cli"
+path = "src/cli.rs"
 
+[dependencies]
 log = { version = "0.4.0" }
 quick-error = "1.2.3"
 pest = "2.1.0"

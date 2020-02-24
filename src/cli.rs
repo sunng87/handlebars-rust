@@ -1,7 +1,3 @@
-extern crate env_logger;
-extern crate handlebars;
-extern crate serde_json;
-
 use std::env;
 use std::fs;
 use std::io::{self, Write};
@@ -16,7 +12,7 @@ fn usage() -> ! {
     writeln!(
         &mut io::stderr(),
         "{}",
-        r#"Usage: ./render-cli template.hbs '{"json": "data"}'"#
+        r#"Usage: handlebars-cli template.hbs '{"json": "data"}'"#
     )
     .ok();
     process::exit(1);
@@ -35,8 +31,6 @@ fn parse_json(text: &str) -> Json {
 }
 
 fn main() {
-    env_logger::init();
-
     let mut args = env::args();
     args.next(); // skip own filename
     let (filename, json) = match (args.next(), args.next()) {
