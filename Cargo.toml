@@ -17,7 +17,7 @@ name = "handlebars"
 path = "src/lib.rs"
 
 [[bin]]
-name = "cli"
+name = "handlebars-cli"
 path = "src/cli.rs"
 
 [dependencies]
