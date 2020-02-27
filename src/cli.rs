@@ -19,7 +19,7 @@ fn usage() -> ! {
 }
 
 fn parse_json(text: &str) -> Json {
-    let text = if text.starts_with("@") {
+    let text = if text.starts_with('@') {
         fs::read_to_string(&text[1..]).unwrap()
     } else {
         text.to_owned()
