@@ -1,7 +1,8 @@
 {{*format_suffix "分"}}
+
 <html>
   <head>
-    <title>中超联赛 {{year}}</title>
+    <title>CSL {{year}}</title>
   </head>
   <body>
     <h1>CSL {{year}}</h1>
@@ -14,6 +15,7 @@
     {{/each~}}
     </ul>
 
-    <p>Rendered by Handlebars from {{engine}} data.</p>
+    {{*set version="v3.0"}}
+    <p>Rendered by Handlebars {{version}} from {{engine}} data.</p>
   </body>
 </html>
