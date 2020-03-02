@@ -1,6 +1,5 @@
 use std::env;
 use std::fs;
-use std::io::{self, Write};
 use std::process;
 use std::str::FromStr;
 
@@ -9,12 +8,7 @@ use serde_json::value::Value as Json;
 use handlebars::Handlebars;
 
 fn usage() -> ! {
-    writeln!(
-        &mut io::stderr(),
-        "{}",
-        r#"Usage: handlebars-cli template.hbs '{"json": "data"}'"#
-    )
-    .ok();
+    eprintln!("Usage: handlebars-cli template.hbs '{{\"json\": \"data\"}}'");
     process::exit(1);
 }
 
