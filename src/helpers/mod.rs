@@ -75,7 +75,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 ///
 
-pub trait HelperDef: Send + Sync {
+pub trait HelperDef {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         _: &Helper<'reg, 'rc>,
@@ -108,9 +108,7 @@ pub trait HelperDef: Send + Sync {
 
 /// implement HelperDef for bare function so we can use function as helper
 impl<
-        F: Send
-            + Sync
-            + for<'reg, 'rc> Fn(
+        F: for<'reg, 'rc> Fn(
                 &Helper<'reg, 'rc>,
                 &'reg Registry<'reg>,
                 &'rc Context,

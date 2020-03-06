@@ -42,8 +42,8 @@ pub fn no_escape(data: &str) -> String {
 /// It maintains compiled templates and registered helpers.
 pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
-    helpers: HashMap<String, Box<dyn HelperDef + 'reg>>,
-    decorators: HashMap<String, Box<dyn DecoratorDef + 'reg>>,
+    helpers: HashMap<String, Box<dyn HelperDef + Send + Sync + 'reg>>,
+    decorators: HashMap<String, Box<dyn DecoratorDef + Send + Sync + 'reg>>,
     escape_fn: EscapeFn,
     source_map: bool,
     strict_mode: bool,
@@ -266,8 +266,8 @@ impl<'reg> Registry<'reg> {
     pub fn register_helper(
         &mut self,
         name: &str,
-        def: Box<dyn HelperDef + 'reg>,
-    ) -> Option<Box<dyn HelperDef + 'reg>> {
+        def: Box<dyn HelperDef + Send + Sync + 'reg>,
+    ) -> Option<Box<dyn HelperDef + Send + Sync + 'reg>> {
         self.helpers.insert(name.to_string(), def)
     }
 
@@ -275,8 +275,8 @@ impl<'reg> Registry<'reg> {
     pub fn register_decorator(
         &mut self,
         name: &str,
-        def: Box<dyn DecoratorDef + 'reg>,
-    ) -> Option<Box<dyn DecoratorDef + 'reg>> {
+        def: Box<dyn DecoratorDef + Send + Sync + 'reg>,
+    ) -> Option<Box<dyn DecoratorDef + Send + Sync + 'reg>> {
         self.decorators.insert(name.to_string(), def)
     }
 
@@ -309,7 +309,7 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Return a registered helper
-    pub fn get_helper(&self, name: &str) -> Option<&(dyn HelperDef)> {
+    pub fn get_helper(&self, name: &str) -> Option<&(dyn HelperDef + Send + Sync + 'reg)> {
         self.helpers.get(name).map(|v| v.as_ref())
     }
 
@@ -319,7 +319,7 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Return a registered decorator, aka decorator
-    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DecoratorDef)> {
+    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DecoratorDef + Send + Sync + 'reg)> {
         self.decorators.get(name).map(|v| v.as_ref())
     }
 
