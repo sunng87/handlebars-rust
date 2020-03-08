@@ -31,16 +31,16 @@ const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
 ///
 #[derive(Clone, Debug)]
 pub struct RenderContext<'reg, 'rc> {
-    inner: Rc<RenderContextInner<'reg>>,
+    inner: Rc<RenderContextInner<'reg, 'rc>>,
     blocks: VecDeque<BlockContext<'reg, 'rc>>,
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
 }
 
 #[derive(Clone)]
-pub struct RenderContextInner<'reg> {
+pub struct RenderContextInner<'reg, 'rc> {
     partials: BTreeMap<String, &'reg Template>,
-    local_helpers: BTreeMap<String, Rc<Box<dyn HelperDef + 'static>>>,
+    local_helpers: BTreeMap<String, Rc<Box<dyn HelperDef + 'rc>>>,
     /// current template name
     current_template: Option<&'reg String>,
     /// root template name
@@ -109,11 +109,11 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.blocks.front_mut()
     }
 
-    fn inner(&self) -> &RenderContextInner<'reg> {
+    fn inner(&self) -> &RenderContextInner<'reg, 'rc> {
         self.inner.borrow()
     }
 
-    fn inner_mut(&mut self) -> &mut RenderContextInner<'reg> {
+    fn inner_mut(&mut self) -> &mut RenderContextInner<'reg, 'rc> {
         Rc::make_mut(&mut self.inner)
     }
 
@@ -192,8 +192,8 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub fn register_local_helper(
         &mut self,
         name: &str,
-        def: Box<dyn HelperDef + 'static>,
-    ) -> Option<Rc<Box<dyn HelperDef + 'static>>> {
+        def: Box<dyn HelperDef + 'rc>,
+    ) -> Option<Rc<Box<dyn HelperDef + 'rc>>> {
         self.inner_mut()
             .local_helpers
             .insert(name.to_string(), Rc::new(def))
@@ -205,7 +205,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Attemp to get a helper from current render context.
-    pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<dyn HelperDef + 'static>>> {
+    pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<dyn HelperDef + 'rc>>> {
         self.inner().local_helpers.get(name).cloned()
     }
 
@@ -244,7 +244,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 }
 
-impl<'reg> fmt::Debug for RenderContextInner<'reg> {
+impl<'reg, 'rc> fmt::Debug for RenderContextInner<'reg, 'rc> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("RenderContextInner")
             .field("partials", &self.partials)

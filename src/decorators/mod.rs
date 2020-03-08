@@ -56,7 +56,7 @@ pub type DecoratorResult = Result<(), RenderError>;
 /// }
 /// ```
 ///
-pub trait DecoratorDef: Send + Sync {
+pub trait DecoratorDef {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
         d: &Decorator<'reg, 'rc>,
@@ -68,9 +68,7 @@ pub trait DecoratorDef: Send + Sync {
 
 /// implement DecoratorDef for bare function so we can use function as decorator
 impl<
-        F: Send
-            + Sync
-            + for<'reg, 'rc> Fn(
+        F: for<'reg, 'rc> Fn(
                 &Decorator<'reg, 'rc>,
                 &'reg Registry<'reg>,
                 &'rc Context,
