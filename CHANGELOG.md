@@ -4,6 +4,7 @@
 
 * [Added] multiple parameter support for log helper
 * [Fixed] helper lookup priority
+* [Changed] `Send` and `Sync` are not required for helper impl [#319]
 
 ## [3.0.1](https://github.com/sunng87/handlebars-rust/compare/3.0.0...3.0.1) - 2020-01-25
 
