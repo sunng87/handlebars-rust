@@ -174,14 +174,19 @@ Handlebars 3.0 can be used in WebAssembly projects.
 * Actix: [handlebars
   example](https://github.com/actix/examples/blob/master/template_handlebars/src/main.rs)
 
-### Helpers
+### Adopters
 
-* [Handlebars Misc Helpers](https://github.com/davidB/handlebars_misc_helpers)
+The
+[adopters](https://github.com/sunng87/handlebars-rust/wiki/Adopters)
+page lists projects that uses handlebars for part of their
+functionalities.
 
-## Using handlebars-rust?
+### Extensions
 
-Add your project to our
-[adopters](https://github.com/sunng87/handlebars-rust/wiki/adopters).
+The
+[extensions](https://github.com/sunng87/handlebars-rust/wiki/Extensions)
+page has libraries that provide additional helpers, decorators and
+outputs to handlebars-rust, and you can use in your own projects.
 
 ## License
 
