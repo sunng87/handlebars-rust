@@ -833,6 +833,12 @@ fn test_parse_template() {
 }
 
 #[test]
+fn test_parse_block_partial_path_identifier() {
+    let source = "{{#> foo/bar}}{{/foo/bar}}";
+    assert!(Template::compile(source.to_string()).is_ok());
+}
+
+#[test]
 fn test_parse_error() {
     let source = "{{#ifequals name compare=\"hello\"}}\nhello\n\t{{else}}\ngood";
 
