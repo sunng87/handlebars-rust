@@ -71,7 +71,7 @@ decorator_block = _{ decorator_block_start ~ template ~
 
 partial_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ ">"
                         ~ partial_exp_line ~ pro_whitespace_omitter? ~ "}}" }
-partial_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
+partial_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ partial_identifier ~
                       pro_whitespace_omitter? ~ "}}" }
 partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
