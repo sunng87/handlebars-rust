@@ -1,10 +1,11 @@
 # Change Log
 
-## [3.1.0-beta.1](https://github.com/sunng87/handlebars-rust/compare/3.0.1...3.1.0-beta.1) - 2020-03-11
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.0.1...Unreleased) - ReleaseDate
 
 * [Added] multiple parameter support for log helper
 * [Fixed] helper lookup priority
 * [Changed] `Send` and `Sync` are not required for helper impl [#319]
+* [Fixed] partial block when using path as name [#321]
 
 ## [3.0.1](https://github.com/sunng87/handlebars-rust/compare/3.0.0...3.0.1) - 2020-01-25
 
