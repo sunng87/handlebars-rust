@@ -6,7 +6,7 @@ in Rust and for Rust.
 
 Handlebars-rust is the template engine that renders the official Rust website
 [rust-lang.org](https://www.rust-lang.org), [its
-book](https://doc.rust-lang.org/book/) and official repository [crates.io](https://crates.io).
+book](https://doc.rust-lang.org/book/) ~~and official repository [crates.io](https://crates.io)~~.
 
 [![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
 [![](https://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
