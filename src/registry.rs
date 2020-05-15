@@ -18,6 +18,12 @@ use crate::template::Template;
 #[cfg(feature = "dir_source")]
 use walkdir::{DirEntry, WalkDir};
 
+#[cfg(feature = "script_helper")]
+use rhai::Engine;
+
+#[cfg(feature = "script_helper")]
+use crate::helpers::scripting::ScriptHelper;
+
 /// This type represents an *escape fn*, that is a function who's purpose it is
 /// to escape potentially problematic characters in a string.
 ///
@@ -47,6 +53,8 @@ pub struct Registry<'reg> {
     escape_fn: EscapeFn,
     source_map: bool,
     strict_mode: bool,
+    #[cfg(feature = "script_helper")]
+    pub(crate) engine: Engine,
 }
 
 impl<'reg> Debug for Registry<'reg> {
@@ -90,6 +98,8 @@ impl<'reg> Registry<'reg> {
             escape_fn: Box::new(html_escape),
             source_map: true,
             strict_mode: false,
+            #[cfg(feature = "script_helper")]
+            engine: Engine::new(),
         };
 
         r.setup_builtins()
@@ -269,6 +279,17 @@ impl<'reg> Registry<'reg> {
         def: Box<dyn HelperDef + Send + Sync + 'reg>,
     ) -> Option<Box<dyn HelperDef + Send + Sync + 'reg>> {
         self.helpers.insert(name.to_string(), def)
+    }
+
+    #[cfg(feature = "script_helper")]
+    pub fn register_script_helper(
+        &mut self,
+        name: &str,
+        script: String,
+    ) -> Option<Box<dyn HelperDef + Send + Sync + 'reg>> {
+        let script_helper = ScriptHelper { script: script };
+        self.helpers
+            .insert(name.to_string(), Box::new(script_helper))
     }
 
     /// register a decorator

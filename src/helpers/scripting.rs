@@ -1,8 +1,5 @@
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::Read;
 use std::iter::FromIterator;
-use std::path::PathBuf;
 
 use crate::context::Context;
 use crate::error::RenderError;
@@ -16,17 +13,10 @@ use rhai::{Dynamic, Engine, Scope};
 use serde_json::value::Value as Json;
 
 pub struct ScriptHelper {
-    script: String,
-    engine: Engine,
+    pub(crate) script: String,
 }
 
-pub struct FileScriptHelper {
-    file_path: PathBuf,
-    script: String,
-    engine: Engine,
-    cache: bool,
-}
-
+#[inline]
 fn call_script_helper<'reg, 'rc>(
     h: &Helper<'reg, 'rc>,
     engine: &Engine,
@@ -56,32 +46,11 @@ impl HelperDef for ScriptHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
-        _reg: &'reg Registry<'reg>,
+        reg: &'reg Registry<'reg>,
         _ctx: &'rc Context,
         _rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        call_script_helper(h, &self.engine, &self.script)
-    }
-}
-
-impl HelperDef for FileScriptHelper {
-    fn call_inner<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper<'reg, 'rc>,
-        _reg: &'reg Registry<'reg>,
-        _ctx: &'rc Context,
-        _rc: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        if self.cache {
-            call_script_helper(h, &self.engine, &self.script)
-        } else {
-            let mut script = String::new();
-            {
-                let mut file = File::open(&self.file_path)?;
-                file.read_to_string(&mut script)?;
-            }
-            call_script_helper(h, &self.engine, &script)
-        }
+        call_script_helper(h, &reg.engine, &self.script)
     }
 }
 
