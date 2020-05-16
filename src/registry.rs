@@ -287,7 +287,7 @@ impl<'reg> Registry<'reg> {
         name: &str,
         script: String,
     ) -> Option<Box<dyn HelperDef + Send + Sync + 'reg>> {
-        let script_helper = ScriptHelper { script: script };
+        let script_helper = ScriptHelper { script };
         self.helpers
             .insert(name.to_string(), Box::new(script_helper))
     }
