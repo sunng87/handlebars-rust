@@ -292,6 +292,24 @@ impl<'reg> Registry<'reg> {
             .insert(name.to_string(), Box::new(script_helper))
     }
 
+    #[cfg(feature = "script_helper")]
+    pub fn register_script_helper_file<P>(
+        &mut self,
+        name: &str,
+        script_path: P,
+    ) -> Result<Option<Box<dyn HelperDef + Send + Sync + 'reg>>, std::io::Error>
+    where
+        P: AsRef<Path>,
+    {
+        let mut script = String::new();
+        {
+            let mut file = File::open(script_path)?;
+            file.read_to_string(&mut script)?;
+        }
+
+        Ok(self.register_script_helper(name, script))
+    }
+
     /// register a decorator
     pub fn register_decorator(
         &mut self,
