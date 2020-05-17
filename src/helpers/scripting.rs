@@ -60,7 +60,16 @@ fn convert(j: &Json) -> Dynamic {
         Json::Bool(b) => Dynamic::from(*b),
         Json::Null => Dynamic::from(()),
         Json::String(s) => Dynamic::from(s.clone()),
-        Json::Array(ref v) => Dynamic::from(v.clone()),
-        Json::Object(ref o) => Dynamic::from(o.clone()),
+        Json::Array(ref v) => {
+            let dyn_vec: Vec<Dynamic> = v.iter().map(|i| convert(i)).collect();
+            Dynamic::from(dyn_vec)
+        }
+        Json::Object(ref o) => {
+            let dyn_map: HashMap<String, Dynamic> = o
+                .iter()
+                .map(|(k, v)| ((*k).to_owned(), convert(v)))
+                .collect();
+            Dynamic::from(dyn_map)
+        }
     }
 }
