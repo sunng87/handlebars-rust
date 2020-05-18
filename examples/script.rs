@@ -15,15 +15,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     handlebars.register_template_file("tpl", "./examples/script/template.hbs")?;
     handlebars.register_script_helper_file("score", "./examples/script/goals.rhai")?;
 
-    let data = json! {
-        [[{
+    let data = json! {[
+        [{
             "name": "Dortmund",
             "goals": ["Haaland", "Guerreiro", "Hazard", "Guerreiro"]
         }, {
             "name": "Schalke",
             "goals": []
-        }]]
-    };
+        }],
+        [{
+            "name": "RB Leipzig",
+            "goals": ["Poulsen"]
+        }, {
+            "name": "SC Feriburg",
+            "goals": ["Gulde"]
+        }]
+    ]};
     println!("{}", handlebars.render("tpl", &data)?);
     Ok(())
 }
