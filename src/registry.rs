@@ -8,6 +8,8 @@ use serde::Serialize;
 
 use crate::context::Context;
 use crate::decorators::{self, DecoratorDef};
+#[cfg(feature = "script_helper")]
+use crate::error::ScriptError;
 use crate::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
@@ -89,6 +91,11 @@ fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
             .unwrap_or(true)
 }
 
+#[cfg(feature = "script_helper")]
+fn rhai_engine() -> Engine {
+    Engine::new()
+}
+
 impl<'reg> Registry<'reg> {
     pub fn new() -> Registry<'reg> {
         let r = Registry {
@@ -99,7 +106,7 @@ impl<'reg> Registry<'reg> {
             source_map: true,
             strict_mode: false,
             #[cfg(feature = "script_helper")]
-            engine: Engine::new(),
+            engine: rhai_engine(),
         };
 
         r.setup_builtins()
@@ -286,10 +293,12 @@ impl<'reg> Registry<'reg> {
         &mut self,
         name: &str,
         script: String,
-    ) -> Option<Box<dyn HelperDef + Send + Sync + 'reg>> {
-        let script_helper = ScriptHelper { script };
-        self.helpers
-            .insert(name.to_string(), Box::new(script_helper))
+    ) -> Result<Option<Box<dyn HelperDef + Send + Sync + 'reg>>, ScriptError> {
+        let compiled = self.engine.compile(&script)?;
+        let script_helper = ScriptHelper { script: compiled };
+        Ok(self
+            .helpers
+            .insert(name.to_string(), Box::new(script_helper)))
     }
 
     #[cfg(feature = "script_helper")]
@@ -297,7 +306,7 @@ impl<'reg> Registry<'reg> {
         &mut self,
         name: &str,
         script_path: P,
-    ) -> Result<Option<Box<dyn HelperDef + Send + Sync + 'reg>>, std::io::Error>
+    ) -> Result<Option<Box<dyn HelperDef + Send + Sync + 'reg>>, ScriptError>
     where
         P: AsRef<Path>,
     {
@@ -307,7 +316,7 @@ impl<'reg> Registry<'reg> {
             file.read_to_string(&mut script)?;
         }
 
-        Ok(self.register_script_helper(name, script))
+        self.register_script_helper(name, script)
     }
 
     /// register a decorator

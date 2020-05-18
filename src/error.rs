@@ -8,7 +8,7 @@ use serde_json::error::Error as SerdeError;
 use walkdir::Error as WalkdirError;
 
 #[cfg(feature = "script_helper")]
-use rhai::EvalAltResult;
+use rhai::{EvalAltResult, ParseError};
 
 /// Error when rendering data on template.
 #[derive(Debug)]
@@ -259,6 +259,21 @@ impl TemplateRenderError {
             Some(&e)
         } else {
             None
+        }
+    }
+}
+
+#[cfg(feature = "script_helper")]
+quick_error! {
+    #[derive(Debug)]
+    pub enum ScriptError {
+        IOError(err: IOError) {
+            from()
+            cause(err)
+        }
+        ParseError(err: Box<ParseError>) {
+            from()
+            cause(err)
         }
     }
 }
