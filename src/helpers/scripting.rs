@@ -1,16 +1,15 @@
 use std::collections::{BTreeMap, HashMap};
-use std::iter::FromIterator;
 
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
-use crate::json::value::{to_json, PathAndJson, ScopedJson};
+use crate::json::value::{PathAndJson, ScopedJson};
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
 
 use rhai::{Dynamic, Engine, Scope, AST};
 
-use serde_json::value::Value as Json;
+use serde_json::value::{Number, Value as Json};
 
 pub struct ScriptHelper {
     pub(crate) script: AST,
@@ -25,12 +24,12 @@ fn call_script_helper<'reg: 'rc, 'rc>(
 ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
     let params: Dynamic = params
         .iter()
-        .map(|p| convert(p.value()))
+        .map(|p| to_dynamic(p.value()))
         .collect::<Vec<Dynamic>>()
         .into();
     let hash: Dynamic = hash
         .iter()
-        .map(|(k, v)| ((*k).to_owned(), convert(v.value())))
+        .map(|(k, v)| ((*k).to_owned(), to_dynamic(v.value())))
         .collect::<HashMap<String, Dynamic>>()
         .into();
 
@@ -42,10 +41,9 @@ fn call_script_helper<'reg: 'rc, 'rc>(
         .eval_ast_with_scope::<Dynamic>(&mut scope, script)
         .map_err(RenderError::from)?;
 
-    // FIXME: convert to json instead of string
-    let result_string = result.take_string().unwrap_or_else(|e| e.to_owned());
+    let result_json = to_json(&result);
 
-    Ok(Some(ScopedJson::Derived(to_json(result_string))))
+    Ok(Some(ScopedJson::Derived(result_json)))
 }
 
 impl HelperDef for ScriptHelper {
@@ -60,29 +58,44 @@ impl HelperDef for ScriptHelper {
     }
 }
 
-fn convert(j: &Json) -> Dynamic {
+fn to_dynamic(j: &Json) -> Dynamic {
     match j {
         Json::Number(n) => Dynamic::from(n.clone()),
         Json::Bool(b) => Dynamic::from(*b),
         Json::Null => Dynamic::from(()),
         Json::String(s) => Dynamic::from(s.clone()),
         Json::Array(ref v) => {
-            let dyn_vec: Vec<Dynamic> = v.iter().map(|i| convert(i)).collect();
+            let dyn_vec: Vec<Dynamic> = v.iter().map(|i| to_dynamic(i)).collect();
             Dynamic::from(dyn_vec)
         }
         Json::Object(ref o) => {
             let dyn_map: HashMap<String, Dynamic> = o
                 .iter()
-                .map(|(k, v)| ((*k).to_owned(), convert(v)))
+                .map(|(k, v)| ((*k).to_owned(), to_dynamic(v)))
                 .collect();
             Dynamic::from(dyn_map)
         }
     }
 }
 
+fn to_json(d: &Dynamic) -> Json {
+    if let Ok(s) = d.as_str() {
+        return Json::String(s.to_owned());
+    }
+    if let Ok(i) = d.as_int() {
+        return Json::Number(Number::from(i));
+    }
+    if let Ok(b) = d.as_bool() {
+        return Json::Bool(b);
+    }
+
+    // FIXME: more types
+    return Json::Null;
+}
+
 #[cfg(test)]
 mod test {
-    use super::{call_script_helper, convert};
+    use super::{call_script_helper, to_dynamic};
     use crate::json::value::{PathAndJson, ScopedJson};
     use rhai::Engine;
 
@@ -92,7 +105,7 @@ mod test {
             [{"name": "tomcat"}, {"name": "jetty"}]
         };
 
-        let d0 = convert(&j0);
+        let d0 = to_dynamic(&j0);
         assert_eq!("array", d0.type_name());
 
         let j1 = json!({
@@ -100,7 +113,7 @@ mod test {
             "value": 4000,
         });
 
-        let d1 = convert(&j1);
+        let d1 = to_dynamic(&j1);
         assert_eq!("map", d1.type_name());
     }
 
