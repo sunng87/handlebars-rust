@@ -23,15 +23,19 @@ fn call_script_helper<'reg: 'rc, 'rc>(
     engine: &Engine,
     script: &AST,
 ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-    let params: Vec<Dynamic> = params.iter().map(|p| convert(p.value())).collect();
-    let hash: Dynamic = HashMap::from_iter(
-        hash.iter()
-            .map(|(k, v)| ((*k).to_owned(), convert(v.value()))),
-    )
-    .into();
+    let params: Dynamic = params
+        .iter()
+        .map(|p| convert(p.value()))
+        .collect::<Vec<Dynamic>>()
+        .into();
+    let hash: Dynamic = hash
+        .iter()
+        .map(|(k, v)| ((*k).to_owned(), convert(v.value())))
+        .collect::<HashMap<String, Dynamic>>()
+        .into();
 
     let mut scope = Scope::new();
-    scope.push_dynamic("params", params.into());
+    scope.push_dynamic("params", params);
     scope.push_dynamic("hash", hash);
 
     let result = engine
