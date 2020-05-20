@@ -9,7 +9,7 @@ use crate::render::{Helper, RenderContext};
 
 use rhai::{Dynamic, Engine, Scope, AST};
 
-use serde_json::value::{Number, Value as Json};
+use serde_json::value::{Map, Number, Value as Json};
 
 pub struct ScriptHelper {
     pub(crate) script: AST,
@@ -89,13 +89,34 @@ fn to_json(d: &Dynamic) -> Json {
         return Json::Bool(b);
     }
 
+    if d.type_name() == "array" {
+        let v = d
+            .downcast_ref::<Vec<Dynamic>>()
+            .unwrap()
+            .iter()
+            .map(to_json)
+            .collect::<Vec<Json>>();
+        return Json::Array(v);
+    }
+
+    if d.type_name() == "map" {
+        let m = d
+            .downcast_ref::<HashMap<String, Dynamic>>()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.clone(), to_json(v)))
+            .collect::<Map<String, Json>>();
+
+        return Json::Object(m);
+    }
+
     // FIXME: more types
     return Json::Null;
 }
 
 #[cfg(test)]
 mod test {
-    use super::{call_script_helper, to_dynamic};
+    use super::*;
     use crate::json::value::{PathAndJson, ScopedJson};
     use rhai::Engine;
 
@@ -115,6 +136,13 @@ mod test {
 
         let d1 = to_dynamic(&j1);
         assert_eq!("map", d1.type_name());
+    }
+
+    #[test]
+    fn test_to_json() {
+        let d0 = Dynamic::from("tomcat".to_owned());
+
+        assert_eq!(Json::String("tomcat".to_owned()), to_json(&d0));
     }
 
     #[test]
