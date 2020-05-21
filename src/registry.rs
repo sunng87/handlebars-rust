@@ -8,6 +8,8 @@ use serde::Serialize;
 
 use crate::context::Context;
 use crate::decorators::{self, DecoratorDef};
+#[cfg(feature = "script_helper")]
+use crate::error::ScriptError;
 use crate::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
@@ -17,6 +19,12 @@ use crate::template::Template;
 
 #[cfg(feature = "dir_source")]
 use walkdir::{DirEntry, WalkDir};
+
+#[cfg(feature = "script_helper")]
+use rhai::Engine;
+
+#[cfg(feature = "script_helper")]
+use crate::helpers::scripting::ScriptHelper;
 
 /// This type represents an *escape fn*, that is a function who's purpose it is
 /// to escape potentially problematic characters in a string.
@@ -47,6 +55,8 @@ pub struct Registry<'reg> {
     escape_fn: EscapeFn,
     source_map: bool,
     strict_mode: bool,
+    #[cfg(feature = "script_helper")]
+    pub(crate) engine: Engine,
 }
 
 impl<'reg> Debug for Registry<'reg> {
@@ -81,6 +91,11 @@ fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
             .unwrap_or(true)
 }
 
+#[cfg(feature = "script_helper")]
+fn rhai_engine() -> Engine {
+    Engine::new()
+}
+
 impl<'reg> Registry<'reg> {
     pub fn new() -> Registry<'reg> {
         let r = Registry {
@@ -90,6 +105,8 @@ impl<'reg> Registry<'reg> {
             escape_fn: Box::new(html_escape),
             source_map: true,
             strict_mode: false,
+            #[cfg(feature = "script_helper")]
+            engine: rhai_engine(),
         };
 
         r.setup_builtins()
@@ -269,6 +286,37 @@ impl<'reg> Registry<'reg> {
         def: Box<dyn HelperDef + Send + Sync + 'reg>,
     ) -> Option<Box<dyn HelperDef + Send + Sync + 'reg>> {
         self.helpers.insert(name.to_string(), def)
+    }
+
+    #[cfg(feature = "script_helper")]
+    pub fn register_script_helper(
+        &mut self,
+        name: &str,
+        script: String,
+    ) -> Result<Option<Box<dyn HelperDef + Send + Sync + 'reg>>, ScriptError> {
+        let compiled = self.engine.compile(&script)?;
+        let script_helper = ScriptHelper { script: compiled };
+        Ok(self
+            .helpers
+            .insert(name.to_string(), Box::new(script_helper)))
+    }
+
+    #[cfg(feature = "script_helper")]
+    pub fn register_script_helper_file<P>(
+        &mut self,
+        name: &str,
+        script_path: P,
+    ) -> Result<Option<Box<dyn HelperDef + Send + Sync + 'reg>>, ScriptError>
+    where
+        P: AsRef<Path>,
+    {
+        let mut script = String::new();
+        {
+            let mut file = File::open(script_path)?;
+            file.read_to_string(&mut script)?;
+        }
+
+        self.register_script_helper(name, script)
     }
 
     /// register a decorator

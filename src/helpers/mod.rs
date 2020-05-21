@@ -109,12 +109,12 @@ pub trait HelperDef {
 /// implement HelperDef for bare function so we can use function as helper
 impl<
         F: for<'reg, 'rc> Fn(
-                &Helper<'reg, 'rc>,
-                &'reg Registry<'reg>,
-                &'rc Context,
-                &mut RenderContext<'reg, 'rc>,
-                &mut dyn Output,
-            ) -> HelperResult,
+            &Helper<'reg, 'rc>,
+            &'reg Registry<'reg>,
+            &'rc Context,
+            &mut RenderContext<'reg, 'rc>,
+            &mut dyn Output,
+        ) -> HelperResult,
     > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
@@ -136,6 +136,8 @@ mod helper_log;
 mod helper_lookup;
 mod helper_raw;
 mod helper_with;
+#[cfg(feature = "script_helper")]
+pub(crate) mod scripting;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
@@ -143,7 +145,6 @@ mod helper_with;
 // h.template().unwrap().render(ctx, r, rc).unwrap()
 // }
 //
-
 #[cfg(test)]
 mod test {
     use std::collections::BTreeMap;

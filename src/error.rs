@@ -7,6 +7,9 @@ use serde_json::error::Error as SerdeError;
 #[cfg(feature = "dir_source")]
 use walkdir::Error as WalkdirError;
 
+#[cfg(feature = "script_helper")]
+use rhai::{EvalAltResult, ParseError};
+
 /// Error when rendering data on template.
 #[derive(Debug)]
 pub struct RenderError {
@@ -14,7 +17,7 @@ pub struct RenderError {
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    cause: Option<Box<dyn Error + Send + Sync + 'static>>,
+    cause: Option<Box<dyn Error + 'static>>,
 }
 
 impl fmt::Display for RenderError {
@@ -59,6 +62,13 @@ impl From<FromUtf8Error> for RenderError {
     }
 }
 
+#[cfg(feature = "script_helper")]
+impl From<Box<EvalAltResult>> for RenderError {
+    fn from(e: Box<EvalAltResult>) -> RenderError {
+        RenderError::with(e)
+    }
+}
+
 impl RenderError {
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
         RenderError {
@@ -80,7 +90,7 @@ impl RenderError {
 
     pub fn with<E>(cause: E) -> RenderError
     where
-        E: Error + Send + Sync + 'static,
+        E: Error + 'static,
     {
         let mut e = RenderError::new(cause.to_string());
         e.cause = Some(Box::new(cause));
@@ -249,6 +259,21 @@ impl TemplateRenderError {
             Some(&e)
         } else {
             None
+        }
+    }
+}
+
+#[cfg(feature = "script_helper")]
+quick_error! {
+    #[derive(Debug)]
+    pub enum ScriptError {
+        IOError(err: IOError) {
+            from()
+            cause(err)
+        }
+        ParseError(err: Box<ParseError>) {
+            from()
+            cause(err)
         }
     }
 }
