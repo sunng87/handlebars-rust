@@ -1,10 +1,7 @@
-#[cfg(feature = "script_helper")]
 use std::error::Error;
 
-#[cfg(feature = "script_helper")]
 use handlebars::Handlebars;
 
-#[cfg(feature = "script_helper")]
 #[macro_use]
 extern crate serde_json;
 

@@ -315,6 +315,8 @@
 //! (value * 100).to_string() + label
 //! ```
 //!
+//! A runnable [example](https://github.com/sunng87/handlebars-rust/blob/master/examples/script.rs) can be find in the repo.
+//!
 //! #### Built-in Helpers
 //!
 //! * `{{{{raw}}}} ... {{{{/raw}}}}` escape handlebars expression within the block
