@@ -1,11 +1,12 @@
+#![allow(unused_imports)]
+
+use handlebars::Handlebars;
 use std::error::Error;
+#[macro_use]
+extern crate serde_json;
 
 #[cfg(feature = "script_helper")]
 fn main() -> Result<(), Box<dyn Error>> {
-    use handlebars::Handlebars;
-    #[macro_use]
-    extern crate serde_json;
-
     let mut handlebars = Handlebars::new();
 
     handlebars.register_template_file("tpl", "./examples/script/template.hbs")?;
