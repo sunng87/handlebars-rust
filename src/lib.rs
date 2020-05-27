@@ -285,10 +285,37 @@
 //! # }
 //!
 //! ```
+//!
 //! Data available to helper can be found in [Helper](struct.Helper.html). And there are more
 //! examples in [HelperDef](trait.HelperDef.html) page.
 //!
 //! You can learn more about helpers by looking into source code of built-in helpers.
+//!
+//!
+//! ### Script Helper
+//!
+//! Like our Javascript counterparts, handlebars allows user to define simple helpers with
+//! a script language, [rhai](https://docs.rs/crate/rhai/). This can be enabled by
+//! turning on `script_helper` feature flag.
+//!
+//! A sample script:
+//!
+//! ```handlebars
+//! {{percent 0.34 label="%"}}
+//! ```
+//!
+//! ```rhai
+//! // percent.rhai
+//! // get first parameter from `params` array
+//! let value = params[0];
+//! // get key  value pair `label` from `hash` map
+//! let label = hash["label"];
+//!
+//! // compute the final string presentation
+//! (value * 100).to_string() + label
+//! ```
+//!
+//! A runnable [example](https://github.com/sunng87/handlebars-rust/blob/master/examples/script.rs) can be find in the repo.
 //!
 //! #### Built-in Helpers
 //!
@@ -345,8 +372,6 @@ pub use self::block::{BlockContext, BlockParams};
 pub use self::context::Context;
 pub use self::decorators::DecoratorDef;
 pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
-#[cfg(feature = "script_helper")]
-pub use self::helpers::scripting::ScriptHelper;
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::json::path::Path;
 pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};

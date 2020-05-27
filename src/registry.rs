@@ -288,6 +288,27 @@ impl<'reg> Registry<'reg> {
         self.helpers.insert(name.to_string(), def)
     }
 
+    /// Register a [rhai](https://docs.rs/rhai/) script as handlebars helper
+    ///
+    /// Currently only simple helper are supported. You can do computation or
+    /// string format with rhai script.
+    ///
+    /// Helper parameters and hash are available in rhai script as array `params`
+    /// and map `hash`. Example script:
+    ///
+    /// ```handlebars
+    /// {{percent 0.34 label="%"}}
+    /// ```
+    ///
+    /// ```rhai
+    /// // percent.rhai
+    /// let value = params[0];
+    /// let label = hash["label"];
+    ///
+    /// (value * 100).to_string() + label
+    /// ```
+    ///
+    ///
     #[cfg(feature = "script_helper")]
     pub fn register_script_helper(
         &mut self,
@@ -301,6 +322,7 @@ impl<'reg> Registry<'reg> {
             .insert(name.to_string(), Box::new(script_helper)))
     }
 
+    /// Register a [rhai](https://docs.rs/rhai/) script from file
     #[cfg(feature = "script_helper")]
     pub fn register_script_helper_file<P>(
         &mut self,
