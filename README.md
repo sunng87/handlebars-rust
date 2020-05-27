@@ -145,6 +145,11 @@ And using it in your template:
 {{hex 16}}
 ```
 
+With `script_helper` feature flag enabled, you can also create helpers
+using [rhai](https://github.com/jonathandturner/rhai) script, just like JavaScript
+for handlebars-js. This feature was in early stage. Its API was limited at the
+moment, and can change in future.
+
 #### Template inheritance
 
 Every time I look into a templating system, I will investigate its
