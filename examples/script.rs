@@ -1,7 +1,8 @@
+use std::error::Error;
+
 #[cfg(feature = "script_helper")]
 fn main() -> Result<(), Box<dyn Error>> {
     use handlebars::Handlebars;
-    use std::error::Error;
     #[macro_use]
     extern crate serde_json;
 
@@ -31,6 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[cfg(not(feature = "script_helper"))]
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     println!("Please enable feature flag script_helper for this example");
+    Ok(())
 }
