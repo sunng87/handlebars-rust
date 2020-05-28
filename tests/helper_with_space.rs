@@ -8,10 +8,16 @@ fn dump<'reg, 'rc>(
     _: &mut RenderContext,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    assert_eq!(1, h.params().len());
+    assert_eq!(2, h.params().len());
 
-    let data = h.param(0).unwrap().value().render();
-    out.write(&data)?;
+    let result = h
+        .params()
+        .iter()
+        .map(|p| p.value().render())
+        .collect::<Vec<String>>()
+        .join(", ");
+    out.write(&result)?;
+
     Ok(())
 }
 
@@ -21,7 +27,10 @@ fn test_helper_with_space_param() {
     r.register_helper("echo", Box::new(dump));
 
     let s = r
-        .render_template("Output: {{echo \"Mozilla Firefox\"}}", &json!({}))
+        .render_template(
+            "Output: {{echo \"Mozilla Firefox\" \"Google Chrome\"}}",
+            &json!({}),
+        )
         .unwrap();
-    assert_eq!(s, "Output: Mozilla Firefox".to_owned());
+    assert_eq!(s, "Output: Mozilla Firefox, Google Chrome".to_owned());
 }
