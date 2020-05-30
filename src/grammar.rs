@@ -167,6 +167,7 @@ fn test_expression() {
         "{{../exp}}",
         "{{exp 1}}",
         "{{exp \"literal\"}}",
+        "{{exp \"literal with space\"}}",
         "{{exp ref}}",
         "{{exp (sub)}}",
         "{{exp (sub 123)}}",
