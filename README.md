@@ -38,6 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // register template using given name
     reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?;
     println!("{}", reg.render("tpl_1", &json!({"name": "foo"}))?);
+    Ok(())
 }
 ```
 
