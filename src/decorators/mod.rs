@@ -69,11 +69,11 @@ pub trait DecoratorDef {
 /// implement DecoratorDef for bare function so we can use function as decorator
 impl<
         F: for<'reg, 'rc> Fn(
-                &Decorator<'reg, 'rc>,
-                &'reg Registry<'reg>,
-                &'rc Context,
-                &mut RenderContext<'reg, 'rc>,
-            ) -> DecoratorResult,
+            &Decorator<'reg, 'rc>,
+            &'reg Registry<'reg>,
+            &'rc Context,
+            &mut RenderContext<'reg, 'rc>,
+        ) -> DecoratorResult,
     > DecoratorDef for F
 {
     fn call<'reg: 'rc, 'rc>(
