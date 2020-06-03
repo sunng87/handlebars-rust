@@ -271,7 +271,7 @@ quick_error! {
             from()
             cause(err)
         }
-        ParseError(err: Box<ParseError>) {
+        ParseError(err: ParseError) {
             from()
             cause(err)
         }
