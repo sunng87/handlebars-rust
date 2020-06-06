@@ -40,7 +40,7 @@ pub struct RenderContext<'reg, 'rc> {
 #[derive(Clone)]
 pub struct RenderContextInner<'reg, 'rc> {
     partials: BTreeMap<String, &'reg Template>,
-    local_helpers: BTreeMap<String, Rc<Box<dyn HelperDef + 'rc>>>,
+    local_helpers: BTreeMap<String, Rc<dyn HelperDef + 'rc>>,
     /// current template name
     current_template: Option<&'reg String>,
     /// root template name
@@ -193,10 +193,10 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         &mut self,
         name: &str,
         def: Box<dyn HelperDef + 'rc>,
-    ) -> Option<Rc<Box<dyn HelperDef + 'rc>>> {
+    ) -> Option<Rc<dyn HelperDef + 'rc>> {
         self.inner_mut()
             .local_helpers
-            .insert(name.to_string(), Rc::new(def))
+            .insert(name.to_string(), def.into())
     }
 
     /// Remove a helper from render context
@@ -205,7 +205,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Attempt to get a helper from current render context.
-    pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<dyn HelperDef + 'rc>>> {
+    pub fn get_local_helper(&self, name: &str) -> Option<Rc<dyn HelperDef + 'rc>> {
         self.inner().local_helpers.get(name).cloned()
     }
 
@@ -584,7 +584,7 @@ impl Parameter {
 
                         let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                         if let Some(ref d) = rc.get_local_helper(&name) {
-                            let helper_def = d.deref().as_ref();
+                            let helper_def = d.deref();
                             call_helper_for_value(helper_def, &h, registry, ctx, rc)
                         } else {
                             registry
