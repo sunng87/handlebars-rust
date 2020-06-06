@@ -167,6 +167,15 @@ impl<'reg> Registry<'reg> {
         self.strict_mode
     }
 
+    /// Register a `Template`
+    ///
+    /// This is infallible since the template has already been parsed and
+    /// insert cannot fail. If there is an existing template with this name it
+    /// will be overwritten.
+    pub fn register_template(&mut self, name: &str, tpl: Template) {
+        self.templates.insert(name.to_string(), tpl);
+    }
+
     /// Register a template string
     ///
     /// Returns `TemplateError` if there is syntax error on parsing template.
@@ -178,8 +187,8 @@ impl<'reg> Registry<'reg> {
     where
         S: AsRef<str>,
     {
-        Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)
-            .and_then(|t| Ok(self.templates.insert(name.to_string(), t)))?;
+        let template = Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)?;
+        self.register_template(name, template);
         Ok(())
     }
 
@@ -511,6 +520,7 @@ mod test {
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
+    use crate::template::Template;
     #[cfg(feature = "dir_source")]
     use std::fs::{DirBuilder, File};
     #[cfg(feature = "dir_source")]
@@ -541,7 +551,9 @@ mod test {
         let mut r = Registry::new();
 
         assert!(r.register_template_string("index", "<h1></h1>").is_ok());
-        assert!(r.register_template_string("index2", "<h2></h2>").is_ok());
+
+        let tpl = Template::compile("<h2></h2>").unwrap();
+        r.register_template("index2", tpl);
 
         assert_eq!(r.templates.len(), 2);
 
