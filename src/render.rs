@@ -26,7 +26,7 @@ const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
 
 /// The context of a render call
 ///
-/// this context stores information of a render and a writer where generated
+/// This context stores information of a render and a writer where generated
 /// content is written to.
 ///
 #[derive(Clone, Debug)]
@@ -131,7 +131,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     /// Evaluate a Json path in current scope.
     ///
-    /// Typically you don't need to evaluate it by your self.
+    /// Typically you don't need to evaluate it by yourself.
     /// The Helper and Decorator API will provide your evaluated value of
     /// their parameters and hash data.
     pub fn evaluate(
@@ -204,7 +204,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.inner_mut().local_helpers.remove(name);
     }
 
-    /// Attemp to get a helper from current render context.
+    /// Attempt to get a helper from current render context.
     pub fn get_local_helper(&self, name: &str) -> Option<Rc<Box<dyn HelperDef + 'rc>>> {
         self.inner().local_helpers.get(name).cloned()
     }
@@ -494,7 +494,7 @@ pub trait Renderable {
     }
 }
 
-/// Evaluate decorator or decorator
+/// Evaluate decorator
 pub trait Evaluable {
     fn eval<'reg: 'rc, 'rc>(
         &'reg self,

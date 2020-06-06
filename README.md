@@ -120,7 +120,7 @@ This library doesn't attempt to use some macro magic to allow you to
 write your template within your rust code. I admit that it's fun to do
 that but it doesn't fit real-world use cases.
 
-#### Limited but essential control structure built-in
+#### Limited but essential control structures built-in
 
 Only essential control directives `if` and `each` are built-in. This
 prevents you from putting too much application logic into your template.

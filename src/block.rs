@@ -106,8 +106,8 @@ impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
     //     self.base_value = Some(value);
     // }
 
-    /// Get a block paramteter from this block.
-    /// Block paramters needed to be supported by the block helper.
+    /// Get a block parameter from this block.
+    /// Block parameters needed to be supported by the block helper.
     /// The typical syntax for block parameter is:
     ///
     /// ```skip
@@ -120,7 +120,7 @@ impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
         self.block_params.get(block_param_name)
     }
 
-    /// Set a block paramter into this block.
+    /// Set a block parameter into this block.
     pub fn set_block_params(&mut self, block_params: BlockParams<'reg>) {
         self.block_params = block_params;
     }

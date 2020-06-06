@@ -17,7 +17,7 @@ pub type HelperResult = Result<(), RenderError>;
 
 /// Helper Definition
 ///
-/// Implement `HelperDef` to create custom helper. You can retrieve useful information from these arguments.
+/// Implement `HelperDef` to create custom helpers. You can retrieve useful information from these arguments.
 ///
 /// * `&Helper`: current helper template information, contains name, params, hashes and nested template
 /// * `&Registry`: the global registry, you can find templates by name from registry
@@ -25,7 +25,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// * `&mut RenderContext`: you can access data or modify variables (starts with @)/partials in render context, for example, @index of #each. See its document for detail.
 /// * `&mut dyn Output`: where you write output to
 ///
-/// By default, you can use bare function as helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
+/// By default, you can use a bare function as a helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
 ///
 /// ## Define an inline helper
 ///
@@ -43,7 +43,7 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 /// ## Define block helper
 ///
-/// Block helper is like `#if` or `#each` which has a inner template and an optional *inverse* template (the template in else branch). You can access the inner template by `helper.template()` and `helper.inverse()`. In most case you will just call `render` on it.
+/// Block helper is like `#if` or `#each` which has a inner template and an optional *inverse* template (the template in else branch). You can access the inner template by `helper.template()` and `helper.inverse()`. In most cases you will just call `render` on it.
 ///
 /// ```
 /// use handlebars::*;
@@ -63,7 +63,7 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 /// ## Define helper function using macro
 ///
-/// In most case you just need some simple function to call from template. We have  `handlebars_helper!` macro to simplify the job.
+/// In most cases you just need some simple function to call from templates. We have a `handlebars_helper!` macro to simplify the job.
 ///
 /// ```
 /// use handlebars::*;
