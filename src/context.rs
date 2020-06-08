@@ -203,12 +203,12 @@ impl Context {
         }
     }
 
-    /// return the Json data wrapped in context
+    /// Return the Json data wrapped in context
     pub fn data(&self) -> &Json {
         &self.data
     }
 
-    /// return the mutable reference to Json data wrapped in context
+    /// Return the mutable reference to Json data wrapped in context
     pub fn data_mut(&mut self) -> &mut Json {
         &mut self.data
     }

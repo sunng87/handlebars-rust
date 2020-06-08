@@ -9,14 +9,14 @@ pub type DecoratorResult = Result<(), RenderError>;
 
 /// Decorator Definition
 ///
-/// Implement this trait to define your own decorators or decorators. Currently
-/// decorator shares same definition with helper.
+/// Implement this trait to define your own decorators. Currently decorator
+/// shares same definition with helper.
 ///
 /// In handlebars, it is recommended to use decorator to change context data and update helper
 /// definition.
 /// ## Updating context data
 ///
-/// In decorator, you can change some context data your are about to render.
+/// In decorator, you can change some context data you are about to render.
 ///
 /// ```
 /// use handlebars::*;
@@ -66,7 +66,7 @@ pub trait DecoratorDef {
     ) -> DecoratorResult;
 }
 
-/// implement DecoratorDef for bare function so we can use function as decorator
+/// Implement DecoratorDef for bare function so we can use function as decorator
 impl<
         F: for<'reg, 'rc> Fn(
             &Decorator<'reg, 'rc>,

@@ -26,7 +26,7 @@ use rhai::Engine;
 #[cfg(feature = "script_helper")]
 use crate::helpers::scripting::ScriptHelper;
 
-/// This type represents an *escape fn*, that is a function who's purpose it is
+/// This type represents an *escape fn*, that is a function whose purpose it is
 /// to escape potentially problematic characters in a string.
 ///
 /// An *escape fn* is represented as a `Box` to avoid unnecessary type
@@ -39,7 +39,7 @@ pub fn html_escape(data: &str) -> String {
     str::escape_html(data)
 }
 
-/// `EscapeFn` that do not change any thing. Useful when using in a non-html
+/// `EscapeFn` that does not change anything. Useful when using in a non-html
 /// environment.
 pub fn no_escape(data: &str) -> String {
     data.to_owned()
@@ -178,7 +178,7 @@ impl<'reg> Registry<'reg> {
 
     /// Register a template string
     ///
-    /// Returns `TemplateError` if there is syntax error on parsing template.
+    /// Returns `TemplateError` if there is syntax error on parsing the template.
     pub fn register_template_string<S>(
         &mut self,
         name: &str,
@@ -195,7 +195,7 @@ impl<'reg> Registry<'reg> {
     /// Register a partial string
     ///
     /// A named partial will be added to the registry. It will overwrite template with
-    /// same name. Currently registered partial is just identical to template.
+    /// same name. Currently a registered partial is just identical to a template.
     pub fn register_partial<S>(&mut self, name: &str, partial_str: S) -> Result<(), TemplateError>
     where
         S: AsRef<str>,
@@ -225,7 +225,7 @@ impl<'reg> Registry<'reg> {
     /// Hidden files and tempfile (starts with `#`) will be ignored. All registered
     /// will use their relative name as template name. For example, when `dir_path` is
     /// `templates/` and `tpl_extension` is `.hbs`, the file
-    /// `templates/some/path/file.hbs` will be registerd as `some/path/file`.
+    /// `templates/some/path/file.hbs` will be registered as `some/path/file`.
     ///
     /// This method is not available by default.
     /// You will need to enable the `dir_source` feature to use it.
@@ -283,12 +283,12 @@ impl<'reg> Registry<'reg> {
         Ok(())
     }
 
-    /// remove a template from the registry
+    /// Remove a template from the registry
     pub fn unregister_template(&mut self, name: &str) {
         self.templates.remove(name);
     }
 
-    /// register a helper
+    /// Register a helper
     pub fn register_helper(
         &mut self,
         name: &str,
@@ -299,8 +299,8 @@ impl<'reg> Registry<'reg> {
 
     /// Register a [rhai](https://docs.rs/rhai/) script as handlebars helper
     ///
-    /// Currently only simple helper are supported. You can do computation or
-    /// string format with rhai script.
+    /// Currently only simple helpers are supported. You can do computation or
+    /// string formatting with rhai script.
     ///
     /// Helper parameters and hash are available in rhai script as array `params`
     /// and map `hash`. Example script:
@@ -350,7 +350,7 @@ impl<'reg> Registry<'reg> {
         self.register_script_helper(name, script)
     }
 
-    /// register a decorator
+    /// Register a decorator
     pub fn register_decorator(
         &mut self,
         name: &str,
@@ -397,7 +397,7 @@ impl<'reg> Registry<'reg> {
         self.helpers.contains_key(name)
     }
 
-    /// Return a registered decorator, aka decorator
+    /// Return a registered decorator
     pub fn get_decorator(&self, name: &str) -> Option<&(dyn DecoratorDef + Send + Sync + 'reg)> {
         self.decorators.get(name).map(|v| v.as_ref())
     }
@@ -434,10 +434,10 @@ impl<'reg> Registry<'reg> {
 
     /// Render a registered template with some data into a string
     ///
-    /// * `name` is the template name you registred previously
-    /// * `ctx` is the data that implements `serde::Serialize`
+    /// * `name` is the template name you registered previously
+    /// * `data` is the data that implements `serde::Serialize`
     ///
-    /// Returns rendered string or an struct with error information
+    /// Returns rendered string or a struct with error information
     pub fn render<T>(&self, name: &str, data: &T) -> Result<String, RenderError>
     where
         T: Serialize,
@@ -457,7 +457,7 @@ impl<'reg> Registry<'reg> {
         self.render_to_output(name, data, &mut output)
     }
 
-    /// render a template string using current registry without register it
+    /// Render a template string using current registry without registering it
     pub fn render_template<T>(
         &self,
         template_string: &str,
@@ -471,7 +471,7 @@ impl<'reg> Registry<'reg> {
         Ok(writer.into_string())
     }
 
-    /// render a template string using current registry without register it
+    /// Render a template string using current registry without registering it
     pub fn render_template_to_write<T, W>(
         &self,
         template_string: &str,
@@ -491,7 +491,7 @@ impl<'reg> Registry<'reg> {
             .map_err(TemplateRenderError::from)
     }
 
-    /// render a template source using current registry without register it
+    /// Render a template source using current registry without registering it
     pub fn render_template_source_to_write<T, R, W>(
         &self,
         template_source: &mut R,

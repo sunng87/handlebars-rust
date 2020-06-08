@@ -44,17 +44,17 @@
 //!
 //! This library doesn't attempt to use some macro magic to allow you to
 //! write your template within your rust code. I admit that it's fun to do
-//! that but it doesn't fit real-world use case in my opinion.
+//! that but it doesn't fit real-world use cases.
 //!
-//! ### Limited but essential control structure built-in
+//! ### Limited but essential control structures built-in
 //!
-//! Only essential control directive `if` and `each` were built-in. This
-//! prevents you to put too much application logic into your template.
+//! Only essential control directives `if` and `each` are built-in. This
+//! prevents you from putting too much application logic into your template.
 //!
 //! ### Extensible helper system
 //!
 //! You can write your own helper with Rust! It can be a block helper or
-//! inline helper. Put you logic into the helper and don't repeat
+//! inline helper. Put your logic into the helper and don't repeat
 //! yourself.
 //!
 //! The built-in helpers like `if` and `each` were written with these
@@ -67,19 +67,19 @@
 //!
 //! [t]: https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance
 //!
-//! Template inclusion is not enough. In most case you will need a skeleton
-//! of page as parent (header, footer, etc.), and embed you page into this
-//! parent.
+//! Template include is not sufficient for template reuse. In most cases
+//! you will need a skeleton of page as parent (header, footer, etc.), and
+//! embed your page into this parent.
 //!
-//! You can find a real example for template inheritance in
-//! `examples/partials.rs`, and templates used by this file.
+//! You can find a real example of template inheritance in
+//! `examples/partials.rs` and templates used by this file.
 //!
 //! ### Strict mode
 //!
 //! Handlebars, the language designed to work with JavaScript, has no
-//! strict restriction on accessing non-existed fields or index. It
-//! generates empty string for such case. However, in Rust we want a
-//! little bit strict sometime.
+//! strict restriction on accessing nonexistent fields or indexes. It
+//! generates empty strings for such cases. However, in Rust we want to be
+//! a little stricter sometimes.
 //!
 //! By enabling `strict_mode` on handlebars:
 //!
@@ -89,37 +89,37 @@
 //! handlebars.set_strict_mode(true);
 //! ```
 //!
-//! You will get a `RenderError` when accessing fields that not exists.
+//! You will get a `RenderError` when accessing fields that do not exist.
 //!
 //! ## Limitations
 //!
 //! ### Compatibility with original JavaScript version
 //!
-//! This implementation is **not fully compatible** with the original javascript version.
+//! This implementation is **not fully compatible** with the original JavaScript version.
 //!
-//! First of all, mustache block is not supported. I suggest you to use `#if` and `#each` for
-//! same functionality.
+//! First of all, mustache blocks are not supported. I suggest you to use `#if` and `#each` for
+//! the same functionality.
 //!
 //! There are some other minor features missing:
 //!
 //! * Chained else [#12](https://github.com/sunng87/handlebars-rust/issues/12)
 //!
-//! Feel free to fire an issue on [github](https://github.com/sunng87/handlebars-rust/issues) if
+//! Feel free to file an issue on [github](https://github.com/sunng87/handlebars-rust/issues) if
 //! you find missing features.
 //!
 //! ### Types
 //!
 //! As a static typed language, it's a little verbose to use handlebars.
 //! Handlebars templating language is designed against JSON data type. In rust,
-//! we will convert user's structs, vectors or maps into SerDe-Json's `Value` type
-//! in order to use in template. You have to make sure your data implements the
+//! we will convert user's structs, vectors or maps into Serde-Json's `Value` type
+//! in order to use in templates. You have to make sure your data implements the
 //! `Serialize` trait from the [Serde](https://serde.rs) project.
 //!
 //! ## Usage
 //!
 //! ### Template Creation and Registration
 //!
-//! Templates are created from String and registered to `Handlebars` with a name.
+//! Templates are created from `String`s and registered to `Handlebars` with a name.
 //!
 //! ```
 //! # extern crate handlebars;
@@ -164,7 +164,7 @@
 //!
 //! That means, if you want to render something, you have to ensure the data type implements the `serde::Serialize` trait. Most rust internal types already have that trait. Use `#derive[Serialize]` for your types to generate default implementation.
 //!
-//! You can use default `render` function to render a template into `String`. From 0.9, there's `renderw` to render text into anything of `std::io::Write`.
+//! You can use default `render` function to render a template into `String`. From 0.9, there's `render_to_write` to render text into anything of `std::io::Write`.
 //!
 //! ```
 //! # use std::error::Error;
@@ -294,8 +294,8 @@
 //!
 //! ### Script Helper
 //!
-//! Like our Javascript counterparts, handlebars allows user to define simple helpers with
-//! a script language, [rhai](https://docs.rs/crate/rhai/). This can be enabled by
+//! Like our JavaScript counterparts, handlebars allows user to define simple helpers with
+//! a scripting language, [rhai](https://docs.rs/crate/rhai/). This can be enabled by
 //! turning on `script_helper` feature flag.
 //!
 //! A sample script:
@@ -322,7 +322,7 @@
 //! * `{{{{raw}}}} ... {{{{/raw}}}}` escape handlebars expression within the block
 //! * `{{#if ...}} ... {{else}} ... {{/if}}` if-else block
 //! * `{{#unless ...}} ... {{else}} .. {{/unless}}` if-not-else block
-//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebar-rust doesn't support mustache iteration syntax so use this instead.
+//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebars-rust doesn't support mustache iteration syntax so use this instead.
 //! * `{{#with ...}} ... {{/with}}` change current context. Similar to {{#each}}, used for replace corresponding mustache syntax.
 //! * `{{lookup ... ...}}` get value from array by `@index` or `@key`
 //! * `{{> ...}}` include template with name
