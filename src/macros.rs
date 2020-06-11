@@ -22,7 +22,7 @@
 /// ```
 #[macro_export]
 macro_rules! handlebars_helper {
-    ($struct_name:ident: |$($name:ident: $tpe:tt),* $($hash_name:ident: $hash_tpe:tt=$default_value:literal),*| $body:expr ) => {
+    ($struct_name:ident: |$($name:ident: $tpe:tt$(= $dft_val: literal)?),* | $body:expr ) => {
         #[allow(non_camel_case_types)]
         pub struct $struct_name;
 
@@ -54,21 +54,6 @@ macro_rules! handlebars_helper {
                                   )))
                         )?;
                     param_idx += 1;
-                )*
-
-                $(
-                    let $hash_name = h.hash_get(stringify!($hash_name))
-                        .map(|x| x.value())
-                        .and_then(|x|
-                                  handlebars_helper!(@as_json_value x, $hash_tpe)
-                                  .ok_or_else(|| $crate::RenderError::new(&format!(
-                                      "`{}` helper: Couldn't convert parameter {} to type `{}`. \
-                                       It's {:?} as JSON. Got these hash: {:?}",
-                                      stringify!($fn_name), stringify!($hash_name), stringify!($hash_tpe),
-                                      x, h.hash(),
-                                  )))
-                        )?
-                        .unwrap_or($default_value);
                 )*
 
                 let result = $body;
