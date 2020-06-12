@@ -831,4 +831,19 @@ mod test {
             )
             .is_err());
     }
+
+    #[test]
+    fn test_html_expression() {
+        let reg = Registry::new();
+        assert_eq!(
+            reg.render_template("{{{ a }}}", &json!({"a": "<b>bold</b>"}))
+                .unwrap(),
+            "<b>bold</b>"
+        );
+        assert_eq!(
+            reg.render_template("{{ $a }}", &json!({"a": "<b>bold</b>"}))
+                .unwrap(),
+            "<b>bold</b>"
+        );
+    }
 }
