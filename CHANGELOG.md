@@ -3,6 +3,7 @@
 ## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.1.0...Unreleased) - ReleaseDate
 
 * [Added] API to register an pre-processed template [#331]
+* [Added] Helper macro now has support for named argument and helepr hash [#338]
 * [Changed] Update rhai to 0.15
 
 ## [3.1.0](https://github.com/sunng87/handlebars-rust/compare/3.0.1...3.1.0) - 2020-06-01

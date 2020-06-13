@@ -1,5 +1,7 @@
 /// Macro that allows you to quickly define a handlebars helper by passing a
-/// name and a closure.
+/// name and a closure. The closure arguments are mapped to helper parameters
+/// one by one. Named argument with default value is also supported and mapped
+/// to helper hash.
 ///
 /// # Examples
 ///
@@ -8,16 +10,22 @@
 /// #[macro_use] extern crate serde_json;
 ///
 /// handlebars_helper!(is_above_10: |x: u64| x > 10);
+/// handlebars_helper!(is_above: |x: u64, { compare: u64 = 10 }| x > compare);
 ///
 /// # fn main() {
 /// #
 /// let mut handlebars = handlebars::Handlebars::new();
 /// handlebars.register_helper("is-above-10", Box::new(is_above_10));
+/// handlebars.register_helper("is-above", Box::new(is_above));
 ///
 /// let result = handlebars
 ///     .render_template("{{#if (is-above-10 12)}}great!{{else}}okay{{/if}}", &json!({}))
 ///     .unwrap();
 ///  assert_eq!(&result, "great!");
+/// let result2 = handlebars
+///     .render_template("{{#if (is-above 12 compare=10)}}great!{{else}}okay{{/if}}", &json!({}))
+///     .unwrap();
+///  assert_eq!(&result2, "great!");
 /// # }
 /// ```
 
