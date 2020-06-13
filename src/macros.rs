@@ -20,9 +20,12 @@
 ///  assert_eq!(&result, "great!");
 /// # }
 /// ```
+
 #[macro_export]
 macro_rules! handlebars_helper {
-    ($struct_name:ident: |$($name:ident: $tpe:tt$(= $dft_val: literal)?),* | $body:expr ) => {
+    ($struct_name:ident: |$($name:ident: $tpe:tt),*
+                          $($(,)?{$($hash_name:ident: $hash_tpe:tt=$dft_val:literal),*})?|
+                            $body:expr ) => {
         #[allow(non_camel_case_types)]
         pub struct $struct_name;
 
@@ -42,19 +45,36 @@ macro_rules! handlebars_helper {
                         .map(|x| x.value())
                         .ok_or_else(|| $crate::RenderError::new(&format!(
                             "`{}` helper: Couldn't read parameter {}",
-                            stringify!($fn_name), stringify!($name),
+                            stringify!($struct_name), stringify!($name),
                         )))
                         .and_then(|x|
                                   handlebars_helper!(@as_json_value x, $tpe)
                                   .ok_or_else(|| $crate::RenderError::new(&format!(
                                       "`{}` helper: Couldn't convert parameter {} to type `{}`. \
                                        It's {:?} as JSON. Got these params: {:?}",
-                                      stringify!($fn_name), stringify!($name), stringify!($tpe),
+                                      stringify!($struct_name), stringify!($name), stringify!($tpe),
                                       x, h.params(),
                                   )))
                         )?;
                     param_idx += 1;
                 )*
+
+                    $(
+                        $(
+                            let $hash_name = h.hash_get(stringify!($hash_name))
+                                .map(|x| x.value())
+                                .map(|x|
+                                     handlebars_helper!(@as_json_value x, $hash_tpe)
+                                     .ok_or_else(|| $crate::RenderError::new(&format!(
+                                         "`{}` helper: Couldn't convert hash {} to type `{}`. \
+                                          It's {:?} as JSON. Got these hash: {:?}",
+                                         stringify!($struct_name), stringify!($hash_name), stringify!($hash_tpe),
+                                         x, h.hash(),
+                                     )))
+                                )
+                                .unwrap_or_else(|| Ok($dft_val))?;
+                        )*
+                    )?
 
                 let result = $body;
                 Ok(Some($crate::ScopedJson::Derived($crate::JsonValue::from(result))))
