@@ -1,5 +1,7 @@
 /// Macro that allows you to quickly define a handlebars helper by passing a
-/// name and a closure.
+/// name and a closure. The closure arguments are mapped to helper parameters
+/// one by one. Named argument with default value is also supported and mapped
+/// to helper hash.
 ///
 /// # Examples
 ///
@@ -8,21 +10,30 @@
 /// #[macro_use] extern crate serde_json;
 ///
 /// handlebars_helper!(is_above_10: |x: u64| x > 10);
+/// handlebars_helper!(is_above: |x: u64, { compare: u64 = 10 }| x > compare);
 ///
 /// # fn main() {
 /// #
 /// let mut handlebars = handlebars::Handlebars::new();
 /// handlebars.register_helper("is-above-10", Box::new(is_above_10));
+/// handlebars.register_helper("is-above", Box::new(is_above));
 ///
 /// let result = handlebars
 ///     .render_template("{{#if (is-above-10 12)}}great!{{else}}okay{{/if}}", &json!({}))
 ///     .unwrap();
 ///  assert_eq!(&result, "great!");
+/// let result2 = handlebars
+///     .render_template("{{#if (is-above 12 compare=10)}}great!{{else}}okay{{/if}}", &json!({}))
+///     .unwrap();
+///  assert_eq!(&result2, "great!");
 /// # }
 /// ```
+
 #[macro_export]
 macro_rules! handlebars_helper {
-    ($struct_name:ident: |$($name:ident: $tpe:tt),*| $body:expr ) => {
+    ($struct_name:ident: |$($name:ident: $tpe:tt),*
+                          $($(,)?{$($hash_name:ident: $hash_tpe:tt=$dft_val:literal),*})?|
+                            $body:expr ) => {
         #[allow(non_camel_case_types)]
         pub struct $struct_name;
 
@@ -42,19 +53,36 @@ macro_rules! handlebars_helper {
                         .map(|x| x.value())
                         .ok_or_else(|| $crate::RenderError::new(&format!(
                             "`{}` helper: Couldn't read parameter {}",
-                            stringify!($fn_name), stringify!($name),
+                            stringify!($struct_name), stringify!($name),
                         )))
                         .and_then(|x|
                                   handlebars_helper!(@as_json_value x, $tpe)
                                   .ok_or_else(|| $crate::RenderError::new(&format!(
                                       "`{}` helper: Couldn't convert parameter {} to type `{}`. \
                                        It's {:?} as JSON. Got these params: {:?}",
-                                      stringify!($fn_name), stringify!($name), stringify!($tpe),
+                                      stringify!($struct_name), stringify!($name), stringify!($tpe),
                                       x, h.params(),
                                   )))
                         )?;
                     param_idx += 1;
                 )*
+
+                    $(
+                        $(
+                            let $hash_name = h.hash_get(stringify!($hash_name))
+                                .map(|x| x.value())
+                                .map(|x|
+                                     handlebars_helper!(@as_json_value x, $hash_tpe)
+                                     .ok_or_else(|| $crate::RenderError::new(&format!(
+                                         "`{}` helper: Couldn't convert hash {} to type `{}`. \
+                                          It's {:?} as JSON. Got these hash: {:?}",
+                                         stringify!($struct_name), stringify!($hash_name), stringify!($hash_tpe),
+                                         x, h.hash(),
+                                     )))
+                                )
+                                .unwrap_or_else(|| Ok($dft_val))?;
+                        )*
+                    )?
 
                 let result = $body;
                 Ok(Some($crate::ScopedJson::Derived($crate::JsonValue::from(result))))
