@@ -32,8 +32,10 @@
 #[macro_export]
 macro_rules! handlebars_helper {
     ($struct_name:ident: |$($name:ident: $tpe:tt),*
-                          $($(,)?{$($hash_name:ident: $hash_tpe:tt=$dft_val:literal),*})?|
-                            $body:expr ) => {
+     $($(,)?{$($hash_name:ident: $hash_tpe:tt=$dft_val:literal),*})?
+     $($(,)?*$args:ident)?
+     $($(,)?**$kwargs:ident)?|
+     $body:expr ) => {
         #[allow(non_camel_case_types)]
         pub struct $struct_name;
 
@@ -83,6 +85,9 @@ macro_rules! handlebars_helper {
                                 .unwrap_or_else(|| Ok($dft_val))?;
                         )*
                     )?
+
+                    $(let $args = h.params().iter().map(|x| x.value()).collect::<Vec<&serde_json::Value>>();)?
+                    $(let $kwargs = h.hash().iter().map(|(k, v)| (k.to_owned(), v.value())).collect::<std::collections::BTreeMap<&str, &serde_json::Value>>();)?
 
                 let result = $body;
                 Ok(Some($crate::ScopedJson::Derived($crate::JsonValue::from(result))))
