@@ -10,6 +10,9 @@ handlebars_helper!(upper: |s: str| s.to_uppercase());
 handlebars_helper!(hex: |v: i64| format!("0x{:x}", v));
 handlebars_helper!(money: |v: i64, {cur: str="$"}| format!("{}{}.00", cur, v));
 handlebars_helper!(all_hash: |{cur: str="$"}| cur);
+handlebars_helper!(nargs: |*args| args.len());
+handlebars_helper!(has_a: |{a:i64 = 99}, **kwargs|
+                   format!("{}, {}", a, kwargs.get("a").is_some()));
 
 #[test]
 fn test_macro_helper() {
@@ -19,6 +22,8 @@ fn test_macro_helper() {
     hbs.register_helper("upper", Box::new(upper));
     hbs.register_helper("hex", Box::new(hex));
     hbs.register_helper("money", Box::new(money));
+    hbs.register_helper("nargs", Box::new(nargs));
+    hbs.register_helper("has_a", Box::new(has_a));
 
     let data = json!("Teixeira");
 
@@ -40,5 +45,20 @@ fn test_macro_helper() {
         hbs.render_template("{{money 5000 cur=\"£\"}}", &())
             .unwrap(),
         "£5000.00"
+    );
+    assert_eq!(
+        hbs.render_template("{{nargs 1 1 1 1 1}}", &()).unwrap(),
+        "5"
+    );
+    assert_eq!(hbs.render_template("{{nargs}}", &()).unwrap(), "0");
+
+    assert_eq!(
+        hbs.render_template("{{has_a a=1 b=2}}", &()).unwrap(),
+        "1, true"
+    );
+
+    assert_eq!(
+        hbs.render_template("{{has_a x=1 b=2}}", &()).unwrap(),
+        "99, false"
     );
 }
