@@ -1,7 +1,14 @@
 /// Macro that allows you to quickly define a handlebars helper by passing a
-/// name and a closure. The closure arguments are mapped to helper parameters
-/// one by one. Named argument with default value is also supported and mapped
-/// to helper hash.
+/// name and a closure.
+///
+/// There are several types of arguments available to closure:
+///
+/// * Parameters are mapped to closure arguments one by one. Any declared
+/// parameters are required
+/// * Hash are mapped as named arguments and declared in a bracket block.
+/// All named arguments are optional so default value is required.
+/// * An optional `*args` provides a vector of all helper parameters.
+/// * An optional `**kwargs` provides a map of all helper hash.
 ///
 /// # Examples
 ///
