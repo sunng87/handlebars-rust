@@ -1,7 +1,14 @@
 /// Macro that allows you to quickly define a handlebars helper by passing a
-/// name and a closure. The closure arguments are mapped to helper parameters
-/// one by one. Named argument with default value is also supported and mapped
-/// to helper hash.
+/// name and a closure.
+///
+/// There are several types of arguments available to closure:
+///
+/// * Parameters are mapped to closure arguments one by one. Any declared
+/// parameters are required
+/// * Hash are mapped as named arguments and declared in a bracket block.
+/// All named arguments are optional so default value is required.
+/// * An optional `*args` provides a vector of all helper parameters.
+/// * An optional `**kwargs` provides a map of all helper hash.
 ///
 /// # Examples
 ///
@@ -32,8 +39,10 @@
 #[macro_export]
 macro_rules! handlebars_helper {
     ($struct_name:ident: |$($name:ident: $tpe:tt),*
-                          $($(,)?{$($hash_name:ident: $hash_tpe:tt=$dft_val:literal),*})?|
-                            $body:expr ) => {
+     $($(,)?{$($hash_name:ident: $hash_tpe:tt=$dft_val:literal),*})?
+     $($(,)?*$args:ident)?
+     $($(,)?**$kwargs:ident)?|
+     $body:expr ) => {
         #[allow(non_camel_case_types)]
         pub struct $struct_name;
 
@@ -83,6 +92,9 @@ macro_rules! handlebars_helper {
                                 .unwrap_or_else(|| Ok($dft_val))?;
                         )*
                     )?
+
+                    $(let $args = h.params().iter().map(|x| x.value()).collect::<Vec<&serde_json::Value>>();)?
+                    $(let $kwargs = h.hash().iter().map(|(k, v)| (k.to_owned(), v.value())).collect::<std::collections::BTreeMap<&str, &serde_json::Value>>();)?
 
                 let result = $body;
                 Ok(Some($crate::ScopedJson::Derived($crate::JsonValue::from(result))))
