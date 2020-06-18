@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::fs::File;
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::path::Path;
 
 use serde::Serialize;
@@ -212,9 +213,10 @@ impl<'reg> Registry<'reg> {
     where
         P: AsRef<Path>,
     {
-        let mut file =
-            File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned()))?;
-        self.register_template_source(name, &mut file)
+        let mut reader = BufReader::new(
+            File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned()))?,
+        );
+        self.register_template_source(name, &mut reader)
     }
 
     /// Register templates from a directory
