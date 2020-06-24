@@ -104,3 +104,14 @@ fn test_referencing_block_param_from_upper_scope() {
         "false|1;false|2;true|3;true|4;"
     );
 }
+
+#[test]
+fn test_literal_param() {
+    let data = json!(4);
+    let mut hbs = Handlebars::new();
+
+    let template = "{{#each [0,1,2] as |i|}}{{i}}{{/each}}";
+    hbs.register_template_string("tpl", template).unwrap();
+
+    assert_eq!("012", hbs.render("tpl", &data).unwrap());
+}
