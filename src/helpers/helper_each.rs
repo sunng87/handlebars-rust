@@ -30,18 +30,18 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => {
-                let mut block_context = BlockContext::new();
-
-                if let Some(path) = value.context_path() {
-                    *block_context.base_path_mut() = path.to_vec();
-                    // TODO: disable base value support for now.
-                    // block_context.set_base_value(value.value());
-                }
-
-                rc.push_block(block_context);
-
                 let rendered = match (value.value().is_truthy(false), value.value()) {
                     (true, &Json::Array(ref list)) => {
+                        let mut block_context = BlockContext::new();
+
+                        if let Some(path) = value.context_path() {
+                            *block_context.base_path_mut() = path.to_vec();
+                            // TODO: disable base value support for now.
+                            // block_context.set_base_value(value.value());
+                        }
+
+                        rc.push_block(block_context);
+
                         let len = list.len();
 
                         let array_path = value.context_path();
@@ -84,6 +84,16 @@ impl HelperDef for EachHelper {
                         Ok(())
                     }
                     (true, &Json::Object(ref obj)) => {
+                        let mut block_context = BlockContext::new();
+
+                        if let Some(path) = value.context_path() {
+                            *block_context.base_path_mut() = path.to_vec();
+                            // TODO: disable base value support for now.
+                            // block_context.set_base_value(value.value());
+                        }
+
+                        rc.push_block(block_context);
+
                         let mut is_first = true;
                         let obj_path = value.context_path();
 
@@ -99,8 +109,6 @@ impl HelperDef for EachHelper {
                                         *ptr = k.clone();
                                     }
                                 }
-
-                                // TODO
 
                                 if let Some(bp_val) = h.block_param() {
                                     let mut params = BlockParams::new();
@@ -408,5 +416,14 @@ mod test {
         let r0 = handlebars.render("t0", &data).ok().unwrap();
 
         assert_eq!("1234 good", r0);
+    }
+
+    #[test]
+    fn test_else_context() {
+        let reg = Registry::new();
+        let template = "{{#each list}}A{{else}}{{foo}}{{/each}}";
+        let input = json!({"list": [], "foo": "bar"});
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("bar", rendered);
     }
 }
