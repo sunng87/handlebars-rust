@@ -409,4 +409,13 @@ mod test {
 
         assert_eq!("1234 good", r0);
     }
+
+    #[test]
+    fn test_else_context() {
+        let reg = Registry::new();
+        let template = "{{#each list}}A{{else}}{{foo}}{{/each}}";
+        let input = json!({"list": [], "foo": "bar"});
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("bar", rendered);
+    }
 }
