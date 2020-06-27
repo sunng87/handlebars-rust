@@ -210,6 +210,19 @@ mod test {
     }
 
     #[test]
+    fn test_partial_context_hash() {
+        let mut hbs = Registry::new();
+        hbs.register_template_string("one", "This is a test. {{> two name=\"fred\" }}")
+            .unwrap();
+        hbs.register_template_string("two", "Lets test {{name}}")
+            .unwrap();
+        assert_eq!(
+            "This is a test. Lets test fred",
+            hbs.render("one", &0).unwrap()
+        );
+    }
+
+    #[test]
     fn test_nested_partial_scope() {
         let t = "{{#*inline \"pp\"}}{{a}} {{b}}{{/inline}}{{#each c}}{{> pp a=2}}{{/each}}";
         let data = json!({"c": [{"b": true}, {"b": false}]});
