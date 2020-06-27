@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 use std::io::Error as IOError;
+use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 
 use serde_json::error::Error as SerdeError;
@@ -46,26 +47,32 @@ impl Error for RenderError {
 
 impl From<IOError> for RenderError {
     fn from(e: IOError) -> RenderError {
-        RenderError::with(e)
+        RenderError::from_error("Error on output generation.", e)
     }
 }
 
 impl From<SerdeError> for RenderError {
     fn from(e: SerdeError) -> RenderError {
-        RenderError::with(e)
+        RenderError::from_error("Error when accessing JSON data.", e)
     }
 }
 
 impl From<FromUtf8Error> for RenderError {
     fn from(e: FromUtf8Error) -> RenderError {
-        RenderError::with(e)
+        RenderError::from_error("Error on bytes generation.", e)
+    }
+}
+
+impl From<ParseIntError> for RenderError {
+    fn from(e: ParseIntError) -> RenderError {
+        RenderError::from_error("Error on accessing array/vector with string index.", e)
     }
 }
 
 #[cfg(feature = "script_helper")]
 impl From<Box<EvalAltResult>> for RenderError {
     fn from(e: Box<EvalAltResult>) -> RenderError {
-        RenderError::with(e)
+        RenderError::from_error("Error on converting data to Rhai dynamic.", e)
     }
 }
 
@@ -88,11 +95,22 @@ impl RenderError {
         RenderError::new(&msg)
     }
 
+    #[deprecated]
     pub fn with<E>(cause: E) -> RenderError
     where
         E: Error + Send + Sync + 'static,
     {
         let mut e = RenderError::new(cause.to_string());
+        e.cause = Some(Box::new(cause));
+
+        e
+    }
+
+    pub fn from_error<E>(error_kind: &str, cause: E) -> RenderError
+    where
+        E: Error + Send + Sync + 'static,
+    {
+        let mut e = RenderError::new(format!("{}: {}", error_kind, cause.to_string()));
         e.cause = Some(Box::new(cause));
 
         e
