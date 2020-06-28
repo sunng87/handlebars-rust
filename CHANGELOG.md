@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.1.0...Unreleased) - ReleaseDate
+## [3.2.0](https://github.com/sunng87/handlebars-rust/compare/3.1.0...3.2.0) - 2020-06-28
 
 * [Added] API to register an pre-processed template [#331]
 * [Added] Helper macro now has support for named argument and helepr hash [#338]
