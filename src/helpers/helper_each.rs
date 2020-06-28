@@ -30,7 +30,7 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => {
-                let rendered = match (value.value().is_truthy(false), value.value()) {
+                match (value.value().is_truthy(false), value.value()) {
                     (true, &Json::Array(ref list)) => {
                         let mut block_context = BlockContext::new();
 
@@ -145,9 +145,7 @@ impl HelperDef for EachHelper {
                         "Param type is not iterable: {:?}",
                         value.value()
                     ))),
-                };
-
-                rendered
+                }
             }
             None => Ok(()),
         }
