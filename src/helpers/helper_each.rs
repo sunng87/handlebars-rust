@@ -81,6 +81,7 @@ impl HelperDef for EachHelper {
                             t.render(r, ctx, rc, out)?;
                         }
 
+                        rc.pop_block();
                         Ok(())
                     }
                     (true, &Json::Object(ref obj)) => {
@@ -130,6 +131,8 @@ impl HelperDef for EachHelper {
                                 is_first = false;
                             }
                         }
+
+                        rc.pop_block();
                         Ok(())
                     }
                     (false, _) => {
@@ -144,7 +147,6 @@ impl HelperDef for EachHelper {
                     ))),
                 };
 
-                rc.pop_block();
                 rendered
             }
             None => Ok(()),
@@ -425,5 +427,14 @@ mod test {
         let input = json!({"list": [], "foo": "bar"});
         let rendered = reg.render_template(template, &input).unwrap();
         assert_eq!("bar", rendered);
+    }
+
+    #[test]
+    fn test_block_context_leak() {
+        let reg = Registry::new();
+        let template = "{{#each list}}{{#each inner}}{{this}}{{/each}}{{foo}}{{/each}}";
+        let input = json!({"list": [{"inner": [], "foo": 1}, {"inner": [], "foo": 2}]});
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("12", rendered);
     }
 }
