@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.2.0...Unreleased) - ReleaseDate
+
+* [Fixed] block context leak introduced in 3.2.0, #346 [#349]
+
 ## [3.2.0](https://github.com/sunng87/handlebars-rust/compare/3.1.0...3.2.0) - 2020-06-28
 
 * [Added] API to register an pre-processed template [#331]
