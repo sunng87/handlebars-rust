@@ -211,6 +211,15 @@ impl Context {
     }
 }
 
+impl Serialize for Context {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ::serde::Serializer,
+    {
+        self.data.serialize(serializer)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::block::{BlockContext, BlockParams};
