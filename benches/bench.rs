@@ -10,7 +10,7 @@ use std::path::Path;
 
 use criterion::profiler::Profiler;
 use criterion::Criterion;
-use handlebars::{to_json, Handlebars, Template};
+use handlebars::{to_json, Context, Handlebars, Template};
 use pprof::protos::Message;
 use pprof::ProfilerGuard;
 use serde_json::value::Value as Json;
@@ -122,9 +122,9 @@ fn render_template(c: &mut Criterion) {
         .ok()
         .expect("Invalid template format");
 
-    let data = make_data();
+    let ctx = Context::wraps(make_data()).unwrap();
     c.bench_function("render_template", move |b| {
-        b.iter(|| handlebars.render("table", &data).ok().unwrap())
+        b.iter(|| handlebars.render_with_context("table", &ctx).ok().unwrap())
     });
 }
 
@@ -147,8 +147,9 @@ fn large_loop_helper(c: &mut Criterion) {
         .collect();
     let rows = RowWrapper { real, dummy };
 
+    let ctx = Context::wraps(&rows).unwrap();
     c.bench_function("large_loop_helper", move |b| {
-        b.iter(|| handlebars.render("test", &rows).ok().unwrap())
+        b.iter(|| handlebars.render_with_context("test", &ctx).ok().unwrap())
     });
 }
 
@@ -174,8 +175,9 @@ fn large_nested_loop(c: &mut Criterion) {
 
     let rows = NestedRowWrapper { parent };
 
+    let ctx = Context::wraps(&rows).unwrap();
     c.bench_function("large_nested_loop", move |b| {
-        b.iter(|| handlebars.render("test", &rows).ok().unwrap())
+        b.iter(|| handlebars.render_with_context("test", &ctx).ok().unwrap())
     });
 }
 
