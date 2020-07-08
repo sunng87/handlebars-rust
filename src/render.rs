@@ -619,8 +619,8 @@ impl Renderable for Template {
     ) -> Result<(), RenderError> {
         rc.set_current_template_name(self.name.as_ref());
         let iter = self.elements.iter();
-        let mut idx = 0;
-        for t in iter {
+
+        for (idx, t) in iter.enumerate() {
             t.render(registry, ctx, rc, out).map_err(|mut e| {
                 // add line/col number if the template has mapping data
                 if e.line_no.is_none() {
@@ -638,7 +638,6 @@ impl Renderable for Template {
 
                 e
             })?;
-            idx += 1;
         }
         Ok(())
     }
@@ -652,8 +651,8 @@ impl Evaluable for Template {
         rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<(), RenderError> {
         let iter = self.elements.iter();
-        let mut idx = 0;
-        for t in iter {
+
+        for (idx, t) in iter.enumerate() {
             t.eval(registry, ctx, rc).map_err(|mut e| {
                 if e.line_no.is_none() {
                     if let Some(ref mapping) = self.mapping {
@@ -667,7 +666,6 @@ impl Evaluable for Template {
                 e.template_name = self.name.clone();
                 e
             })?;
-            idx += 1;
         }
         Ok(())
     }
