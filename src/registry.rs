@@ -431,7 +431,6 @@ impl<'reg> Registry<'reg> {
                 let mut render_context = RenderContext::new(t.name.as_ref());
                 t.render(self, &ctx, &mut render_context, output)
             })
-            .map(|_| ())
     }
 
     /// Render a registered template with some data into a string
@@ -446,6 +445,18 @@ impl<'reg> Registry<'reg> {
     {
         let mut output = StringOutput::new();
         self.render_to_output(name, data, &mut output)?;
+        output.into_string().map_err(RenderError::from)
+    }
+
+    /// Render a registered template with reused context
+    pub fn render_with_context(&self, name: &str, ctx: &Context) -> Result<String, RenderError> {
+        let mut output = StringOutput::new();
+        self.get_template(name)
+            .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
+            .and_then(|t| {
+                let mut render_context = RenderContext::new(t.name.as_ref());
+                t.render(self, &ctx, &mut render_context, &mut output)
+            })?;
         output.into_string().map_err(RenderError::from)
     }
 
@@ -473,6 +484,24 @@ impl<'reg> Registry<'reg> {
         Ok(writer.into_string())
     }
 
+    /// Render a template string using reused context data
+    pub fn render_template_with_context(
+        &self,
+        template_string: &str,
+        ctx: &Context,
+    ) -> Result<String, TemplateRenderError> {
+        let tpl = Template::compile2(template_string, self.source_map)?;
+
+        let mut out = StringOutput::new();
+        {
+            let mut render_context = RenderContext::new(None);
+            tpl.render(self, &ctx, &mut render_context, &mut out)?;
+        }
+
+        out.into_string()
+            .map_err(|e| TemplateRenderError::from(RenderError::from(e)))
+    }
+
     /// Render a template string using current registry without registering it
     pub fn render_template_to_write<T, W>(
         &self,
@@ -489,7 +518,6 @@ impl<'reg> Registry<'reg> {
         let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
         tpl.render(self, &ctx, &mut render_context, &mut out)
-            .map(|_| ())
             .map_err(TemplateRenderError::from)
     }
 
