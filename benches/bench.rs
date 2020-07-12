@@ -153,6 +153,30 @@ fn large_loop_helper(c: &mut Criterion) {
     });
 }
 
+fn large_loop_helper_with_context_creation(c: &mut Criterion) {
+    let mut handlebars = Handlebars::new();
+    handlebars
+        .register_template_string("test", "BEFORE\n{{#each real}}{{this.v}}{{/each}}AFTER")
+        .ok()
+        .expect("Invalid template format");
+
+    let real: Vec<DataWrapper> = (1..1000)
+        .map(|i| DataWrapper {
+            v: format!("n={}", i),
+        })
+        .collect();
+    let dummy: Vec<DataWrapper> = (1..1000)
+        .map(|i| DataWrapper {
+            v: format!("n={}", i),
+        })
+        .collect();
+    let rows = RowWrapper { real, dummy };
+
+    c.bench_function("large_loop_helper_with_context_creation", move |b| {
+        b.iter(|| handlebars.render("test", &rows).ok().unwrap())
+    });
+}
+
 fn large_nested_loop(c: &mut Criterion) {
     let mut handlebars = Handlebars::new();
     handlebars
@@ -184,6 +208,7 @@ fn large_nested_loop(c: &mut Criterion) {
 criterion_group!(
     name = benches;
     config = profiled();
-    targets = parse_template, render_template, large_loop_helper, large_nested_loop
+    targets = parse_template, render_template, large_loop_helper, large_loop_helper_with_context_creation,
+              large_nested_loop
 );
 criterion_main!(benches);
