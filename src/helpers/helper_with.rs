@@ -234,4 +234,12 @@ mod test {
         let rendered = reg.render_template(template, &input).unwrap();
         assert_eq!("bar", rendered);
     }
+
+    #[test]
+    fn test_derived_value() {
+        let hb = Registry::new();
+        let data = json!({"a": {"b": {"c": "d"}}});
+        let template = "{{#with (lookup a.b \"c\")}}{{this}}{{/with}}";
+        assert_eq!("d", hb.render_template(template, &data).unwrap());
+    }
 }
