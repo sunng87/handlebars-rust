@@ -28,7 +28,7 @@ pest_derive = "2.1.0"
 serde = "1.0.0"
 serde_json = "1.0.39"
 walkdir = { version = "2.2.3", optional = true }
-rhai = { version = "0.15.0", optional = true, features = ["sync"] }
+rhai = { version = "0.16.0", optional = true, features = ["sync"] }
 
 [dev-dependencies]
 env_logger = "0.7.1"

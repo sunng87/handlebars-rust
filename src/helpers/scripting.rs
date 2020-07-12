@@ -7,7 +7,7 @@ use crate::json::value::{PathAndJson, ScopedJson};
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
 
-use rhai::{Dynamic, Engine, Scope, AST};
+use rhai::{Dynamic, Engine, ImmutableString, Scope, AST};
 
 use serde_json::value::{Map, Number, Value as Json};
 
@@ -69,9 +69,9 @@ fn to_dynamic(j: &Json) -> Dynamic {
             Dynamic::from(dyn_vec)
         }
         Json::Object(ref o) => {
-            let dyn_map: HashMap<String, Dynamic> = o
+            let dyn_map: HashMap<ImmutableString, Dynamic> = o
                 .iter()
-                .map(|(k, v)| ((*k).to_owned(), to_dynamic(v)))
+                .map(|(k, v)| (ImmutableString::from(k.as_str()), to_dynamic(v)))
                 .collect();
             Dynamic::from(dyn_map)
         }
