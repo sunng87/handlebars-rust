@@ -414,20 +414,18 @@ impl<'reg> Registry<'reg> {
         self.templates.clear();
     }
 
-    fn render_to_output<T, O>(
+    fn render_to_output<O>(
         &self,
         name: &str,
-        data: &T,
+        ctx: &Context,
         output: &mut O,
     ) -> Result<(), RenderError>
     where
-        T: Serialize,
         O: Output,
     {
         self.get_template(name)
             .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
-                let ctx = Context::wraps(data)?;
                 let mut render_context = RenderContext::new(t.name.as_ref());
                 t.render(self, &ctx, &mut render_context, output)
             })
@@ -444,19 +442,15 @@ impl<'reg> Registry<'reg> {
         T: Serialize,
     {
         let mut output = StringOutput::new();
-        self.render_to_output(name, data, &mut output)?;
+        let ctx = Context::wraps(&data)?;
+        self.render_to_output(name, &ctx, &mut output)?;
         output.into_string().map_err(RenderError::from)
     }
 
     /// Render a registered template with reused context
     pub fn render_with_context(&self, name: &str, ctx: &Context) -> Result<String, RenderError> {
         let mut output = StringOutput::new();
-        self.get_template(name)
-            .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
-            .and_then(|t| {
-                let mut render_context = RenderContext::new(t.name.as_ref());
-                t.render(self, &ctx, &mut render_context, &mut output)
-            })?;
+        self.render_to_output(name, ctx, &mut output)?;
         output.into_string().map_err(RenderError::from)
     }
 
@@ -467,7 +461,8 @@ impl<'reg> Registry<'reg> {
         W: Write,
     {
         let mut output = WriteOutput::new(writer);
-        self.render_to_output(name, data, &mut output)
+        let ctx = Context::wraps(data)?;
+        self.render_to_output(name, &ctx, &mut output)
     }
 
     /// Render a template string using current registry without registering it
