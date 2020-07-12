@@ -871,4 +871,28 @@ mod test {
             "<b>bold</b>"
         );
     }
+
+    #[test]
+    fn test_render_context() {
+        let mut reg = Registry::new();
+
+        let data = json!([0, 1, 2, 3]);
+
+        assert_eq!(
+            "0123",
+            reg.render_template_with_context(
+                "{{#each this}}{{this}}{{/each}}",
+                &Context::wraps(&data).unwrap()
+            )
+            .unwrap()
+        );
+
+        reg.register_template_string("t0", "{{#each this}}{{this}}{{/each}}")
+            .unwrap();
+        assert_eq!(
+            "0123",
+            reg.render_with_context("t0", &Context::wraps(&data).unwrap())
+                .unwrap()
+        );
+    }
 }
