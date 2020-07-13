@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.2.1...Unreleased) - ReleaseDate
+
+* [Added] Added two new APIs to reuse `Context` for rendering [#352]
+
 ## [3.2.1](https://github.com/sunng87/handlebars-rust/compare/3.2.0...3.2.1) - 2020-06-28
 
 * [Fixed] block context leak introduced in 3.2.0, #346 [#349]
