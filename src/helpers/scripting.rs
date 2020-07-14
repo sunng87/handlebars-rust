@@ -7,10 +7,11 @@ use crate::json::value::{PathAndJson, ScopedJson};
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
 
+use rhai::de::from_dynamic;
 use rhai::ser::to_dynamic;
 use rhai::{Dynamic, Engine, Scope, AST};
 
-use serde_json::value::{Map, Number, Value as Json};
+use serde_json::value::Value as Json;
 
 pub struct ScriptHelper {
     pub(crate) script: AST,
@@ -39,7 +40,7 @@ fn call_script_helper<'reg: 'rc, 'rc>(
         .eval_ast_with_scope::<Dynamic>(&mut scope, script)
         .map_err(RenderError::from)?;
 
-    let result_json = to_json(&result);
+    let result_json: Json = from_dynamic(&result)?;
 
     Ok(Some(ScopedJson::Derived(result_json)))
 }
@@ -54,42 +55,6 @@ impl HelperDef for ScriptHelper {
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         call_script_helper(h.params(), h.hash(), &reg.engine, &self.script)
     }
-}
-
-fn to_json(d: &Dynamic) -> Json {
-    if let Ok(s) = d.as_str() {
-        return Json::String(s.to_owned());
-    }
-    if let Ok(i) = d.as_int() {
-        return Json::Number(Number::from(i));
-    }
-    if let Ok(b) = d.as_bool() {
-        return Json::Bool(b);
-    }
-
-    if d.type_name() == "array" {
-        let v = d
-            .downcast_ref::<Vec<Dynamic>>()
-            .unwrap()
-            .iter()
-            .map(to_json)
-            .collect::<Vec<Json>>();
-        return Json::Array(v);
-    }
-
-    if d.type_name() == "map" {
-        let m = d
-            .downcast_ref::<HashMap<String, Dynamic>>()
-            .unwrap()
-            .iter()
-            .map(|(k, v)| (k.clone(), to_json(v)))
-            .collect::<Map<String, Json>>();
-
-        return Json::Object(m);
-    }
-
-    // FIXME: more types
-    return Json::Null;
 }
 
 #[cfg(test)]
@@ -120,7 +85,10 @@ mod test {
     fn test_to_json() {
         let d0 = Dynamic::from("tomcat".to_owned());
 
-        assert_eq!(Json::String("tomcat".to_owned()), to_json(&d0));
+        assert_eq!(
+            Json::String("tomcat".to_owned()),
+            from_dynamic::<Json>(&d0).unwrap()
+        );
     }
 
     #[test]
