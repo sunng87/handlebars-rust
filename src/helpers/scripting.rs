@@ -7,7 +7,8 @@ use crate::json::value::{PathAndJson, ScopedJson};
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
 
-use rhai::{Dynamic, Engine, ImmutableString, Scope, AST};
+use rhai::ser::to_dynamic;
+use rhai::{Dynamic, Engine, Scope, AST};
 
 use serde_json::value::{Map, Number, Value as Json};
 
@@ -22,16 +23,13 @@ fn call_script_helper<'reg: 'rc, 'rc>(
     engine: &Engine,
     script: &AST,
 ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-    let params: Dynamic = params
-        .iter()
-        .map(|p| to_dynamic(p.value()))
-        .collect::<Vec<Dynamic>>()
-        .into();
-    let hash: Dynamic = hash
-        .iter()
-        .map(|(k, v)| ((*k).to_owned(), to_dynamic(v.value())))
-        .collect::<HashMap<String, Dynamic>>()
-        .into();
+    let params: Dynamic = to_dynamic(params.iter().map(|p| p.value()).collect::<Vec<&Json>>())?;
+
+    let hash: Dynamic = to_dynamic(
+        hash.iter()
+            .map(|(k, v)| ((*k).to_owned(), v.value()))
+            .collect::<HashMap<String, &Json>>(),
+    )?;
 
     let mut scope = Scope::new();
     scope.push_dynamic("params", params);
@@ -55,26 +53,6 @@ impl HelperDef for ScriptHelper {
         _rc: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         call_script_helper(h.params(), h.hash(), &reg.engine, &self.script)
-    }
-}
-
-fn to_dynamic(j: &Json) -> Dynamic {
-    match j {
-        Json::Number(n) => Dynamic::from(n.clone()),
-        Json::Bool(b) => Dynamic::from(*b),
-        Json::Null => Dynamic::from(()),
-        Json::String(s) => Dynamic::from(s.clone()),
-        Json::Array(ref v) => {
-            let dyn_vec: Vec<Dynamic> = v.iter().map(|i| to_dynamic(i)).collect();
-            Dynamic::from(dyn_vec)
-        }
-        Json::Object(ref o) => {
-            let dyn_map: HashMap<ImmutableString, Dynamic> = o
-                .iter()
-                .map(|(k, v)| (ImmutableString::from(k.as_str()), to_dynamic(v)))
-                .collect();
-            Dynamic::from(dyn_map)
-        }
     }
 }
 
@@ -126,7 +104,7 @@ mod test {
             [{"name": "tomcat"}, {"name": "jetty"}]
         };
 
-        let d0 = to_dynamic(&j0);
+        let d0 = to_dynamic(&j0).unwrap();
         assert_eq!("array", d0.type_name());
 
         let j1 = json!({
@@ -134,7 +112,7 @@ mod test {
             "value": 4000,
         });
 
-        let d1 = to_dynamic(&j1);
+        let d1 = to_dynamic(&j1).unwrap();
         assert_eq!("map", d1.type_name());
     }
 
