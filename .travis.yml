@@ -1,8 +1,7 @@
 language: rust
 
 env:
-  - TASK=test RUSTFLAGS="-D warnings"
-  - CXX=clang++
+  - TASK=test RUSTFLAGS="-D warnings" CXX=clang++
 
 matrix:
   include:
