@@ -21,7 +21,7 @@ array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
 
-symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
+symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|"$"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
 partial_symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'|"/"}
 path_char = _{ "/" }
 
@@ -47,9 +47,9 @@ expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~
               ~ pro_whitespace_omitter? ~ "}}" }
 html_expression_triple_bracket = _{ "{{{" ~ pre_whitespace_omitter? ~ name ~
                                     pro_whitespace_omitter? ~ "}}}" }
-dollar_expression = _{ "{{" ~ pre_whitespace_omitter? ~ "$" ~ name ~
+amp_expression = _{ "{{" ~ pre_whitespace_omitter? ~ "&" ~ name ~
                        pro_whitespace_omitter? ~ "}}" }
-html_expression = { html_expression_triple_bracket | dollar_expression }
+html_expression = { html_expression_triple_bracket | amp_expression }
 
 decorator_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
 pro_whitespace_omitter? ~ "}}" }

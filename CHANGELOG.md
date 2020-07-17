@@ -4,6 +4,7 @@
 
 * [Added] Added two new APIs to reuse `Context` for rendering [#352]
 * [Changed] Update rhai to 0.17 [#354]
+* [Fixed] Fixed mustache.js html expression support, which is "&" instead of "$"
 
 ## [3.2.1](https://github.com/sunng87/handlebars-rust/compare/3.2.0...3.2.1) - 2020-06-28
 
