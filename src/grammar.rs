@@ -81,6 +81,7 @@ mod test {
             "abc.[0].[nice]",
             "some-name",
             "this.[0].ok",
+            "[$id]",
         ];
         for i in s.iter() {
             assert_rule!(Rule::reference, i);
