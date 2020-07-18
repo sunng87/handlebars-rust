@@ -866,7 +866,7 @@ mod test {
             "<b>bold</b>"
         );
         assert_eq!(
-            reg.render_template("{{ $a }}", &json!({"a": "<b>bold</b>"}))
+            reg.render_template("{{ &a }}", &json!({"a": "<b>bold</b>"}))
                 .unwrap(),
             "<b>bold</b>"
         );

@@ -81,6 +81,9 @@ mod test {
             "abc.[0].[nice]",
             "some-name",
             "this.[0].ok",
+            "this.[$id]",
+            "[$id]",
+            "$id",
         ];
         for i in s.iter() {
             assert_rule!(Rule::reference, i);
@@ -193,7 +196,7 @@ mod test {
 
     #[test]
     fn test_html_expression() {
-        let s = vec!["{{{html}}}", "{{{(html)}}}", "{{{(html)}}}", "{{$html}}"];
+        let s = vec!["{{{html}}}", "{{{(html)}}}", "{{{(html)}}}", "{{&html}}"];
         for i in s.iter() {
             assert_rule!(Rule::html_expression, i);
         }
