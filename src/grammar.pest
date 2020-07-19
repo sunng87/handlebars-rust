@@ -35,7 +35,7 @@ param = { !(keywords ~ !symbol_char) ~ (literal | reference | subexpression) }
 hash = { identifier ~ "=" ~ param }
 block_param = { "as" ~ "|" ~ identifier ~ identifier? ~ "|"}
 exp_line = _{ identifier ~ (hash|param)* ~ block_param?}
-partial_exp_line = _{ (partial_identifier ~ (hash|param)+) | name }
+partial_exp_line = _{ ((partial_identifier|name) ~ (hash|param)*) }
 
 subexpression = { "(" ~ ((identifier ~ (hash|param)+) | reference)  ~ ")" }
 

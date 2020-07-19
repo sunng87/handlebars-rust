@@ -88,7 +88,11 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
 #[cfg(test)]
 mod test {
+    use crate::context::Context;
+    use crate::error::RenderError;
+    use crate::output::Output;
     use crate::registry::Registry;
+    use crate::render::{Helper, RenderContext};
 
     #[test]
     fn test() {
@@ -216,6 +220,34 @@ mod test {
             .unwrap();
         hbs.register_template_string("two", "Lets test {{name}}")
             .unwrap();
+        assert_eq!(
+            "This is a test. Lets test fred",
+            hbs.render("one", &0).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_partial_subexpression_context_hash() {
+        let mut hbs = Registry::new();
+        hbs.register_template_string("one", "This is a test. {{> (x @root) name=\"fred\" }}")
+            .unwrap();
+        hbs.register_template_string("two", "Lets test {{name}}")
+            .unwrap();
+
+        hbs.register_helper(
+            "x",
+            Box::new(
+                |_: &Helper<'_, '_>,
+                 _: &Registry<'_>,
+                 _: &Context,
+                 _: &mut RenderContext<'_, '_>,
+                 out: &mut dyn Output|
+                 -> Result<(), RenderError> {
+                    out.write("two")?;
+                    Ok(())
+                },
+            ),
+        );
         assert_eq!(
             "This is a test. Lets test fred",
             hbs.render("one", &0).unwrap()
