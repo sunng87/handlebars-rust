@@ -323,7 +323,7 @@
 //! * `{{#if ...}} ... {{else}} ... {{/if}}` if-else block
 //! * `{{#unless ...}} ... {{else}} .. {{/unless}}` if-not-else block
 //! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebars-rust doesn't support mustache iteration syntax so use this instead.
-//! * `{{#with ...}} ... {{/with}}` change current context. Similar to {{#each}}, used for replace corresponding mustache syntax.
+//! * `{{#with ...}} ... {{/with}}` change current context. Similar to `{{#each}}`, used for replace corresponding mustache syntax.
 //! * `{{lookup ... ...}}` get value from array by `@index` or `@key`
 //! * `{{> ...}}` include template with name
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
