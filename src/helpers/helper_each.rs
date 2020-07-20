@@ -46,7 +46,7 @@ impl HelperDef for EachHelper {
 
                         let array_path = value.context_path();
 
-                        for (i, _) in list.iter().enumerate().take(len) {
+                        for (i, v) in list.iter().enumerate().take(len) {
                             if let Some(ref mut block) = rc.block_mut() {
                                 let is_first = i == 0usize;
                                 let is_last = i == len - 1;
@@ -66,12 +66,20 @@ impl HelperDef for EachHelper {
 
                                 if let Some(bp_val) = h.block_param() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    if array_path.is_some() {
+                                        params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    } else {
+                                        params.add_value(bp_val, v.clone())?;
+                                    }
 
                                     block.set_block_params(params);
                                 } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    if array_path.is_some() {
+                                        params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    } else {
+                                        params.add_value(bp_val, v.clone())?;
+                                    }
                                     params.add_value(bp_index, to_json(i))?;
 
                                     block.set_block_params(params);
