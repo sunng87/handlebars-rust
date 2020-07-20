@@ -444,10 +444,8 @@ mod test {
         assert_eq!("12", rendered);
     }
 
-
-
     #[test]
-    fn test_derived_value_as_block_params() {
+    fn test_derived_array_as_block_params() {
         handlebars_helper!(range: |x: u64| (0..x).collect::<Vec<u64>>());
         let mut reg = Registry::new();
         reg.register_helper("range", Box::new(range)); 
@@ -455,5 +453,16 @@ mod test {
         let input = json!(0);
         let rendered = reg.render_template(template, &input).unwrap();
         assert_eq!("012", rendered);
+    }
+
+    #[test]
+    fn test_derived_object_as_block_params() {
+        handlebars_helper!(point: |x: u64, y: u64| json!({"x":x, "y":y}));
+        let mut reg = Registry::new();
+        reg.register_helper("point", Box::new(point)); 
+        let template = "{{#each (point 0 1) as |i|}}{{i}}{{/each}}";
+        let input = json!(0);
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("01", rendered);
     }
 }
