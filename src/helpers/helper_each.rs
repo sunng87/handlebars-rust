@@ -435,4 +435,17 @@ mod test {
         let rendered = reg.render_template(template, &input).unwrap();
         assert_eq!("12", rendered);
     }
+
+
+
+    #[test]
+    fn test_derived_value_as_block_params() {
+        handlebars_helper!(range: |x: u64| (0..x).collect::<Vec<u64>>());
+        let mut reg = Registry::new();
+        reg.register_helper("range", Box::new(range)); 
+        let template = "{{#each (range 3) as |i|}}{{i}}{{/each}}";
+        let input = json!(0);
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("012", rendered);
+    }
 }
