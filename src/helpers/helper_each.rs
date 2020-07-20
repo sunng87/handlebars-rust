@@ -106,7 +106,7 @@ impl HelperDef for EachHelper {
                         let mut is_first = true;
                         let obj_path = value.context_path();
 
-                        for (k, _) in obj.iter() {
+                        for (k, v) in obj.iter() {
                             if let Some(ref mut block) = rc.block_mut() {
                                 block.set_local_var("@first".to_string(), to_json(is_first));
                                 block.set_local_var("@key".to_string(), to_json(k));
@@ -121,12 +121,20 @@ impl HelperDef for EachHelper {
 
                                 if let Some(bp_val) = h.block_param() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    if obj_path.is_some() {
+                                        params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    } else {
+                                        params.add_value(bp_val, v.clone())?;
+                                    }
 
                                     block.set_block_params(params);
                                 } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    if obj_path.is_some() {
+                                        params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    } else {
+                                        params.add_value(bp_val, v.clone())?;
+                                    }
                                     params.add_value(bp_key, to_json(&k))?;
 
                                     block.set_block_params(params);
