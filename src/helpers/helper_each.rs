@@ -46,7 +46,7 @@ impl HelperDef for EachHelper {
 
                         let array_path = value.context_path();
 
-                        for (i, _) in list.iter().enumerate().take(len) {
+                        for (i, v) in list.iter().enumerate().take(len) {
                             if let Some(ref mut block) = rc.block_mut() {
                                 let is_first = i == 0usize;
                                 let is_last = i == len - 1;
@@ -66,12 +66,20 @@ impl HelperDef for EachHelper {
 
                                 if let Some(bp_val) = h.block_param() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    if array_path.is_some() {
+                                        params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    } else {
+                                        params.add_value(bp_val, v.clone())?;
+                                    }
 
                                     block.set_block_params(params);
                                 } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    if array_path.is_some() {
+                                        params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    } else {
+                                        params.add_value(bp_val, v.clone())?;
+                                    }
                                     params.add_value(bp_index, to_json(i))?;
 
                                     block.set_block_params(params);
@@ -98,7 +106,7 @@ impl HelperDef for EachHelper {
                         let mut is_first = true;
                         let obj_path = value.context_path();
 
-                        for (k, _) in obj.iter() {
+                        for (k, v) in obj.iter() {
                             if let Some(ref mut block) = rc.block_mut() {
                                 block.set_local_var("@first".to_string(), to_json(is_first));
                                 block.set_local_var("@key".to_string(), to_json(k));
@@ -113,12 +121,20 @@ impl HelperDef for EachHelper {
 
                                 if let Some(bp_val) = h.block_param() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    if obj_path.is_some() {
+                                        params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    } else {
+                                        params.add_value(bp_val, v.clone())?;
+                                    }
 
                                     block.set_block_params(params);
                                 } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
                                     let mut params = BlockParams::new();
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    if obj_path.is_some() {
+                                        params.add_path(bp_val, Vec::with_capacity(0))?;
+                                    } else {
+                                        params.add_value(bp_val, v.clone())?;
+                                    }
                                     params.add_value(bp_key, to_json(&k))?;
 
                                     block.set_block_params(params);
@@ -434,5 +450,27 @@ mod test {
         let input = json!({"list": [{"inner": [], "foo": 1}, {"inner": [], "foo": 2}]});
         let rendered = reg.render_template(template, &input).unwrap();
         assert_eq!("12", rendered);
+    }
+
+    #[test]
+    fn test_derived_array_as_block_params() {
+        handlebars_helper!(range: |x: u64| (0..x).collect::<Vec<u64>>());
+        let mut reg = Registry::new();
+        reg.register_helper("range", Box::new(range)); 
+        let template = "{{#each (range 3) as |i|}}{{i}}{{/each}}";
+        let input = json!(0);
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("012", rendered);
+    }
+
+    #[test]
+    fn test_derived_object_as_block_params() {
+        handlebars_helper!(point: |x: u64, y: u64| json!({"x":x, "y":y}));
+        let mut reg = Registry::new();
+        reg.register_helper("point", Box::new(point)); 
+        let template = "{{#each (point 0 1) as |i|}}{{i}}{{/each}}";
+        let input = json!(0);
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("01", rendered);
     }
 }
