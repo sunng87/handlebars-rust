@@ -28,13 +28,17 @@ enum ResolvedPath<'a> {
     RelativePath(Vec<String>),
     // relative path against block param value
     BlockParamValue(Vec<String>, &'a Json),
+    // relative path against derived value,
+    LocalValue(Vec<String>, &'a Json),
 }
 
 fn parse_json_visitor<'a, 'reg: 'rc, 'rc>(
     relative_path: &[PathSeg],
-    block_contexts: &'a VecDeque<BlockContext<'reg, 'rc>>,
+    block_contexts: &'a VecDeque<BlockContext<'reg>>,
     always_for_absolute_path: bool,
 ) -> Result<ResolvedPath<'a>, RenderError> {
+    // TODO: add support for base value
+
     let mut path_context_depth: i64 = 0;
     let mut with_block_param = None;
     let mut from_root = false;
@@ -117,7 +121,7 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
 }
 
 fn get_in_block_params<'a, 'reg: 'rc, 'rc>(
-    block_contexts: &'a VecDeque<BlockContext<'reg, 'rc>>,
+    block_contexts: &'a VecDeque<BlockContext<'reg>>,
     p: &str,
 ) -> Option<(&'a BlockParamHolder, &'a Vec<String>)> {
     for bc in block_contexts {
@@ -160,7 +164,7 @@ impl Context {
     pub(crate) fn navigate<'reg, 'rc>(
         &'rc self,
         relative_path: &[PathSeg],
-        block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
+        block_contexts: &VecDeque<BlockContext<'reg>>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         // always use absolute at the moment until we get base_value lifetime issue fixed
         let resolved_visitor = parse_json_visitor(&relative_path, block_contexts, true)?;
@@ -189,6 +193,15 @@ impl Context {
                 //     .unwrap_or_else(|| ScopedJson::Missing))
             }
             ResolvedPath::BlockParamValue(paths, value) => {
+                let mut ptr = Some(value);
+                for p in paths.iter() {
+                    ptr = get_data(ptr, p)?;
+                }
+                Ok(ptr
+                    .map(|v| ScopedJson::Derived(v.clone()))
+                    .unwrap_or_else(|| ScopedJson::Missing))
+            }
+            ResolvedPath::LocalValue(paths, value) => {
                 let mut ptr = Some(value);
                 for p in paths.iter() {
                     ptr = get_data(ptr, p)?;

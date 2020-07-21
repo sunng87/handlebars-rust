@@ -55,20 +55,22 @@ impl<'reg> BlockParams<'reg> {
 
 /// A data structure holds contextual data for current block scope.
 #[derive(Debug, Clone, Default)]
-pub struct BlockContext<'reg: 'rc, 'rc> {
+pub struct BlockContext<'reg> {
     /// the base_path of current block scope
     base_path: Vec<String>,
-    /// the base_value of current block scope, not in use for now
-    base_value: Option<&'rc Json>,
+    /// the base_value of current block scope, when the block is using a
+    /// constant or derived value as block base
+    /// FIXME: we use owned json temporarily to avoid lifetime issue
+    base_value: Option<Json>,
     /// current block context variables
     block_params: BlockParams<'reg>,
     /// local variables in current context
     local_variables: BTreeMap<String, Json>,
 }
 
-impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
+impl<'reg> BlockContext<'reg> {
     /// create a new `BlockContext` with default data
-    pub fn new() -> BlockContext<'reg, 'rc> {
+    pub fn new() -> BlockContext<'reg> {
         BlockContext::default()
     }
 
@@ -93,18 +95,15 @@ impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
         &mut self.base_path
     }
 
-    // TODO: disable for lifetime issue
-    // pub fn base_value(&self) -> Option<&'rc Json> {
-    //     self.base_value
-    // }
+    /// borrow the base value
+    pub fn base_value(&self) -> Option<&Json> {
+        self.base_value.as_ref()
+    }
 
-    // pub fn base_value_mut(&mut self) -> &mut Option<&'rc Json> {
-    //     &mut self.base_value
-    // }
-
-    // pub fn set_base_value(&mut self, value: &'rc Json) {
-    //     self.base_value = Some(value);
-    // }
+    /// set the base value
+    pub fn set_base_value(&mut self, value: Json) {
+        self.base_value = Some(value);
+    }
 
     /// Get a block parameter from this block.
     /// Block parameters needed to be supported by the block helper.

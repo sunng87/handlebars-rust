@@ -32,13 +32,13 @@ const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
 #[derive(Clone, Debug)]
 pub struct RenderContext<'reg, 'rc> {
     inner: Rc<RenderContextInner<'reg, 'rc>>,
-    blocks: VecDeque<BlockContext<'reg, 'rc>>,
+    blocks: VecDeque<BlockContext<'reg>>,
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
 }
 
 #[derive(Clone)]
-pub struct RenderContextInner<'reg, 'rc> {
+pub struct RenderContextInner<'reg: 'rc, 'rc> {
     partials: BTreeMap<String, &'reg Template>,
     local_helpers: BTreeMap<String, Rc<dyn HelperDef + 'rc>>,
     /// current template name
@@ -88,7 +88,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     /// Push a block context into render context stack. This is typically
     /// called when you entering a block scope.
-    pub fn push_block(&mut self, block: BlockContext<'reg, 'rc>) {
+    pub fn push_block(&mut self, block: BlockContext<'reg>) {
         self.blocks.push_front(block);
     }
 
@@ -99,13 +99,13 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Borrow a reference to current block context
-    pub fn block(&self) -> Option<&BlockContext<'reg, 'rc>> {
+    pub fn block(&self) -> Option<&BlockContext<'reg>> {
         self.blocks.front()
     }
 
     /// Borrow a mutable reference to current block context in order to
     /// modify some data.
-    pub fn block_mut(&mut self) -> Option<&mut BlockContext<'reg, 'rc>> {
+    pub fn block_mut(&mut self) -> Option<&mut BlockContext<'reg>> {
         self.blocks.front_mut()
     }
 

@@ -1,4 +1,5 @@
-use crate::block::{BlockContext, BlockParams};
+use super::block_util::create_block;
+use crate::block::BlockParams;
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
@@ -27,16 +28,11 @@ impl HelperDef for WithHelper {
         let template = if not_empty { h.template() } else { h.inverse() };
 
         if not_empty {
-            let mut block = BlockContext::new();
-
-            let new_path = param.context_path();
-            if let Some(new_path) = new_path {
-                *block.base_path_mut() = new_path.clone();
-            }
+            let mut block = create_block(&param)?;
 
             if let Some(block_param) = h.block_param() {
                 let mut params = BlockParams::new();
-                if new_path.is_some() {
+                if param.context_path().is_some() {
                     params.add_path(block_param, Vec::with_capacity(0))?;
                 } else {
                     params.add_value(block_param, param.value().clone())?;
