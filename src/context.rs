@@ -192,16 +192,8 @@ impl Context {
                 //     .map(|v| ScopedJson::Context(v, paths))
                 //     .unwrap_or_else(|| ScopedJson::Missing))
             }
-            ResolvedPath::BlockParamValue(paths, value) => {
-                let mut ptr = Some(value);
-                for p in paths.iter() {
-                    ptr = get_data(ptr, p)?;
-                }
-                Ok(ptr
-                    .map(|v| ScopedJson::Derived(v.clone()))
-                    .unwrap_or_else(|| ScopedJson::Missing))
-            }
-            ResolvedPath::LocalValue(paths, value) => {
+            ResolvedPath::BlockParamValue(paths, value)
+            | ResolvedPath::LocalValue(paths, value) => {
                 let mut ptr = Some(value);
                 for p in paths.iter() {
                     ptr = get_data(ptr, p)?;
