@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.3.0...Unreleased) - ReleaseDate
+
+* [Fixed] Derived value as block context base value [#343, #353]
+
 ## [3.3.0](https://github.com/sunng87/handlebars-rust/compare/3.2.1...3.3.0) - 2020-07-18
 
 * [Added] Added two new APIs to reuse `Context` for rendering [#352]
