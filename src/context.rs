@@ -37,8 +37,6 @@ fn parse_json_visitor<'a, 'reg: 'rc, 'rc>(
     block_contexts: &'a VecDeque<BlockContext<'reg>>,
     always_for_absolute_path: bool,
 ) -> Result<ResolvedPath<'a>, RenderError> {
-    // TODO: add support for base value
-
     let mut path_context_depth: i64 = 0;
     let mut with_block_param = None;
     let mut from_root = false;
@@ -97,11 +95,16 @@ fn parse_json_visitor<'a, 'reg: 'rc, 'rc>(
                 merge_json_path(&mut path_stack, relative_path);
                 Ok(ResolvedPath::AbsolutePath(path_stack))
             } else if always_for_absolute_path {
-                if let Some(base_path) = block_contexts.front().map(|blk| blk.base_path()) {
-                    extend(&mut path_stack, base_path);
+                if let Some(base_value) = block_contexts.front().and_then(|blk| blk.base_value()) {
+                    merge_json_path(&mut path_stack, relative_path);
+                    Ok(ResolvedPath::LocalValue(path_stack, base_value))
+                } else {
+                    if let Some(base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                        extend(&mut path_stack, base_path);
+                    }
+                    merge_json_path(&mut path_stack, relative_path);
+                    Ok(ResolvedPath::AbsolutePath(path_stack))
                 }
-                merge_json_path(&mut path_stack, relative_path);
-                Ok(ResolvedPath::AbsolutePath(path_stack))
             } else {
                 merge_json_path(&mut path_stack, relative_path);
                 Ok(ResolvedPath::RelativePath(path_stack))
