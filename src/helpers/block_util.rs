@@ -10,7 +10,7 @@ pub(crate) fn create_block<'reg: 'rc, 'rc>(
     if let Some(new_path) = param.context_path() {
         *block.base_path_mut() = new_path.clone();
     } else {
-        // FIXME: clone to avoid issue
+        // use clone for now
         block.set_base_value(param.value().clone());
     }
 

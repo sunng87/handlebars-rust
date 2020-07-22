@@ -238,4 +238,13 @@ mod test {
         let template = "{{#with (lookup a.b \"c\")}}{{this}}{{/with}}";
         assert_eq!("d", hb.render_template(template, &data).unwrap());
     }
+
+    // #[test]
+    // FIXME: fix this later, subexpression result should be used as literal
+    fn test_nested_derived_value() {
+        let hb = Registry::new();
+        let data = json!({"a": {"b": {"c": "d"}}});
+        let template = "{{#with (lookup a \"b\")}}{{#with this}}{{c}}{{/with}}{{/with}}";
+        assert_eq!("d", hb.render_template(template, &data).unwrap());
+    }
 }
