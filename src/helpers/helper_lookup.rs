@@ -2,9 +2,8 @@ use serde_json::value::Value as Json;
 
 use crate::context::Context;
 use crate::error::RenderError;
-use crate::helpers::{HelperDef, HelperResult};
-use crate::json::value::JsonRender;
-use crate::output::Output;
+use crate::helpers::HelperDef;
+use crate::json::value::ScopedJson;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
 
@@ -12,14 +11,13 @@ use crate::render::{Helper, RenderContext};
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call<'reg: 'rc, 'rc>(
+    fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-        out: &mut dyn Output,
-    ) -> HelperResult {
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         let collection_value = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"lookup\""))?;
@@ -27,23 +25,20 @@ impl HelperDef for LookupHelper {
             .param(1)
             .ok_or_else(|| RenderError::new("Insufficient params for helper \"lookup\""))?;
 
-        let null = Json::Null;
         let value = match *collection_value.value() {
             Json::Array(ref v) => index
                 .value()
                 .as_u64()
                 .and_then(|u| v.get(u as usize))
-                .unwrap_or(&null),
+                .map(|i| ScopedJson::Derived(i.clone())),
             Json::Object(ref m) => index
                 .value()
                 .as_str()
                 .and_then(|k| m.get(k))
-                .unwrap_or(&null),
-            _ => &null,
+                .map(|i| ScopedJson::Derived(i.clone())),
+            _ => None,
         };
-        let r = value.render();
-        out.write(r.as_ref())?;
-        Ok(())
+        Ok(value)
     }
 }
 

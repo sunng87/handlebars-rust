@@ -1,7 +1,7 @@
 use serde_json::value::Value as Json;
 
 use super::block_util::create_block;
-use crate::block::BlockParams;
+use crate::block::{BlockContext, BlockParams};
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
@@ -10,6 +10,24 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
+
+fn update_block_context<'reg>(
+    block: &mut BlockContext<'reg>,
+    base_path: Option<&Vec<String>>,
+    relative_path: String,
+    is_first: bool,
+    value: &Json,
+) {
+    if let Some(ref p) = base_path {
+        if is_first {
+            *block.base_path_mut() = copy_on_push_vec(p, relative_path);
+        } else if let Some(ptr) = block.base_path_mut().last_mut() {
+            *ptr = relative_path;
+        }
+    } else {
+        block.set_base_value(value.clone());
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct EachHelper;
@@ -47,13 +65,8 @@ impl HelperDef for EachHelper {
                             block.set_local_var("@first".to_string(), to_json(is_first));
                             block.set_local_var("@last".to_string(), to_json(is_last));
                             block.set_local_var("@index".to_string(), to_json(i));
-                            if let Some(ref p) = array_path {
-                                if is_first {
-                                    *block.base_path_mut() = copy_on_push_vec(p, i.to_string());
-                                } else if let Some(ptr) = block.base_path_mut().last_mut() {
-                                    *ptr = i.to_string();
-                                }
-                            }
+
+                            update_block_context(block, array_path, i.to_string(), is_first, &v);
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
@@ -95,13 +108,7 @@ impl HelperDef for EachHelper {
                             block.set_local_var("@first".to_string(), to_json(is_first));
                             block.set_local_var("@key".to_string(), to_json(k));
 
-                            if let Some(ref p) = obj_path {
-                                if is_first {
-                                    *block.base_path_mut() = copy_on_push_vec(p, k.clone());
-                                } else if let Some(ptr) = block.base_path_mut().last_mut() {
-                                    *ptr = k.clone();
-                                }
-                            }
+                            update_block_context(block, obj_path, k.to_string(), is_first, &v);
 
                             if let Some(bp_val) = h.block_param() {
                                 let mut params = BlockParams::new();
@@ -457,8 +464,7 @@ mod test {
         assert_eq!("01", rendered);
     }
 
-    // #[test]
-    // FIXME: subexpression return value as literal
+    #[test]
     fn test_derived_array_without_block_param() {
         handlebars_helper!(range: |x: u64| (0..x).collect::<Vec<u64>>());
         let mut reg = Registry::new();
@@ -467,5 +473,16 @@ mod test {
         let input = json!(0);
         let rendered = reg.render_template(template, &input).unwrap();
         assert_eq!("012", rendered);
+    }
+
+    #[test]
+    fn test_derived_object_without_block_params() {
+        handlebars_helper!(point: |x: u64, y: u64| json!({"x":x, "y":y}));
+        let mut reg = Registry::new();
+        reg.register_helper("point", Box::new(point));
+        let template = "{{#each (point 0 1)}}{{this}}{{/each}}";
+        let input = json!(0);
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("01", rendered);
     }
 }
