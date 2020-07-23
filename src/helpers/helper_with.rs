@@ -1,4 +1,5 @@
-use crate::block::{BlockContext, BlockParams};
+use super::block_util::create_block;
+use crate::block::BlockParams;
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
@@ -27,16 +28,11 @@ impl HelperDef for WithHelper {
         let template = if not_empty { h.template() } else { h.inverse() };
 
         if not_empty {
-            let mut block = BlockContext::new();
-
-            let new_path = param.context_path();
-            if let Some(new_path) = new_path {
-                *block.base_path_mut() = new_path.clone();
-            }
+            let mut block = create_block(&param)?;
 
             if let Some(block_param) = h.block_param() {
                 let mut params = BlockParams::new();
-                if new_path.is_some() {
+                if param.context_path().is_some() {
                     params.add_path(block_param, Vec::with_capacity(0))?;
                 } else {
                     params.add_value(block_param, param.value().clone())?;
@@ -233,5 +229,22 @@ mod test {
         let input = json!({"list": [], "foo": "bar"});
         let rendered = reg.render_template(template, &input).unwrap();
         assert_eq!("bar", rendered);
+    }
+
+    #[test]
+    fn test_derived_value() {
+        let hb = Registry::new();
+        let data = json!({"a": {"b": {"c": "d"}}});
+        let template = "{{#with (lookup a.b \"c\")}}{{this}}{{/with}}";
+        assert_eq!("d", hb.render_template(template, &data).unwrap());
+    }
+
+    // #[test]
+    // FIXME: fix this later, subexpression result should be used as literal
+    fn test_nested_derived_value() {
+        let hb = Registry::new();
+        let data = json!({"a": {"b": {"c": "d"}}});
+        let template = "{{#with (lookup a \"b\")}}{{#with this}}{{c}}{{/with}}{{/with}}";
+        assert_eq!("d", hb.render_template(template, &data).unwrap());
     }
 }

@@ -129,6 +129,7 @@ impl<
     }
 }
 
+mod block_util;
 pub(crate) mod helper_boolean;
 mod helper_each;
 mod helper_if;
