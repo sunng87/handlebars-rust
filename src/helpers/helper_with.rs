@@ -239,8 +239,7 @@ mod test {
         assert_eq!("d", hb.render_template(template, &data).unwrap());
     }
 
-    // #[test]
-    // FIXME: fix this later, subexpression result should be used as literal
+    #[test]
     fn test_nested_derived_value() {
         let hb = Registry::new();
         let data = json!({"a": {"b": {"c": "d"}}});
