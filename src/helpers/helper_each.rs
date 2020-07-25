@@ -29,6 +29,37 @@ fn update_block_context<'reg>(
     }
 }
 
+fn set_block_param<'reg: 'rc, 'rc>(
+    block: &mut BlockContext<'reg>,
+    h: &Helper<'reg, 'rc>,
+    base_path: Option<&Vec<String>>,
+    k: &Json,
+    v: &Json,
+) -> Result<(), RenderError> {
+    if let Some(bp_val) = h.block_param() {
+        let mut params = BlockParams::new();
+        if base_path.is_some() {
+            params.add_path(bp_val, Vec::with_capacity(0))?;
+        } else {
+            params.add_value(bp_val, v.clone())?;
+        }
+
+        block.set_block_params(params);
+    } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
+        let mut params = BlockParams::new();
+        if base_path.is_some() {
+            params.add_path(bp_val, Vec::with_capacity(0))?;
+        } else {
+            params.add_value(bp_val, v.clone())?;
+        }
+        params.add_value(bp_key, k.clone())?;
+
+        block.set_block_params(params);
+    }
+
+    Ok(())
+}
+
 #[derive(Clone, Copy)]
 pub struct EachHelper;
 
@@ -62,32 +93,13 @@ impl HelperDef for EachHelper {
                             let is_first = i == 0usize;
                             let is_last = i == len - 1;
 
+                            let index = to_json(i);
                             block.set_local_var("@first".to_string(), to_json(is_first));
                             block.set_local_var("@last".to_string(), to_json(is_last));
-                            block.set_local_var("@index".to_string(), to_json(i));
+                            block.set_local_var("@index".to_string(), index.clone());
 
                             update_block_context(block, array_path, i.to_string(), is_first, &v);
-
-                            if let Some(bp_val) = h.block_param() {
-                                let mut params = BlockParams::new();
-                                if array_path.is_some() {
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
-                                } else {
-                                    params.add_value(bp_val, v.clone())?;
-                                }
-
-                                block.set_block_params(params);
-                            } else if let Some((bp_val, bp_index)) = h.block_param_pair() {
-                                let mut params = BlockParams::new();
-                                if array_path.is_some() {
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
-                                } else {
-                                    params.add_value(bp_val, v.clone())?;
-                                }
-                                params.add_value(bp_index, to_json(i))?;
-
-                                block.set_block_params(params);
-                            }
+                            set_block_param(block, h, array_path, &index, &v)?;
                         }
 
                         t.render(r, ctx, rc, out)?;
@@ -105,31 +117,13 @@ impl HelperDef for EachHelper {
 
                     for (k, v) in obj.iter() {
                         if let Some(ref mut block) = rc.block_mut() {
+                            let key = to_json(k);
+
                             block.set_local_var("@first".to_string(), to_json(is_first));
-                            block.set_local_var("@key".to_string(), to_json(k));
+                            block.set_local_var("@key".to_string(), key.clone());
 
                             update_block_context(block, obj_path, k.to_string(), is_first, &v);
-
-                            if let Some(bp_val) = h.block_param() {
-                                let mut params = BlockParams::new();
-                                if obj_path.is_some() {
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
-                                } else {
-                                    params.add_value(bp_val, v.clone())?;
-                                }
-
-                                block.set_block_params(params);
-                            } else if let Some((bp_val, bp_key)) = h.block_param_pair() {
-                                let mut params = BlockParams::new();
-                                if obj_path.is_some() {
-                                    params.add_path(bp_val, Vec::with_capacity(0))?;
-                                } else {
-                                    params.add_value(bp_val, v.clone())?;
-                                }
-                                params.add_value(bp_key, to_json(&k))?;
-
-                                block.set_block_params(params);
-                            }
+                            set_block_param(block, h, obj_path, &key, &v)?;
                         }
 
                         t.render(r, ctx, rc, out)?;
