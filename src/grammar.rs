@@ -323,6 +323,7 @@ mod test {
             "{{~> hello a}}",
             "{{> hello a=1}}",
             "{{> (hello) a=1}}",
+            "{{> hello.world}}",
         ];
         for i in s.iter() {
             assert_rule!(Rule::partial_expression, i);

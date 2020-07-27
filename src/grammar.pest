@@ -22,7 +22,7 @@ object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
 
 symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|"$"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
-partial_symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'|"/"}
+partial_symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'|"/"|"."}
 path_char = _{ "/" }
 
 identifier = @{ symbol_char+ }
