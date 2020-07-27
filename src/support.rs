@@ -39,6 +39,7 @@ pub mod str {
         }
     }
 
+    /// See https://github.com/handlebars-lang/handlebars.js/blob/37411901da42200ced8e1a7fc2f67bf83526b497/lib/handlebars/utils.js#L1
     pub fn escape_html(s: &str) -> String {
         let mut output = String::new();
         for c in s.chars() {
@@ -47,6 +48,9 @@ pub mod str {
                 '>' => output.push_str("&gt;"),
                 '"' => output.push_str("&quot;"),
                 '&' => output.push_str("&amp;"),
+                '\'' => output.push_str("&#x27;"),
+                '`' => output.push_str("&#x60;"),
+                '=' => output.push_str("&#x3D;"),
                 _ => output.push(c),
             }
         }
