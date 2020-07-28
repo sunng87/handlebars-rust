@@ -26,7 +26,7 @@ partial_symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|'\u{80}'..'\u{7ff}
 path_char = _{ "/" }
 
 identifier = @{ symbol_char+ }
-partial_identifier = @{ partial_symbol_char+ }
+partial_identifier = @{ partial_symbol_char+ | ("[" ~ ANY+ ~ "]") | ("'" ~ (!"'" ~ ("\\'" | ANY))+ ~ "'") }
 reference = ${ path_inline }
 
 name = _{ subexpression | reference }

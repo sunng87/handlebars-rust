@@ -324,6 +324,8 @@ mod test {
             "{{> hello a=1}}",
             "{{> (hello) a=1}}",
             "{{> hello.world}}",
+            "{{> [a83?f4+.3]}}",
+            "{{> 'anif?.bar'}}",
         ];
         for i in s.iter() {
             assert_rule!(Rule::partial_expression, i);
