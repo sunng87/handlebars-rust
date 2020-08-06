@@ -687,6 +687,12 @@ fn render_helper<'reg: 'rc, 'rc>(
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
+    debug!(
+        "Rendering helper: {:?}, params: {:?}, hash: {:?}",
+        h.name(),
+        h.params(),
+        h.hash()
+    );
     if let Some(ref d) = rc.get_local_helper(h.name()) {
         d.call(&h, registry, ctx, rc, out)
     } else {
@@ -724,6 +730,7 @@ impl Renderable for TemplateElement {
                     if helper_exists(&helper_name, registry, rc) {
                         render_helper(ht, registry, ctx, rc, out)
                     } else {
+                        debug!("Rendering value: {:?}", ht.name);
                         let context_json = ht.name.expand(registry, ctx, rc)?;
                         if context_json.is_value_missing() {
                             if registry.strict_mode() {
@@ -754,6 +761,7 @@ impl Renderable for TemplateElement {
                 }
             }
             HTMLExpression(ref v) => {
+                debug!("Rendering value: {:?}", v);
                 let context_json = v.expand(registry, ctx, rc)?;
 
                 // strict mode check
