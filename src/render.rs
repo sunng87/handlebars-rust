@@ -710,6 +710,14 @@ fn render_helper<'reg: 'rc, 'rc>(
     }
 }
 
+fn do_escape(r: &Registry<'_>, rc: &RenderContext<'_, '_>, content: String) -> String {
+    if !rc.is_disable_escape() {
+        r.get_escape_fn()(&content)
+    } else {
+        content
+    }
+}
+
 impl Renderable for TemplateElement {
     fn render<'reg: 'rc, 'rc>(
         &'reg self,
@@ -746,11 +754,7 @@ impl Renderable for TemplateElement {
                             }
                         } else {
                             let rendered = context_json.value().render();
-                            let output = if !rc.is_disable_escape() {
-                                registry.get_escape_fn()(&rendered)
-                            } else {
-                                rendered
-                            };
+                            let output = do_escape(registry, rc, rendered);
                             out.write(output.as_ref())?;
                             Ok(())
                         }
