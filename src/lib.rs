@@ -346,7 +346,6 @@
 //!
 
 #![allow(dead_code)]
-#![allow(clippy::match_like_matches_macro)]
 #![warn(rust_2018_idioms)]
 #![recursion_limit = "200"]
 
