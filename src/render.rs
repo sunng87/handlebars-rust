@@ -904,7 +904,7 @@ fn test_render_context_promotion_and_demotion() {
     let mut render_context = RenderContext::new(None);
     let mut block = BlockContext::new();
 
-    block.set_local_var("@index".to_string(), to_json(0));
+    block.set_local_var("index", to_json(0));
     render_context.push_block(block);
 
     render_context.push_block(BlockContext::new());
