@@ -13,6 +13,7 @@ handlebars_helper!(all_hash: |{cur: str="$"}| cur);
 handlebars_helper!(nargs: |*args| args.len());
 handlebars_helper!(has_a: |{a:i64 = 99}, **kwargs|
                    format!("{}, {}", a, kwargs.get("a").is_some()));
+handlebars_helper!(tag: |t: str| format!("<{}>", t));
 
 #[test]
 fn test_macro_helper() {
@@ -24,6 +25,7 @@ fn test_macro_helper() {
     hbs.register_helper("money", Box::new(money));
     hbs.register_helper("nargs", Box::new(nargs));
     hbs.register_helper("has_a", Box::new(has_a));
+    hbs.register_helper("tag", Box::new(tag));
 
     let data = json!("Teixeira");
 
@@ -60,5 +62,10 @@ fn test_macro_helper() {
     assert_eq!(
         hbs.render_template("{{has_a x=1 b=2}}", &()).unwrap(),
         "99, false"
+    );
+
+    assert_eq!(
+        hbs.render_template("{{tag \"html\"}}", &()).unwrap(),
+        "&lt;html&gt;"
     );
 }

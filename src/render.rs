@@ -710,7 +710,7 @@ fn render_helper<'reg: 'rc, 'rc>(
     }
 }
 
-fn do_escape(r: &Registry<'_>, rc: &RenderContext<'_, '_>, content: String) -> String {
+pub(crate) fn do_escape(r: &Registry<'_>, rc: &RenderContext<'_, '_>, content: String) -> String {
     if !rc.is_disable_escape() {
         r.get_escape_fn()(&content)
     } else {
