@@ -731,9 +731,14 @@ impl Renderable for TemplateElement {
                 out.write(v.as_ref())?;
                 Ok(())
             }
-            Expression(ref ht) => {
+            Expression(ref ht) | HTMLExpression(ref ht) => {
+                let is_html_expression = matches!(self, HTMLExpression(_));
+                if is_html_expression {
+                    rc.set_disable_escape(true);
+                }
+
                 // test if the expression is to render some value
-                if ht.is_name_only() {
+                let result = if ht.is_name_only() {
                     let helper_name = ht.name.expand_as_name(registry, ctx, rc)?;
                     if helper_exists(&helper_name, registry, rc) {
                         render_helper(ht, registry, ctx, rc, out)
@@ -762,20 +767,13 @@ impl Renderable for TemplateElement {
                 } else {
                     // this is a helper expression
                     render_helper(ht, registry, ctx, rc, out)
-                }
-            }
-            HTMLExpression(ref v) => {
-                debug!("Rendering value: {:?}", v);
-                let context_json = v.expand(registry, ctx, rc)?;
+                };
 
-                // strict mode check
-                if registry.strict_mode() && context_json.is_value_missing() {
-                    return Err(RenderError::strict_error(context_json.relative_path()));
+                if is_html_expression {
+                    rc.set_disable_escape(false);
                 }
 
-                let rendered = context_json.value().render();
-                out.write(rendered.as_ref())?;
-                Ok(())
+                result
             }
             HelperBlock(ref ht) => render_helper(ht, registry, ctx, rc, out),
             DecoratorExpression(_) | DecoratorBlock(_) => self.eval(registry, ctx, rc),
