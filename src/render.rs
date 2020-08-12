@@ -853,7 +853,9 @@ fn test_expression() {
 #[test]
 fn test_html_expression() {
     let r = Registry::new();
-    let element = HTMLExpression(Parameter::Path(Path::with_named_paths(&["hello"])));
+    let element = HTMLExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+        &["hello"],
+    ))));
 
     let mut out = StringOutput::new();
     let mut m: BTreeMap<String, String> = BTreeMap::new();

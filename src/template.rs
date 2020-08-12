@@ -791,7 +791,9 @@ fn test_parse_template() {
 
     assert_eq!(
         *t.elements.get(3).unwrap(),
-        HTMLExpression(Parameter::Path(Path::with_named_paths(&["content"])))
+        HTMLExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+            &["content"],
+        ))))
     );
 
     match *t.elements.get(5).unwrap() {
