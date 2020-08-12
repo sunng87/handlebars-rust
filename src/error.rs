@@ -229,11 +229,11 @@ quick_error! {
     pub enum TemplateFileError {
         TemplateError(err: TemplateError) {
             from()
-            cause(err)
+            source(err)
             display("{}", err)
         }
         IOError(err: IOError, name: String) {
-            cause(err)
+            source(err)
             display("Template \"{}\": {}", name, err)
         }
     }
@@ -256,16 +256,16 @@ quick_error! {
     pub enum TemplateRenderError {
         TemplateError(err: TemplateError) {
             from()
-            cause(err)
+            source(err)
             display("{}", err)
         }
         RenderError(err: RenderError) {
             from()
-            cause(err)
+            source(err)
             display("{}", err)
         }
         IOError(err: IOError, name: String) {
-            cause(err)
+            source(err)
             display("Template \"{}\": {}", name, err)
         }
     }
@@ -287,11 +287,11 @@ quick_error! {
     pub enum ScriptError {
         IOError(err: IOError) {
             from()
-            cause(err)
+            source(err)
         }
         ParseError(err: ParseError) {
             from()
-            cause(err)
+            source(err)
         }
     }
 }
