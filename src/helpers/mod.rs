@@ -3,7 +3,7 @@ use crate::error::RenderError;
 use crate::json::value::ScopedJson;
 use crate::output::Output;
 use crate::registry::Registry;
-use crate::render::{Helper, RenderContext};
+use crate::render::{do_escape, Helper, RenderContext};
 
 pub use self::helper_each::EACH_HELPER;
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
@@ -98,7 +98,9 @@ pub trait HelperDef {
             if r.strict_mode() && result.is_missing() {
                 return Err(RenderError::strict_error(None));
             } else {
-                out.write(result.render().as_ref())?;
+                // auto escape according to settings
+                let output = do_escape(r, rc, result.render());
+                out.write(output.as_ref())?;
             }
         }
 

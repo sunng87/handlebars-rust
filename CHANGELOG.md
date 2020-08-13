@@ -2,10 +2,12 @@
 
 ## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.3.0...Unreleased) - ReleaseDate
 
+* [Added] Debug log that can be turned on by using envlog or other implementation, to trace data resolution during rendering [#369]
 * [Fixed] Derived value as block context base value [#343, #353]
 * [Fixed] Partial name aligned with handlebars.js, added support for `.`, escape `[]` and string `''` name
 * [Changed] HTML escape aligned with handlebars.js, added `=`, `\` and ``` [#366]
-* [Changed] Update rhai to 0.18
+* [Changed] Update rhai to 0.18 [#370]
+* [Fixed] Result of simple helper is now escaped [#373]
 
 ## [3.3.0](https://github.com/sunng87/handlebars-rust/compare/3.2.1...3.3.0) - 2020-07-18
 
