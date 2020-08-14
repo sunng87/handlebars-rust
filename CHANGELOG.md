@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.3.0...Unreleased) - ReleaseDate
+## [3.4.0](https://github.com/sunng87/handlebars-rust/compare/3.3.0...3.4.0) - 2020-08-14
 
 * [Added] Debug log that can be turned on by using envlog or other implementation, to trace data resolution during rendering [#369]
 * [Fixed] Derived value as block context base value [#343, #353]

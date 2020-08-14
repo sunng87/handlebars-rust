@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/handlebars/3.3.0")]
+#![doc(html_root_url = "https://docs.rs/handlebars/3.4.0")]
 //! # Handlebars
 //!
 //! [Handlebars](http://handlebarsjs.com/) is a modern and extensible templating solution originally created in the JavaScript world. It's used by many popular frameworks like [Ember.js](http://emberjs.com) and Chaplin. It's also ported to some other platforms such as [Java](https://github.com/jknack/handlebars.java).
