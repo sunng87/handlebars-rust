@@ -1094,16 +1094,20 @@ fn test_zero_args_heler() {
     r.register_helper(
         "helperMissing",
         Box::new(
-            |_: &Helper<'_, '_>,
+            |h: &Helper<'_, '_>,
              _: &Registry<'_>,
              _: &Context,
              _: &mut RenderContext<'_, '_>,
              out: &mut dyn Output|
-             -> Result<(), RenderError> { out.write("Default").map_err(Into::into) },
+             -> Result<(), RenderError> {
+                let name = h.name();
+                out.write(&format!("{} not resolved", name))?;
+                Ok(())
+            },
         ),
     );
     assert_eq!(
         r.render("t1", &json!({"name": "Alex"})).unwrap(),
-        "Output name: Default"
+        "Output name: first_name not resolved"
     );
 }
