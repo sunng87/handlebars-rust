@@ -63,11 +63,10 @@ output).
 
 Checkout `examples/` for more concrete demos of the current API.
 
-
 ## Minimum Rust Version Policy
 
 Handlebars will track Rust nightly and stable channel. When dropping
-support for previous stable versions, I will bump **minor** version
+support for previous stable versions, I will bump **major** version
 and clarify in CHANGELOG.
 
 ### Rust compatibility table
@@ -98,14 +97,6 @@ feel free to contact me on github.
 I'm always looking for maintainers to work together on this library,
 let me know (via email or anywhere in the issue tracker) if you
 want to join.
-
-## Donations
-
-I'm now accepting donations on [liberapay](https://liberapay.com/Sunng/donate)
-and [buymeacoffee](https://www.buymeacoffee.com/Sunng) if you find my
-work helpful and want to keep it going.
-
-[![buymeacoffee](https://www.buymeacoffee.com/assets/img/guidelines/download-assets-3.svg)](https://www.buymeacoffee.com/Sunng)
 
 ## Why (this) Handlebars?
 
