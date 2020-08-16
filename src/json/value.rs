@@ -34,10 +34,7 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
     }
 
     pub fn is_missing(&self) -> bool {
-        match self {
-            ScopedJson::Missing => true,
-            _ => false,
-        }
+        matches!(self, ScopedJson::Missing)
     }
 
     pub fn into_derived(self) -> ScopedJson<'reg, 'rc> {
