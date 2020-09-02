@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use serde_json::value::Value as Json;
 
 use crate::error::RenderError;
+use crate::json::value::ScopedJson;
 use crate::local_vars::LocalVars;
 
 #[derive(Clone, Debug)]
@@ -55,23 +56,23 @@ impl<'reg> BlockParams<'reg> {
 }
 
 /// A data structure holds contextual data for current block scope.
-#[derive(Debug, Clone, Default)]
-pub struct BlockContext<'reg> {
+#[derive(Debug, Default)]
+pub struct BlockContext<'reg: 'rc, 'rc> {
     /// the base_path of current block scope
     base_path: Vec<String>,
     /// the base_value of current block scope, when the block is using a
     /// constant or derived value as block base
     /// FIXME: we use owned json temporarily to avoid lifetime issue
-    base_value: Option<Json>,
+    base_value: Option<ScopedJson<'reg, 'rc>>,
     /// current block context variables
     block_params: BlockParams<'reg>,
     /// local variables in current context
     local_variables: LocalVars,
 }
 
-impl<'reg> BlockContext<'reg> {
+impl<'reg: 'rc, 'rc> BlockContext<'reg, 'rc> {
     /// create a new `BlockContext` with default data
-    pub fn new() -> BlockContext<'reg> {
+    pub fn new() -> BlockContext<'reg, 'rc> {
         BlockContext::default()
     }
 
@@ -98,11 +99,11 @@ impl<'reg> BlockContext<'reg> {
 
     /// borrow the base value
     pub fn base_value(&self) -> Option<&Json> {
-        self.base_value.as_ref()
+        self.base_value.map(|sj| sj.as_json())
     }
 
     /// set the base value
-    pub fn set_base_value(&mut self, value: Json) {
+    pub fn set_base_value(&mut self, value: ScopedJson<'reg, 'rc>) {
         self.base_value = Some(value);
     }
 
