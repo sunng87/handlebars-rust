@@ -506,7 +506,7 @@ pub trait Evaluable {
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
     hd: &dyn HelperDef,
-    ht: &Helper<'reg, 'rc>,
+    ht: &'rc Helper<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
     rc: &mut RenderContext<'reg, 'rc>,

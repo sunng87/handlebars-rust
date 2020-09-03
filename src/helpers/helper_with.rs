@@ -14,7 +14,7 @@ pub struct WithHelper;
 impl HelperDef for WithHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,

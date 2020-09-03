@@ -32,9 +32,9 @@ enum ResolvedPath<'a> {
     LocalValue(Vec<String>, &'a Json),
 }
 
-fn parse_json_visitor<'a, 'reg>(
+fn parse_json_visitor<'a, 'reg, 'rc>(
     relative_path: &[PathSeg],
-    block_contexts: &'a VecDeque<BlockContext<'reg>>,
+    block_contexts: &'a VecDeque<BlockContext<'reg, 'rc>>,
     always_for_absolute_path: bool,
 ) -> Result<ResolvedPath<'a>, RenderError> {
     let mut path_context_depth: i64 = 0;
@@ -123,8 +123,8 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
     Ok(result)
 }
 
-fn get_in_block_params<'a, 'reg>(
-    block_contexts: &'a VecDeque<BlockContext<'reg>>,
+fn get_in_block_params<'a, 'reg, 'rc>(
+    block_contexts: &'a VecDeque<BlockContext<'reg, 'rc>>,
     p: &str,
 ) -> Option<(&'a BlockParamHolder, &'a Vec<String>)> {
     for bc in block_contexts {
@@ -167,7 +167,7 @@ impl Context {
     pub(crate) fn navigate<'reg, 'rc>(
         &'rc self,
         relative_path: &[PathSeg],
-        block_contexts: &VecDeque<BlockContext<'reg>>,
+        block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         // always use absolute at the moment until we get base_value lifetime issue fixed
         let resolved_visitor = parse_json_visitor(&relative_path, block_contexts, true)?;

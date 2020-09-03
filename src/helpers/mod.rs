@@ -78,7 +78,7 @@ pub type HelperResult = Result<(), RenderError>;
 pub trait HelperDef {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper<'reg, 'rc>,
+        _: &'rc Helper<'reg, 'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
@@ -88,7 +88,7 @@ pub trait HelperDef {
 
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -111,7 +111,7 @@ pub trait HelperDef {
 /// implement HelperDef for bare function so we can use function as helper
 impl<
         F: for<'reg, 'rc> Fn(
-            &Helper<'reg, 'rc>,
+            &'rc Helper<'reg, 'rc>,
             &'reg Registry<'reg>,
             &'rc Context,
             &mut RenderContext<'reg, 'rc>,
@@ -121,7 +121,7 @@ impl<
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,

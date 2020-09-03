@@ -11,8 +11,8 @@ use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
 
-fn update_block_context<'reg>(
-    block: &mut BlockContext<'reg>,
+fn update_block_context<'reg: 'rc, 'rc>(
+    block: &mut BlockContext<'reg, 'rc>,
     base_path: Option<&Vec<String>>,
     relative_path: String,
     is_first: bool,
@@ -25,12 +25,13 @@ fn update_block_context<'reg>(
             *ptr = relative_path;
         }
     } else {
+        // FIXME:
         block.set_base_value(value.clone());
     }
 }
 
 fn set_block_param<'reg: 'rc, 'rc>(
-    block: &mut BlockContext<'reg>,
+    block: &mut BlockContext<'reg, 'rc>,
     h: &Helper<'reg, 'rc>,
     base_path: Option<&Vec<String>>,
     k: &Json,
@@ -66,7 +67,7 @@ pub struct EachHelper;
 impl HelperDef for EachHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
