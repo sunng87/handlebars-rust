@@ -91,6 +91,10 @@ impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
         self.value.as_json()
     }
 
+    pub fn scoped_value(&self) -> &ScopedJson<'reg, 'rc> {
+        &self.value
+    }
+
     /// Test if value is missing
     pub fn is_value_missing(&self) -> bool {
         self.value.is_missing()

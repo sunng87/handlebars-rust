@@ -76,22 +76,22 @@ pub type HelperResult = Result<(), RenderError>;
 ///
 
 pub trait HelperDef {
-    fn call_inner<'reg: 'rc, 'rc>(
+    fn call_inner<'reg: 'rc, 'rc: 'blk, 'blk>(
         &self,
         _: &'rc Helper<'reg, 'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
-        _: &mut RenderContext<'reg, 'rc>,
+        _: &mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
 
-    fn call<'reg: 'rc, 'rc>(
+    fn call<'reg: 'rc, 'rc: 'blk, 'blk>(
         &self,
         h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg, 'rc, 'blk>,
         out: &mut dyn Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, ctx, rc)? {
@@ -110,21 +110,21 @@ pub trait HelperDef {
 
 /// implement HelperDef for bare function so we can use function as helper
 impl<
-        F: for<'reg, 'rc> Fn(
+        F: for<'reg, 'rc, 'blk> Fn(
             &'rc Helper<'reg, 'rc>,
             &'reg Registry<'reg>,
             &'rc Context,
-            &mut RenderContext<'reg, 'rc>,
+            &mut RenderContext<'reg, 'rc, 'blk>,
             &mut dyn Output,
         ) -> HelperResult,
     > HelperDef for F
 {
-    fn call<'reg: 'rc, 'rc>(
+    fn call<'reg: 'rc, 'rc: 'blk, 'blk>(
         &self,
         h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg, 'rc, 'blk>,
         out: &mut dyn Output,
     ) -> HelperResult {
         (*self)(h, r, ctx, rc, out)
