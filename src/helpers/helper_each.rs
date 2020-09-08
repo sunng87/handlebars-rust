@@ -5,7 +5,7 @@ use crate::block::{BlockContext, BlockParams};
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
-use crate::json::value::{to_json, JsonTruthy};
+use crate::json::value::to_json;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
@@ -79,8 +79,8 @@ impl HelperDef for EachHelper {
         let template = h.template();
 
         match template {
-            Some(t) => match (value.value().is_truthy(false), value.value()) {
-                (true, &Json::Array(ref list)) => {
+            Some(t) => match *value.value() {
+                Json::Array(ref list) if !list.is_empty() => {
                     let block_context = create_block(&value)?;
                     rc.push_block(block_context);
 
@@ -108,7 +108,7 @@ impl HelperDef for EachHelper {
                     rc.pop_block();
                     Ok(())
                 }
-                (true, &Json::Object(ref obj)) => {
+                Json::Object(ref obj) if !obj.is_empty() => {
                     let block_context = create_block(&value)?;
                     rc.push_block(block_context);
 
