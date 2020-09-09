@@ -5,7 +5,7 @@ use crate::block::{BlockContext, BlockParams};
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
-use crate::json::value::{to_json, JsonTruthy};
+use crate::json::value::to_json;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
@@ -79,8 +79,8 @@ impl HelperDef for EachHelper {
         let template = h.template();
 
         match template {
-            Some(t) => match (value.value().is_truthy(false), value.value()) {
-                (true, &Json::Array(ref list)) => {
+            Some(t) => match *value.value() {
+                Json::Array(ref list) if !list.is_empty() => {
                     let block_context = create_block(&value)?;
                     rc.push_block(block_context);
 
@@ -108,7 +108,7 @@ impl HelperDef for EachHelper {
                     rc.pop_block();
                     Ok(())
                 }
-                (true, &Json::Object(ref obj)) => {
+                Json::Object(ref obj) if !obj.is_empty() => {
                     let block_context = create_block(&value)?;
                     rc.push_block(block_context);
 
@@ -136,16 +136,12 @@ impl HelperDef for EachHelper {
                     rc.pop_block();
                     Ok(())
                 }
-                (false, _) => {
+                _ => {
                     if let Some(else_template) = h.inverse() {
                         else_template.render(r, ctx, rc, out)?;
                     }
                     Ok(())
                 }
-                _ => Err(RenderError::new(format!(
-                    "Param type is not iterable: {:?}",
-                    value.value()
-                ))),
             },
             None => Ok(()),
         }
@@ -478,5 +474,54 @@ mod test {
         let input = json!(0);
         let rendered = reg.render_template(template, &input).unwrap();
         assert_eq!("01", rendered);
+    }
+
+    #[test]
+    fn test_non_iterable() {
+        let reg = Registry::new();
+        let template = "{{#each this}}each block{{else}}else block{{/each}}";
+        let input = json!("strings aren't iterable");
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("else block", rendered);
+    }
+
+    #[test]
+    fn test_recursion() {
+        let mut reg = Registry::new();
+        assert!(reg
+            .register_template_string(
+                "walk",
+                "(\
+                    {{#each this}}\
+                        {{#if @key}}{{@key}}{{else}}{{@index}}{{/if}}: \
+                        {{this}} \
+                        {{> walk this}}, \
+                    {{/each}}\
+                )",
+            )
+            .is_ok());
+
+        let input = json!({
+            "array": [42, {"wow": "cool"}, [[]]],
+            "object": { "a": { "b": "c", "d": ["e"] } },
+            "string": "hi"
+        });
+        let expected_output = "(\
+            array: [42, [object], [[], ], ] (\
+                0: 42 (), \
+                1: [object] (wow: cool (), ), \
+                2: [[], ] (0: [] (), ), \
+            ), \
+            object: [object] (\
+                a: [object] (\
+                    b: c (), \
+                    d: [e, ] (0: e (), ), \
+                ), \
+            ), \
+            string: hi (), \
+        )";
+
+        let rendered = reg.render("walk", &input).unwrap();
+        assert_eq!(expected_output, rendered);
     }
 }
