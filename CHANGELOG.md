@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.4.0...Unreleased) - ReleaseDate
+
+* [Changed] `#each` helper now renders else block for non-iterable data [#380]
+
 ## [3.4.0](https://github.com/sunng87/handlebars-rust/compare/3.3.0...3.4.0) - 2020-08-14
 
 * [Added] Debug log that can be turned on by using envlog or other implementation, to trace data resolution during rendering [#369]
