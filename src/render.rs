@@ -410,12 +410,12 @@ pub struct Decorator<'reg, 'rc> {
     template: Option<&'reg Template>,
 }
 
-impl<'reg: 'rc, 'rc> Decorator<'reg, 'rc> {
+impl<'reg: 'rc, 'rc: 'blk, 'blk> Decorator<'reg, 'rc> {
     fn try_from_template(
         dt: &'reg DecoratorTemplate,
         registry: &'reg Registry<'reg>,
         context: &'rc Context,
-        render_context: &mut RenderContext<'reg, 'rc>,
+        render_context: &mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Decorator<'reg, 'rc>, RenderError> {
         let name = dt.name.expand_as_name(registry, context, render_context)?;
 
@@ -610,11 +610,11 @@ impl Parameter {
 }
 
 impl Renderable for Template {
-    fn render<'reg: 'rc, 'rc>(
+    fn render<'reg: 'rc, 'rc: 'blk, 'blk>(
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg, 'rc, 'blk>,
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         rc.set_current_template_name(self.name.as_ref());
@@ -644,11 +644,11 @@ impl Renderable for Template {
 }
 
 impl Evaluable for Template {
-    fn eval<'reg: 'rc, 'rc>(
+    fn eval<'reg: 'rc, 'rc: 'blk, 'blk>(
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<(), RenderError> {
         let iter = self.elements.iter();
 

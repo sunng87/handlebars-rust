@@ -65,12 +65,12 @@ fn set_block_param<'reg: 'rc, 'rc>(
 pub struct EachHelper;
 
 impl HelperDef for EachHelper {
-    fn call<'reg: 'rc, 'rc>(
+    fn call<'reg: 'rc, 'rc: 'blk, 'blk>(
         &self,
         h: &'rc Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg, 'rc, 'blk>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let value = h

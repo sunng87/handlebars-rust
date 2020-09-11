@@ -11,12 +11,12 @@ use crate::render::{Helper, RenderContext};
 pub struct LookupHelper;
 
 impl HelperDef for LookupHelper {
-    fn call_inner<'reg: 'rc, 'rc>(
+    fn call_inner<'reg: 'rc, 'rc: 'blk, 'blk>(
         &self,
         h: &Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         _: &'rc Context,
-        _: &mut RenderContext<'reg, 'rc>,
+        _: &mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         let collection_value = h
             .param(0)

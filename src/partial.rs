@@ -10,12 +10,14 @@ use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
 
-fn render_partial<'reg: 'rc, 'rc>(
+const PARTIAL_BLOCK: &str = "@partial-block";
+
+fn render_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
     t: &'reg Template,
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
-    local_rc: &mut RenderContext<'reg, 'rc>,
+    local_rc: &mut RenderContext<'reg, 'rc, 'blk>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // partial context path
@@ -27,7 +29,7 @@ fn render_partial<'reg: 'rc, 'rc>(
 
     // @partial-block
     if let Some(t) = d.template() {
-        local_rc.set_partial("@partial-block".to_owned(), t);
+        local_rc.set_partial(PARTIAL_BLOCK.to_owned(), t);
     }
 
     let result = if d.hash().is_empty() {
@@ -46,16 +48,16 @@ fn render_partial<'reg: 'rc, 'rc>(
         t.render(r, &ctx, &mut partial_rc, out)
     };
 
-    local_rc.remove_partial("@partial-block");
+    local_rc.remove_partial(PARTIAL_BLOCK);
 
     result
 }
 
-pub fn expand_partial<'reg: 'rc, 'rc>(
+pub fn expand_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg, 'rc>,
+    rc: &mut RenderContext<'reg, 'rc, 'blk>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
