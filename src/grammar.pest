@@ -1,5 +1,5 @@
 WHITESPACE = _{ " "|"\t"|"\n"|"\r" }
-keywords = @{ "as" | "else" }
+keywords = { "as" | "else" }
 
 escape = @{ ("\\" ~ "{{" ~ "{{"?) | ("\\" ~ "\\"+ ~ &"{{") }
 raw_text = ${ ( escape | (!"{{" ~ ANY) )+ }
@@ -14,8 +14,7 @@ literal = { string_literal |
 
 null_literal = { "null" }
 boolean_literal = { "true"|"false" }
-number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT*
-~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
+number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
 string_literal = @{ ("\"" ~ (!"\"" ~ ("\\\"" | ANY))* ~ "\"") | ("'" ~ (!"'" ~ ("\\'" | ANY))* ~ "'") }
 array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
