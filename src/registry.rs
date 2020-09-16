@@ -895,4 +895,57 @@ mod test {
                 .unwrap()
         );
     }
+
+    #[test]
+    fn test_keys_starts_with_null() {
+        env_logger::init();
+        let reg = Registry::new();
+        let data = json!({
+            "optional": true,
+            "is_null": true,
+            "nullable": true,
+            "null": true,
+            "falsevalue": true,
+        });
+        assert_eq!(
+            "optional: true --> true",
+            reg.render_template(
+                "optional: {{optional}} --> {{#if optional }}true{{else}}false{{/if}}",
+                &data
+            )
+            .unwrap()
+        );
+        assert_eq!(
+            "is_null: true --> true",
+            reg.render_template(
+                "is_null: {{is_null}} --> {{#if is_null }}true{{else}}false{{/if}}",
+                &data
+            )
+            .unwrap()
+        );
+        assert_eq!(
+            "nullable: true --> true",
+            reg.render_template(
+                "nullable: {{nullable}} --> {{#if nullable }}true{{else}}false{{/if}}",
+                &data
+            )
+            .unwrap()
+        );
+        assert_eq!(
+            "falsevalue: true --> true",
+            reg.render_template(
+                "falsevalue: {{falsevalue}} --> {{#if falsevalue }}true{{else}}false{{/if}}",
+                &data
+            )
+            .unwrap()
+        );
+        assert_eq!(
+            "null: true --> false",
+            reg.render_template(
+                "null: {{null}} --> {{#if null }}true{{else}}false{{/if}}",
+                &data
+            )
+            .unwrap()
+        );
+    }
 }
