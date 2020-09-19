@@ -947,5 +947,13 @@ mod test {
             )
             .unwrap()
         );
+        assert_eq!(
+            "null: true --> true",
+            reg.render_template(
+                "null: {{null}} --> {{#if this.[null]}}true{{else}}false{{/if}}",
+                &data
+            )
+            .unwrap()
+        );
     }
 }
