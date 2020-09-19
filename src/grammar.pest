@@ -13,7 +13,7 @@ literal = { string_literal |
             boolean_literal }
 
 null_literal = @{ "null" ~ !symbol_char }
-boolean_literal = @{ "true"|"false" ~ !symbol_char }
+boolean_literal = @{ ("true"|"false") ~ !symbol_char }
 number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
 string_literal = @{ ("\"" ~ (!"\"" ~ ("\\\"" | ANY))* ~ "\"") | ("'" ~ (!"'" ~ ("\\'" | ANY))* ~ "'") }
 array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
