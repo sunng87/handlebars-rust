@@ -12,8 +12,8 @@ literal = { string_literal |
             null_literal |
             boolean_literal }
 
-null_literal = { "null" }
-boolean_literal = { "true"|"false" }
+null_literal = @{ "null" ~ !symbol_char }
+boolean_literal = @{ "true"|"false" ~ !symbol_char }
 number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
 string_literal = @{ ("\"" ~ (!"\"" ~ ("\\\"" | ANY))* ~ "\"") | ("'" ~ (!"'" ~ ("\\'" | ANY))* ~ "'") }
 array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
@@ -30,7 +30,7 @@ reference = ${ path_inline }
 
 name = _{ subexpression | reference }
 
-param = { !(keywords ~ !symbol_char) ~ (literal | reference | subexpression) }
+param = { !(keywords ~ !symbol_char) ~ ( literal | reference | subexpression) }
 hash = { identifier ~ "=" ~ param }
 block_param = { "as" ~ "|" ~ identifier ~ identifier? ~ "|"}
 exp_line = _{ identifier ~ (hash|param)* ~ block_param?}
