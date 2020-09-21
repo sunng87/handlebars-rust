@@ -1,5 +1,5 @@
 WHITESPACE = _{ " "|"\t"|"\n"|"\r" }
-keywords = @{ "as" | "else" }
+keywords = { "as" | "else" }
 
 escape = @{ ("\\" ~ "{{" ~ "{{"?) | ("\\" ~ "\\"+ ~ &"{{") }
 raw_text = ${ ( escape | (!"{{" ~ ANY) )+ }
@@ -12,17 +12,16 @@ literal = { string_literal |
             null_literal |
             boolean_literal }
 
-null_literal = { "null" }
-boolean_literal = { "true"|"false" }
-number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT*
-~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
+null_literal = @{ "null" ~ !symbol_char }
+boolean_literal = @{ ("true"|"false") ~ !symbol_char }
+number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
 string_literal = @{ ("\"" ~ (!"\"" ~ ("\\\"" | ANY))* ~ "\"") | ("'" ~ (!"'" ~ ("\\'" | ANY))* ~ "'") }
 array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
 
-symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|"$"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
-partial_symbol_char = _{'a'..'z'|'A'..'Z'|ASCII_DIGIT|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'|"/"|"."}
+symbol_char = _{ASCII_ALPHANUMERIC|"-"|"_"|"$"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
+partial_symbol_char = _{ASCII_ALPHANUMERIC|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'|"/"|"."}
 path_char = _{ "/" }
 
 identifier = @{ symbol_char+ }

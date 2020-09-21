@@ -84,6 +84,7 @@ mod test {
             "this.[$id]",
             "[$id]",
             "$id",
+            "this.[null]",
         ];
         for i in s.iter() {
             assert_rule!(Rule::reference, i);
@@ -100,7 +101,7 @@ mod test {
 
     #[test]
     fn test_param() {
-        let s = vec!["hello", "\"json literal\""];
+        let s = vec!["hello", "\"json literal\"", "nullable", "truestory"];
         for i in s.iter() {
             assert_rule!(Rule::param, i);
         }
@@ -132,6 +133,7 @@ mod test {
             "{\"hello\": \"world\"}",
             "{}",
             "{\"a\":1, \"b\":2 }",
+            "\"nullable\"",
         ];
         for i in s.iter() {
             assert_rule!(Rule::literal, i);
@@ -289,6 +291,7 @@ mod test {
             "./[/foo]",
             "[foo]",
             "@root/a/b",
+            "nullable",
         ];
         for i in s.iter() {
             assert_rule_match!(Rule::path, i);
