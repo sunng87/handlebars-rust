@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.4.0...Unreleased) - ReleaseDate
+## [3.5.0](https://github.com/sunng87/handlebars-rust/compare/3.4.0...3.5.0) - 2020-09-23
 
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
 * [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
