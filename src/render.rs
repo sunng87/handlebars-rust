@@ -199,6 +199,18 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             .insert(name.to_string(), def.into())
     }
 
+    /// Register a reference counted helper in this render context.
+    ///
+    /// If there was a local helper with the same name present, it will be replaced
+    /// with the new local helper and returned, otherwise this will return `None`.
+    pub fn register_local_helper_rc(
+        &mut self,
+        name: &str,
+        def: Rc<dyn HelperDef + 'rc>,
+    ) -> Option<Rc<dyn HelperDef + 'rc>> {
+        self.inner_mut().local_helpers.insert(name.to_string(), def)
+    }
+
     /// Remove a helper from render context
     pub fn unregister_local_helper(&mut self, name: &str) {
         self.inner_mut().local_helpers.remove(name);
