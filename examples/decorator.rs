@@ -41,21 +41,19 @@ fn format_decorator(
         .unwrap_or("".to_owned());
     rc.register_local_helper(
         "format",
-        Box::new(
-            move |h: &Helper,
-                  _: &Handlebars,
-                  _: &Context,
-                  _: &mut RenderContext,
-                  out: &mut dyn Output| {
-                // get parameter from helper or throw an error
-                let param = h
-                    .param(0)
-                    .ok_or(RenderError::new("Param 0 is required for format helper."))?;
-                let rendered = format!("{} {}", param.value().render(), suffix);
-                out.write(rendered.as_ref())?;
-                Ok(())
-            },
-        ),
+        move |h: &Helper,
+              _: &Handlebars,
+              _: &Context,
+              _: &mut RenderContext,
+              out: &mut dyn Output| {
+            // get parameter from helper or throw an error
+            let param = h
+                .param(0)
+                .ok_or(RenderError::new("Param 0 is required for format helper."))?;
+            let rendered = format!("{} {}", param.value().render(), suffix);
+            out.write(rendered.as_ref())?;
+            Ok(())
+        },
     );
     Ok(())
 }
