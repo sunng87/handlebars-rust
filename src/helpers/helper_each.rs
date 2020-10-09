@@ -94,9 +94,9 @@ impl HelperDef for EachHelper {
                             let is_last = i == len - 1;
 
                             let index = to_json(i);
-                            block.set_local_var("@first".to_string(), to_json(is_first));
-                            block.set_local_var("@last".to_string(), to_json(is_last));
-                            block.set_local_var("@index".to_string(), index.clone());
+                            block.set_local_var("first", to_json(is_first));
+                            block.set_local_var("last", to_json(is_last));
+                            block.set_local_var("index", index.clone());
 
                             update_block_context(block, array_path, i.to_string(), is_first, &v);
                             set_block_param(block, h, array_path, &index, &v)?;
@@ -119,8 +119,8 @@ impl HelperDef for EachHelper {
                         if let Some(ref mut block) = rc.block_mut() {
                             let key = to_json(k);
 
-                            block.set_local_var("@first".to_string(), to_json(is_first));
-                            block.set_local_var("@key".to_string(), key.clone());
+                            block.set_local_var("first", to_json(is_first));
+                            block.set_local_var("key", key.clone());
 
                             update_block_context(block, obj_path, k.to_string(), is_first, &v);
                             set_block_param(block, h, obj_path, &key, &v)?;

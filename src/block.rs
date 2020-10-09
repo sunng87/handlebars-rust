@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use serde_json::value::Value as Json;
 
 use crate::error::RenderError;
+use crate::local_vars::LocalVars;
 
 #[derive(Clone, Debug)]
 pub enum BlockParamHolder {
@@ -65,7 +66,7 @@ pub struct BlockContext<'reg> {
     /// current block context variables
     block_params: BlockParams<'reg>,
     /// local variables in current context
-    local_variables: BTreeMap<String, Json>,
+    local_variables: LocalVars,
 }
 
 impl<'reg> BlockContext<'reg> {
@@ -75,13 +76,13 @@ impl<'reg> BlockContext<'reg> {
     }
 
     /// set a local variable into current scope
-    pub fn set_local_var(&mut self, name: String, value: Json) {
-        self.local_variables.insert(name, value);
+    pub fn set_local_var(&mut self, name: &str, value: Json) {
+        self.local_variables.put(name, value);
     }
 
     /// get a local variable from current scope
     pub fn get_local_var(&self, name: &str) -> Option<&Json> {
-        self.local_variables.get(&format!("@{}", name))
+        self.local_variables.get(name)
     }
 
     /// borrow a reference to current scope's base path

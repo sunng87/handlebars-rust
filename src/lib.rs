@@ -392,6 +392,7 @@ mod error;
 mod grammar;
 mod helpers;
 mod json;
+mod local_vars;
 mod output;
 mod partial;
 mod registry;
