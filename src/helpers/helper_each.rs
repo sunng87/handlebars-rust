@@ -138,9 +138,12 @@ impl HelperDef for EachHelper {
                 }
                 _ => {
                     if let Some(else_template) = h.inverse() {
-                        else_template.render(r, ctx, rc, out)?;
+                        else_template.render(r, ctx, rc, out)
+                    } else if r.strict_mode() {
+                        Err(RenderError::strict_error(value.relative_path()))
+                    } else {
+                        Ok(())
                     }
-                    Ok(())
                 }
             },
             None => Ok(()),

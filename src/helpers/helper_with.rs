@@ -24,10 +24,7 @@ impl HelperDef for WithHelper {
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
-        let not_empty = param.value().is_truthy(false);
-        let template = if not_empty { h.template() } else { h.inverse() };
-
-        if not_empty {
+        if param.value().is_truthy(false) {
             let mut block = create_block(&param)?;
 
             if let Some(block_param) = h.block_param() {
@@ -42,17 +39,18 @@ impl HelperDef for WithHelper {
             }
 
             rc.push_block(block);
-        }
 
-        let result = match template {
-            Some(t) => t.render(r, ctx, rc, out),
-            None => Ok(()),
-        };
+            if let Some(t) = h.template() {
+                t.render(r, ctx, rc, out)?;
+            };
 
-        if not_empty {
             rc.pop_block();
+            Ok(())
+        } else if let Some(t) = h.inverse() {
+            t.render(r, ctx, rc, out)
+        } else {
+            Err(RenderError::strict_error(param.relative_path()))
         }
-        result
     }
 }
 

@@ -14,7 +14,7 @@ impl HelperDef for LookupHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,
-        _: &'reg Registry<'reg>,
+        r: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
@@ -38,7 +38,11 @@ impl HelperDef for LookupHelper {
                 .map(|i| ScopedJson::Derived(i.clone())),
             _ => None,
         };
-        Ok(value)
+        if r.strict_mode() && value.is_none() {
+            Err(RenderError::strict_error(None))
+        } else {
+            Ok(value)
+        }
     }
 }
 
