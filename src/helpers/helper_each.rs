@@ -527,4 +527,31 @@ mod test {
         let rendered = reg.render("walk", &input).unwrap();
         assert_eq!(expected_output, rendered);
     }
+
+    #[test]
+    fn test_strict_each() {
+        let mut reg = Registry::new();
+
+        assert!(reg
+            .render_template("{{#each data}}{{/each}}", &json!({}))
+            .is_ok());
+        assert!(reg
+            .render_template("{{#each data}}{{/each}}", &json!({"data": 24}))
+            .is_ok());
+
+        reg.set_strict_mode(true);
+
+        assert!(reg
+            .render_template("{{#each data}}{{/each}}", &json!({}))
+            .is_err());
+        assert!(reg
+            .render_template("{{#each data}}{{/each}}", &json!({"data": 24}))
+            .is_err());
+        assert!(reg
+            .render_template("{{#each data}}{{else}}food{{/each}}", &json!({}))
+            .is_ok());
+        assert!(reg
+            .render_template("{{#each data}}{{else}}food{{/each}}", &json!({"data": 24}))
+            .is_ok());
+    }
 }

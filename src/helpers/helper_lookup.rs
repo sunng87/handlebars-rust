@@ -84,4 +84,21 @@ mod test {
         let r2 = handlebars.render("t2", &m2);
         assert_eq!(r2.ok().unwrap(), "world".to_string());
     }
+
+    #[test]
+    fn test_strict_lookup() {
+        let mut hbs = Registry::new();
+
+        assert_eq!(
+            hbs.render_template("{{lookup kk 1}}", &json!({"kk": []}))
+                .unwrap(),
+            ""
+        );
+
+        hbs.set_strict_mode(true);
+
+        assert!(hbs
+            .render_template("{{lookup kk 1}}", &json!({"kk": []}))
+            .is_err());
+    }
 }

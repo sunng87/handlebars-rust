@@ -48,8 +48,10 @@ impl HelperDef for WithHelper {
             Ok(())
         } else if let Some(t) = h.inverse() {
             t.render(r, ctx, rc, out)
-        } else {
+        } else if r.strict_mode() {
             Err(RenderError::strict_error(param.relative_path()))
+        } else {
+            Ok(())
         }
     }
 }
@@ -243,5 +245,32 @@ mod test {
         let data = json!({"a": {"b": {"c": "d"}}});
         let template = "{{#with (lookup a \"b\")}}{{#with this}}{{c}}{{/with}}{{/with}}";
         assert_eq!("d", hb.render_template(template, &data).unwrap());
+    }
+
+    #[test]
+    fn test_strict_with() {
+        let mut hb = Registry::new();
+
+        assert_eq!(
+            hb.render_template("{{#with name}}yes{{/with}}", &json!({}))
+                .unwrap(),
+            ""
+        );
+        assert_eq!(
+            hb.render_template("{{#with name}}yes{{else}}no{{/with}}", &json!({}))
+                .unwrap(),
+            "no"
+        );
+
+        hb.set_strict_mode(true);
+
+        assert!(hb
+            .render_template("{{#with name}}yes{{/with}}", &json!({}))
+            .is_err());
+        assert_eq!(
+            hb.render_template("{{#with name}}yes{{else}}no{{/with}}", &json!({}))
+                .unwrap(),
+            "no"
+        );
     }
 }
