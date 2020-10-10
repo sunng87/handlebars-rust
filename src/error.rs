@@ -190,12 +190,12 @@ fn template_segment(template_str: &str, line: usize, col: usize) -> String {
                 buf.push_str("     |");
                 for c in 0..line_content.len() {
                     if c != col {
-                        buf.push_str("-");
+                        buf.push('-');
                     } else {
-                        buf.push_str("^");
+                        buf.push('^');
                     }
                 }
-                buf.push_str("\n");
+                buf.push('\n');
             }
         }
     }

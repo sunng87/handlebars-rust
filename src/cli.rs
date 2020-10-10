@@ -13,12 +13,12 @@ fn usage() -> ! {
 }
 
 fn parse_json(text: &str) -> Json {
-    let text = if text.starts_with('@') {
-        fs::read_to_string(&text[1..]).unwrap()
+    let result = if let Some(text) = text.strip_prefix('@') {
+        fs::read_to_string(text).unwrap()
     } else {
         text.to_owned()
     };
-    match Json::from_str(&text) {
+    match Json::from_str(&result) {
         Ok(json) => json,
         Err(_) => usage(),
     }
