@@ -14,7 +14,7 @@ matrix:
         - cargo clippy -- -D warnings
     - rust: beta
     - rust: stable
-    - rust: 1.42.0
+    - rust: 1.45.0
       script:
         - cargo build
     - rust: nightly
