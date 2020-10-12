@@ -598,12 +598,7 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         match rule {
-                            Rule::html_expression => {
-                                let el = HTMLExpression(exp.name);
-                                let t = template_stack.front_mut().unwrap();
-                                t.push_element(el, line_no, col_no);
-                            }
-                            Rule::expression => {
+                            Rule::expression | Rule::html_expression => {
                                 let helper_template = HelperTemplate {
                                     name: exp.name,
                                     params: exp.params,
@@ -613,7 +608,11 @@ impl Template {
                                     template: None,
                                     inverse: None,
                                 };
-                                let el = Expression(Box::new(helper_template));
+                                let el = if rule == Rule::expression {
+                                    Expression(Box::new(helper_template))
+                                } else {
+                                    HTMLExpression(Box::new(helper_template))
+                                };
                                 let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
                             }
@@ -733,7 +732,7 @@ impl Template {
 #[derive(PartialEq, Clone, Debug)]
 pub enum TemplateElement {
     RawString(String),
-    HTMLExpression(Parameter),
+    HTMLExpression(Box<HelperTemplate>),
     Expression(Box<HelperTemplate>),
     HelperBlock(Box<HelperTemplate>),
     DecoratorExpression(Box<DecoratorTemplate>),
@@ -792,7 +791,9 @@ fn test_parse_template() {
 
     assert_eq!(
         *t.elements.get(3).unwrap(),
-        HTMLExpression(Parameter::Path(Path::with_named_paths(&["content"])))
+        HTMLExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+            &["content"],
+        ))))
     );
 
     match *t.elements.get(5).unwrap() {
