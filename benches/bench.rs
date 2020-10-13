@@ -4,11 +4,11 @@ extern crate criterion;
 extern crate serde_derive;
 
 use std::collections::BTreeMap;
-use std::fs::{create_dir_all, File};
-use std::io::Write;
-use std::path::Path;
+// use std::fs::{create_dir_all, File};
+// use std::io::Write;
+// use std::path::Path;
 
-use criterion::profiler::Profiler;
+// use criterion::profiler::Profiler;
 use criterion::Criterion;
 use handlebars::{to_json, Context, Handlebars, Template};
 // use pprof::protos::Message;
@@ -205,10 +205,18 @@ fn large_nested_loop(c: &mut Criterion) {
     });
 }
 
+// criterion_group!(
+//     name = benches;
+//     config = profiled();
+//     targets = parse_template, render_template, large_loop_helper, large_loop_helper_with_context_creation,
+//     large_nested_loop
+// );
 criterion_group!(
-    name = benches;
-    // config = profiled();
-    targets = parse_template, render_template, large_loop_helper, large_loop_helper_with_context_creation,
+    benches,
+    parse_template,
+    render_template,
+    large_loop_helper,
+    large_loop_helper_with_context_creation,
     large_nested_loop
 );
 criterion_main!(benches);
