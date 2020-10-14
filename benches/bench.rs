@@ -3,53 +3,63 @@ extern crate criterion;
 #[macro_use]
 extern crate serde_derive;
 
-use std::collections::BTreeMap;
-// use std::fs::{create_dir_all, File};
-// use std::io::Write;
-// use std::path::Path;
-
-// use criterion::profiler::Profiler;
 use criterion::Criterion;
 use handlebars::{to_json, Context, Handlebars, Template};
-// use pprof::protos::Message;
-// use pprof::ProfilerGuard;
 use serde_json::value::Value as Json;
+use std::collections::BTreeMap;
 
-// #[derive(Default)]
-// struct CpuProfiler<'a> {
-//     guard: Option<ProfilerGuard<'a>>,
-// }
+#[cfg(unix)]
+use criterion::profiler::Profiler;
+#[cfg(unix)]
+use pprof::protos::Message;
+#[cfg(unix)]
+use pprof::ProfilerGuard;
 
-// impl<'a> Profiler for CpuProfiler<'a> {
-//     fn start_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
-//         create_dir_all(&benchmark_dir).unwrap();
+#[cfg(unix)]
+use std::fs::{create_dir_all, File};
+#[cfg(unix)]
+use std::io::Write;
+#[cfg(unix)]
+use std::path::Path;
 
-//         let guard = ProfilerGuard::new(100).unwrap();
-//         self.guard = Some(guard);
-//     }
+#[cfg(unix)]
+#[derive(Default)]
+struct CpuProfiler<'a> {
+    guard: Option<ProfilerGuard<'a>>,
+}
 
-//     fn stop_profiling(&mut self, benchmark_id: &str, benchmark_dir: &Path) {
-//         if let Ok(ref report) = self.guard.as_ref().unwrap().report().build() {
-//             let fg_file_name = benchmark_dir.join(format!("{}.svg", benchmark_id));
-//             let fg_file = File::create(fg_file_name).unwrap();
-//             report.flamegraph(fg_file).unwrap();
+#[cfg(unix)]
+impl<'a> Profiler for CpuProfiler<'a> {
+    fn start_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
+        create_dir_all(&benchmark_dir).unwrap();
 
-//             let pb_file_name = benchmark_dir.join(format!("{}.pb", benchmark_id));
-//             let mut pb_file = File::create(pb_file_name).unwrap();
-//             let profile = report.pprof().unwrap();
+        let guard = ProfilerGuard::new(100).unwrap();
+        self.guard = Some(guard);
+    }
 
-//             let mut content = Vec::new();
-//             profile.encode(&mut content).unwrap();
-//             pb_file.write_all(&content).unwrap();
-//         };
+    fn stop_profiling(&mut self, benchmark_id: &str, benchmark_dir: &Path) {
+        if let Ok(ref report) = self.guard.as_ref().unwrap().report().build() {
+            let fg_file_name = benchmark_dir.join(format!("{}.svg", benchmark_id));
+            let fg_file = File::create(fg_file_name).unwrap();
+            report.flamegraph(fg_file).unwrap();
 
-//         self.guard = None;
-//     }
-// }
+            let pb_file_name = benchmark_dir.join(format!("{}.pb", benchmark_id));
+            let mut pb_file = File::create(pb_file_name).unwrap();
+            let profile = report.pprof().unwrap();
 
-// fn profiled() -> Criterion {
-//     Criterion::default().with_profiler(CpuProfiler::default())
-// }
+            let mut content = Vec::new();
+            profile.encode(&mut content).unwrap();
+            pb_file.write_all(&content).unwrap();
+        };
+
+        self.guard = None;
+    }
+}
+
+#[cfg(unix)]
+fn profiled() -> Criterion {
+    Criterion::default().with_profiler(CpuProfiler::default())
+}
 
 #[derive(Serialize)]
 struct DataWrapper {
@@ -205,12 +215,15 @@ fn large_nested_loop(c: &mut Criterion) {
     });
 }
 
-// criterion_group!(
-//     name = benches;
-//     config = profiled();
-//     targets = parse_template, render_template, large_loop_helper, large_loop_helper_with_context_creation,
-//     large_nested_loop
-// );
+#[cfg(unix)]
+criterion_group!(
+    name = benches;
+    config = profiled();
+    targets = parse_template, render_template, large_loop_helper, large_loop_helper_with_context_creation,
+    large_nested_loop
+);
+
+#[cfg(not(unix))]
 criterion_group!(
     benches,
     parse_template,
@@ -219,4 +232,5 @@ criterion_group!(
     large_loop_helper_with_context_creation,
     large_nested_loop
 );
+
 criterion_main!(benches);
