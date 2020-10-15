@@ -138,9 +138,12 @@ impl HelperDef for EachHelper {
                 }
                 _ => {
                     if let Some(else_template) = h.inverse() {
-                        else_template.render(r, ctx, rc, out)?;
+                        else_template.render(r, ctx, rc, out)
+                    } else if r.strict_mode() {
+                        Err(RenderError::strict_error(value.relative_path()))
+                    } else {
+                        Ok(())
                     }
-                    Ok(())
                 }
             },
             None => Ok(()),
@@ -523,5 +526,32 @@ mod test {
 
         let rendered = reg.render("walk", &input).unwrap();
         assert_eq!(expected_output, rendered);
+    }
+
+    #[test]
+    fn test_strict_each() {
+        let mut reg = Registry::new();
+
+        assert!(reg
+            .render_template("{{#each data}}{{/each}}", &json!({}))
+            .is_ok());
+        assert!(reg
+            .render_template("{{#each data}}{{/each}}", &json!({"data": 24}))
+            .is_ok());
+
+        reg.set_strict_mode(true);
+
+        assert!(reg
+            .render_template("{{#each data}}{{/each}}", &json!({}))
+            .is_err());
+        assert!(reg
+            .render_template("{{#each data}}{{/each}}", &json!({"data": 24}))
+            .is_err());
+        assert!(reg
+            .render_template("{{#each data}}{{else}}food{{/each}}", &json!({}))
+            .is_ok());
+        assert!(reg
+            .render_template("{{#each data}}{{else}}food{{/each}}", &json!({"data": 24}))
+            .is_ok());
     }
 }
