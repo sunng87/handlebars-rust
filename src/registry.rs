@@ -19,6 +19,8 @@ use crate::support::str::{self, StringWriter};
 use crate::template::Template;
 
 #[cfg(feature = "dir_source")]
+use std::path;
+#[cfg(feature = "dir_source")]
 use walkdir::{DirEntry, WalkDir};
 
 #[cfg(feature = "script_helper")]
@@ -242,7 +244,7 @@ impl<'reg> Registry<'reg> {
     {
         let dir_path = dir_path.as_ref();
 
-        let prefix_len = if dir_path.to_string_lossy().ends_with('/') {
+        let prefix_len = if dir_path.to_string_lossy().ends_with(path::MAIN_SEPARATOR) {
             dir_path.to_string_lossy().len()
         } else {
             dir_path.to_string_lossy().len() + 1
@@ -261,7 +263,8 @@ impl<'reg> Registry<'reg> {
             let tpl_file_path = entry.path().to_string_lossy();
 
             let tpl_name = &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
-            let tpl_canonical_name = tpl_name.replace("\\", "/");
+            // replace platform path separator with our internal one
+            let tpl_canonical_name = tpl_name.replace(path::MAIN_SEPARATOR, "/");
             self.register_template_file(&tpl_canonical_name, &tpl_path)?;
         }
 
