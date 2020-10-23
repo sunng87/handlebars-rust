@@ -21,6 +21,8 @@ matrix:
       name: minimal-versions
       script:
         - cargo -Z minimal-versions build --verbose
+    - rust: nightly
+      os: windows
 
 script:
   - cargo $TASK --verbose
