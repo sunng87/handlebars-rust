@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.5.0...Unreleased) - ReleaseDate
+
+* [Fixed] dir source path separator bug on windows [#389]
+
 ## [3.5.0](https://github.com/sunng87/handlebars-rust/compare/3.4.0...3.5.0) - 2020-09-23
 
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
