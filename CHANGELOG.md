@@ -4,6 +4,7 @@
 
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
 * [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
+* [Fixed] dir source path separator bug on windows [#389]
 
 ## [3.4.0](https://github.com/sunng87/handlebars-rust/compare/3.3.0...3.4.0) - 2020-08-14
 
