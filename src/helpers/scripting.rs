@@ -7,8 +7,7 @@ use crate::json::value::{PathAndJson, ScopedJson};
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
 
-use rhai::de::from_dynamic;
-use rhai::ser::to_dynamic;
+use rhai::serde::{from_dynamic, to_dynamic};
 use rhai::{Dynamic, Engine, Scope, AST};
 
 use serde_json::value::Value as Json;
