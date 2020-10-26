@@ -19,7 +19,7 @@ pub struct ScriptHelper {
 
 #[inline]
 fn call_script_helper<'reg: 'rc, 'rc>(
-    params: &Vec<PathAndJson<'reg, 'rc>>,
+    params: &[PathAndJson<'reg, 'rc>],
     hash: &BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
     engine: &Engine,
     script: &AST,
