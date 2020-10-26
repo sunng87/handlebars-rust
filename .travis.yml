@@ -11,7 +11,7 @@ matrix:
       before_script:
         - rustup component add clippy
       script:
-        - cargo clippy -- -D warnings
+        - cargo clippy --all-features -- -D warnings
     - rust: beta
     - rust: stable
     - rust: 1.45.0
