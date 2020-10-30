@@ -12,6 +12,12 @@ matrix:
         - rustup component add clippy
       script:
         - cargo clippy --all-features -- -D warnings
+    - rust: stable
+      name: fmt-check
+      before_script:
+        - rustup component add rustfmt
+      script:
+        - cargo fmt --check
     - rust: beta
     - rust: stable
     - rust: 1.45.0
