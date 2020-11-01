@@ -36,6 +36,11 @@ use crate::helpers::scripting::ScriptHelper;
 /// parameters (and because traits cannot be aliased using `type`).
 pub type EscapeFn = Box<dyn Fn(&str) -> String + Send + Sync>;
 
+/// A template preprocess function that takes template string and its name (if given)
+/// as input and returns processed template string. The processed string will be registered
+/// into registry instead of the original.
+pub type PreprocessFn = Box<dyn Fn(&str, Option<&str>) -> String>;
+
 /// The default *escape fn* replaces the characters `&"<>`
 /// with the equivalent html / xml entities.
 pub fn html_escape(data: &str) -> String {
@@ -56,6 +61,7 @@ pub struct Registry<'reg> {
     helpers: HashMap<String, Box<dyn HelperDef + Send + Sync + 'reg>>,
     decorators: HashMap<String, Box<dyn DecoratorDef + Send + Sync + 'reg>>,
     escape_fn: EscapeFn,
+    preprocess_fn: Option<PreprocessFn>,
     source_map: bool,
     strict_mode: bool,
     #[cfg(feature = "script_helper")]
@@ -106,6 +112,7 @@ impl<'reg> Registry<'reg> {
             helpers: HashMap::new(),
             decorators: HashMap::new(),
             escape_fn: Box::new(html_escape),
+            preprocess_fn: None,
             source_map: true,
             strict_mode: false,
             #[cfg(feature = "script_helper")]
@@ -380,6 +387,29 @@ impl<'reg> Registry<'reg> {
     /// Get a reference to the current *escape fn*.
     pub fn get_escape_fn(&self) -> &dyn Fn(&str) -> String {
         &*self.escape_fn
+    }
+
+    /// Register a *preprocess fn* to transform all template string.
+    ///
+    /// The template content and its name (if given) is provided for this function.
+    /// The function has to return the transformed content which will be registered
+    /// into handlebars registry eventually.
+    pub fn register_preprocess_fn<F: 'static + Fn(&str, Option<&str>) -> String + Send + Sync>(
+        &mut self,
+        preprocess_fn: F,
+    ) {
+        self.preprocess_fn = Some(Box::new(preprocess_fn));
+    }
+
+    /// Remove the template preprocessor. Note that this won't affect template that
+    /// has been registered.
+    pub fn unregister_preprocess_fn(&mut self) {
+        self.preprocess_fn = None;
+    }
+
+    /// Get a reference to *preprocess fn*
+    pub fn get_preprocess_fn(&self) -> Option<&dyn Fn(&str, Option<&str>) -> String> {
+        self.preprocess_fn.as_ref().map(|b| b.as_ref())
     }
 
     /// Return `true` if a template is registered for the given name
