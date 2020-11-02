@@ -197,6 +197,7 @@ impl<'reg> Registry<'reg> {
     where
         S: AsRef<str>,
     {
+        // TODO: preprocess
         let template = Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)?;
         self.register_template(name, template);
         Ok(())
@@ -518,6 +519,7 @@ impl<'reg> Registry<'reg> {
         template_string: &str,
         ctx: &Context,
     ) -> Result<String, TemplateRenderError> {
+        // TODO: preprocess
         let tpl = Template::compile2(template_string, self.source_map)?;
 
         let mut out = StringOutput::new();
@@ -541,6 +543,7 @@ impl<'reg> Registry<'reg> {
         T: Serialize,
         W: Write,
     {
+        // TODO: preprocess
         let tpl = Template::compile2(template_string, self.source_map)?;
         let ctx = Context::wraps(data)?;
         let mut render_context = RenderContext::new(None);
