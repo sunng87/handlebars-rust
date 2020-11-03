@@ -164,10 +164,10 @@ impl Context {
     }
 
     /// Navigate the context with relative path and block scopes
-    pub(crate) fn navigate<'reg, 'rc>(
+    pub(crate) fn navigate<'reg, 'rc, 'blk>(
         &'rc self,
         relative_path: &[PathSeg],
-        block_contexts: &VecDeque<BlockContext<'reg, 'rc>>,
+        block_contexts: &VecDeque<BlockContext<'reg, 'blk>>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         // always use absolute at the moment until we get base_value lifetime issue fixed
         let resolved_visitor = parse_json_visitor(&relative_path, block_contexts, true)?;

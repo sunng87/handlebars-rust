@@ -74,12 +74,12 @@ pub fn expand_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
 
     match partial {
         Some(t) => {
-            let mut local_rc = rc.clone();
+            let mut local_rc = rc.new_for_block();
             render_partial(&t, d, r, ctx, &mut local_rc, out)?;
         }
         None => {
             if let Some(t) = r.get_template(tname).or_else(|| d.template()) {
-                let mut local_rc = rc.clone();
+                let mut local_rc = rc.new_for_block();
                 render_partial(t, d, r, ctx, &mut local_rc, out)?;
             }
         }

@@ -11,12 +11,12 @@ use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
 
-fn update_block_context<'reg: 'rc, 'rc>(
-    block: &mut BlockContext<'reg, 'rc>,
+fn update_block_context<'reg, 'blk>(
+    block: &mut BlockContext<'reg, 'blk>,
     base_path: Option<&Vec<String>>,
     relative_path: String,
     is_first: bool,
-    value: &Json,
+    value: &'blk Json,
 ) {
     if let Some(ref p) = base_path {
         if is_first {
@@ -26,7 +26,7 @@ fn update_block_context<'reg: 'rc, 'rc>(
         }
     } else {
         // FIXME:
-        block.set_base_value(value.clone());
+        block.set_base_value(&value);
     }
 }
 
