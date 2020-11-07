@@ -48,20 +48,24 @@ If you are not familiar with [handlebars language
 syntax](https://handlebarsjs.com), it is recommended to walk through
 their introduction first.
 
-Check the `render` example in the source tree. The example shows you how
-to:
+Examples are provided in source tree to demo usage of various api.
 
-* Create a `Handlebars` registry and register the template from files;
-* Create a custom Helper with closure or struct implementing
- `HelperDef`, and register it;
-* Define and prepare some data;
-* Render it;
-
-Run `cargo run --example render` to see results
-(or `RUST_LOG=handlebars=info cargo run --example render` for logging
-output).
-
-Checkout `examples/` for more concrete demos of the current API.
+* [quick](https://github.com/sunng87/handlebars-rust/blob/master/examples/quick.rs)
+  the very basic example of registry and render apis
+* [render](https://github.com/sunng87/handlebars-rust/blob/master/examples/render.rs)
+  how to define custom helpers with function, trait impl or macro, and also how
+  to use custom helpers.
+* [render_file](https://github.com/sunng87/handlebars-rust/blob/master/examples/render_file.rs)
+  similar to render, but render to file instead of string
+* [partials](https://github.com/sunng87/handlebars-rust/blob/master/examples/partials.rs)
+  template inheritance with handlebars
+* [decorator](https://github.com/sunng87/handlebars-rust/blob/master/examples/decorator.rs)
+  how to use decorator to change data or define custom helper
+* [script](https://github.com/sunng87/handlebars-rust/blob/master/examples/script.rs)
+  how to define custom helper with rhai scripting language,
+  just like using javascript for handlebarsjs
+* [error](https://github.com/sunng87/handlebars-rust/blob/master/examples/error.rs)
+  simple case for error
 
 ## Minimum Rust Version Policy
 
@@ -136,6 +140,10 @@ And using it in your template:
 ```handlebars
 {{hex 16}}
 ```
+
+By default, handlebars-rust ships [additional helpers](https://github.com/sunng87/handlebars-rust/blob/master/src/helpers/helper_boolean.rs#L5)
+(compared with original js version)
+that is useful when working with `if`.
 
 With `script_helper` feature flag enabled, you can also create helpers
 using [rhai](https://github.com/jonathandturner/rhai) script, just like JavaScript
