@@ -116,25 +116,25 @@ impl<'reg> Registry<'reg> {
     }
 
     fn setup_builtins(mut self) -> Registry<'reg> {
-        self.register_helper("if", Box::new(helpers::IF_HELPER));
-        self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
-        self.register_helper("each", Box::new(helpers::EACH_HELPER));
-        self.register_helper("with", Box::new(helpers::WITH_HELPER));
-        self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
-        self.register_helper("raw", Box::new(helpers::RAW_HELPER));
-        self.register_helper("log", Box::new(helpers::LOG_HELPER));
+        // self.register_helper("if", Box::new(helpers::IF_HELPER));
+        // self.register_helper("unless", Box::new(helpers::UNLESS_HELPER));
+        // self.register_helper("each", Box::new(helpers::EACH_HELPER));
+        // self.register_helper("with", Box::new(helpers::WITH_HELPER));
+        // self.register_helper("lookup", Box::new(helpers::LOOKUP_HELPER));
+        // self.register_helper("raw", Box::new(helpers::RAW_HELPER));
+        // self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
-        self.register_helper("eq", Box::new(helpers::helper_boolean::eq));
-        self.register_helper("ne", Box::new(helpers::helper_boolean::ne));
-        self.register_helper("gt", Box::new(helpers::helper_boolean::gt));
-        self.register_helper("gte", Box::new(helpers::helper_boolean::gte));
-        self.register_helper("lt", Box::new(helpers::helper_boolean::lt));
-        self.register_helper("lte", Box::new(helpers::helper_boolean::lte));
-        self.register_helper("and", Box::new(helpers::helper_boolean::and));
-        self.register_helper("or", Box::new(helpers::helper_boolean::or));
-        self.register_helper("not", Box::new(helpers::helper_boolean::not));
+        // self.register_helper("eq", Box::new(helpers::helper_boolean::eq));
+        // self.register_helper("ne", Box::new(helpers::helper_boolean::ne));
+        // self.register_helper("gt", Box::new(helpers::helper_boolean::gt));
+        // self.register_helper("gte", Box::new(helpers::helper_boolean::gte));
+        // self.register_helper("lt", Box::new(helpers::helper_boolean::lt));
+        // self.register_helper("lte", Box::new(helpers::helper_boolean::lte));
+        // self.register_helper("and", Box::new(helpers::helper_boolean::and));
+        // self.register_helper("or", Box::new(helpers::helper_boolean::or));
+        // self.register_helper("not", Box::new(helpers::helper_boolean::not));
 
-        self.register_decorator("inline", Box::new(decorators::INLINE_DECORATOR));
+        // self.register_decorator("inline", Box::new(decorators::INLINE_DECORATOR));
         self
     }
 
@@ -417,20 +417,15 @@ impl<'reg> Registry<'reg> {
         self.templates.clear();
     }
 
-    fn render_to_output<O>(
-        &self,
-        name: &str,
-        ctx: &Context,
-        output: &mut O,
-    ) -> Result<(), RenderError>
+    fn render_to_output<O>(&self, name: &str, ctx: Context, output: O) -> Result<(), RenderError>
     where
-        O: Output,
+        O: Output + 'static,
     {
         self.get_template(name)
             .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
-                let mut render_context = RenderContext::new(t.name.as_ref());
-                t.render(self, &ctx, &mut render_context, output)
+                let mut render_context = RenderContext::new(t.name.as_ref(), ctx, output);
+                t.render(self, &mut render_context)
             })
     }
 
@@ -446,14 +441,14 @@ impl<'reg> Registry<'reg> {
     {
         let mut output = StringOutput::new();
         let ctx = Context::wraps(&data)?;
-        self.render_to_output(name, &ctx, &mut output)?;
+        self.render_to_output(name, ctx, output)?;
         output.into_string().map_err(RenderError::from)
     }
 
     /// Render a registered template with reused context
-    pub fn render_with_context(&self, name: &str, ctx: &Context) -> Result<String, RenderError> {
+    pub fn render_with_context(&self, name: &str, ctx: Context) -> Result<String, RenderError> {
         let mut output = StringOutput::new();
-        self.render_to_output(name, ctx, &mut output)?;
+        self.render_to_output(name, ctx, output)?;
         output.into_string().map_err(RenderError::from)
     }
 
@@ -461,11 +456,11 @@ impl<'reg> Registry<'reg> {
     pub fn render_to_write<T, W>(&self, name: &str, data: &T, writer: W) -> Result<(), RenderError>
     where
         T: Serialize,
-        W: Write,
+        W: Write + 'static,
     {
         let mut output = WriteOutput::new(writer);
         let ctx = Context::wraps(data)?;
-        self.render_to_output(name, &ctx, &mut output)
+        self.render_to_output(name, ctx, output)
     }
 
     /// Render a template string using current registry without registering it
@@ -486,14 +481,14 @@ impl<'reg> Registry<'reg> {
     pub fn render_template_with_context(
         &self,
         template_string: &str,
-        ctx: &Context,
+        ctx: Context,
     ) -> Result<String, TemplateRenderError> {
         let tpl = Template::compile2(template_string, self.source_map)?;
 
         let mut out = StringOutput::new();
         {
-            let mut render_context = RenderContext::new(None);
-            tpl.render(self, &ctx, &mut render_context, &mut out)?;
+            let mut render_context = RenderContext::new(None, ctx, out);
+            tpl.render(self, &mut render_context)?;
         }
 
         out.into_string()
@@ -509,13 +504,13 @@ impl<'reg> Registry<'reg> {
     ) -> Result<(), TemplateRenderError>
     where
         T: Serialize,
-        W: Write,
+        W: Write + 'static,
     {
         let tpl = Template::compile2(template_string, self.source_map)?;
         let ctx = Context::wraps(data)?;
-        let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
-        tpl.render(self, &ctx, &mut render_context, &mut out)
+        let mut render_context = RenderContext::new(None, ctx, out);
+        tpl.render(self, &mut render_context)
             .map_err(TemplateRenderError::from)
     }
 
@@ -528,7 +523,7 @@ impl<'reg> Registry<'reg> {
     ) -> Result<(), TemplateRenderError>
     where
         T: Serialize,
-        W: Write,
+        W: Write + 'static,
         R: Read,
     {
         let mut tpl_str = String::new();

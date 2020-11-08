@@ -3,7 +3,7 @@ use crate::error::RenderError;
 use crate::registry::Registry;
 use crate::render::{Decorator, RenderContext};
 
-pub use self::inline::INLINE_DECORATOR;
+// pub use self::inline::INLINE_DECORATOR;
 
 pub type DecoratorResult = Result<(), RenderError>;
 
@@ -61,7 +61,6 @@ pub trait DecoratorDef {
         &'reg self,
         d: &Decorator<'reg, 'rc>,
         r: &'reg Registry<'reg>,
-        ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc, 'blk>,
     ) -> DecoratorResult;
 }
@@ -71,7 +70,6 @@ impl<
         F: for<'reg, 'rc, 'blk> Fn(
             &Decorator<'reg, 'rc>,
             &'reg Registry<'reg>,
-            &'rc Context,
             &mut RenderContext<'reg, 'rc, 'blk>,
         ) -> DecoratorResult,
     > DecoratorDef for F
@@ -80,14 +78,13 @@ impl<
         &'reg self,
         d: &Decorator<'reg, 'rc>,
         reg: &'reg Registry<'reg>,
-        ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc, 'blk>,
     ) -> DecoratorResult {
-        (*self)(d, reg, ctx, rc)
+        (*self)(d, reg, rc)
     }
 }
 
-mod inline;
+// mod inline;
 
 #[cfg(test)]
 mod test {

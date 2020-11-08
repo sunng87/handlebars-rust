@@ -5,12 +5,12 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{do_escape, Helper, RenderContext};
 
-pub use self::helper_each::EACH_HELPER;
-pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
-pub use self::helper_log::LOG_HELPER;
-pub use self::helper_lookup::LOOKUP_HELPER;
-pub use self::helper_raw::RAW_HELPER;
-pub use self::helper_with::WITH_HELPER;
+// pub use self::helper_each::EACH_HELPER;
+// pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
+// pub use self::helper_log::LOG_HELPER;
+// pub use self::helper_lookup::LOOKUP_HELPER;
+// pub use self::helper_raw::RAW_HELPER;
+// pub use self::helper_with::WITH_HELPER;
 
 /// A type alias for `Result<(), RenderError>`
 pub type HelperResult = Result<(), RenderError>;
@@ -80,7 +80,6 @@ pub trait HelperDef {
         &self,
         _: &'blk Helper<'reg, 'rc>,
         _: &'reg Registry<'reg>,
-        _: &'rc Context,
         _: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
@@ -90,17 +89,15 @@ pub trait HelperDef {
         &self,
         h: &'blk Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
-        ctx: &'rc Context,
         rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
-        out: &'rc mut dyn Output,
     ) -> HelperResult {
-        if let Some(result) = self.call_inner(h, r, ctx, rc)? {
+        if let Some(result) = self.call_inner(h, r, rc)? {
             if r.strict_mode() && result.is_missing() {
                 return Err(RenderError::strict_error(None));
             } else {
                 // auto escape according to settings
                 let output = do_escape(r, !rc.is_disable_escape(), result.render());
-                out.write(output.as_ref())?;
+                rc.output_mut().write(output.as_ref())?;
             }
         }
 
@@ -113,9 +110,7 @@ impl<
         F: for<'reg, 'rc, 'blk> Fn(
             &'blk Helper<'reg, 'rc>,
             &'reg Registry<'reg>,
-            &'rc Context,
             &'rc mut RenderContext<'reg, 'rc, 'blk>,
-            &'rc mut dyn Output,
         ) -> HelperResult,
     > HelperDef for F
 {
@@ -123,24 +118,22 @@ impl<
         &self,
         h: &'blk Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
-        ctx: &'rc Context,
         rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
-        out: &'rc mut dyn Output,
     ) -> HelperResult {
-        (*self)(h, r, ctx, rc, out)
+        (*self)(h, r, rc)
     }
 }
 
-mod block_util;
-pub(crate) mod helper_boolean;
-mod helper_each;
-mod helper_if;
-mod helper_log;
-mod helper_lookup;
-mod helper_raw;
-mod helper_with;
-#[cfg(feature = "script_helper")]
-pub(crate) mod scripting;
+// mod block_util;
+// pub(crate) mod helper_boolean;
+// mod helper_each;
+// mod helper_if;
+// mod helper_log;
+// mod helper_lookup;
+// mod helper_raw;
+// mod helper_with;
+// #[cfg(feature = "script_helper")]
+// pub(crate) mod scripting;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
