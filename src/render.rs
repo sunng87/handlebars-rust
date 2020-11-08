@@ -272,7 +272,7 @@ impl<'reg: 'rc, 'rc: 'blk, 'blk> Helper<'reg, 'rc> {
         ht: &'reg HelperTemplate,
         registry: &'reg Registry<'reg>,
         context: &'rc Context,
-        render_context: &mut RenderContext<'reg, 'rc, 'blk>,
+        render_context: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Helper<'reg, 'rc>, RenderError> {
         let name = ht.name.expand_as_name(registry, context, render_context)?;
         let mut pv = Vec::with_capacity(ht.params.len());
@@ -415,7 +415,7 @@ impl<'reg: 'rc, 'rc: 'blk, 'blk> Decorator<'reg, 'rc> {
         dt: &'reg DecoratorTemplate,
         registry: &'reg Registry<'reg>,
         context: &'rc Context,
-        render_context: &mut RenderContext<'reg, 'rc, 'blk>,
+        render_context: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Decorator<'reg, 'rc>, RenderError> {
         let name = dt.name.expand_as_name(registry, context, render_context)?;
 
@@ -477,8 +477,8 @@ pub trait Renderable {
         &'reg self,
         registry: &'reg Registry<'reg>,
         context: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
-        out: &mut dyn Output,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+        out: &'rc mut dyn Output,
     ) -> Result<(), RenderError>;
 
     /// render into string
@@ -486,7 +486,7 @@ pub trait Renderable {
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
         self.render(registry, ctx, rc, &mut so)?;
@@ -500,16 +500,16 @@ pub trait Evaluable {
         &'reg self,
         registry: &'reg Registry<'reg>,
         context: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<(), RenderError>;
 }
 
 fn call_helper_for_value<'reg: 'rc, 'rc: 'blk, 'blk>(
     hd: &dyn HelperDef,
-    ht: &'rc Helper<'reg, 'rc>,
+    ht: &'blk Helper<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg, 'rc, 'blk>,
+    rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
     if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
         Ok(PathAndJson::new(None, result))
@@ -538,7 +538,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Cow<'reg, str>, RenderError> {
         match self {
             Parameter::Name(ref name) => Ok(Cow::Borrowed(name)),
@@ -555,7 +555,7 @@ impl Parameter {
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
         match self {
             Parameter::Name(ref name) => {
@@ -614,8 +614,8 @@ impl Renderable for Template {
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
-        out: &mut dyn Output,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+        out: &'rc mut dyn Output,
     ) -> Result<(), RenderError> {
         rc.set_current_template_name(self.name.as_ref());
         let iter = self.elements.iter();
@@ -648,7 +648,7 @@ impl Evaluable for Template {
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<(), RenderError> {
         let iter = self.elements.iter();
 
@@ -683,8 +683,8 @@ fn render_helper<'reg: 'rc, 'rc: 'blk, 'blk>(
     ht: &'reg HelperTemplate,
     registry: &'reg Registry<'reg>,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg, 'rc, 'blk>,
-    out: &mut dyn Output,
+    rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+    out: &'rc mut dyn Output,
 ) -> Result<(), RenderError> {
     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
     debug!(
@@ -710,12 +710,8 @@ fn render_helper<'reg: 'rc, 'rc: 'blk, 'blk>(
     }
 }
 
-pub(crate) fn do_escape(
-    r: &Registry<'_>,
-    rc: &RenderContext<'_, '_, '_>,
-    content: String,
-) -> String {
-    if !rc.is_disable_escape() {
+pub(crate) fn do_escape(r: &Registry<'_>, escape: bool, content: String) -> String {
+    if escape {
         r.get_escape_fn()(&content)
     } else {
         content
@@ -727,8 +723,8 @@ impl Renderable for TemplateElement {
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
-        out: &mut dyn Output,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+        out: &'rc mut dyn Output,
     ) -> Result<(), RenderError> {
         match *self {
             RawString(ref v) => {
@@ -763,7 +759,7 @@ impl Renderable for TemplateElement {
                             }
                         } else {
                             let rendered = context_json.value().render();
-                            let output = do_escape(registry, rc, rendered);
+                            let output = do_escape(registry, !rc.is_disable_escape(), rendered);
                             out.write(output.as_ref())?;
                             Ok(())
                         }
@@ -796,7 +792,7 @@ impl Evaluable for TemplateElement {
         &'reg self,
         registry: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<(), RenderError> {
         match *self {
             DecoratorExpression(ref dt) | DecoratorBlock(ref dt) => {

@@ -17,8 +17,8 @@ fn render_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
-    local_rc: &mut RenderContext<'reg, 'rc, 'blk>,
-    out: &mut dyn Output,
+    local_rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+    out: &'rc mut dyn Output,
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
@@ -57,8 +57,8 @@ pub fn expand_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
-    rc: &mut RenderContext<'reg, 'rc, 'blk>,
-    out: &mut dyn Output,
+    rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+    out: &'rc mut dyn Output,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {

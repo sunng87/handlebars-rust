@@ -78,28 +78,28 @@ pub type HelperResult = Result<(), RenderError>;
 pub trait HelperDef {
     fn call_inner<'reg: 'rc, 'rc: 'blk, 'blk>(
         &self,
-        _: &'rc Helper<'reg, 'rc>,
+        _: &'blk Helper<'reg, 'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
-        _: &mut RenderContext<'reg, 'rc, 'blk>,
+        _: &'rc mut RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
 
     fn call<'reg: 'rc, 'rc: 'blk, 'blk>(
         &self,
-        h: &'rc Helper<'reg, 'rc>,
+        h: &'blk Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
-        out: &mut dyn Output,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+        out: &'rc mut dyn Output,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, ctx, rc)? {
             if r.strict_mode() && result.is_missing() {
                 return Err(RenderError::strict_error(None));
             } else {
                 // auto escape according to settings
-                let output = do_escape(r, rc, result.render());
+                let output = do_escape(r, !rc.is_disable_escape(), result.render());
                 out.write(output.as_ref())?;
             }
         }
@@ -111,21 +111,21 @@ pub trait HelperDef {
 /// implement HelperDef for bare function so we can use function as helper
 impl<
         F: for<'reg, 'rc, 'blk> Fn(
-            &'rc Helper<'reg, 'rc>,
+            &'blk Helper<'reg, 'rc>,
             &'reg Registry<'reg>,
             &'rc Context,
-            &mut RenderContext<'reg, 'rc, 'blk>,
-            &mut dyn Output,
+            &'rc mut RenderContext<'reg, 'rc, 'blk>,
+            &'rc mut dyn Output,
         ) -> HelperResult,
     > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc: 'blk, 'blk>(
         &self,
-        h: &'rc Helper<'reg, 'rc>,
+        h: &'blk Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
-        out: &mut dyn Output,
+        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+        out: &'rc mut dyn Output,
     ) -> HelperResult {
         (*self)(h, r, ctx, rc, out)
     }
