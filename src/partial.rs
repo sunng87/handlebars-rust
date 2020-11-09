@@ -16,7 +16,7 @@ fn render_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
     t: &'reg Template,
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    local_rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+    local_rc: RenderContext<'reg, 'rc, 'blk>,
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
@@ -45,7 +45,7 @@ fn render_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
         let ctx = Context::wraps(&partial_context)?;
         let mut partial_rc = local_rc.new_for_block();
 
-        t.render(r, &mut partial_rc)
+        t.render(r, partial_rc)
     };
 
     local_rc.remove_partial(PARTIAL_BLOCK);
@@ -56,7 +56,7 @@ fn render_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
 pub fn expand_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+    rc: RenderContext<'reg, 'rc, 'blk>,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {
@@ -73,12 +73,12 @@ pub fn expand_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
     match partial {
         Some(t) => {
             let mut local_rc = rc.new_for_block();
-            render_partial(&t, d, r, &mut local_rc)?;
+            render_partial(&t, d, r, local_rc)?;
         }
         None => {
             if let Some(t) = r.get_template(tname).or_else(|| d.template()) {
                 let mut local_rc = rc.new_for_block();
-                render_partial(t, d, r, &mut local_rc)?;
+                render_partial(t, d, r, local_rc)?;
             }
         }
     }

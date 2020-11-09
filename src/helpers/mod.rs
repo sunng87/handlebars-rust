@@ -80,7 +80,7 @@ pub trait HelperDef {
         &self,
         _: &'blk Helper<'reg, 'rc>,
         _: &'reg Registry<'reg>,
-        _: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+        _: RenderContext<'reg, 'rc, 'blk>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         Ok(None)
     }
@@ -89,7 +89,7 @@ pub trait HelperDef {
         &self,
         h: &'blk Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
-        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+        rc: RenderContext<'reg, 'rc, 'blk>,
     ) -> HelperResult {
         if let Some(result) = self.call_inner(h, r, rc)? {
             if r.strict_mode() && result.is_missing() {
@@ -110,7 +110,7 @@ impl<
         F: for<'reg, 'rc, 'blk> Fn(
             &'blk Helper<'reg, 'rc>,
             &'reg Registry<'reg>,
-            &'rc mut RenderContext<'reg, 'rc, 'blk>,
+            RenderContext<'reg, 'rc, 'blk>,
         ) -> HelperResult,
     > HelperDef for F
 {
@@ -118,7 +118,7 @@ impl<
         &self,
         h: &'blk Helper<'reg, 'rc>,
         r: &'reg Registry<'reg>,
-        rc: &'rc mut RenderContext<'reg, 'rc, 'blk>,
+        rc: RenderContext<'reg, 'rc, 'blk>,
     ) -> HelperResult {
         (*self)(h, r, rc)
     }
