@@ -12,11 +12,11 @@ use crate::template::Template;
 
 const PARTIAL_BLOCK: &str = "@partial-block";
 
-fn render_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
+fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    local_rc: RenderContext<'reg, 'rc, 'blk>,
+    local_rc: RenderContext<'reg, 'rc>,
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
@@ -53,10 +53,10 @@ fn render_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
     result
 }
 
-pub fn expand_partial<'reg: 'rc, 'rc: 'blk, 'blk>(
+pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    rc: RenderContext<'reg, 'rc, 'blk>,
+    rc: RenderContext<'reg, 'rc>,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {

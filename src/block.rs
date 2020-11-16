@@ -56,21 +56,21 @@ impl<'reg> BlockParams<'reg> {
 
 /// A data structure holds contextual data for current block scope.
 #[derive(Debug, Default)]
-pub struct BlockContext<'reg, 'blk> {
+pub struct BlockContext<'reg> {
     /// the base_path of current block scope
     base_path: Vec<String>,
     /// the base_value of current block scope, when the block is using a
     /// constant or derived value as block base
-    base_value: Option<&'blk Json>,
+    base_value: Option<Json>,
     /// current block context variables
     block_params: BlockParams<'reg>,
     /// local variables in current context
     local_variables: LocalVars,
 }
 
-impl<'reg, 'blk> BlockContext<'reg, 'blk> {
+impl<'reg> BlockContext<'reg> {
     /// create a new `BlockContext` with default data
-    pub fn new() -> BlockContext<'reg, 'blk> {
+    pub fn new() -> BlockContext<'reg> {
         BlockContext::default()
     }
 
@@ -96,12 +96,12 @@ impl<'reg, 'blk> BlockContext<'reg, 'blk> {
     }
 
     /// borrow the base value
-    pub fn base_value(&self) -> Option<&'blk Json> {
-        self.base_value
+    pub fn base_value(&self) -> Option<&Json> {
+        self.base_value.as_ref()
     }
 
     /// set the base value
-    pub fn set_base_value(&mut self, value: &'blk Json) {
+    pub fn set_base_value(&mut self, value: Json) {
         self.base_value = Some(value);
     }
 

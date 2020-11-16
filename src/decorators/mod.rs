@@ -57,11 +57,11 @@ pub type DecoratorResult = Result<(), RenderError>;
 /// ```
 ///
 pub trait DecoratorDef {
-    fn call<'reg: 'rc, 'rc: 'blk, 'blk>(
+    fn call<'reg: 'rc, 'rc>(
         &'reg self,
         d: &Decorator<'reg, 'rc>,
         r: &'reg Registry<'reg>,
-        rc: RenderContext<'reg, 'rc, 'blk>,
+        rc: RenderContext<'reg, 'rc>,
     ) -> DecoratorResult;
 }
 
@@ -70,15 +70,15 @@ impl<
         F: for<'reg, 'rc, 'blk> Fn(
             &Decorator<'reg, 'rc>,
             &'reg Registry<'reg>,
-            RenderContext<'reg, 'rc, 'blk>,
+            RenderContext<'reg, 'rc>,
         ) -> DecoratorResult,
     > DecoratorDef for F
 {
-    fn call<'reg: 'rc, 'rc: 'blk, 'blk>(
+    fn call<'reg: 'rc, 'rc>(
         &'reg self,
         d: &Decorator<'reg, 'rc>,
         reg: &'reg Registry<'reg>,
-        rc: RenderContext<'reg, 'rc, 'blk>,
+        rc: RenderContext<'reg, 'rc>,
     ) -> DecoratorResult {
         (*self)(d, reg, rc)
     }
