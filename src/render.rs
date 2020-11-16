@@ -125,12 +125,12 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// Typically you don't need to evaluate it by yourself.
     /// The Helper and Decorator API will provide your evaluated value of
     /// their parameters and hash data.
-    pub fn evaluate(&self, relative_path: &str) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    pub fn evaluate(&'rc self, relative_path: &str) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let path = Path::parse(relative_path)?;
         self.evaluate2(&path)
     }
 
-    pub(crate) fn evaluate2(&self, path: &Path) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    pub(crate) fn evaluate2(&'rc self, path: &Path) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         match path {
             Path::Local((level, name, _)) => Ok(self
                 .get_local_var(*level, name)
