@@ -425,7 +425,7 @@ impl<'reg> Registry<'reg> {
             .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
             .and_then(|t| {
                 let mut render_context = RenderContext::new(t.name.as_ref(), ctx, output);
-                t.render(self, render_context)
+                t.render(self, &mut render_context)
             })
     }
 
@@ -488,7 +488,7 @@ impl<'reg> Registry<'reg> {
         let mut out = StringOutput::new();
         {
             let mut render_context = RenderContext::new(None, ctx, out);
-            tpl.render(self, render_context)?;
+            tpl.render(self, &mut render_context)?;
         }
 
         out.into_string()

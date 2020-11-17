@@ -16,22 +16,23 @@ fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    local_rc: RenderContext<'reg, 'rc>,
+    rc: &'rc mut RenderContext<'reg, 'rc>,
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
-        if let (Some(p), Some(block)) = (param_ctx.context_path(), local_rc.block_mut()) {
+        if let (Some(p), Some(block)) = (param_ctx.context_path(), rc.block_mut()) {
             *block.base_path_mut() = p.clone();
         }
     }
 
     // @partial-block
     if let Some(t) = d.template() {
-        local_rc.set_partial(PARTIAL_BLOCK.to_owned(), t);
+        rc.set_partial(PARTIAL_BLOCK.to_owned(), t);
     }
 
     let result = if d.hash().is_empty() {
-        t.render(r, local_rc)
+        let mut local_rc = rc.child(None);
+        t.render(r, &mut local_rc)
     } else {
         let hash_ctx = d
             .hash()
@@ -39,16 +40,15 @@ fn render_partial<'reg: 'rc, 'rc>(
             .map(|(k, v)| (k, v.value()))
             .collect::<HashMap<&&str, &Json>>();
         let current_path = Path::current();
-        let partial_context = merge_json(local_rc.evaluate2(&current_path)?.as_json(), &hash_ctx);
+        let partial_context = merge_json(rc.evaluate2(&current_path)?.as_json(), &hash_ctx);
 
-        // FIXME
         let ctx = Context::wraps(&partial_context)?;
-        let mut partial_rc = local_rc.new_for_block();
+        let partial_rc = rc.child(Some(ctx));
 
-        t.render(r, partial_rc)
+        t.render(r, &mut partial_rc)
     };
 
-    local_rc.remove_partial(PARTIAL_BLOCK);
+    rc.remove_partial(PARTIAL_BLOCK);
 
     result
 }
@@ -56,7 +56,7 @@ fn render_partial<'reg: 'rc, 'rc>(
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    rc: RenderContext<'reg, 'rc>,
+    rc: &'rc mut RenderContext<'reg, 'rc>,
 ) -> Result<(), RenderError> {
     // try eval inline partials first
     if let Some(t) = d.template() {
@@ -72,13 +72,11 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
     match partial {
         Some(t) => {
-            let mut local_rc = rc.new_for_block();
-            render_partial(&t, d, r, local_rc)?;
+            render_partial(&t, d, r, rc)?;
         }
         None => {
             if let Some(t) = r.get_template(tname).or_else(|| d.template()) {
-                let mut local_rc = rc.new_for_block();
-                render_partial(t, d, r, local_rc)?;
+                render_partial(t, d, r, rc)?;
             }
         }
     }
