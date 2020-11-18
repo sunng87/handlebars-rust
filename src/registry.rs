@@ -510,7 +510,7 @@ impl<'reg> Registry<'reg> {
         let ctx = Context::wraps(data)?;
         let mut out = WriteOutput::new(writer);
         let mut render_context = RenderContext::new(None, ctx, out);
-        tpl.render(self, render_context)
+        tpl.render(self, &mut render_context)
             .map_err(TemplateRenderError::from)
     }
 

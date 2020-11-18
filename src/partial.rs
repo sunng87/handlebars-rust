@@ -16,23 +16,22 @@ fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
     d: &Decorator<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    rc: &'rc mut RenderContext<'reg, 'rc>,
+    local_rc: &'rc mut RenderContext<'reg, 'rc>,
 ) -> Result<(), RenderError> {
     // partial context path
     if let Some(ref param_ctx) = d.param(0) {
-        if let (Some(p), Some(block)) = (param_ctx.context_path(), rc.block_mut()) {
+        if let (Some(p), Some(block)) = (param_ctx.context_path(), local_rc.block_mut()) {
             *block.base_path_mut() = p.clone();
         }
     }
 
     // @partial-block
     if let Some(t) = d.template() {
-        rc.set_partial(PARTIAL_BLOCK.to_owned(), t);
+        local_rc.set_partial(PARTIAL_BLOCK.to_owned(), t);
     }
 
     let result = if d.hash().is_empty() {
-        let mut local_rc = rc.child(None);
-        t.render(r, &mut local_rc)
+        t.render(r, local_rc)
     } else {
         let hash_ctx = d
             .hash()
@@ -40,15 +39,15 @@ fn render_partial<'reg: 'rc, 'rc>(
             .map(|(k, v)| (k, v.value()))
             .collect::<HashMap<&&str, &Json>>();
         let current_path = Path::current();
-        let partial_context = merge_json(rc.evaluate2(&current_path)?.as_json(), &hash_ctx);
+        let partial_context = merge_json(local_rc.evaluate2(&current_path)?.as_json(), &hash_ctx);
 
         let ctx = Context::wraps(&partial_context)?;
-        let partial_rc = rc.child(Some(ctx));
+        let mut partial_rc = local_rc.child(Some(ctx));
 
         t.render(r, &mut partial_rc)
     };
 
-    rc.remove_partial(PARTIAL_BLOCK);
+    local_rc.remove_partial(PARTIAL_BLOCK);
 
     result
 }
@@ -72,11 +71,13 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
     match partial {
         Some(t) => {
-            render_partial(&t, d, r, rc)?;
+            let mut local_rc = rc.child(None);
+            render_partial(&t, d, r, &mut local_rc)?;
         }
         None => {
             if let Some(t) = r.get_template(tname).or_else(|| d.template()) {
-                render_partial(t, d, r, rc)?;
+                let mut local_rc = rc.child(None);
+                render_partial(t, d, r, &mut local_rc)?;
             }
         }
     }
