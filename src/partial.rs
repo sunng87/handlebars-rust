@@ -10,6 +10,8 @@ use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
 
+const PARTIAL_BLOCK: &str = "@partial-block";
+
 fn render_partial<'reg: 'rc, 'rc>(
     t: &'reg Template,
     d: &Decorator<'reg, 'rc>,
@@ -27,7 +29,7 @@ fn render_partial<'reg: 'rc, 'rc>(
 
     // @partial-block
     if let Some(t) = d.template() {
-        local_rc.set_partial("@partial-block".to_owned(), t);
+        local_rc.set_partial(PARTIAL_BLOCK.to_owned(), t);
     }
 
     let result = if d.hash().is_empty() {
@@ -46,7 +48,7 @@ fn render_partial<'reg: 'rc, 'rc>(
         t.render(r, &ctx, &mut partial_rc, out)
     };
 
-    local_rc.remove_partial("@partial-block");
+    local_rc.remove_partial(PARTIAL_BLOCK);
 
     result
 }
