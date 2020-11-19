@@ -32,7 +32,7 @@ enum ResolvedPath<'a> {
     LocalValue(Vec<String>, &'a Json),
 }
 
-fn parse_json_visitor<'a, 'reg, 'rc>(
+fn parse_json_visitor<'a, 'reg>(
     relative_path: &[PathSeg],
     block_contexts: &'a VecDeque<BlockContext<'reg>>,
     always_for_absolute_path: bool,
@@ -123,7 +123,7 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
     Ok(result)
 }
 
-fn get_in_block_params<'a, 'reg, 'rc>(
+fn get_in_block_params<'a, 'reg>(
     block_contexts: &'a VecDeque<BlockContext<'reg>>,
     p: &str,
 ) -> Option<(&'a BlockParamHolder, &'a Vec<String>)> {

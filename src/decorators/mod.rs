@@ -3,7 +3,7 @@ use crate::error::RenderError;
 use crate::registry::Registry;
 use crate::render::{Decorator, RenderContext};
 
-// pub use self::inline::INLINE_DECORATOR;
+pub use self::inline::INLINE_DECORATOR;
 
 pub type DecoratorResult = Result<(), RenderError>;
 
@@ -67,7 +67,7 @@ pub trait DecoratorDef {
 
 /// Implement DecoratorDef for bare function so we can use function as decorator
 impl<
-        F: for<'reg, 'rc, 'blk> Fn(
+        F: for<'reg, 'rc> Fn(
             &Decorator<'reg, 'rc>,
             &'reg Registry<'reg>,
             &mut RenderContext<'reg, 'rc>,
@@ -84,7 +84,7 @@ impl<
     }
 }
 
-// mod inline;
+mod inline;
 
 #[cfg(test)]
 mod test {

@@ -18,12 +18,11 @@ fn get_name<'reg: 'rc, 'rc>(d: &'rc Decorator<'reg, 'rc>) -> Result<&'rc str, Re
 }
 
 impl DecoratorDef for InlineDecorator {
-    fn call<'reg: 'rc, 'rc: 'blk, 'blk>(
+    fn call<'reg: 'rc, 'rc>(
         &self,
         d: &Decorator<'reg, 'rc>,
         _: &'reg Registry<'reg>,
-        _: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc, 'blk>,
+        rc: &mut RenderContext<'reg, 'rc>,
     ) -> DecoratorResult {
         let name = get_name(d)?;
 

@@ -417,7 +417,7 @@ impl<'reg> Registry<'reg> {
         self.templates.clear();
     }
 
-    fn render_to_output<O>(&self, name: &str, ctx: Context, output: O) -> Result<(), RenderError>
+    fn render_to_output<O>(&self, name: &str, ctx: Context, output: O) -> Result<O, RenderError>
     where
         O: Output + 'static,
     {
@@ -426,7 +426,8 @@ impl<'reg> Registry<'reg> {
             .and_then(|t| {
                 let mut render_context = RenderContext::new(t.name.as_ref(), ctx, output);
                 t.render(self, &mut render_context)
-            })
+            })?;
+        Ok(output)
     }
 
     /// Render a registered template with some data into a string
@@ -439,16 +440,20 @@ impl<'reg> Registry<'reg> {
     where
         T: Serialize,
     {
-        let mut output = StringOutput::new();
+        let output = StringOutput::new();
+
         let ctx = Context::wraps(&data)?;
-        self.render_to_output(name, ctx, output)?;
-        output.into_string().map_err(RenderError::from)
+        let out = self.render_to_output(name, ctx, output)?;
+
+        out.into_string().map_err(RenderError::from)
     }
 
     /// Render a registered template with reused context
     pub fn render_with_context(&self, name: &str, ctx: Context) -> Result<String, RenderError> {
-        let mut output = StringOutput::new();
-        self.render_to_output(name, ctx, output)?;
+        let output = StringOutput::new();
+        {
+            self.render_to_output(name, ctx, output)?;
+        }
         output.into_string().map_err(RenderError::from)
     }
 
@@ -460,7 +465,8 @@ impl<'reg> Registry<'reg> {
     {
         let mut output = WriteOutput::new(writer);
         let ctx = Context::wraps(data)?;
-        self.render_to_output(name, ctx, output)
+        self.render_to_output(name, ctx, output)?;
+        Ok(())
     }
 
     /// Render a template string using current registry without registering it
