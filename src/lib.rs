@@ -397,6 +397,7 @@ mod output;
 mod partial;
 mod registry;
 mod render;
+mod sources;
 mod support;
 pub mod template;
 mod util;

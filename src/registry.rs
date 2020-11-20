@@ -15,6 +15,7 @@ use crate::error::{RenderError, TemplateError, TemplateFileError, TemplateRender
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
+use crate::sources::Source;
 use crate::support::str::{self, StringWriter};
 use crate::template::Template;
 
@@ -53,6 +54,9 @@ pub fn no_escape(data: &str) -> String {
 /// It maintains compiled templates and registered helpers.
 pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
+    template_sources:
+        HashMap<String, Box<dyn Source<Item = Template, Error = TemplateError> + 'reg>>,
+
     helpers: HashMap<String, Box<dyn HelperDef + Send + Sync + 'reg>>,
     decorators: HashMap<String, Box<dyn DecoratorDef + Send + Sync + 'reg>>,
     escape_fn: EscapeFn,
@@ -417,6 +421,7 @@ impl<'reg> Registry<'reg> {
         self.templates.clear();
     }
 
+    #[inline]
     fn render_to_output<O>(
         &self,
         name: &str,
