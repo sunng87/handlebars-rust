@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::io::prelude::*;
@@ -59,6 +60,7 @@ pub struct Registry<'reg> {
     decorators: HashMap<String, Box<dyn DecoratorDef + Send + Sync + 'reg>>,
     escape_fn: EscapeFn,
     strict_mode: bool,
+    dev_mode: bool,
     #[cfg(feature = "script_helper")]
     pub(crate) engine: Engine,
 }
@@ -108,6 +110,7 @@ impl<'reg> Registry<'reg> {
             decorators: HashMap::new(),
             escape_fn: Box::new(html_escape),
             strict_mode: false,
+            dev_mode: false,
             #[cfg(feature = "script_helper")]
             engine: rhai_engine(),
         };
@@ -209,7 +212,11 @@ impl<'reg> Registry<'reg> {
         let template = source.load()?;
 
         self.register_template(name, template);
-        // TODO: add source
+        if self.dev_mode {
+            self.template_sources
+                .insert(name.to_owned(), Box::new(source));
+        }
+
         Ok(())
     }
 
@@ -367,6 +374,30 @@ impl<'reg> Registry<'reg> {
         self.templates.get(name)
     }
 
+    #[inline]
+    fn get_or_load_template(&'reg self, name: &str) -> Result<Cow<'reg, Template>, RenderError> {
+        if !self.dev_mode {
+            self.templates
+                .get(name)
+                .map(Cow::Borrowed)
+                .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
+        } else {
+            if let Some(source) = self.template_sources.get(name) {
+                source
+                    .load()
+                    .map(Cow::Owned)
+                    .map_err(RenderError::from)
+                    .into()
+            } else {
+                self.templates
+                    .get(name)
+                    .map(Cow::Borrowed)
+                    .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
+                    .into()
+            }
+        }
+    }
+
     /// Return a registered helper
     pub fn get_helper(&self, name: &str) -> Option<&(dyn HelperDef + Send + Sync + 'reg)> {
         self.helpers.get(name).map(|v| v.as_ref())
@@ -402,12 +433,10 @@ impl<'reg> Registry<'reg> {
     where
         O: Output,
     {
-        self.get_template(name)
-            .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
-            .and_then(|t| {
-                let mut render_context = RenderContext::new(t.name.as_ref());
-                t.render(self, &ctx, &mut render_context, output)
-            })
+        self.get_or_load_template(name).and_then(|t| {
+            let mut render_context = RenderContext::new(t.name.as_ref());
+            t.render(self, &ctx, &mut render_context, output)
+        })
     }
 
     /// Render a registered template with some data into a string
