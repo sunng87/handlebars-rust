@@ -887,7 +887,7 @@ fn test_template() {
     let template = Template {
         elements,
         name: None,
-        mapping: None,
+        mapping: Vec::new(),
     };
 
     {

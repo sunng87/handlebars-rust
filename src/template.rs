@@ -831,12 +831,11 @@ fn test_parse_block_partial_path_identifier() {
 fn test_parse_error() {
     let source = "{{#ifequals name compare=\"hello\"}}\nhello\n\t{{else}}\ngood";
 
-    let t = Template::compile(source.to_string());
+    let terr = Template::compile(source.to_string()).unwrap_err();
 
-    assert_eq!(
-        t.unwrap_err(),
-        TemplateError::of(TemplateErrorReason::InvalidSyntax).at(source, 4, 5)
-    );
+    assert!(matches!(terr.reason, TemplateErrorReason::InvalidSyntax));
+    assert_eq!(terr.line_no.unwrap(), 4);
+    assert_eq!(terr.column_no.unwrap(), 5);
 }
 
 #[test]
@@ -1017,16 +1016,12 @@ fn test_literal_parameter_parser() {
 
 #[test]
 fn test_template_mapping() {
-    match Template::compile2("hello\n  {{~world}}\n{{#if nice}}\n\thello\n{{/if}}", true) {
+    match Template::compile("hello\n  {{~world}}\n{{#if nice}}\n\thello\n{{/if}}") {
         Ok(t) => {
-            if let Some(ref mapping) = t.mapping {
-                assert_eq!(mapping.len(), t.elements.len());
-                assert_eq!(mapping[0], TemplateMapping(1, 1));
-                assert_eq!(mapping[1], TemplateMapping(2, 3));
-                assert_eq!(mapping[3], TemplateMapping(3, 1));
-            } else {
-                panic!("should contains mapping");
-            }
+            assert_eq!(t.mapping.len(), t.elements.len());
+            assert_eq!(t.mapping[0], TemplateMapping(1, 1));
+            assert_eq!(t.mapping[1], TemplateMapping(2, 3));
+            assert_eq!(t.mapping[3], TemplateMapping(3, 1));
         }
         Err(e) => panic!("{}", e),
     }

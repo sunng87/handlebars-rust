@@ -762,10 +762,7 @@ mod test {
         let render_error = r
             .render_template("accessing non-exists key {{the_key_never_exists}}", &data)
             .unwrap_err();
-        assert_eq!(
-            render_error.as_render_error().unwrap().column_no.unwrap(),
-            26
-        );
+        assert_eq!(render_error.column_no.unwrap(), 26);
 
         let data2 = json!([1, 2, 3]);
         assert!(r
@@ -777,10 +774,7 @@ mod test {
         let render_error2 = r
             .render_template("accessing invalid array index {{this.[3]}}", &data2)
             .unwrap_err();
-        assert_eq!(
-            render_error2.as_render_error().unwrap().column_no.unwrap(),
-            31
-        );
+        assert_eq!(render_error2.column_no.unwrap(), 31);
     }
 
     use crate::json::value::ScopedJson;
