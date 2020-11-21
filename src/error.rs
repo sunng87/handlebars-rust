@@ -145,13 +145,11 @@ quick_error! {
             display("nested subexpression is not supported")
         }
         IoError(err: IOError, name: String) {
-            from(err)
-            display("Template \"{}\": {}", name, err)
+             display("Template \"{}\": {}", name, err)
         }
         #[cfg(feature = "dir_source")]
         WalkdirError(err: WalkdirError) {
-            from(err)
-            display("Walk dir error: {}", err)
+             display("Walk dir error: {}", err)
         }
     }
 }
@@ -191,6 +189,20 @@ impl TemplateError {
 }
 
 impl Error for TemplateError {}
+
+impl From<(IOError, String)> for TemplateError {
+    fn from(err_info: (IOError, String)) -> TemplateError {
+        let (e, name) = err_info;
+        TemplateError::of(TemplateErrorReason::IoError(e, name))
+    }
+}
+
+#[cfg(feature = "dir_source")]
+impl From<WalkdirError> for TemplateError {
+    fn from(e: WalkdirError) -> TemplateError {
+        TemplateError::of(TemplateErrorReason::WalkdirError(e))
+    }
+}
 
 fn template_segment(template_str: &str, line: usize, col: usize) -> String {
     let range = 3;

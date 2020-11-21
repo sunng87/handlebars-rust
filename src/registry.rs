@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
-use std::io::prelude::*;
+use std::io::{Error as IoError, Write};
 use std::path::Path;
 
 use serde::Serialize;
@@ -14,7 +14,7 @@ use crate::error::{RenderError, TemplateError};
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
-use crate::sources::{FileTemplateSource, Source};
+use crate::sources::{FileSource, Source};
 use crate::support::str::{self, StringWriter};
 use crate::template::Template;
 
@@ -53,8 +53,7 @@ pub fn no_escape(data: &str) -> String {
 /// It maintains compiled templates and registered helpers.
 pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
-    template_sources:
-        HashMap<String, Box<dyn Source<Item = Template, Error = TemplateError> + 'reg>>,
+    template_sources: HashMap<String, Box<dyn Source<Item = String, Error = IoError> + 'reg>>,
 
     helpers: HashMap<String, Box<dyn HelperDef + Send + Sync + 'reg>>,
     decorators: HashMap<String, Box<dyn DecoratorDef + Send + Sync + 'reg>>,
@@ -208,10 +207,12 @@ impl<'reg> Registry<'reg> {
     where
         P: AsRef<Path>,
     {
-        let source = FileTemplateSource::new(tpl_path.as_ref().into(), name.to_owned());
-        let template = source.load()?;
+        let source = FileSource::new(tpl_path.as_ref().into());
+        let template_string = source
+            .load()
+            .map_err(|err| TemplateError::from((err, name.to_owned())))?;
 
-        self.register_template(name, template);
+        self.register_template_string(name, template_string)?;
         if self.dev_mode {
             self.template_sources
                 .insert(name.to_owned(), Box::new(source));
@@ -328,11 +329,8 @@ impl<'reg> Registry<'reg> {
     where
         P: AsRef<Path>,
     {
-        let mut script = String::new();
-        {
-            let mut file = File::open(script_path)?;
-            file.read_to_string(&mut script)?;
-        }
+        let source = FileSource::new(script_path.as_ref().into());
+        let script = source.load()?;
 
         self.register_script_helper(name, script)
     }
@@ -376,13 +374,13 @@ impl<'reg> Registry<'reg> {
 
     #[inline]
     fn get_or_load_template(&'reg self, name: &str) -> Result<Cow<'reg, Template>, RenderError> {
-        if !self.dev_mode {
-            self.templates
-                .get(name)
-                .map(Cow::Borrowed)
-                .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
-        } else if let Some(source) = self.template_sources.get(name) {
-            source.load().map(Cow::Owned).map_err(RenderError::from)
+        if let (true, Some(source)) = (self.dev_mode, self.template_sources.get(name)) {
+            source
+                .load()
+                .map_err(|e| TemplateError::from((e, name.to_owned())))
+                .and_then(|tpl_str| Template::compile_with_name(tpl_str, name.to_owned()))
+                .map(Cow::Owned)
+                .map_err(RenderError::from)
         } else {
             self.templates
                 .get(name)
