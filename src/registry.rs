@@ -381,20 +381,13 @@ impl<'reg> Registry<'reg> {
                 .get(name)
                 .map(Cow::Borrowed)
                 .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
+        } else if let Some(source) = self.template_sources.get(name) {
+            source.load().map(Cow::Owned).map_err(RenderError::from)
         } else {
-            if let Some(source) = self.template_sources.get(name) {
-                source
-                    .load()
-                    .map(Cow::Owned)
-                    .map_err(RenderError::from)
-                    .into()
-            } else {
-                self.templates
-                    .get(name)
-                    .map(Cow::Borrowed)
-                    .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
-                    .into()
-            }
+            self.templates
+                .get(name)
+                .map(Cow::Borrowed)
+                .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
         }
     }
 
@@ -497,7 +490,7 @@ impl<'reg> Registry<'reg> {
             tpl.render(self, &ctx, &mut render_context, &mut out)?;
         }
 
-        out.into_string().map_err(|e| RenderError::from(e))
+        out.into_string().map_err(RenderError::from)
     }
 
     /// Render a template string using current registry without registering it

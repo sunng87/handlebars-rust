@@ -18,7 +18,7 @@ use self::TemplateElement::*;
 pub struct TemplateMapping(pub usize, pub usize);
 
 /// A handlebars template
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Default)]
 pub struct Template {
     pub name: Option<String>,
     pub elements: Vec<TemplateElement>,
@@ -168,11 +168,7 @@ impl Parameter {
 
 impl Template {
     pub fn new() -> Template {
-        Template {
-            elements: Vec::new(),
-            name: None,
-            mapping: Vec::new(),
-        }
+        Template::default()
     }
 
     fn push_element(&mut self, e: TemplateElement, line: usize, col: usize) {
