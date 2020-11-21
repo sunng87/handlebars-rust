@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
-use std::fs::File;
 use std::io::prelude::*;
-use std::io::BufReader;
 use std::path::Path;
 
 use serde::Serialize;
@@ -11,11 +9,11 @@ use crate::context::Context;
 use crate::decorators::{self, DecoratorDef};
 #[cfg(feature = "script_helper")]
 use crate::error::ScriptError;
-use crate::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
+use crate::error::{RenderError, TemplateError};
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
-use crate::sources::Source;
+use crate::sources::{FileTemplateSource, Source};
 use crate::support::str::{self, StringWriter};
 use crate::template::Template;
 
@@ -60,7 +58,6 @@ pub struct Registry<'reg> {
     helpers: HashMap<String, Box<dyn HelperDef + Send + Sync + 'reg>>,
     decorators: HashMap<String, Box<dyn DecoratorDef + Send + Sync + 'reg>>,
     escape_fn: EscapeFn,
-    source_map: bool,
     strict_mode: bool,
     #[cfg(feature = "script_helper")]
     pub(crate) engine: Engine,
@@ -72,7 +69,6 @@ impl<'reg> Debug for Registry<'reg> {
             .field("templates", &self.templates)
             .field("helpers", &self.helpers.keys())
             .field("decorators", &self.decorators.keys())
-            .field("source_map", &self.source_map)
             .finish()
     }
 }
@@ -107,10 +103,10 @@ impl<'reg> Registry<'reg> {
     pub fn new() -> Registry<'reg> {
         let r = Registry {
             templates: HashMap::new(),
+            template_sources: HashMap::new(),
             helpers: HashMap::new(),
             decorators: HashMap::new(),
             escape_fn: Box::new(html_escape),
-            source_map: true,
             strict_mode: false,
             #[cfg(feature = "script_helper")]
             engine: rhai_engine(),
@@ -140,16 +136,6 @@ impl<'reg> Registry<'reg> {
 
         self.register_decorator("inline", Box::new(decorators::INLINE_DECORATOR));
         self
-    }
-
-    /// Enable handlebars template source map
-    ///
-    /// Source map provides line/col reporting on error. It uses slightly
-    /// more memory to maintain the data.
-    ///
-    /// Default is true.
-    pub fn source_map_enabled(&mut self, enable: bool) {
-        self.source_map = enable;
     }
 
     /// Enable handlebars strict mode
@@ -194,7 +180,7 @@ impl<'reg> Registry<'reg> {
     where
         S: AsRef<str>,
     {
-        let template = Template::compile_with_name(tpl_str, name.to_owned(), self.source_map)?;
+        let template = Template::compile_with_name(tpl_str, name.to_owned())?;
         self.register_template(name, template);
         Ok(())
     }
@@ -215,14 +201,16 @@ impl<'reg> Registry<'reg> {
         &mut self,
         name: &str,
         tpl_path: P,
-    ) -> Result<(), TemplateFileError>
+    ) -> Result<(), TemplateError>
     where
         P: AsRef<Path>,
     {
-        let mut reader = BufReader::new(
-            File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned()))?,
-        );
-        self.register_template_source(name, &mut reader)
+        let source = FileTemplateSource::new(tpl_path.as_ref().into(), name.to_owned());
+        let template = source.load()?;
+
+        self.register_template(name, template);
+        // TODO: add source
+        Ok(())
     }
 
     /// Register templates from a directory
@@ -242,7 +230,7 @@ impl<'reg> Registry<'reg> {
         &mut self,
         tpl_extension: &'static str,
         dir_path: P,
-    ) -> Result<(), TemplateFileError>
+    ) -> Result<(), TemplateError>
     where
         P: AsRef<Path>,
     {
@@ -272,23 +260,6 @@ impl<'reg> Registry<'reg> {
             self.register_template_file(&tpl_canonical_name, &tpl_path)?;
         }
 
-        Ok(())
-    }
-
-    /// Register a template from `std::io::Read` source
-    pub fn register_template_source<R>(
-        &mut self,
-        name: &str,
-        tpl_source: &mut R,
-    ) -> Result<(), TemplateFileError>
-    where
-        R: Read,
-    {
-        let mut buf = String::new();
-        tpl_source
-            .read_to_string(&mut buf)
-            .map_err(|e| TemplateFileError::IOError(e, name.to_owned()))?;
-        self.register_template_string(name, buf)?;
         Ok(())
     }
 
@@ -474,11 +445,7 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Render a template string using current registry without registering it
-    pub fn render_template<T>(
-        &self,
-        template_string: &str,
-        data: &T,
-    ) -> Result<String, TemplateRenderError>
+    pub fn render_template<T>(&self, template_string: &str, data: &T) -> Result<String, RenderError>
     where
         T: Serialize,
     {
@@ -492,8 +459,8 @@ impl<'reg> Registry<'reg> {
         &self,
         template_string: &str,
         ctx: &Context,
-    ) -> Result<String, TemplateRenderError> {
-        let tpl = Template::compile2(template_string, self.source_map)?;
+    ) -> Result<String, RenderError> {
+        let tpl = Template::compile(template_string)?;
 
         let mut out = StringOutput::new();
         {
@@ -501,8 +468,7 @@ impl<'reg> Registry<'reg> {
             tpl.render(self, &ctx, &mut render_context, &mut out)?;
         }
 
-        out.into_string()
-            .map_err(|e| TemplateRenderError::from(RenderError::from(e)))
+        out.into_string().map_err(|e| RenderError::from(e))
     }
 
     /// Render a template string using current registry without registering it
@@ -511,36 +477,16 @@ impl<'reg> Registry<'reg> {
         template_string: &str,
         data: &T,
         writer: W,
-    ) -> Result<(), TemplateRenderError>
+    ) -> Result<(), RenderError>
     where
         T: Serialize,
         W: Write,
     {
-        let tpl = Template::compile2(template_string, self.source_map)?;
+        let tpl = Template::compile(template_string)?;
         let ctx = Context::wraps(data)?;
         let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
         tpl.render(self, &ctx, &mut render_context, &mut out)
-            .map_err(TemplateRenderError::from)
-    }
-
-    /// Render a template source using current registry without registering it
-    pub fn render_template_source_to_write<T, R, W>(
-        &self,
-        template_source: &mut R,
-        data: &T,
-        writer: W,
-    ) -> Result<(), TemplateRenderError>
-    where
-        T: Serialize,
-        W: Write,
-        R: Read,
-    {
-        let mut tpl_str = String::new();
-        template_source
-            .read_to_string(&mut tpl_str)
-            .map_err(|e| TemplateRenderError::IOError(e, "Unnamed template source".to_owned()))?;
-        self.render_template_to_write(&tpl_str, data, writer)
     }
 }
 

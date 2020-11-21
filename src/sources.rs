@@ -1,24 +1,25 @@
-use crate::error::TemplateError;
+use crate::error::{TemplateError, TemplateErrorReason};
 use crate::template::Template;
 
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::path::Path;
+use std::path::PathBuf;
 
 pub(crate) trait Source {
     type Item;
     type Error;
 
-    fn load(&mut self) -> Result<Self::Item, Self::Error>;
+    fn load(&self) -> Result<Self::Item, Self::Error>;
 }
 
 pub(crate) struct FileTemplateSource {
-    path: Path,
+    name: String,
+    path: PathBuf,
 }
 
 impl FileTemplateSource {
-    fn new(path: Path) -> FileTemplateSource {
-        FileTemplateSource { path }
+    pub(crate) fn new(path: PathBuf, name: String) -> FileTemplateSource {
+        FileTemplateSource { path, name }
     }
 }
 
@@ -26,13 +27,17 @@ impl Source for FileTemplateSource {
     type Item = Template;
     type Error = TemplateError;
 
-    fn load(&mut self) -> Result<Self::Item, Self::Error> {
-        let mut reader = BufReader::new(
-            File::open(tpl_path).map_err(|e| TemplateFileError::IOError(e, name.to_owned()))?,
-        );
+    fn load(&self) -> Result<Self::Item, Self::Error> {
+        let mut reader =
+            BufReader::new(File::open(&self.path).map_err(|e| {
+                TemplateError::of(TemplateErrorReason::IoError(e, self.name.clone()))
+            })?);
+
         let mut buf = String::new();
-        tpl_source
+        reader
             .read_to_string(&mut buf)
-            .map_err(|e| TemplateFileError::IOError(e, name.to_owned()))?;
+            .map_err(|e| TemplateError::of(TemplateErrorReason::IoError(e, self.name.clone())))?;
+
+        Template::compile_with_name(buf, self.name.clone())
     }
 }

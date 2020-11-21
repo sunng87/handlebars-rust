@@ -22,7 +22,7 @@ pub struct TemplateMapping(pub usize, pub usize);
 pub struct Template {
     pub name: Option<String>,
     pub elements: Vec<TemplateElement>,
-    pub mapping: Option<Vec<TemplateMapping>>,
+    pub mapping: Vec<TemplateMapping>,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -167,23 +167,17 @@ impl Parameter {
 }
 
 impl Template {
-    pub fn new(mapping: bool) -> Template {
+    pub fn new() -> Template {
         Template {
             elements: Vec::new(),
             name: None,
-            mapping: if mapping { Some(Vec::new()) } else { None },
+            mapping: Vec::new(),
         }
     }
 
     fn push_element(&mut self, e: TemplateElement, line: usize, col: usize) {
         self.elements.push(e);
-        if let Some(ref mut maps) = self.mapping {
-            maps.push(TemplateMapping(line, col));
-        }
-    }
-
-    pub fn compile<S: AsRef<str>>(source: S) -> Result<Template, TemplateError> {
-        Template::compile2(source, false)
+        self.mapping.push(TemplateMapping(line, col));
     }
 
     fn parse_subexpression<'a, I>(
@@ -434,10 +428,7 @@ impl Template {
         }
     }
 
-    pub fn compile2<'a, S: AsRef<str> + 'a>(
-        source: S,
-        mapping: bool,
-    ) -> Result<Template, TemplateError> {
+    pub fn compile<'a, S: AsRef<str> + 'a>(source: S) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut decorator_stack: VecDeque<DecoratorTemplate> = VecDeque::new();
@@ -477,7 +468,7 @@ impl Template {
                     // trailing string check
                     let (line_no, col_no) = span.start_pos().line_col();
                     if rule == Rule::raw_block_end {
-                        let mut t = Template::new(mapping);
+                        let mut t = Template::new();
                         t.push_element(
                             Template::raw_string(&source[prev_end..span.start()], None, false),
                             line_no,
@@ -497,7 +488,7 @@ impl Template {
                 let (line_no, col_no) = span.start_pos().line_col();
                 match rule {
                     Rule::template => {
-                        template_stack.push_front(Template::new(mapping));
+                        template_stack.push_front(Template::new());
                     }
                     Rule::raw_text => {
                         // leading space fix
@@ -555,9 +546,7 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         let t = template_stack.front_mut().unwrap();
-                        if let Some(ref mut maps) = t.mapping {
-                            maps.push(TemplateMapping(line_no, col_no));
-                        }
+                        t.mapping.push(TemplateMapping(line_no, col_no));
                     }
                     Rule::invert_tag => {
                         // hack: invert_tag structure is similar to ExpressionSpec, so I
@@ -574,7 +563,7 @@ impl Template {
                         h.template = Some(t);
                     }
                     Rule::raw_block_text => {
-                        let mut t = Template::new(mapping);
+                        let mut t = Template::new();
                         t.push_element(
                             Template::raw_string(span.as_str(), Some(pair.clone()), omit_pro_ws),
                             line_no,
@@ -717,9 +706,8 @@ impl Template {
     pub fn compile_with_name<S: AsRef<str>>(
         source: S,
         name: String,
-        mapping: bool,
     ) -> Result<Template, TemplateError> {
-        match Template::compile2(source, mapping) {
+        match Template::compile(source) {
             Ok(mut t) => {
                 t.name = Some(name);
                 Ok(t)

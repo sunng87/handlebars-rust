@@ -624,11 +624,9 @@ impl Renderable for Template {
             t.render(registry, ctx, rc, out).map_err(|mut e| {
                 // add line/col number if the template has mapping data
                 if e.line_no.is_none() {
-                    if let Some(ref mapping) = self.mapping {
-                        if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
-                            e.line_no = Some(line);
-                            e.column_no = Some(col);
-                        }
+                    if let Some(&TemplateMapping(line, col)) = self.mapping.get(idx) {
+                        e.line_no = Some(line);
+                        e.column_no = Some(col);
                     }
                 }
 
@@ -655,11 +653,9 @@ impl Evaluable for Template {
         for (idx, t) in iter.enumerate() {
             t.eval(registry, ctx, rc).map_err(|mut e| {
                 if e.line_no.is_none() {
-                    if let Some(ref mapping) = self.mapping {
-                        if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
-                            e.line_no = Some(line);
-                            e.column_no = Some(col);
-                        }
+                    if let Some(&TemplateMapping(line, col)) = self.mapping.get(idx) {
+                        e.line_no = Some(line);
+                        e.column_no = Some(col);
                     }
                 }
 
