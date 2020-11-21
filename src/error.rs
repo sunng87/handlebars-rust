@@ -69,6 +69,12 @@ impl From<ParseIntError> for RenderError {
     }
 }
 
+impl From<TemplateError> for RenderError {
+    fn from(e: TemplateError) -> RenderError {
+        RenderError::from_error("Error with parsing template.", e)
+    }
+}
+
 #[cfg(feature = "script_helper")]
 impl From<Box<EvalAltResult>> for RenderError {
     fn from(e: Box<EvalAltResult>) -> RenderError {
@@ -119,7 +125,7 @@ impl RenderError {
 
 quick_error! {
 /// Template parsing error
-    #[derive(PartialEq, Debug, Clone)]
+    #[derive(Debug)]
     pub enum TemplateErrorReason {
         MismatchingClosedHelper(open: String, closed: String) {
             display("helper {:?} was opened, but {:?} is closing",
@@ -138,11 +144,20 @@ quick_error! {
         NestedSubexpression {
             display("nested subexpression is not supported")
         }
+        IoError(err: IOError, name: String) {
+            from(err)
+            display("Template \"{}\": {}", name, err)
+        }
+        #[cfg(feature = "dir_source")]
+        WalkdirError(err: WalkdirError) {
+            from(err)
+            display("Walk dir error: {}", err)
+        }
     }
 }
 
 /// Error on parsing template.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct TemplateError {
     pub reason: TemplateErrorReason,
     pub template_name: Option<String>,
@@ -219,64 +234,6 @@ impl fmt::Display for TemplateError {
                 self.reason
             ),
             _ => write!(f, "{}", self.reason),
-        }
-    }
-}
-
-quick_error! {
-    /// A combined error type for `TemplateError` and `IOError`
-    #[derive(Debug)]
-    pub enum TemplateFileError {
-        TemplateError(err: TemplateError) {
-            from()
-            source(err)
-            display("{}", err)
-        }
-        IOError(err: IOError, name: String) {
-            source(err)
-            display("Template \"{}\": {}", name, err)
-        }
-    }
-}
-
-#[cfg(feature = "dir_source")]
-impl From<WalkdirError> for TemplateFileError {
-    fn from(error: WalkdirError) -> TemplateFileError {
-        let path_string: String = error
-            .path()
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_default();
-        TemplateFileError::IOError(IOError::from(error), path_string)
-    }
-}
-
-quick_error! {
-    /// A combined error type for `TemplateError`, `IOError` and `RenderError`
-    #[derive(Debug)]
-    pub enum TemplateRenderError {
-        TemplateError(err: TemplateError) {
-            from()
-            source(err)
-            display("{}", err)
-        }
-        RenderError(err: RenderError) {
-            from()
-            source(err)
-            display("{}", err)
-        }
-        IOError(err: IOError, name: String) {
-            source(err)
-            display("Template \"{}\": {}", name, err)
-        }
-    }
-}
-
-impl TemplateRenderError {
-    pub fn as_render_error(&self) -> Option<&RenderError> {
-        if let TemplateRenderError::RenderError(ref e) = *self {
-            Some(&e)
-        } else {
-            None
         }
     }
 }
