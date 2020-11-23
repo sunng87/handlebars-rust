@@ -70,6 +70,8 @@ impl<'reg> Debug for Registry<'reg> {
             .field("templates", &self.templates)
             .field("helpers", &self.helpers.keys())
             .field("decorators", &self.decorators.keys())
+            .field("strict_mode", &self.strict_mode)
+            .field("dev_mode", &self.dev_mode)
             .finish()
     }
 }
@@ -140,15 +142,15 @@ impl<'reg> Registry<'reg> {
         self
     }
 
-    /// Enable handlebars strict mode
+    /// Enable or disable handlebars strict mode
     ///
     /// By default, handlebars renders empty string for value that
     /// undefined or never exists. Since rust is a static type
     /// language, we offer strict mode in handlebars-rust.  In strict
     /// mode, if you were to render a value that doesn't exist, a
     /// `RenderError` will be raised.
-    pub fn set_strict_mode(&mut self, enable: bool) {
-        self.strict_mode = enable;
+    pub fn set_strict_mode(&mut self, enabled: bool) {
+        self.strict_mode = enabled;
     }
 
     /// Return strict mode state, default is false.
@@ -160,6 +162,22 @@ impl<'reg> Registry<'reg> {
     /// `RenderError` will be raised.
     pub fn strict_mode(&self) -> bool {
         self.strict_mode
+    }
+
+    /// Return dev mode state, default is false
+    ///
+    /// With dev mode turned on, handlebars enables a set of development
+    /// firendly features, that may affect its performance.
+    pub fn dev_mode(&self) -> bool {
+        self.dev_mode
+    }
+
+    /// Enable or disable dev mode
+    ///
+    /// With dev mode turned on, handlebars enables a set of development
+    /// firendly features, that may affect its performance.
+    pub fn set_dev_mode(&mut self, enabled: bool) {
+        self.dev_mode = enabled;
     }
 
     /// Register a `Template`
