@@ -538,11 +538,8 @@ mod test {
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
     use crate::template::Template;
-    #[cfg(feature = "dir_source")]
-    use std::fs::{DirBuilder, File};
-    #[cfg(feature = "dir_source")]
+    use std::fs::File;
     use std::io::Write;
-    #[cfg(feature = "dir_source")]
     use tempfile::tempdir;
 
     #[derive(Clone, Copy)]
@@ -595,6 +592,8 @@ mod test {
     #[test]
     #[cfg(feature = "dir_source")]
     fn test_register_templates_directory() {
+        use std::fs::DirBuilder;
+
         let mut r = Registry::new();
         {
             let dir = tempdir().unwrap();
@@ -941,5 +940,38 @@ mod test {
             )
             .unwrap()
         );
+    }
+
+    #[test]
+    fn test_dev_mode_template_reload() {
+        let mut reg = Registry::new();
+        reg.set_dev_mode(true);
+        assert!(reg.dev_mode());
+
+        let dir = tempdir().unwrap();
+        let file1_path = dir.path().join("t1.hbs");
+        {
+            let mut file1: File = File::create(&file1_path).unwrap();
+            write!(file1, "<h1>Hello {{{{name}}}}!</h1>").unwrap();
+        }
+
+        reg.register_template_file("t1", &file1_path).unwrap();
+
+        assert_eq!(
+            reg.render("t1", &json!({"name": "Alex"})).unwrap(),
+            "<h1>Hello Alex!</h1>"
+        );
+
+        {
+            let mut file1: File = File::create(&file1_path).unwrap();
+            write!(file1, "<h1>Privet {{{{name}}}}!</h1>").unwrap();
+        }
+
+        assert_eq!(
+            reg.render("t1", &json!({"name": "Alex"})).unwrap(),
+            "<h1>Privet Alex!</h1>"
+        );
+
+        dir.close().unwrap();
     }
 }
