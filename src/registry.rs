@@ -51,6 +51,7 @@ pub fn no_escape(data: &str) -> String {
 /// The single entry point of your Handlebars templates
 ///
 /// It maintains compiled templates and registered helpers.
+#[derive(Clone)]
 pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
     helpers: HashMap<String, Box<dyn HelperDef + Send + Sync + 'reg>>,
