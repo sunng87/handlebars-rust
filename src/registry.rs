@@ -55,15 +55,19 @@ pub fn no_escape(data: &str) -> String {
 #[derive(Clone)]
 pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
-    template_sources: HashMap<String, Rc<dyn Source<Item = String, Error = IoError> + 'reg>>,
 
     helpers: HashMap<String, Rc<dyn HelperDef + 'reg>>,
     decorators: HashMap<String, Rc<dyn DecoratorDef + 'reg>>,
+
     escape_fn: EscapeFn,
     strict_mode: bool,
     dev_mode: bool,
     #[cfg(feature = "script_helper")]
-    pub(crate) engine: Engine,
+    pub(crate) engine: Rc<Engine>,
+
+    template_sources: HashMap<String, Rc<dyn Source<Item = String, Error = IoError> + 'reg>>,
+    #[cfg(feature = "script_helper")]
+    script_sources: HashMap<String, Rc<dyn Source<Item = String, Error = IoError> + 'reg>>,
 }
 
 impl<'reg> Debug for Registry<'reg> {
@@ -115,7 +119,9 @@ impl<'reg> Registry<'reg> {
             strict_mode: false,
             dev_mode: false,
             #[cfg(feature = "script_helper")]
-            engine: rhai_engine(),
+            engine: Rc::new(rhai_engine()),
+            #[cfg(feature = "script_helper")]
+            script_sources: HashMap::new(),
         };
 
         r.setup_builtins()
@@ -348,6 +354,7 @@ impl<'reg> Registry<'reg> {
         let source = FileSource::new(script_path.as_ref().into());
         let script = source.load()?;
 
+        self.script_sources.insert(name.to_owned(), Rc::new(source));
         self.register_script_helper(name, script)
     }
 
@@ -402,12 +409,25 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Return a registered helper
-    /// TODO: attempt if we can make script helper reloadable
     pub(crate) fn get_or_load_helper(
         &'reg self,
         name: &str,
-    ) -> Option<Cow<'reg, Rc<dyn HelperDef + 'reg>>> {
-        self.helpers.get(name).map(|v| Cow::Borrowed(v))
+    ) -> Result<Option<Rc<dyn HelperDef + 'reg>>, RenderError> {
+        #[cfg(feature = "script_helper")]
+        if let (true, Some(source)) = (self.dev_mode, self.script_sources.get(name)) {
+            return source
+                .load()
+                .map_err(|e| ScriptError::from(e))
+                .and_then(|s| {
+                    let helper = Box::new(ScriptHelper {
+                        script: self.engine.compile(&s)?,
+                    }) as Box<dyn HelperDef>;
+                    Ok(Some(helper.into()))
+                })
+                .map_err(RenderError::from);
+        }
+
+        Ok(self.helpers.get(name).map(|v| v.clone()))
     }
 
     #[inline]

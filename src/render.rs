@@ -585,19 +585,21 @@ impl Parameter {
                         if let Some(ref d) = rc.get_local_helper(&name) {
                             call_helper_for_value(d, &h, registry, ctx, rc)
                         } else {
-                            registry
-                                .get_or_load_helper(&name)
-                                .or_else(|| {
-                                    registry.get_or_load_helper(if ht.block {
-                                        BLOCK_HELPER_MISSING
-                                    } else {
-                                        HELPER_MISSING
-                                    })
-                                })
+                            let mut helper = registry.get_or_load_helper(&name)?;
+
+                            if helper.is_none() {
+                                helper = registry.get_or_load_helper(if ht.block {
+                                    BLOCK_HELPER_MISSING
+                                } else {
+                                    HELPER_MISSING
+                                })?;
+                            }
+
+                            helper
                                 .ok_or_else(|| {
                                     RenderError::new(format!("Helper not defined: {:?}", ht.name))
                                 })
-                                .and_then(move |d| call_helper_for_value(&d, &h, registry, ctx, rc))
+                                .and_then(|d| call_helper_for_value(&d, &h, registry, ctx, rc))
                         }
                     }
                 }
@@ -690,17 +692,19 @@ fn render_helper<'reg: 'rc, 'rc>(
     if let Some(ref d) = rc.get_local_helper(h.name()) {
         d.call(&h, registry, ctx, rc, out)
     } else {
-        registry
-            .get_or_load_helper(h.name())
-            .or_else(|| {
-                registry.get_or_load_helper(if ht.block {
-                    BLOCK_HELPER_MISSING
-                } else {
-                    HELPER_MISSING
-                })
-            })
-            .ok_or_else(|| RenderError::new(format!("Helper not defined: {:?}", ht.name)))
-            .and_then(move |d| d.call(&h, registry, ctx, rc, out))
+        let mut helper = registry.get_or_load_helper(h.name())?;
+
+        if helper.is_none() {
+            helper = registry.get_or_load_helper(if ht.block {
+                BLOCK_HELPER_MISSING
+            } else {
+                HELPER_MISSING
+            })?;
+        }
+
+        helper
+            .ok_or_else(|| RenderError::new(format!("Helper not defined: {:?}", h.name())))
+            .and_then(|d| d.call(&h, registry, ctx, rc, out))
     }
 }
 
@@ -744,7 +748,7 @@ impl Renderable for TemplateElement {
                                 Err(RenderError::strict_error(context_json.relative_path()))
                             } else {
                                 // helper missing
-                                if let Some(hook) = registry.get_or_load_helper(HELPER_MISSING) {
+                                if let Some(hook) = registry.get_or_load_helper(HELPER_MISSING)? {
                                     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                                     hook.call(&h, registry, ctx, rc, out)
                                 } else {

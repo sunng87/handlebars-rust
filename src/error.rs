@@ -82,6 +82,13 @@ impl From<Box<EvalAltResult>> for RenderError {
     }
 }
 
+#[cfg(feature = "script_helper")]
+impl From<ScriptError> for RenderError {
+    fn from(e: ScriptError) -> RenderError {
+        RenderError::from_error("Error loading rhai script.", e)
+    }
+}
+
 impl RenderError {
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
         RenderError {
