@@ -1,7 +1,6 @@
 use std::borrow::{Borrow, Cow};
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
-use std::ops::Deref;
 use std::rc::Rc;
 
 use serde_json::value::Value as Json;
@@ -505,7 +504,7 @@ pub trait Evaluable {
 }
 
 fn call_helper_for_value<'reg: 'rc, 'rc>(
-    hd: &dyn HelperDef,
+    hd: &Rc<dyn HelperDef + 'rc>,
     ht: &Helper<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
@@ -584,13 +583,12 @@ impl Parameter {
 
                         let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                         if let Some(ref d) = rc.get_local_helper(&name) {
-                            let helper_def = d.deref();
-                            call_helper_for_value(helper_def, &h, registry, ctx, rc)
+                            call_helper_for_value(d, &h, registry, ctx, rc)
                         } else {
                             registry
-                                .get_helper(&name)
+                                .get_or_load_helper(&name)
                                 .or_else(|| {
-                                    registry.get_helper(if ht.block {
+                                    registry.get_or_load_helper(if ht.block {
                                         BLOCK_HELPER_MISSING
                                     } else {
                                         HELPER_MISSING
@@ -599,7 +597,7 @@ impl Parameter {
                                 .ok_or_else(|| {
                                     RenderError::new(format!("Helper not defined: {:?}", ht.name))
                                 })
-                                .and_then(move |d| call_helper_for_value(d, &h, registry, ctx, rc))
+                                .and_then(move |d| call_helper_for_value(&d, &h, registry, ctx, rc))
                         }
                     }
                 }
@@ -693,9 +691,9 @@ fn render_helper<'reg: 'rc, 'rc>(
         d.call(&h, registry, ctx, rc, out)
     } else {
         registry
-            .get_helper(h.name())
+            .get_or_load_helper(h.name())
             .or_else(|| {
-                registry.get_helper(if ht.block {
+                registry.get_or_load_helper(if ht.block {
                     BLOCK_HELPER_MISSING
                 } else {
                     HELPER_MISSING
@@ -746,7 +744,7 @@ impl Renderable for TemplateElement {
                                 Err(RenderError::strict_error(context_json.relative_path()))
                             } else {
                                 // helper missing
-                                if let Some(hook) = registry.get_helper(HELPER_MISSING) {
+                                if let Some(hook) = registry.get_or_load_helper(HELPER_MISSING) {
                                     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                                     hook.call(&h, registry, ctx, rc, out)
                                 } else {

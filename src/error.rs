@@ -101,17 +101,6 @@ impl RenderError {
         RenderError::new(&msg)
     }
 
-    #[deprecated]
-    pub fn with<E>(cause: E) -> RenderError
-    where
-        E: Error + Send + Sync + 'static,
-    {
-        let mut e = RenderError::new(cause.to_string());
-        e.cause = Some(Box::new(cause));
-
-        e
-    }
-
     pub fn from_error<E>(error_kind: &str, cause: E) -> RenderError
     where
         E: Error + Send + Sync + 'static,

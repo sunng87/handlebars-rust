@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::io::{Error as IoError, Write};
 use std::path::Path;
+use std::rc::Rc;
 
 use serde::Serialize;
 
@@ -34,7 +35,7 @@ use crate::helpers::scripting::ScriptHelper;
 ///
 /// An *escape fn* is represented as a `Box` to avoid unnecessary type
 /// parameters (and because traits cannot be aliased using `type`).
-pub type EscapeFn = Box<dyn Fn(&str) -> String + Send + Sync>;
+pub type EscapeFn = Rc<dyn Fn(&str) -> String + Send + Sync>;
 
 /// The default *escape fn* replaces the characters `&"<>`
 /// with the equivalent html / xml entities.
@@ -51,12 +52,13 @@ pub fn no_escape(data: &str) -> String {
 /// The single entry point of your Handlebars templates
 ///
 /// It maintains compiled templates and registered helpers.
+#[derive(Clone)]
 pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
-    template_sources: HashMap<String, Box<dyn Source<Item = String, Error = IoError> + 'reg>>,
+    template_sources: HashMap<String, Rc<dyn Source<Item = String, Error = IoError> + 'reg>>,
 
-    helpers: HashMap<String, Box<dyn HelperDef + Send + Sync + 'reg>>,
-    decorators: HashMap<String, Box<dyn DecoratorDef + Send + Sync + 'reg>>,
+    helpers: HashMap<String, Rc<dyn HelperDef + 'reg>>,
+    decorators: HashMap<String, Rc<dyn DecoratorDef + 'reg>>,
     escape_fn: EscapeFn,
     strict_mode: bool,
     dev_mode: bool,
@@ -109,7 +111,7 @@ impl<'reg> Registry<'reg> {
             template_sources: HashMap::new(),
             helpers: HashMap::new(),
             decorators: HashMap::new(),
-            escape_fn: Box::new(html_escape),
+            escape_fn: Rc::new(html_escape),
             strict_mode: false,
             dev_mode: false,
             #[cfg(feature = "script_helper")]
@@ -233,7 +235,7 @@ impl<'reg> Registry<'reg> {
         self.register_template_string(name, template_string)?;
         if self.dev_mode {
             self.template_sources
-                .insert(name.to_owned(), Box::new(source));
+                .insert(name.to_owned(), Rc::new(source));
         }
 
         Ok(())
@@ -295,12 +297,8 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Register a helper
-    pub fn register_helper(
-        &mut self,
-        name: &str,
-        def: Box<dyn HelperDef + Send + Sync + 'reg>,
-    ) -> Option<Box<dyn HelperDef + Send + Sync + 'reg>> {
-        self.helpers.insert(name.to_string(), def)
+    pub fn register_helper(&mut self, name: &str, def: Box<dyn HelperDef + 'reg>) {
+        self.helpers.insert(name.to_string(), def.into());
     }
 
     /// Register a [rhai](https://docs.rs/rhai/) script as handlebars helper
@@ -329,12 +327,12 @@ impl<'reg> Registry<'reg> {
         &mut self,
         name: &str,
         script: String,
-    ) -> Result<Option<Box<dyn HelperDef + Send + Sync + 'reg>>, ScriptError> {
+    ) -> Result<(), ScriptError> {
         let compiled = self.engine.compile(&script)?;
         let script_helper = ScriptHelper { script: compiled };
-        Ok(self
-            .helpers
-            .insert(name.to_string(), Box::new(script_helper)))
+        self.helpers
+            .insert(name.to_string(), Rc::new(script_helper));
+        Ok(())
     }
 
     /// Register a [rhai](https://docs.rs/rhai/) script from file
@@ -343,7 +341,7 @@ impl<'reg> Registry<'reg> {
         &mut self,
         name: &str,
         script_path: P,
-    ) -> Result<Option<Box<dyn HelperDef + Send + Sync + 'reg>>, ScriptError>
+    ) -> Result<(), ScriptError>
     where
         P: AsRef<Path>,
     {
@@ -354,12 +352,8 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Register a decorator
-    pub fn register_decorator(
-        &mut self,
-        name: &str,
-        def: Box<dyn DecoratorDef + Send + Sync + 'reg>,
-    ) -> Option<Box<dyn DecoratorDef + Send + Sync + 'reg>> {
-        self.decorators.insert(name.to_string(), def)
+    pub fn register_decorator(&mut self, name: &str, def: Box<dyn DecoratorDef + 'reg>) {
+        self.decorators.insert(name.to_string(), def.into());
     }
 
     /// Register a new *escape fn* to be used from now on by this registry.
@@ -367,12 +361,12 @@ impl<'reg> Registry<'reg> {
         &mut self,
         escape_fn: F,
     ) {
-        self.escape_fn = Box::new(escape_fn);
+        self.escape_fn = Rc::new(escape_fn);
     }
 
     /// Restore the default *escape fn*.
     pub fn unregister_escape_fn(&mut self) {
-        self.escape_fn = Box::new(html_escape);
+        self.escape_fn = Rc::new(html_escape);
     }
 
     /// Get a reference to the current *escape fn*.
@@ -408,8 +402,12 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Return a registered helper
-    pub fn get_helper(&self, name: &str) -> Option<&(dyn HelperDef + Send + Sync + 'reg)> {
-        self.helpers.get(name).map(|v| v.as_ref())
+    /// TODO: attempt if we can make script helper reloadable
+    pub(crate) fn get_or_load_helper(
+        &'reg self,
+        name: &str,
+    ) -> Option<Cow<'reg, Rc<dyn HelperDef + 'reg>>> {
+        self.helpers.get(name).map(|v| Cow::Borrowed(v))
     }
 
     #[inline]
@@ -418,7 +416,7 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Return a registered decorator
-    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DecoratorDef + Send + Sync + 'reg)> {
+    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DecoratorDef + 'reg)> {
         self.decorators.get(name).map(|v| v.as_ref())
     }
 
