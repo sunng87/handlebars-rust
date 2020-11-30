@@ -329,12 +329,8 @@ impl<'reg> Registry<'reg> {
     ///
     ///
     #[cfg(feature = "script_helper")]
-    pub fn register_script_helper(
-        &mut self,
-        name: &str,
-        script: String,
-    ) -> Result<(), ScriptError> {
-        let compiled = self.engine.compile(&script)?;
+    pub fn register_script_helper(&mut self, name: &str, script: &str) -> Result<(), ScriptError> {
+        let compiled = self.engine.compile(script)?;
         let script_helper = ScriptHelper { script: compiled };
         self.helpers
             .insert(name.to_string(), Rc::new(script_helper));
@@ -355,7 +351,7 @@ impl<'reg> Registry<'reg> {
         let script = source.load()?;
 
         self.script_sources.insert(name.to_owned(), Rc::new(source));
-        self.register_script_helper(name, script)
+        self.register_script_helper(name, &script)
     }
 
     /// Register a decorator
@@ -988,6 +984,64 @@ mod test {
         assert_eq!(
             reg.render("t1", &json!({"name": "Alex"})).unwrap(),
             "<h1>Privet Alex!</h1>"
+        );
+
+        dir.close().unwrap();
+    }
+
+    #[test]
+    #[cfg(feature = "script_helper")]
+    fn test_script_helper() {
+        let mut reg = Registry::new();
+
+        reg.register_script_helper(
+            "acc",
+            "params.reduce(|sum, x| if sum.type_of() == \"()\" { x } else { x + sum} )",
+        )
+        .unwrap();
+
+        assert_eq!(
+            reg.render_template("{{acc 1 2 3 4}}", &json!({})).unwrap(),
+            "10"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "script_helper")]
+    fn test_script_helper_dev_mode() {
+        let mut reg = Registry::new();
+        reg.set_dev_mode(true);
+
+        let dir = tempdir().unwrap();
+        let file1_path = dir.path().join("acc.rhai");
+        {
+            let mut file1: File = File::create(&file1_path).unwrap();
+            write!(
+                file1,
+                "params.reduce(|sum, x| if sum.type_of() == \"()\" {{ x }} else {{ x + sum }} )"
+            )
+            .unwrap();
+        }
+
+        reg.register_script_helper_file("acc", &file1_path).unwrap();
+
+        assert_eq!(
+            reg.render_template("{{acc 1 2 3 4}}", &json!({})).unwrap(),
+            "10"
+        );
+
+        {
+            let mut file1: File = File::create(&file1_path).unwrap();
+            write!(
+                file1,
+                "params.reduce(|sum, x| if sum.type_of() == \"()\" {{ x }} else {{ x * sum }} )"
+            )
+            .unwrap();
+        }
+
+        assert_eq!(
+            reg.render_template("{{acc 1 2 3 4}}", &json!({})).unwrap(),
+            "24"
         );
 
         dir.close().unwrap();
