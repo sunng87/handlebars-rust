@@ -413,7 +413,7 @@ impl<'reg> Registry<'reg> {
         if let (true, Some(source)) = (self.dev_mode, self.script_sources.get(name)) {
             return source
                 .load()
-                .map_err(|e| ScriptError::from(e))
+                .map_err(ScriptError::from)
                 .and_then(|s| {
                     let helper = Box::new(ScriptHelper {
                         script: self.engine.compile(&s)?,
@@ -423,7 +423,7 @@ impl<'reg> Registry<'reg> {
                 .map_err(RenderError::from);
         }
 
-        Ok(self.helpers.get(name).map(|v| v.clone()))
+        Ok(self.helpers.get(name).cloned())
     }
 
     #[inline]

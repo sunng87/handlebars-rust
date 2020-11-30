@@ -279,11 +279,7 @@ impl Template {
         Ok((key, value))
     }
 
-    fn parse_block_param<'a, I>(
-        _: &'a str,
-        it: &mut Peekable<I>,
-        limit: usize,
-    ) -> Result<BlockParam, TemplateError>
+    fn parse_block_param<'a, I>(_: &'a str, it: &mut Peekable<I>, limit: usize) -> BlockParam
     where
         I: Iterator<Item = Pair<'a, Rule>>,
     {
@@ -303,9 +299,9 @@ impl Template {
 
         if let Some(p2) = p2 {
             it.next();
-            Ok(BlockParam::Pair((Parameter::Name(p1), Parameter::Name(p2))))
+            BlockParam::Pair((Parameter::Name(p1), Parameter::Name(p2)))
         } else {
-            Ok(BlockParam::Single(Parameter::Name(p1)))
+            BlockParam::Single(Parameter::Name(p1))
         }
     }
 
@@ -356,7 +352,7 @@ impl Template {
                     hashes.insert(key, value);
                 }
                 Rule::block_param => {
-                    block_param = Some(Template::parse_block_param(source, it.by_ref(), end)?);
+                    block_param = Some(Template::parse_block_param(source, it.by_ref(), end));
                 }
                 Rule::pro_whitespace_omitter => {
                     omit_pro_ws = true;

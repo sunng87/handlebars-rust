@@ -81,7 +81,7 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => match *value.value() {
                 Json::Array(ref list) if !list.is_empty() => {
-                    let block_context = create_block(&value)?;
+                    let block_context = create_block(&value);
                     rc.push_block(block_context);
 
                     let len = list.len();
@@ -109,7 +109,7 @@ impl HelperDef for EachHelper {
                     Ok(())
                 }
                 Json::Object(ref obj) if !obj.is_empty() => {
-                    let block_context = create_block(&value)?;
+                    let block_context = create_block(&value);
                     rc.push_block(block_context);
 
                     let mut is_first = true;
