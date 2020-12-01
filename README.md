@@ -163,6 +163,11 @@ embed your page into this parent.
 You can find a real example of template inheritance in
 `examples/partials.rs` and templates used by this file.
 
+#### Auto-reload in dev mode
+
+By turning on `dev_mode`, handlebars auto reloads any template and scripts that
+loaded from files or directory. This can be handy for template development.
+
 #### WebAssembly compatible
 
 Handlebars 3.0 can be used in WebAssembly projects.
