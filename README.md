@@ -66,6 +66,9 @@ Examples are provided in source tree to demo usage of various api.
   just like using javascript for handlebarsjs
 * [error](https://github.com/sunng87/handlebars-rust/blob/master/examples/error.rs)
   simple case for error
+* [dev_mode](https://github.com/sunng87/handlebars-rust/blob/master/examples/dev_mode.rs)
+  a web server hosts handlebars in `dev_mode`, you can edit the template and see the change
+  without restarting your server.
 
 ## Minimum Rust Version Policy
 
