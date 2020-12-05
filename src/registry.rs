@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fmt::{self, Debug, Formatter};
 use std::io::{Error as IoError, Write};
 use std::path::Path;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use serde::Serialize;
 
@@ -35,7 +35,7 @@ use crate::helpers::scripting::ScriptHelper;
 ///
 /// An *escape fn* is represented as a `Box` to avoid unnecessary type
 /// parameters (and because traits cannot be aliased using `type`).
-pub type EscapeFn = Rc<dyn Fn(&str) -> String + Send + Sync>;
+pub type EscapeFn = Arc<dyn Fn(&str) -> String + Send + Sync>;
 
 /// The default *escape fn* replaces the characters `&"<>`
 /// with the equivalent html / xml entities.
@@ -56,18 +56,20 @@ pub fn no_escape(data: &str) -> String {
 pub struct Registry<'reg> {
     templates: HashMap<String, Template>,
 
-    helpers: HashMap<String, Rc<dyn HelperDef + 'reg>>,
-    decorators: HashMap<String, Rc<dyn DecoratorDef + 'reg>>,
+    helpers: HashMap<String, Arc<dyn HelperDef + Send + Sync + 'reg>>,
+    decorators: HashMap<String, Arc<dyn DecoratorDef + Send + Sync + 'reg>>,
 
     escape_fn: EscapeFn,
     strict_mode: bool,
     dev_mode: bool,
     #[cfg(feature = "script_helper")]
-    pub(crate) engine: Rc<Engine>,
+    pub(crate) engine: Arc<Engine>,
 
-    template_sources: HashMap<String, Rc<dyn Source<Item = String, Error = IoError> + 'reg>>,
+    template_sources:
+        HashMap<String, Arc<dyn Source<Item = String, Error = IoError> + Send + Sync + 'reg>>,
     #[cfg(feature = "script_helper")]
-    script_sources: HashMap<String, Rc<dyn Source<Item = String, Error = IoError> + 'reg>>,
+    script_sources:
+        HashMap<String, Arc<dyn Source<Item = String, Error = IoError> + Send + Sync + 'reg>>,
 }
 
 impl<'reg> Debug for Registry<'reg> {
@@ -115,11 +117,11 @@ impl<'reg> Registry<'reg> {
             template_sources: HashMap::new(),
             helpers: HashMap::new(),
             decorators: HashMap::new(),
-            escape_fn: Rc::new(html_escape),
+            escape_fn: Arc::new(html_escape),
             strict_mode: false,
             dev_mode: false,
             #[cfg(feature = "script_helper")]
-            engine: Rc::new(rhai_engine()),
+            engine: Arc::new(rhai_engine()),
             #[cfg(feature = "script_helper")]
             script_sources: HashMap::new(),
         };
@@ -241,7 +243,7 @@ impl<'reg> Registry<'reg> {
         self.register_template_string(name, template_string)?;
         if self.dev_mode {
             self.template_sources
-                .insert(name.to_owned(), Rc::new(source));
+                .insert(name.to_owned(), Arc::new(source));
         }
 
         Ok(())
@@ -303,7 +305,7 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Register a helper
-    pub fn register_helper(&mut self, name: &str, def: Box<dyn HelperDef + 'reg>) {
+    pub fn register_helper(&mut self, name: &str, def: Box<dyn HelperDef + Send + Sync + 'reg>) {
         self.helpers.insert(name.to_string(), def.into());
     }
 
@@ -333,7 +335,7 @@ impl<'reg> Registry<'reg> {
         let compiled = self.engine.compile(script)?;
         let script_helper = ScriptHelper { script: compiled };
         self.helpers
-            .insert(name.to_string(), Rc::new(script_helper));
+            .insert(name.to_string(), Arc::new(script_helper));
         Ok(())
     }
 
@@ -350,12 +352,17 @@ impl<'reg> Registry<'reg> {
         let source = FileSource::new(script_path.as_ref().into());
         let script = source.load()?;
 
-        self.script_sources.insert(name.to_owned(), Rc::new(source));
+        self.script_sources
+            .insert(name.to_owned(), Arc::new(source));
         self.register_script_helper(name, &script)
     }
 
     /// Register a decorator
-    pub fn register_decorator(&mut self, name: &str, def: Box<dyn DecoratorDef + 'reg>) {
+    pub fn register_decorator(
+        &mut self,
+        name: &str,
+        def: Box<dyn DecoratorDef + Send + Sync + 'reg>,
+    ) {
         self.decorators.insert(name.to_string(), def.into());
     }
 
@@ -364,12 +371,12 @@ impl<'reg> Registry<'reg> {
         &mut self,
         escape_fn: F,
     ) {
-        self.escape_fn = Rc::new(escape_fn);
+        self.escape_fn = Arc::new(escape_fn);
     }
 
     /// Restore the default *escape fn*.
     pub fn unregister_escape_fn(&mut self) {
-        self.escape_fn = Rc::new(html_escape);
+        self.escape_fn = Arc::new(html_escape);
     }
 
     /// Get a reference to the current *escape fn*.
@@ -408,7 +415,7 @@ impl<'reg> Registry<'reg> {
     pub(crate) fn get_or_load_helper(
         &'reg self,
         name: &str,
-    ) -> Result<Option<Rc<dyn HelperDef + 'reg>>, RenderError> {
+    ) -> Result<Option<Arc<dyn HelperDef + Send + Sync + 'reg>>, RenderError> {
         #[cfg(feature = "script_helper")]
         if let (true, Some(source)) = (self.dev_mode, self.script_sources.get(name)) {
             return source
@@ -417,7 +424,7 @@ impl<'reg> Registry<'reg> {
                 .and_then(|s| {
                     let helper = Box::new(ScriptHelper {
                         script: self.engine.compile(&s)?,
-                    }) as Box<dyn HelperDef>;
+                    }) as Box<dyn HelperDef + Send + Sync>;
                     Ok(Some(helper.into()))
                 })
                 .map_err(RenderError::from);
@@ -432,7 +439,10 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Return a registered decorator
-    pub fn get_decorator(&self, name: &str) -> Option<&(dyn DecoratorDef + 'reg)> {
+    pub(crate) fn get_decorator(
+        &self,
+        name: &str,
+    ) -> Option<&(dyn DecoratorDef + Send + Sync + 'reg)> {
         self.decorators.get(name).map(|v| v.as_ref())
     }
 

@@ -39,7 +39,7 @@ pub struct RenderContext<'reg, 'rc> {
 #[derive(Clone)]
 pub struct RenderContextInner<'reg: 'rc, 'rc> {
     partials: BTreeMap<String, &'reg Template>,
-    local_helpers: BTreeMap<String, Rc<dyn HelperDef + 'rc>>,
+    local_helpers: BTreeMap<String, Rc<dyn HelperDef + Send + Sync + 'rc>>,
     /// current template name
     current_template: Option<&'reg String>,
     /// root template name
@@ -191,11 +191,11 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub fn register_local_helper(
         &mut self,
         name: &str,
-        def: Box<dyn HelperDef + 'rc>,
-    ) -> Option<Rc<dyn HelperDef + 'rc>> {
+        def: Box<dyn HelperDef + Send + Sync + 'rc>,
+    ) {
         self.inner_mut()
             .local_helpers
-            .insert(name.to_string(), def.into())
+            .insert(name.to_string(), def.into());
     }
 
     /// Remove a helper from render context
@@ -204,7 +204,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Attempt to get a helper from current render context.
-    pub fn get_local_helper(&self, name: &str) -> Option<Rc<dyn HelperDef + 'rc>> {
+    pub fn get_local_helper(&self, name: &str) -> Option<Rc<dyn HelperDef + Send + Sync + 'rc>> {
         self.inner().local_helpers.get(name).cloned()
     }
 
@@ -503,8 +503,9 @@ pub trait Evaluable {
     ) -> Result<(), RenderError>;
 }
 
+#[inline]
 fn call_helper_for_value<'reg: 'rc, 'rc>(
-    hd: &Rc<dyn HelperDef + 'rc>,
+    hd: &dyn HelperDef,
     ht: &Helper<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
@@ -583,7 +584,7 @@ impl Parameter {
 
                         let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                         if let Some(ref d) = rc.get_local_helper(&name) {
-                            call_helper_for_value(d, &h, registry, ctx, rc)
+                            call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
                         } else {
                             let mut helper = registry.get_or_load_helper(&name)?;
 
@@ -599,7 +600,9 @@ impl Parameter {
                                 .ok_or_else(|| {
                                     RenderError::new(format!("Helper not defined: {:?}", ht.name))
                                 })
-                                .and_then(|d| call_helper_for_value(&d, &h, registry, ctx, rc))
+                                .and_then(|d| {
+                                    call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
+                                })
                         }
                     }
                 }
@@ -675,6 +678,7 @@ fn helper_exists<'reg: 'rc, 'rc>(
     rc.has_local_helper(name) || reg.has_helper(name)
 }
 
+#[inline]
 fn render_helper<'reg: 'rc, 'rc>(
     ht: &'reg HelperTemplate,
     registry: &'reg Registry<'reg>,
