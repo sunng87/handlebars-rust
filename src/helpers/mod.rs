@@ -131,6 +131,38 @@ impl<
     }
 }
 
+impl<T> HelperDef for std::rc::Rc<T>
+where
+    T: HelperDef,
+{
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        r: &'reg Registry<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> HelperResult {
+        (**self).call(h, r, ctx, rc, out)
+    }
+}
+
+impl<T> HelperDef for std::sync::Arc<T>
+where
+    T: HelperDef,
+{
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        r: &'reg Registry<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> HelperResult {
+        (**self).call(h, r, ctx, rc, out)
+    }
+}
+
 mod block_util;
 pub(crate) mod helper_boolean;
 mod helper_each;

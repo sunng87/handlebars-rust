@@ -51,7 +51,7 @@ pub type DecoratorResult = Result<(), RenderError>;
 ///         // your helper logic
 ///         Ok(())
 ///     };
-///     rc.register_local_helper("distance", Box::new(new_helper));
+///     rc.register_local_helper("distance", new_helper);
 ///     Ok(())
 /// }
 /// ```
@@ -274,7 +274,7 @@ mod test {
                         Ok(())
                     };
 
-                    rc.register_local_helper("distance", Box::new(new_helper));
+                    rc.register_local_helper("distance", new_helper);
                     Ok(())
                 },
             ),

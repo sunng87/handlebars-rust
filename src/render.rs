@@ -189,14 +189,17 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// Register a helper in this render context.
     /// This is a feature provided by Decorator where you can create
     /// temporary helpers.
-    pub fn register_local_helper(
+    pub fn register_local_helper<H>(
         &mut self,
         name: &str,
-        def: Box<dyn HelperDef + 'rc>,
-    ) -> Option<Rc<dyn HelperDef + 'rc>> {
+        def: H,
+    ) -> Option<Rc<dyn HelperDef + 'rc>>
+    where
+        H: HelperDef + 'rc,
+    {
         self.inner_mut()
             .local_helpers
-            .insert(name.to_string(), def.into())
+            .insert(name.to_string(), Rc::from(def))
     }
 
     /// Remove a helper from render context
