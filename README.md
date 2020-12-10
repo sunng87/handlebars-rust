@@ -13,8 +13,8 @@ book](https://doc.rust-lang.org/book/).
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Docs](https://docs.rs/handlebars/badge.svg)](https://docs.rs/crate/handlebars/)
+[![rustc](https://img.shields.io/badge/rustc-1.45+-lightgray.svg)]
 [![Donate](https://img.shields.io/badge/donate-liberapay-yellow.svg)](https://liberapay.com/Sunng/donate)
-[![Donate](https://img.shields.io/badge/donate-buymeacoffee-yellow.svg)](https://www.buymeacoffee.com/Sunng)
 
 ## Getting Started
 
