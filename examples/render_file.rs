@@ -129,9 +129,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let data = make_data();
 
-    let mut source_template = File::open(&"./examples/render_file/template.hbs")?;
+    handlebars
+        .register_template_file("template", "./examples/render_file/template.hbs")
+        .unwrap();
+
     let mut output_file = File::create("target/table.html")?;
-    handlebars.render_template_source_to_write(&mut source_template, &data, &mut output_file)?;
+    handlebars.render_to_write("template", &data, &mut output_file)?;
     println!("target/table.html generated");
     Ok(())
 }

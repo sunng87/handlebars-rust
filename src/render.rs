@@ -1,7 +1,6 @@
 use std::borrow::{Borrow, Cow};
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
-use std::ops::Deref;
 use std::rc::Rc;
 
 use serde_json::value::Value as Json;
@@ -40,7 +39,7 @@ pub struct RenderContext<'reg, 'rc> {
 #[derive(Clone)]
 pub struct RenderContextInner<'reg: 'rc, 'rc> {
     partials: BTreeMap<String, &'reg Template>,
-    local_helpers: BTreeMap<String, Rc<dyn HelperDef + 'rc>>,
+    local_helpers: BTreeMap<String, Rc<dyn HelperDef + Send + Sync + 'rc>>,
     /// current template name
     current_template: Option<&'reg String>,
     /// root template name
@@ -192,11 +191,11 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub fn register_local_helper(
         &mut self,
         name: &str,
-        def: Box<dyn HelperDef + 'rc>,
-    ) -> Option<Rc<dyn HelperDef + 'rc>> {
+        def: Box<dyn HelperDef + Send + Sync + 'rc>,
+    ) {
         self.inner_mut()
             .local_helpers
-            .insert(name.to_string(), def.into())
+            .insert(name.to_string(), def.into());
     }
 
     /// Remove a helper from render context
@@ -205,7 +204,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Attempt to get a helper from current render context.
-    pub fn get_local_helper(&self, name: &str) -> Option<Rc<dyn HelperDef + 'rc>> {
+    pub fn get_local_helper(&self, name: &str) -> Option<Rc<dyn HelperDef + Send + Sync + 'rc>> {
         self.inner().local_helpers.get(name).cloned()
     }
 
@@ -504,6 +503,7 @@ pub trait Evaluable {
     ) -> Result<(), RenderError>;
 }
 
+#[inline]
 fn call_helper_for_value<'reg: 'rc, 'rc>(
     hd: &dyn HelperDef,
     ht: &Helper<'reg, 'rc>,
@@ -584,22 +584,25 @@ impl Parameter {
 
                         let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                         if let Some(ref d) = rc.get_local_helper(&name) {
-                            let helper_def = d.deref();
-                            call_helper_for_value(helper_def, &h, registry, ctx, rc)
+                            call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
                         } else {
-                            registry
-                                .get_helper(&name)
-                                .or_else(|| {
-                                    registry.get_helper(if ht.block {
-                                        BLOCK_HELPER_MISSING
-                                    } else {
-                                        HELPER_MISSING
-                                    })
-                                })
+                            let mut helper = registry.get_or_load_helper(&name)?;
+
+                            if helper.is_none() {
+                                helper = registry.get_or_load_helper(if ht.block {
+                                    BLOCK_HELPER_MISSING
+                                } else {
+                                    HELPER_MISSING
+                                })?;
+                            }
+
+                            helper
                                 .ok_or_else(|| {
                                     RenderError::new(format!("Helper not defined: {:?}", ht.name))
                                 })
-                                .and_then(move |d| call_helper_for_value(d, &h, registry, ctx, rc))
+                                .and_then(|d| {
+                                    call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
+                                })
                         }
                     }
                 }
@@ -624,11 +627,9 @@ impl Renderable for Template {
             t.render(registry, ctx, rc, out).map_err(|mut e| {
                 // add line/col number if the template has mapping data
                 if e.line_no.is_none() {
-                    if let Some(ref mapping) = self.mapping {
-                        if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
-                            e.line_no = Some(line);
-                            e.column_no = Some(col);
-                        }
+                    if let Some(&TemplateMapping(line, col)) = self.mapping.get(idx) {
+                        e.line_no = Some(line);
+                        e.column_no = Some(col);
                     }
                 }
 
@@ -655,11 +656,9 @@ impl Evaluable for Template {
         for (idx, t) in iter.enumerate() {
             t.eval(registry, ctx, rc).map_err(|mut e| {
                 if e.line_no.is_none() {
-                    if let Some(ref mapping) = self.mapping {
-                        if let Some(&TemplateMapping(line, col)) = mapping.get(idx) {
-                            e.line_no = Some(line);
-                            e.column_no = Some(col);
-                        }
+                    if let Some(&TemplateMapping(line, col)) = self.mapping.get(idx) {
+                        e.line_no = Some(line);
+                        e.column_no = Some(col);
                     }
                 }
 
@@ -679,6 +678,7 @@ fn helper_exists<'reg: 'rc, 'rc>(
     rc.has_local_helper(name) || reg.has_helper(name)
 }
 
+#[inline]
 fn render_helper<'reg: 'rc, 'rc>(
     ht: &'reg HelperTemplate,
     registry: &'reg Registry<'reg>,
@@ -696,17 +696,19 @@ fn render_helper<'reg: 'rc, 'rc>(
     if let Some(ref d) = rc.get_local_helper(h.name()) {
         d.call(&h, registry, ctx, rc, out)
     } else {
-        registry
-            .get_helper(h.name())
-            .or_else(|| {
-                registry.get_helper(if ht.block {
-                    BLOCK_HELPER_MISSING
-                } else {
-                    HELPER_MISSING
-                })
-            })
-            .ok_or_else(|| RenderError::new(format!("Helper not defined: {:?}", ht.name)))
-            .and_then(move |d| d.call(&h, registry, ctx, rc, out))
+        let mut helper = registry.get_or_load_helper(h.name())?;
+
+        if helper.is_none() {
+            helper = registry.get_or_load_helper(if ht.block {
+                BLOCK_HELPER_MISSING
+            } else {
+                HELPER_MISSING
+            })?;
+        }
+
+        helper
+            .ok_or_else(|| RenderError::new(format!("Helper not defined: {:?}", h.name())))
+            .and_then(|d| d.call(&h, registry, ctx, rc, out))
     }
 }
 
@@ -750,7 +752,7 @@ impl Renderable for TemplateElement {
                                 Err(RenderError::strict_error(context_json.relative_path()))
                             } else {
                                 // helper missing
-                                if let Some(hook) = registry.get_helper(HELPER_MISSING) {
+                                if let Some(hook) = registry.get_or_load_helper(HELPER_MISSING)? {
                                     let h = Helper::try_from_template(ht, registry, ctx, rc)?;
                                     hook.call(&h, registry, ctx, rc, out)
                                 } else {
@@ -891,7 +893,7 @@ fn test_template() {
     let template = Template {
         elements,
         name: None,
-        mapping: None,
+        mapping: Vec::new(),
     };
 
     {

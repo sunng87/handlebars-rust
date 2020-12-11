@@ -25,7 +25,7 @@ impl HelperDef for WithHelper {
             .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
         if param.value().is_truthy(false) {
-            let mut block = create_block(&param)?;
+            let mut block = create_block(&param);
 
             if let Some(block_param) = h.block_param() {
                 let mut params = BlockParams::new();

@@ -66,6 +66,9 @@ Examples are provided in source tree to demo usage of various api.
   just like using javascript for handlebarsjs
 * [error](https://github.com/sunng87/handlebars-rust/blob/master/examples/error.rs)
   simple case for error
+* [dev_mode](https://github.com/sunng87/handlebars-rust/blob/master/examples/dev_mode.rs)
+  a web server hosts handlebars in `dev_mode`, you can edit the template and see the change
+  without restarting your server.
 
 ## Minimum Rust Version Policy
 
@@ -162,6 +165,11 @@ embed your page into this parent.
 
 You can find a real example of template inheritance in
 `examples/partials.rs` and templates used by this file.
+
+#### Auto-reload in dev mode
+
+By turning on `dev_mode`, handlebars auto reloads any template and scripts that
+loaded from files or directory. This can be handy for template development.
 
 #### WebAssembly compatible
 

@@ -53,12 +53,19 @@
 //!
 //! ### Extensible helper system
 //!
-//! You can write your own helper with Rust! It can be a block helper or
-//! inline helper. Put your logic into the helper and don't repeat
-//! yourself.
+//! Helper is the control system of handlebars language. In the original JavaScript
+//! version, you can implement your own helper with JavaScript.
+//!
+//! Handlebars-rust offers similar mechanism that custom helper can be defined with
+//! rust function, or [rhai](https://github.com/jonathandturner/rhai) script.
 //!
 //! The built-in helpers like `if` and `each` were written with these
 //! helper APIs and the APIs are fully available to developers.
+//!
+//! ### Auto-reload in dev mode
+//!
+//! By turning on `dev_mode`, handlebars auto reloads any template and scripts that
+//! loaded from files or directory. This can be handy for template development.
 //!
 //! ### Template inheritance
 //!
@@ -376,7 +383,7 @@ extern crate serde_json;
 pub use self::block::{BlockContext, BlockParams};
 pub use self::context::Context;
 pub use self::decorators::DecoratorDef;
-pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
+pub use self::error::{RenderError, TemplateError};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::json::path::Path;
 pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
@@ -402,6 +409,7 @@ mod output;
 mod partial;
 mod registry;
 mod render;
+mod sources;
 mod support;
 pub mod template;
 mod util;

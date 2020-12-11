@@ -2,9 +2,16 @@
 
 ## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.4.0...Unreleased) - ReleaseDate
 
+* [Added] `dev_mode` for registry: templates and scripts loaded from file are always
+  reloaded when dev mode enabled [#395]
+* [Added] Registry is now `Clone` [#395]
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
+* [Changed] `TemplateError` and `ScriptError` is now a cause of `RenderError` [#395]
 * [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
 * [Fixed] dir source path separator bug on windows [#389]
+* [Removed] option to disable source map is removed [#395]
+* [Removed] `TemplateFileError` and `TemplateRenderError` are removed and merged into
+  `TemplateError` and `RenderError` [#395]
 
 ## [3.4.0](https://github.com/sunng87/handlebars-rust/compare/3.3.0...3.4.0) - 2020-08-14
 

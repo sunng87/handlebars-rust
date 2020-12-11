@@ -18,11 +18,11 @@ use self::TemplateElement::*;
 pub struct TemplateMapping(pub usize, pub usize);
 
 /// A handlebars template
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Default)]
 pub struct Template {
     pub name: Option<String>,
     pub elements: Vec<TemplateElement>,
-    pub mapping: Option<Vec<TemplateMapping>>,
+    pub mapping: Vec<TemplateMapping>,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -167,23 +167,13 @@ impl Parameter {
 }
 
 impl Template {
-    pub fn new(mapping: bool) -> Template {
-        Template {
-            elements: Vec::new(),
-            name: None,
-            mapping: if mapping { Some(Vec::new()) } else { None },
-        }
+    pub fn new() -> Template {
+        Template::default()
     }
 
     fn push_element(&mut self, e: TemplateElement, line: usize, col: usize) {
         self.elements.push(e);
-        if let Some(ref mut maps) = self.mapping {
-            maps.push(TemplateMapping(line, col));
-        }
-    }
-
-    pub fn compile<S: AsRef<str>>(source: S) -> Result<Template, TemplateError> {
-        Template::compile2(source, false)
+        self.mapping.push(TemplateMapping(line, col));
     }
 
     fn parse_subexpression<'a, I>(
@@ -289,11 +279,7 @@ impl Template {
         Ok((key, value))
     }
 
-    fn parse_block_param<'a, I>(
-        _: &'a str,
-        it: &mut Peekable<I>,
-        limit: usize,
-    ) -> Result<BlockParam, TemplateError>
+    fn parse_block_param<'a, I>(_: &'a str, it: &mut Peekable<I>, limit: usize) -> BlockParam
     where
         I: Iterator<Item = Pair<'a, Rule>>,
     {
@@ -313,9 +299,9 @@ impl Template {
 
         if let Some(p2) = p2 {
             it.next();
-            Ok(BlockParam::Pair((Parameter::Name(p1), Parameter::Name(p2))))
+            BlockParam::Pair((Parameter::Name(p1), Parameter::Name(p2)))
         } else {
-            Ok(BlockParam::Single(Parameter::Name(p1)))
+            BlockParam::Single(Parameter::Name(p1))
         }
     }
 
@@ -366,7 +352,7 @@ impl Template {
                     hashes.insert(key, value);
                 }
                 Rule::block_param => {
-                    block_param = Some(Template::parse_block_param(source, it.by_ref(), end)?);
+                    block_param = Some(Template::parse_block_param(source, it.by_ref(), end));
                 }
                 Rule::pro_whitespace_omitter => {
                     omit_pro_ws = true;
@@ -434,10 +420,7 @@ impl Template {
         }
     }
 
-    pub fn compile2<'a, S: AsRef<str> + 'a>(
-        source: S,
-        mapping: bool,
-    ) -> Result<Template, TemplateError> {
+    pub fn compile<'a, S: AsRef<str> + 'a>(source: S) -> Result<Template, TemplateError> {
         let source = source.as_ref();
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut decorator_stack: VecDeque<DecoratorTemplate> = VecDeque::new();
@@ -477,7 +460,7 @@ impl Template {
                     // trailing string check
                     let (line_no, col_no) = span.start_pos().line_col();
                     if rule == Rule::raw_block_end {
-                        let mut t = Template::new(mapping);
+                        let mut t = Template::new();
                         t.push_element(
                             Template::raw_string(&source[prev_end..span.start()], None, false),
                             line_no,
@@ -497,7 +480,7 @@ impl Template {
                 let (line_no, col_no) = span.start_pos().line_col();
                 match rule {
                     Rule::template => {
-                        template_stack.push_front(Template::new(mapping));
+                        template_stack.push_front(Template::new());
                     }
                     Rule::raw_text => {
                         // leading space fix
@@ -555,9 +538,7 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         let t = template_stack.front_mut().unwrap();
-                        if let Some(ref mut maps) = t.mapping {
-                            maps.push(TemplateMapping(line_no, col_no));
-                        }
+                        t.mapping.push(TemplateMapping(line_no, col_no));
                     }
                     Rule::invert_tag => {
                         // hack: invert_tag structure is similar to ExpressionSpec, so I
@@ -574,7 +555,7 @@ impl Template {
                         h.template = Some(t);
                     }
                     Rule::raw_block_text => {
-                        let mut t = Template::new(mapping);
+                        let mut t = Template::new();
                         t.push_element(
                             Template::raw_string(span.as_str(), Some(pair.clone()), omit_pro_ws),
                             line_no,
@@ -717,9 +698,8 @@ impl Template {
     pub fn compile_with_name<S: AsRef<str>>(
         source: S,
         name: String,
-        mapping: bool,
     ) -> Result<Template, TemplateError> {
-        match Template::compile2(source, mapping) {
+        match Template::compile(source) {
             Ok(mut t) => {
                 t.name = Some(name);
                 Ok(t)
@@ -843,12 +823,11 @@ fn test_parse_block_partial_path_identifier() {
 fn test_parse_error() {
     let source = "{{#ifequals name compare=\"hello\"}}\nhello\n\t{{else}}\ngood";
 
-    let t = Template::compile(source.to_string());
+    let terr = Template::compile(source.to_string()).unwrap_err();
 
-    assert_eq!(
-        t.unwrap_err(),
-        TemplateError::of(TemplateErrorReason::InvalidSyntax).at(source, 4, 5)
-    );
+    assert!(matches!(terr.reason, TemplateErrorReason::InvalidSyntax));
+    assert_eq!(terr.line_no.unwrap(), 4);
+    assert_eq!(terr.column_no.unwrap(), 5);
 }
 
 #[test]
@@ -1029,16 +1008,12 @@ fn test_literal_parameter_parser() {
 
 #[test]
 fn test_template_mapping() {
-    match Template::compile2("hello\n  {{~world}}\n{{#if nice}}\n\thello\n{{/if}}", true) {
+    match Template::compile("hello\n  {{~world}}\n{{#if nice}}\n\thello\n{{/if}}") {
         Ok(t) => {
-            if let Some(ref mapping) = t.mapping {
-                assert_eq!(mapping.len(), t.elements.len());
-                assert_eq!(mapping[0], TemplateMapping(1, 1));
-                assert_eq!(mapping[1], TemplateMapping(2, 3));
-                assert_eq!(mapping[3], TemplateMapping(3, 1));
-            } else {
-                panic!("should contains mapping");
-            }
+            assert_eq!(t.mapping.len(), t.elements.len());
+            assert_eq!(t.mapping[0], TemplateMapping(1, 1));
+            assert_eq!(t.mapping[1], TemplateMapping(2, 3));
+            assert_eq!(t.mapping[3], TemplateMapping(3, 1));
         }
         Err(e) => panic!("{}", e),
     }
