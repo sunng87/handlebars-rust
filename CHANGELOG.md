@@ -5,6 +5,7 @@
 * [Added] `dev_mode` for registry: templates and scripts loaded from file are always
   reloaded when dev mode enabled [#395]
 * [Added] Registry is now `Clone` [#395]
+* [Changed] Updated `rhai` to 0.19.6 and above [#391]
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
 * [Changed] `TemplateError` and `ScriptError` is now a cause of `RenderError` [#395]
 * [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
