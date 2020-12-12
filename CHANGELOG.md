@@ -8,6 +8,7 @@
 * [Changed] Updated `rhai` to 0.19.6 and above [#391]
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
 * [Changed] `TemplateError` and `ScriptError` is now a cause of `RenderError` [#395]
+* [Changed] `RenderContext::get_partial` now returns `Option<&Template>`
 * [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
 * [Fixed] dir source path separator bug on windows [#389]
 * [Removed] option to disable source map is removed [#395]

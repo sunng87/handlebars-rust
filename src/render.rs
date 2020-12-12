@@ -157,8 +157,8 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Get registered partial in this render context
-    pub fn get_partial(&self, name: &str) -> Option<&&Template> {
-        self.inner().partials.get(name)
+    pub fn get_partial(&self, name: &str) -> Option<&Template> {
+        self.inner().partials.get(name).map(|v| *v)
     }
 
     /// Register a partial for this context
