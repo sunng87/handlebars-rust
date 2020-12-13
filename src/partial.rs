@@ -250,4 +250,22 @@ mod test {
         let r0 = handlebars.render("t", &data);
         assert_eq!(r0.ok().unwrap(), "2 true2 false");
     }
+
+    #[test]
+    fn test_nested_partials() {
+        let mut handlebars = Registry::new();
+        let template1 = "<outer>{{> @partial-block }}</outer>";
+        let template2 = "{{#> t1 }}<inner>{{> @partial-block }}</inner>{{/ t1 }}";
+        let template3 = "{{#> t2 }}Hello{{/ t2 }}";
+
+        handlebars
+            .register_template_string("t1", &template1)
+            .unwrap();
+        handlebars
+            .register_template_string("t2", &template2)
+            .unwrap();
+
+        let page = handlebars.render_template(&template3, &json!({})).unwrap();
+        assert_eq!("<outer><inner>Hello</inner></outer>", page);
+    }
 }
