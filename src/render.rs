@@ -39,7 +39,7 @@ pub struct RenderContext<'reg, 'rc> {
 #[derive(Clone)]
 pub struct RenderContextInner<'reg: 'rc, 'rc> {
     partials: BTreeMap<String, &'reg Template>,
-    partial_block_stack: VecDeque<Option<&'reg Template>>,
+    partial_block_stack: VecDeque<&'reg Template>,
     partial_block_depth: isize,
     local_helpers: BTreeMap<String, Rc<dyn HelperDef + Send + Sync + 'rc>>,
     /// current template name
@@ -167,8 +167,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
                 .inner()
                 .partial_block_stack
                 .get(self.inner().partial_block_depth as usize)
-                .map(|v| *v)
-                .unwrap_or(None);
+                .map(|v| *v);
         }
         self.inner().partials.get(name).map(|v| *v)
     }
@@ -178,7 +177,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.inner_mut().partials.insert(name, partial);
     }
 
-    pub(crate) fn push_partial_block(&mut self, partial: Option<&'reg Template>) {
+    pub(crate) fn push_partial_block(&mut self, partial: &'reg Template) {
         self.inner_mut().partial_block_stack.push_front(partial);
     }
 

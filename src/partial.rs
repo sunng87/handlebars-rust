@@ -37,6 +37,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     if let Some(t) = partial {
         let mut local_rc = rc.clone();
         let is_partial_block = tname == PARTIAL_BLOCK;
+
         if is_partial_block {
             local_rc.inc_partial_block_depth();
         }
@@ -49,8 +50,8 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         }
 
         // @partial-block
-        if d.template().is_some() {
-            local_rc.push_partial_block(d.template());
+        if let Some(pb) = d.template() {
+            local_rc.push_partial_block(pb);
         }
 
         let result = if d.hash().is_empty() {
