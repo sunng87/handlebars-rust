@@ -167,9 +167,9 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
                 .inner()
                 .partial_block_stack
                 .get(self.inner().partial_block_depth as usize)
-                .map(|v| *v);
+                .copied();
         }
-        self.inner().partials.get(name).map(|v| *v)
+        self.inner().partials.get(name).copied()
     }
 
     /// Register a partial for this context
