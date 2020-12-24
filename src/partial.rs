@@ -28,6 +28,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         return Err(RenderError::new("Cannot include self in >"));
     }
 
+    // if tname == PARTIAL_BLOCK
     let partial = rc
         .get_partial(tname)
         .or_else(|| r.get_template(tname))
@@ -35,6 +36,10 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
     if let Some(t) = partial {
         let mut local_rc = rc.clone();
+        let is_partial_block = tname == PARTIAL_BLOCK;
+        if is_partial_block {
+            local_rc.inc_partial_block_depth();
+        }
 
         // partial context path
         if let Some(ref param_ctx) = d.param(0) {
@@ -44,11 +49,11 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         }
 
         // @partial-block
-        local_rc.push_partial_block(d.template());
+        if d.template().is_some() {
+            local_rc.push_partial_block(d.template());
+        }
 
         let result = if d.hash().is_empty() {
-            dbg!(&t);
-            dbg!(&local_rc);
             t.render(r, ctx, &mut local_rc, out)
         } else {
             let hash_ctx = d
@@ -64,7 +69,13 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             t.render(r, &ctx, &mut partial_rc, out)
         };
 
-        local_rc.pop_partial_block();
+        if is_partial_block {
+            local_rc.dec_partial_block_depth();
+        }
+
+        if d.template().is_some() {
+            local_rc.pop_partial_block();
+        }
 
         result
     } else {

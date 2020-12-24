@@ -40,6 +40,7 @@ pub struct RenderContext<'reg, 'rc> {
 pub struct RenderContextInner<'reg: 'rc, 'rc> {
     partials: BTreeMap<String, &'reg Template>,
     partial_block_stack: VecDeque<Option<&'reg Template>>,
+    partial_block_depth: isize,
     local_helpers: BTreeMap<String, Rc<dyn HelperDef + Send + Sync + 'rc>>,
     /// current template name
     current_template: Option<&'reg String>,
@@ -54,6 +55,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         let inner = Rc::new(RenderContextInner {
             partials: BTreeMap::new(),
             partial_block_stack: VecDeque::new(),
+            partial_block_depth: 0,
             local_helpers: BTreeMap::new(),
             current_template: None,
             root_template,
@@ -164,7 +166,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             return self
                 .inner()
                 .partial_block_stack
-                .front() // TODO:
+                .get(self.inner().partial_block_depth as usize)
                 .map(|v| *v)
                 .unwrap_or(None);
         }
@@ -182,6 +184,14 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     pub(crate) fn pop_partial_block(&mut self) {
         self.inner_mut().partial_block_stack.pop_front();
+    }
+
+    pub(crate) fn inc_partial_block_depth(&mut self) {
+        self.inner_mut().partial_block_depth += 1;
+    }
+
+    pub(crate) fn dec_partial_block_depth(&mut self) {
+        self.inner_mut().partial_block_depth -= 1;
     }
 
     /// Remove a registered partial
