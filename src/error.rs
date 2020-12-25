@@ -47,45 +47,45 @@ impl Error for RenderError {
 
 impl From<IOError> for RenderError {
     fn from(e: IOError) -> RenderError {
-        RenderError::from_error("Error on output generation.", e)
+        RenderError::from_error("Error on output generation", e)
     }
 }
 
 impl From<SerdeError> for RenderError {
     fn from(e: SerdeError) -> RenderError {
-        RenderError::from_error("Error when accessing JSON data.", e)
+        RenderError::from_error("Error when accessing JSON data", e)
     }
 }
 
 impl From<FromUtf8Error> for RenderError {
     fn from(e: FromUtf8Error) -> RenderError {
-        RenderError::from_error("Error on bytes generation.", e)
+        RenderError::from_error("Error on bytes generation", e)
     }
 }
 
 impl From<ParseIntError> for RenderError {
     fn from(e: ParseIntError) -> RenderError {
-        RenderError::from_error("Error on accessing array/vector with string index.", e)
+        RenderError::from_error("Error on accessing array/vector with string index", e)
     }
 }
 
 impl From<TemplateError> for RenderError {
     fn from(e: TemplateError) -> RenderError {
-        RenderError::from_error("Error with parsing template.", e)
+        RenderError::from_error("Error with parsing template", e)
     }
 }
 
 #[cfg(feature = "script_helper")]
 impl From<Box<EvalAltResult>> for RenderError {
     fn from(e: Box<EvalAltResult>) -> RenderError {
-        RenderError::from_error("Error on converting data to Rhai dynamic.", e)
+        RenderError::from_error("Error on converting data to Rhai dynamic", e)
     }
 }
 
 #[cfg(feature = "script_helper")]
 impl From<ScriptError> for RenderError {
     fn from(e: ScriptError) -> RenderError {
-        RenderError::from_error("Error loading rhai script.", e)
+        RenderError::from_error("Error loading rhai script", e)
     }
 }
 
