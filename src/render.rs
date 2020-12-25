@@ -39,6 +39,8 @@ pub struct RenderContext<'reg, 'rc> {
 #[derive(Clone)]
 pub struct RenderContextInner<'reg: 'rc, 'rc> {
     partials: BTreeMap<String, &'reg Template>,
+    partial_block_stack: VecDeque<&'reg Template>,
+    partial_block_depth: isize,
     local_helpers: BTreeMap<String, Rc<dyn HelperDef + Send + Sync + 'rc>>,
     /// current template name
     current_template: Option<&'reg String>,
@@ -52,6 +54,8 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg, 'rc> {
         let inner = Rc::new(RenderContextInner {
             partials: BTreeMap::new(),
+            partial_block_stack: VecDeque::new(),
+            partial_block_depth: 0,
             local_helpers: BTreeMap::new(),
             current_template: None,
             root_template,
@@ -158,12 +162,35 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     /// Get registered partial in this render context
     pub fn get_partial(&self, name: &str) -> Option<&Template> {
-        self.inner().partials.get(name).map(|v| *v)
+        if name == partial::PARTIAL_BLOCK {
+            return self
+                .inner()
+                .partial_block_stack
+                .get(self.inner().partial_block_depth as usize)
+                .copied();
+        }
+        self.inner().partials.get(name).copied()
     }
 
     /// Register a partial for this context
     pub fn set_partial(&mut self, name: String, partial: &'reg Template) {
         self.inner_mut().partials.insert(name, partial);
+    }
+
+    pub(crate) fn push_partial_block(&mut self, partial: &'reg Template) {
+        self.inner_mut().partial_block_stack.push_front(partial);
+    }
+
+    pub(crate) fn pop_partial_block(&mut self) {
+        self.inner_mut().partial_block_stack.pop_front();
+    }
+
+    pub(crate) fn inc_partial_block_depth(&mut self) {
+        self.inner_mut().partial_block_depth += 1;
+    }
+
+    pub(crate) fn dec_partial_block_depth(&mut self) {
+        self.inner_mut().partial_block_depth -= 1;
     }
 
     /// Remove a registered partial
@@ -247,6 +274,7 @@ impl<'reg, 'rc> fmt::Debug for RenderContextInner<'reg, 'rc> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("RenderContextInner")
             .field("partials", &self.partials)
+            .field("partial_block_stack", &self.partial_block_stack)
             .field("root_template", &self.root_template)
             .field("current_template", &self.current_template)
             .field("disable_eacape", &self.disable_escape)

@@ -9,7 +9,7 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 
-const PARTIAL_BLOCK: &str = "@partial-block";
+pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Decorator<'reg, 'rc>,
@@ -28,6 +28,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         return Err(RenderError::new("Cannot include self in >"));
     }
 
+    // if tname == PARTIAL_BLOCK
     let partial = rc
         .get_partial(tname)
         .or_else(|| r.get_template(tname))
@@ -35,6 +36,11 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
     if let Some(t) = partial {
         let mut local_rc = rc.clone();
+        let is_partial_block = tname == PARTIAL_BLOCK;
+
+        if is_partial_block {
+            local_rc.inc_partial_block_depth();
+        }
 
         // partial context path
         if let Some(ref param_ctx) = d.param(0) {
@@ -44,8 +50,8 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         }
 
         // @partial-block
-        if let Some(t) = d.template() {
-            local_rc.set_partial(PARTIAL_BLOCK.to_owned(), t);
+        if let Some(pb) = d.template() {
+            local_rc.push_partial_block(pb);
         }
 
         let result = if d.hash().is_empty() {
@@ -64,7 +70,13 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             t.render(r, &ctx, &mut partial_rc, out)
         };
 
-        local_rc.remove_partial(PARTIAL_BLOCK);
+        if is_partial_block {
+            local_rc.dec_partial_block_depth();
+        }
+
+        if d.template().is_some() {
+            local_rc.pop_partial_block();
+        }
 
         result
     } else {
@@ -249,5 +261,23 @@ mod test {
         assert!(handlebars.register_template_string("t", t).is_ok());
         let r0 = handlebars.render("t", &data);
         assert_eq!(r0.ok().unwrap(), "2 true2 false");
+    }
+
+    #[test]
+    fn test_nested_partials() {
+        let mut handlebars = Registry::new();
+        let template1 = "<outer>{{> @partial-block }}</outer>";
+        let template2 = "{{#> t1 }}<inner>{{> @partial-block }}</inner>{{/ t1 }}";
+        let template3 = "{{#> t2 }}Hello{{/ t2 }}";
+
+        handlebars
+            .register_template_string("t1", &template1)
+            .unwrap();
+        handlebars
+            .register_template_string("t2", &template2)
+            .unwrap();
+
+        let page = handlebars.render_template(&template3, &json!({})).unwrap();
+        assert_eq!("<outer><inner>Hello</inner></outer>", page);
     }
 }
