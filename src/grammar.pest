@@ -56,36 +56,36 @@ pro_whitespace_omitter? ~ "}}" }
 partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
                      ~ pro_whitespace_omitter? ~ "}}" }
 invert_tag_item = { "else"|"^" }
-invert_tag = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
-             ~ pro_whitespace_omitter? ~ "}}"}
-helper_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
-                     pro_whitespace_omitter? ~ "}}" }
-helper_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                   pro_whitespace_omitter? ~ "}}" }
+invert_tag = { !escape ~ PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
+             ~ pro_whitespace_omitter? ~ "}}" ~ POP }
+helper_block_start = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
+                     pro_whitespace_omitter? ~ "}}" ~ POP }
+helper_block_end = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
+                   pro_whitespace_omitter? ~ "}}" ~ POP }
 helper_block = _{ helper_block_start ~ template ~
                   (invert_tag ~ template)? ~ helper_block_end }
 
-decorator_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ "*"
-                        ~ exp_line ~ pro_whitespace_omitter? ~ "}}" }
-decorator_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                        pro_whitespace_omitter? ~ "}}" }
+decorator_block_start = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ "*"
+                        ~ exp_line ~ pro_whitespace_omitter? ~ "}}" ~ POP }
+decorator_block_end = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
+                        pro_whitespace_omitter? ~ "}}" ~ POP }
 decorator_block = _{ decorator_block_start ~ template ~
                      decorator_block_end }
 
-partial_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ ">"
-                        ~ partial_exp_line ~ pro_whitespace_omitter? ~ "}}" }
-partial_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ partial_identifier ~
-                      pro_whitespace_omitter? ~ "}}" }
+partial_block_start = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ ">"
+                        ~ partial_exp_line ~ pro_whitespace_omitter? ~ "}}" ~ POP }
+partial_block_end = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ partial_identifier ~
+                      pro_whitespace_omitter? ~ "}}" ~ POP }
 partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
-raw_block_start = { "{{{{" ~ pre_whitespace_omitter? ~ exp_line ~
-                    pro_whitespace_omitter? ~ "}}}}" }
-raw_block_end = { "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                  pro_whitespace_omitter? ~ "}}}}" }
+raw_block_start = { PUSH(LINE_SEPARATOR?) ~ "{{{{" ~ pre_whitespace_omitter? ~ exp_line ~
+                    pro_whitespace_omitter? ~ "}}}}" ~ POP }
+raw_block_end = { PUSH(LINE_SEPARATOR?) ~ "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
+                  pro_whitespace_omitter? ~ "}}}}" ~ POP }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-hbs_comment = { "{{!--" ~ (!"--}}" ~ ANY)* ~ "--}}" }
-hbs_comment_compact = { "{{!" ~ (!"}}" ~ ANY)* ~ "}}" }
+hbs_comment = { PUSH(LINE_SEPARATOR?) ~ "{{!--" ~ (!"--}}" ~ ANY)* ~ "--}}" ~ POP }
+hbs_comment_compact = { PUSH(LINE_SEPARATOR?) ~ "{{!" ~ (!"}}" ~ ANY)* ~ "}}" ~ POP }
 
 template = { (
             raw_text |
