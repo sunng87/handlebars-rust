@@ -1025,7 +1025,9 @@ fn test_whitespace_elements() {
         "  {{elem}}\n\t{{#if true}} \
          {{/if}}\n{{{{raw}}}} {{{{/raw}}}}\n{{{{raw}}}}{{{{/raw}}}}\n",
     );
-    assert_eq!(c.ok().unwrap().elements.len(), 9);
+    let r = c.unwrap();
+    // the \n after last raw block is dropped by pest
+    assert_eq!(r.elements.len(), 6);
 }
 
 #[test]

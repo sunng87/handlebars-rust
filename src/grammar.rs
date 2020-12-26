@@ -225,6 +225,8 @@ mod test {
             "{{#each people as |person|}}",
             "{{#each-obj obj as |val key|}}",
             "{{#each assets}}",
+            "\n{{#each assets}}\n",
+            "\r\n{{#each assets}}\r\n",
         ];
         for i in s.iter() {
             assert_rule!(Rule::helper_block_start, i);
@@ -252,6 +254,7 @@ mod test {
             "{{#if}}hello{{else~}}world{{/if}}",
             "{{#if}}hello{{~^~}}world{{/if}}",
             "{{#if}}{{/if}}",
+            "\r\n{{#if}}\r\n\r\n{{/if}}\r\n",
         ];
         for i in s.iter() {
             assert_rule!(Rule::helper_block, i);
@@ -263,6 +266,7 @@ mod test {
         let s = vec![
             "{{{{if hello}}}}good {{hello}}{{{{/if}}}}",
             "{{{{if hello}}}}{{#if nice}}{{/if}}{{{{/if}}}}",
+            "\n{{{{if hello}}}}\n{{#if nice}}{{/if}}{{{{/if}}}}",
         ];
         for i in s.iter() {
             assert_rule!(Rule::raw_block, i);
