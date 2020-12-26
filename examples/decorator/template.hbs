@@ -7,12 +7,12 @@
   <body>
     <h1>CSL {{year}}</h1>
     <ul>
-    {{#each teams as |t| ~}}
+    {{#each teams as |t|}}
       <li class="{{ranking_label @index ../teams}}">
       {{~log @index~}}
       <b>{{t.name}}</b>: {{format t.pts ~}}
       </li>
-    {{/each~}}
+    {{/each}}
     </ul>
 
     {{*set version="v3.0"}}
