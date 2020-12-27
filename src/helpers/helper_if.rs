@@ -126,4 +126,14 @@ mod test {
                 .unwrap()
         );
     }
+
+    #[test]
+    fn test_invisible_line_stripping() {
+        let hbs = Registry::new();
+        assert_eq!(
+            "yes\n",
+            hbs.render_template("{{#if a}}\nyes\n{{/if}}\n", &json!({"a": true}))
+                .unwrap()
+        );
+    }
 }

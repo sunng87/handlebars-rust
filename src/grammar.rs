@@ -145,7 +145,9 @@ mod test {
         let s = vec!["{{!-- <hello {{ a-b c-d}} {{d-c}} ok --}}",
                  "{{!--
                     <li><a href=\"{{up-dir nest-count}}{{base-url}}index.html\">{{this.title}}</a></li>
-                --}}"];
+                --}}",
+                     "\r\n     {{!-- yes --}}    \r\n",
+                     "{{!    -- good  --}}"];
         for i in s.iter() {
             assert_rule!(Rule::hbs_comment, i);
         }
@@ -227,6 +229,8 @@ mod test {
             "{{#each assets}}",
             "\n{{#each assets}}\n",
             "\r\n{{#each assets}}\r\n",
+            "\r\n      {{#each assets}}\r\n",
+            "\r\n\t\t{{#each assets}}\r\n",
         ];
         for i in s.iter() {
             assert_rule!(Rule::helper_block_start, i);

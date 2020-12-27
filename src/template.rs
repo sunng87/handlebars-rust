@@ -441,7 +441,18 @@ impl Template {
         // remove escape from our pair queue
         let mut it = parser_queue
             .flatten()
-            .filter(|p| p.as_rule() != Rule::escape)
+            .filter(|p| {
+                // remove rules that should be silent but not for now due to pest limitation
+                !matches!(
+                    p.as_rule(),
+                    Rule::escape
+                        | Rule::brackets_open
+                        | Rule::brackets_close
+                        | Rule::double_brackets_open
+                        | Rule::double_brackets_close
+                        | Rule::comment_brackets_open
+                )
+            })
             .peekable();
         let mut end_pos: Option<Position<'_>> = None;
         loop {

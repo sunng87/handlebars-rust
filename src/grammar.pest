@@ -55,37 +55,45 @@ decorator_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
 pro_whitespace_omitter? ~ "}}" }
 partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
                      ~ pro_whitespace_omitter? ~ "}}" }
+
+brackets_open = @{ ("\r"? ~ "\n" ~ (" "|"\t")*)? ~ "{{" }
+brackets_close = @{ "}}" ~ ((" "|"\t")* ~ "\r"? ~ "\n")? }
+
 invert_tag_item = { "else"|"^" }
-invert_tag = { !escape ~ PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
-             ~ pro_whitespace_omitter? ~ "}}" ~ POP }
-helper_block_start = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
-                     pro_whitespace_omitter? ~ "}}" ~ POP }
-helper_block_end = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                   pro_whitespace_omitter? ~ "}}" ~ POP }
+invert_tag = { !escape ~ brackets_open ~ pre_whitespace_omitter? ~ invert_tag_item
+             ~ pro_whitespace_omitter? ~ brackets_close }
+helper_block_start = { brackets_open ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
+                     pro_whitespace_omitter? ~ brackets_close }
+helper_block_end = { brackets_open ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
+                   pro_whitespace_omitter? ~ brackets_close }
 helper_block = _{ helper_block_start ~ template ~
                   (invert_tag ~ template)? ~ helper_block_end }
 
-decorator_block_start = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ "*"
-                        ~ exp_line ~ pro_whitespace_omitter? ~ "}}" ~ POP }
-decorator_block_end = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                        pro_whitespace_omitter? ~ "}}" ~ POP }
+decorator_block_start = { brackets_open ~ pre_whitespace_omitter? ~ "#" ~ "*"
+                        ~ exp_line ~ pro_whitespace_omitter? ~ brackets_close }
+decorator_block_end = { brackets_open ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
+                        pro_whitespace_omitter? ~ brackets_close }
 decorator_block = _{ decorator_block_start ~ template ~
                      decorator_block_end }
 
-partial_block_start = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "#" ~ ">"
-                        ~ partial_exp_line ~ pro_whitespace_omitter? ~ "}}" ~ POP }
-partial_block_end = { PUSH(LINE_SEPARATOR?) ~ "{{" ~ pre_whitespace_omitter? ~ "/" ~ partial_identifier ~
-                      pro_whitespace_omitter? ~ "}}" ~ POP }
+partial_block_start = { brackets_open ~ pre_whitespace_omitter? ~ "#" ~ ">"
+                        ~ partial_exp_line ~ pro_whitespace_omitter? ~ brackets_close }
+partial_block_end = { brackets_open ~ pre_whitespace_omitter? ~ "/" ~ partial_identifier ~
+                      pro_whitespace_omitter? ~ brackets_close }
 partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
-raw_block_start = { PUSH(LINE_SEPARATOR?) ~ "{{{{" ~ pre_whitespace_omitter? ~ exp_line ~
-                    pro_whitespace_omitter? ~ "}}}}" ~ POP }
-raw_block_end = { PUSH(LINE_SEPARATOR?) ~ "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                  pro_whitespace_omitter? ~ "}}}}" ~ POP }
+double_brackets_open = @{ ("\r"? ~ "\n" ~ (" "|"\t")*)? ~ "{{{{" }
+double_brackets_close = @{ "}}}}" ~ ((" "|"\t")* ~ "\r"? ~ "\n")? }
+
+raw_block_start = { double_brackets_open ~ pre_whitespace_omitter? ~ exp_line ~
+                    pro_whitespace_omitter? ~ double_brackets_close }
+raw_block_end = { double_brackets_open ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
+                  pro_whitespace_omitter? ~ double_brackets_close }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-hbs_comment = { PUSH(LINE_SEPARATOR?) ~ "{{!--" ~ (!"--}}" ~ ANY)* ~ "--}}" ~ POP }
-hbs_comment_compact = { PUSH(LINE_SEPARATOR?) ~ "{{!" ~ (!"}}" ~ ANY)* ~ "}}" ~ POP }
+comment_brackets_open = @{ ("\r"? ~ "\n" ~ (" "|"\t")*)? ~ "{{!" }
+hbs_comment = { comment_brackets_open ~ "--" ~ (!"--}}" ~ ANY)* ~ "--" ~ brackets_close }
+hbs_comment_compact = { comment_brackets_open ~ (!"}}" ~ ANY)* ~ brackets_close }
 
 template = { (
             raw_text |
