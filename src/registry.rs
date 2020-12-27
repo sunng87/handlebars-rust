@@ -732,9 +732,9 @@ mod test {
 
             let mut dir_path = dir
                 .path()
-                .to_string_loosy()
-                .replace(path::MAIN_SEPARATOR, "/");
-            if !dir_path.end_with("/") {
+                .to_string_lossy()
+                .replace(std::path::MAIN_SEPARATOR, "/");
+            if !dir_path.ends_with("/") {
                 dir_path.push('/');
             }
             r.register_templates_directory(".hbs", dir_path).unwrap();
