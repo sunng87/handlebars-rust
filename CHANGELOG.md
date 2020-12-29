@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.5.1...Unreleased) - ReleaseDate
+## [3.5.2](https://github.com/sunng87/handlebars-rust/compare/3.5.1...3.5.2) - 2020-12-29
 
 * [Fixed] allow `/` as trailing separator on Windows, backported from master [#405]
 
