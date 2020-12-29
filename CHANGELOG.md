@@ -10,7 +10,7 @@
 * [Changed] `TemplateError` and `ScriptError` is now a cause of `RenderError` [#395]
 * [Changed] `RenderContext::get_partial` now returns `Option<&Template>`
 * [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
-* [Fixed] dir source path separator bug on windows [#389]
+* [Fixed] dir source path separator bug on windows [#389] [#405]
 * [Removed] option to disable source map is removed [#395]
 * [Removed] `TemplateFileError` and `TemplateRenderError` are removed and merged into
   `TemplateError` and `RenderError` [#395]
