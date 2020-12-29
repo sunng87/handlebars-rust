@@ -272,7 +272,11 @@ impl<'reg> Registry<'reg> {
     {
         let dir_path = dir_path.as_ref();
 
-        let prefix_len = if dir_path.to_string_lossy().ends_with(path::MAIN_SEPARATOR) {
+        let prefix_len = if dir_path
+            .to_string_lossy()
+            .ends_with(|c| c == '\\' || c == '/')
+        // `/` will work on windows too so we still need to check
+        {
             dir_path.to_string_lossy().len()
         } else {
             dir_path.to_string_lossy().len() + 1
@@ -716,6 +720,29 @@ mod test {
             drop(file2);
             drop(file3);
 
+            dir.close().unwrap();
+        }
+
+        {
+            let dir = tempdir().unwrap();
+
+            let file1_path = dir.path().join("t10.hbs");
+            let mut file1: File = File::create(&file1_path).unwrap();
+            writeln!(file1, "<h1>Bonjour {{world}}!</h1>").unwrap();
+
+            let mut dir_path = dir
+                .path()
+                .to_string_lossy()
+                .replace(std::path::MAIN_SEPARATOR, "/");
+            if !dir_path.ends_with("/") {
+                dir_path.push('/');
+            }
+            r.register_templates_directory(".hbs", dir_path).unwrap();
+
+            assert_eq!(r.templates.len(), 8);
+            assert_eq!(r.templates.contains_key("t10"), true);
+
+            drop(file1);
             dir.close().unwrap();
         }
     }
