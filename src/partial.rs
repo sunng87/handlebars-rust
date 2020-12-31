@@ -2,9 +2,11 @@ use std::collections::HashMap;
 
 use serde_json::value::Value as Json;
 
+use crate::block::BlockContext;
 use crate::context::{merge_json, Context};
 use crate::error::RenderError;
 use crate::json::path::Path;
+use crate::json::value::to_json;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
@@ -42,34 +44,46 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             local_rc.inc_partial_block_depth();
         }
 
-        // partial context path
-        if let Some(ref param_ctx) = d.param(0) {
-            if let (Some(p), Some(block)) = (param_ctx.context_path(), local_rc.block_mut()) {
-                *block.base_path_mut() = p.clone();
-            }
+        let mut block = BlockContext::new();
+
+        if let Some(ref base_path) = d.param(0).and_then(|p| p.context_path()) {
+            // path given, update base_path
+            *block.base_path_mut() = base_path.to_vec();
+        } else if !d.hash().is_empty() {
+            // hash given, update base_value
+            let hash_ctx = d
+                .hash()
+                .iter()
+                .map(|(k, v)| (*k, v.value()))
+                .collect::<HashMap<&str, &Json>>();
+            block.set_base_value(to_json(hash_ctx));
         }
+        local_rc.push_block(block);
 
         // @partial-block
         if let Some(pb) = d.template() {
             local_rc.push_partial_block(pb);
         }
 
-        let result = if d.hash().is_empty() {
-            t.render(r, ctx, &mut local_rc, out)
-        } else {
-            let hash_ctx = d
-                .hash()
-                .iter()
-                .map(|(k, v)| (k, v.value()))
-                .collect::<HashMap<&&str, &Json>>();
-            let current_path = Path::current();
-            let partial_context =
-                merge_json(local_rc.evaluate2(ctx, &current_path)?.as_json(), &hash_ctx);
-            let ctx = Context::wraps(&partial_context)?;
-            let mut partial_rc = local_rc.new_for_block();
-            t.render(r, &ctx, &mut partial_rc, out)
-        };
+        let result = t.render(r, ctx, &mut local_rc, out);
+        //        let result = if d.hash().is_empty() {
 
+        //         } else {
+        //             let hash_ctx = d
+        //                 .hash()
+        //                 .iter()
+        //                 .map(|(k, v)| (k, v.value()))
+        //                 .collect::<HashMap<&&str, &Json>>();
+        //             let current_path = Path::current();
+        //             let partial_context =
+        //                 merge_json(local_rc.evaluate2(ctx, &current_path)?.as_json(), &hash_ctx);
+        //             let ctx = Context::wraps(&partial_context)?;
+        //             let mut partial_rc = local_rc.new_for_block();
+        //             t.render(r, &ctx, &mut partial_rc, out)
+        //         };
+        //
+
+        local_rc.pop_block();
         if is_partial_block {
             local_rc.dec_partial_block_depth();
         }
