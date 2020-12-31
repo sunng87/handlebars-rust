@@ -56,8 +56,8 @@ pro_whitespace_omitter? ~ "}}" }
 partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
                      ~ pro_whitespace_omitter? ~ "}}" }
 
-brackets_open = @{ ("\r"? ~ "\n" ~ (" "|"\t")*)? ~ "{{" }
-brackets_close = @{ "}}" ~ ((" "|"\t")* ~ "\r"? ~ "\n")? }
+brackets_open = @{ (NEWLINE ~ (" "|"\t")*)? ~ "{{" }
+brackets_close = @{ "}}" ~ ((" "|"\t")* ~ NEWLINE)? }
 
 invert_tag_item = { "else"|"^" }
 invert_tag = { !escape ~ brackets_open ~ pre_whitespace_omitter? ~ invert_tag_item
@@ -82,8 +82,8 @@ partial_block_end = { brackets_open ~ pre_whitespace_omitter? ~ "/" ~ partial_id
                       pro_whitespace_omitter? ~ brackets_close }
 partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
-double_brackets_open = @{ ("\r"? ~ "\n" ~ (" "|"\t")*)? ~ "{{{{" }
-double_brackets_close = @{ "}}}}" ~ ((" "|"\t")* ~ "\r"? ~ "\n")? }
+double_brackets_open = @{ (NEWLINE ~ (" "|"\t")*)? ~ "{{{{" }
+double_brackets_close = @{ "}}}}" ~ ((" "|"\t")* ~ NEWLINE)? }
 
 raw_block_start = { double_brackets_open ~ pre_whitespace_omitter? ~ exp_line ~
                     pro_whitespace_omitter? ~ double_brackets_close }
