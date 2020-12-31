@@ -29,7 +29,8 @@ impl fmt::Display for RenderError {
                 "Error rendering \"{}\" line {}, col {}: {}",
                 self.template_name
                     .as_ref()
-                    .unwrap_or(&"Unnamed template".to_owned(),),
+                    .map(|v| v.as_str())
+                    .unwrap_or("Unnamed template"),
                 line,
                 col,
                 self.desc
@@ -41,51 +42,53 @@ impl fmt::Display for RenderError {
 
 impl Error for RenderError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        self.cause.as_ref().map(|e| &**e as &(dyn Error + 'static))
+        self.cause
+            .as_ref()
+            .map(|e| e.as_ref() as &(dyn Error + 'static))
     }
 }
 
 impl From<IOError> for RenderError {
     fn from(e: IOError) -> RenderError {
-        RenderError::from_error("Error on output generation", e)
+        RenderError::from_error("Cannot generate output.", e)
     }
 }
 
 impl From<SerdeError> for RenderError {
     fn from(e: SerdeError) -> RenderError {
-        RenderError::from_error("Error when accessing JSON data", e)
+        RenderError::from_error("Failed to access JSON data.", e)
     }
 }
 
 impl From<FromUtf8Error> for RenderError {
     fn from(e: FromUtf8Error) -> RenderError {
-        RenderError::from_error("Error on bytes generation", e)
+        RenderError::from_error("Failed to generate bytes.", e)
     }
 }
 
 impl From<ParseIntError> for RenderError {
     fn from(e: ParseIntError) -> RenderError {
-        RenderError::from_error("Error on accessing array/vector with string index", e)
+        RenderError::from_error("Cannot access array/vector with string index.", e)
     }
 }
 
 impl From<TemplateError> for RenderError {
     fn from(e: TemplateError) -> RenderError {
-        RenderError::from_error("Error with parsing template", e)
+        RenderError::from_error("Failed to parse template.", e)
     }
 }
 
 #[cfg(feature = "script_helper")]
 impl From<Box<EvalAltResult>> for RenderError {
     fn from(e: Box<EvalAltResult>) -> RenderError {
-        RenderError::from_error("Error on converting data to Rhai dynamic", e)
+        RenderError::from_error("Cannot convert data to Rhai dynamic", e)
     }
 }
 
 #[cfg(feature = "script_helper")]
 impl From<ScriptError> for RenderError {
     fn from(e: ScriptError) -> RenderError {
-        RenderError::from_error("Error loading rhai script", e)
+        RenderError::from_error("Failed to load rhai script", e)
     }
 }
 
@@ -108,11 +111,11 @@ impl RenderError {
         RenderError::new(&msg)
     }
 
-    pub fn from_error<E>(error_kind: &str, cause: E) -> RenderError
+    pub fn from_error<E>(error_info: &str, cause: E) -> RenderError
     where
         E: Error + Send + Sync + 'static,
     {
-        let mut e = RenderError::new(format!("{}: {}", error_kind, cause.to_string()));
+        let mut e = RenderError::new(error_info);
         e.cause = Some(Box::new(cause));
 
         e
