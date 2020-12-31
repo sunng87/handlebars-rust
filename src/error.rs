@@ -27,10 +27,7 @@ impl fmt::Display for RenderError {
             (Some(line), Some(col)) => write!(
                 f,
                 "Error rendering \"{}\" line {}, col {}: {}",
-                self.template_name
-                    .as_ref()
-                    .map(|v| v.as_str())
-                    .unwrap_or("Unnamed template"),
+                self.template_name.as_deref().unwrap_or("Unnamed template"),
                 line,
                 col,
                 self.desc
