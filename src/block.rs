@@ -61,7 +61,6 @@ pub struct BlockContext<'reg> {
     base_path: Vec<String>,
     /// the base_value of current block scope, when the block is using a
     /// constant or derived value as block base
-    /// FIXME: we use owned json temporarily to avoid lifetime issue
     base_value: Option<Json>,
     /// current block context variables
     block_params: BlockParams<'reg>,
