@@ -53,7 +53,7 @@ macro_rules! handlebars_helper {
                 h: &$crate::Helper<'reg>,
                 r: &'reg $crate::Handlebars<'reg>,
                 ctx: &'rc $crate::Context,
-                rc: &mut $crate::RenderContext<'reg, 'rc>,
+                rc: &mut $crate::RenderContext<'reg>,
             ) -> Result<Option<$crate::ScopedJson<'reg, 'rc>>, $crate::RenderError> {
                 let mut param_idx = 0;
 

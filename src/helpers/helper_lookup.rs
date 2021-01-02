@@ -16,7 +16,7 @@ impl HelperDef for LookupHelper {
         h: &Helper<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         let collection_value = h
             .param(0, r, ctx, rc)?

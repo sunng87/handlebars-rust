@@ -62,7 +62,7 @@ pub trait DecoratorDef {
         d: &Decorator<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg>,
     ) -> DecoratorResult;
 }
 
@@ -72,7 +72,7 @@ impl<
             &Decorator<'reg>,
             &'reg Registry<'reg>,
             &'rc Context,
-            &mut RenderContext<'reg, 'rc>,
+            &mut RenderContext<'reg>,
         ) -> DecoratorResult,
     > DecoratorDef for F
 {
@@ -81,7 +81,7 @@ impl<
         d: &Decorator<'reg>,
         reg: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg>,
     ) -> DecoratorResult {
         (*self)(d, reg, ctx, rc)
     }

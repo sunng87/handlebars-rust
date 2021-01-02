@@ -50,7 +50,7 @@ impl HelperDef for ScriptHelper {
         h: &Helper<'reg>,
         reg: &'reg Registry<'reg>,
         _ctx: &'rc Context,
-        _rc: &mut RenderContext<'reg, 'rc>,
+        _rc: &mut RenderContext<'reg>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
         call_script_helper(h.params(), h.hash(), &reg.engine, &self.script)
     }

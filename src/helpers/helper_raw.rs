@@ -13,7 +13,7 @@ impl HelperDef for RawHelper {
         h: &Helper<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let tpl = h.template();

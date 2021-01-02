@@ -69,7 +69,7 @@ impl HelperDef for EachHelper {
         h: &Helper<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let value = h

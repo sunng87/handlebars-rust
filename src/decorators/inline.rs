@@ -13,7 +13,7 @@ impl DecoratorDef for InlineDecorator {
         d: &Decorator<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
+        rc: &mut RenderContext<'reg>,
     ) -> DecoratorResult {
         let name = d
             .param(0, r, ctx, rc)?
