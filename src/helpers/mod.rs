@@ -52,7 +52,7 @@ pub type HelperResult = Result<(), RenderError>;
 ///     h: &Helper<'reg, 'rc>,
 ///     r: &'reg Handlebars<'reg>,
 ///     ctx: &'rc Context,
-///     rc: &mut RenderContext<'reg, 'rc>,
+///     rc: &mut RenderContext<'reg>,
 ///     out: &mut dyn Output,
 /// ) -> HelperResult {
 ///     h.template()
@@ -109,15 +109,15 @@ pub trait HelperDef {
 }
 
 /// implement HelperDef for bare function so we can use function as helper
-impl<
-        F: for<'reg, 'rc> Fn(
-            &Helper<'reg>,
-            &'reg Registry<'reg>,
-            &'rc Context,
-            &mut RenderContext<'reg>,
-            &mut dyn Output,
-        ) -> HelperResult,
-    > HelperDef for F
+impl<F> HelperDef for F
+where
+    F: for<'reg, 'rc> Fn(
+        &Helper<'reg>,
+        &'reg Registry<'reg>,
+        &'rc Context,
+        &mut RenderContext<'reg>,
+        &mut dyn Output,
+    ) -> HelperResult,
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
@@ -129,6 +129,24 @@ impl<
     ) -> HelperResult {
         (*self)(h, r, ctx, rc, out)
     }
+}
+
+/// A walkaournd for rust compiler to type inferencing closure as
+/// helper.
+///
+/// Simply use this function to wrap your closure so rust compiler
+/// will recognize it.
+pub fn helper_fn<F>(f: F) -> F
+where
+    F: for<'reg, 'rc> Fn(
+        &Helper<'reg>,
+        &'reg Registry<'reg>,
+        &'rc Context,
+        &mut RenderContext<'reg>,
+        &mut dyn Output,
+    ) -> HelperResult,
+{
+    f
 }
 
 mod block_util;
@@ -154,7 +172,7 @@ mod test {
 
     use crate::context::Context;
     use crate::error::RenderError;
-    use crate::helpers::HelperDef;
+    use crate::helpers::{helper_fn, HelperDef};
     use crate::json::value::JsonRender;
     use crate::output::Output;
     use crate::registry::Registry;
@@ -169,10 +187,10 @@ mod test {
             h: &Helper<'reg>,
             r: &'reg Registry<'reg>,
             ctx: &'rc Context,
-            rc: &mut RenderContext<'reg, 'rc>,
+            rc: &mut RenderContext<'reg>,
             out: &mut dyn Output,
         ) -> Result<(), RenderError> {
-            let v = h.param(0).unwrap();
+            let v = h.param(0, r, ctx, rc)?.unwrap();
 
             if !h.is_block() {
                 let output = format!("{}:{}", h.name(), v.value().render());
@@ -217,33 +235,37 @@ mod test {
 
         handlebars.register_helper(
             "helperMissing",
-            Box::new(
+            Box::new(helper_fn(
                 |h: &Helper<'_>,
-                 _: &Registry<'_>,
-                 _: &Context,
-                 _: &mut RenderContext<'_, '_>,
+                 r: &Registry<'_>,
+                 ctx: &Context,
+                 rc: &mut RenderContext<'_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
+                    let output =
+                        format!("{}{}", h.name(), h.param(0, r, ctx, rc)?.unwrap().value());
                     out.write(output.as_ref())?;
                     Ok(())
                 },
-            ),
+            )),
         );
         handlebars.register_helper(
             "foo",
-            Box::new(
+            Box::new(helper_fn(
                 |h: &Helper<'_>,
-                 _: &Registry<'_>,
-                 _: &Context,
-                 _: &mut RenderContext<'_, '_>,
+                 r: &Registry<'_>,
+                 ctx: &Context,
+                 rc: &mut RenderContext<'_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}", h.hash_get("value").unwrap().value().render());
+                    let output = format!(
+                        "{}",
+                        h.hash_get("value", r, ctx, rc)?.unwrap().value().render()
+                    );
                     out.write(output.as_ref())?;
                     Ok(())
                 },
-            ),
+            )),
         );
 
         let mut data = BTreeMap::new();
