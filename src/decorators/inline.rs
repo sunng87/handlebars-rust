@@ -7,26 +7,23 @@ use crate::render::{Decorator, RenderContext};
 #[derive(Clone, Copy)]
 pub struct InlineDecorator;
 
-fn get_name<'reg: 'rc, 'rc>(d: &Decorator<'reg, 'rc>) -> Result<String, RenderError> {
-    d.param(0)
-        .ok_or_else(|| RenderError::new("Param required for decorator \"inline\""))
-        .and_then(|v| {
-            v.value()
-                .as_str()
-                .map(|v| v.to_owned())
-                .ok_or_else(|| RenderError::new("inline name must be string"))
-        })
-}
-
 impl DecoratorDef for InlineDecorator {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        d: &Decorator<'reg, 'rc>,
-        _: &'reg Registry<'reg>,
-        _: &'rc Context,
+        d: &Decorator<'reg>,
+        r: &'reg Registry<'reg>,
+        ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
     ) -> DecoratorResult {
-        let name = get_name(d)?;
+        let name = d
+            .param(0, r, ctx, rc)?
+            .ok_or_else(|| RenderError::new("Param required for decorator \"inline\""))
+            .and_then(|v| {
+                v.value()
+                    .as_str()
+                    .map(|v| v.to_owned())
+                    .ok_or_else(|| RenderError::new("inline name must be string"))
+            })?;
 
         let template = d
             .template()

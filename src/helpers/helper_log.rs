@@ -19,14 +19,14 @@ pub struct LogHelper;
 impl HelperDef for LogHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
-        _: &'reg Registry<'reg>,
-        _: &'rc Context,
-        _: &mut RenderContext<'reg, 'rc>,
+        h: &Helper<'reg>,
+        r: &'reg Registry<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
         _: &mut dyn Output,
     ) -> HelperResult {
         let param_to_log = h
-            .params()
+            .params(r, ctx, rc)?
             .iter()
             .map(|p| {
                 if let Some(ref relative_path) = p.relative_path() {
@@ -39,11 +39,11 @@ impl HelperDef for LogHelper {
             .join(", ");
 
         let level = h
-            .hash_get("level")
-            .and_then(|v| v.value().as_str())
-            .unwrap_or("info");
+            .hash_get("level", r, ctx, rc)?
+            .and_then(|v| v.value().as_str().map(|s| s.to_owned()))
+            .unwrap_or("info".to_string());
 
-        if let Ok(log_level) = Level::from_str(level) {
+        if let Ok(log_level) = Level::from_str(&level) {
             log!(log_level, "{}", param_to_log)
         } else {
             return Err(RenderError::new(&format!(

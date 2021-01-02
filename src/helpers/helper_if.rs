@@ -14,17 +14,17 @@ pub struct IfHelper {
 impl HelperDef for IfHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let param = h
-            .param(0)
+            .param(0, r, ctx, rc)?
             .ok_or_else(|| RenderError::new("Param not found for helper \"if\""))?;
         let include_zero = h
-            .hash_get("includeZero")
+            .hash_get("includeZero", r, ctx, rc)?
             .and_then(|v| v.value().as_bool())
             .unwrap_or(false);
 

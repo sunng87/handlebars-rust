@@ -13,7 +13,7 @@ use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
-    d: &Decorator<'reg, 'rc>,
+    d: &Decorator<'reg>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
     rc: &mut RenderContext<'reg, 'rc>,
@@ -46,18 +46,21 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         }
 
         let mut block_created = false;
+        let param = d.param(0, r, ctx, &mut local_rc)?;
+        let hash = d.hash(r, ctx, &mut local_rc)?;
 
-        if let Some(ref base_path) = d.param(0).and_then(|p| p.context_path()) {
-            // path given, update base_path
-            let mut block = BlockContext::new();
-            *block.base_path_mut() = base_path.to_vec();
-            block_created = true;
-            local_rc.push_block(block);
-        } else if !d.hash().is_empty() {
+        if let Some(ref p) = param {
+            if let Some(ref base_path) = p.context_path() {
+                // path given, update base_path
+                let mut block = BlockContext::new();
+                *block.base_path_mut() = base_path.to_vec();
+                block_created = true;
+                local_rc.push_block(block);
+            }
+        } else if !hash.is_empty() {
             let mut block = BlockContext::new();
             // hash given, update base_value
-            let hash_ctx = d
-                .hash()
+            let hash_ctx = hash
                 .iter()
                 .map(|(k, v)| (*k, v.value()))
                 .collect::<HashMap<&str, &Json>>();

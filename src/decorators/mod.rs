@@ -59,7 +59,7 @@ pub type DecoratorResult = Result<(), RenderError>;
 pub trait DecoratorDef {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
-        d: &Decorator<'reg, 'rc>,
+        d: &Decorator<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -69,7 +69,7 @@ pub trait DecoratorDef {
 /// Implement DecoratorDef for bare function so we can use function as decorator
 impl<
         F: for<'reg, 'rc> Fn(
-            &Decorator<'reg, 'rc>,
+            &Decorator<'reg>,
             &'reg Registry<'reg>,
             &'rc Context,
             &mut RenderContext<'reg, 'rc>,
@@ -78,7 +78,7 @@ impl<
 {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
-        d: &Decorator<'reg, 'rc>,
+        d: &Decorator<'reg>,
         reg: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,

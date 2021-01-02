@@ -576,7 +576,7 @@ mod test {
     impl HelperDef for DummyHelper {
         fn call<'reg: 'rc, 'rc>(
             &self,
-            h: &Helper<'reg, 'rc>,
+            h: &Helper<'reg>,
             r: &'reg Registry<'reg>,
             ctx: &'rc Context,
             rc: &mut RenderContext<'reg, 'rc>,
@@ -841,7 +841,7 @@ mod test {
     impl HelperDef for GenMissingHelper {
         fn call_inner<'reg: 'rc, 'rc>(
             &self,
-            _: &Helper<'reg, 'rc>,
+            _: &Helper<'reg>,
             _: &'reg Registry<'reg>,
             _: &'rc Context,
             _: &mut RenderContext<'reg, 'rc>,

@@ -50,51 +50,54 @@ macro_rules! handlebars_helper {
             #[allow(unused_assignments)]
             fn call_inner<'reg: 'rc, 'rc>(
                 &self,
-                h: &$crate::Helper<'reg, 'rc>,
-                _: &'reg $crate::Handlebars<'reg>,
-                _: &'rc $crate::Context,
-                _: &mut $crate::RenderContext<'reg, 'rc>,
+                h: &$crate::Helper<'reg>,
+                r: &'reg $crate::Handlebars<'reg>,
+                ctx: &'rc $crate::Context,
+                rc: &mut $crate::RenderContext<'reg, 'rc>,
             ) -> Result<Option<$crate::ScopedJson<'reg, 'rc>>, $crate::RenderError> {
                 let mut param_idx = 0;
 
                 $(
-                    let $name = h.param(param_idx)
-                        .map(|x| x.value())
+                    let param = h.param(param_idx, r, ctx, rc)?
                         .ok_or_else(|| $crate::RenderError::new(&format!(
                             "`{}` helper: Couldn't read parameter {}",
                             stringify!($struct_name), stringify!($name),
-                        )))
-                        .and_then(|x|
-                                  handlebars_helper!(@as_json_value x, $tpe)
-                                  .ok_or_else(|| $crate::RenderError::new(&format!(
-                                      "`{}` helper: Couldn't convert parameter {} to type `{}`. \
-                                       It's {:?} as JSON. Got these params: {:?}",
-                                      stringify!($struct_name), stringify!($name), stringify!($tpe),
-                                      x, h.params(),
-                                  )))
-                        )?;
+                        )))?;
+                    let pv = param.value();
+                    let $name = handlebars_helper!(@as_json_value pv, $tpe)
+                        .ok_or_else(|| $crate::RenderError::new(&format!(
+                            "`{}` helper: Couldn't convert parameter {} to type `{}`. \
+                             It's {:?} as JSON. Got these params: {:?}",
+                            stringify!($struct_name), stringify!($name), stringify!($tpe),
+                            pv, h.params(r, ctx, rc),
+                        )))?;
                     param_idx += 1;
                 )*
 
                     $(
                         $(
-                            let $hash_name = h.hash_get(stringify!($hash_name))
-                                .map(|x| x.value())
-                                .map(|x|
-                                     handlebars_helper!(@as_json_value x, $hash_tpe)
-                                     .ok_or_else(|| $crate::RenderError::new(&format!(
-                                         "`{}` helper: Couldn't convert hash {} to type `{}`. \
-                                          It's {:?} as JSON. Got these hash: {:?}",
-                                         stringify!($struct_name), stringify!($hash_name), stringify!($hash_tpe),
-                                         x, h.hash(),
-                                     )))
-                                )
-                                .unwrap_or_else(|| Ok($dft_val))?;
+                            let hash = h.hash_get(stringify!($hash_name), r, ctx, rc)?;
+                            let $hash_name = hash.map(|x| {
+                                let xv = x.value();
+                                handlebars_helper!(@as_json_value xv, $hash_tpe)
+                                    .ok_or_else(|| $crate::RenderError::new(&format!(
+                                        "`{}` helper: Couldn't convert hash {} to type `{}`. \
+                                         It's {:?} as JSON. Got these hash: {:?}",
+                                        stringify!($struct_name), stringify!($hash_name), stringify!($hash_tpe),
+                                        x, h.hash(r, ctx, rc),
+                                    )))
+                            }).unwrap_or_else(|| Ok($dft_val))?;
                         )*
                     )?
 
-                    $(let $args = h.params().iter().map(|x| x.value()).collect::<Vec<&serde_json::Value>>();)?
-                    $(let $kwargs = h.hash().iter().map(|(k, v)| (k.to_owned(), v.value())).collect::<std::collections::BTreeMap<&str, &serde_json::Value>>();)?
+                    $(
+                        let params = h.params(r, ctx, rc)?;
+                        let $args = params.iter().map(|x| x.value()).collect::<Vec<&serde_json::Value>>();
+                    )?
+                    $(
+                        let hash = h.hash(r, ctx, rc)?;
+                        let $kwargs = hash.iter().map(|(k, v)| (k.to_owned(), v.value())).collect::<std::collections::BTreeMap<&str, &serde_json::Value>>();
+                    )?
 
                 let result = $body;
                 Ok(Some($crate::ScopedJson::Derived($crate::JsonValue::from(result))))

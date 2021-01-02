@@ -14,14 +14,14 @@ pub struct WithHelper;
 impl HelperDef for WithHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let param = h
-            .param(0)
+            .param(0, r, ctx, rc)?
             .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
 
         if param.value().is_truthy(false) {

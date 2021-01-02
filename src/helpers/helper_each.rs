@@ -31,7 +31,7 @@ fn update_block_context<'reg>(
 
 fn set_block_param<'reg: 'rc, 'rc>(
     block: &mut BlockContext<'reg>,
-    h: &Helper<'reg, 'rc>,
+    h: &Helper<'reg>,
     base_path: Option<&Vec<String>>,
     k: &Json,
     v: &Json,
@@ -66,14 +66,14 @@ pub struct EachHelper;
 impl HelperDef for EachHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'reg>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
         let value = h
-            .param(0)
+            .param(0, r, ctx, rc)?
             .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
 
         let template = h.template();

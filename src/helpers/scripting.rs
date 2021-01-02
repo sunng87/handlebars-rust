@@ -47,7 +47,7 @@ fn call_script_helper<'reg: 'rc, 'rc>(
 impl HelperDef for ScriptHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'reg>,
         reg: &'reg Registry<'reg>,
         _ctx: &'rc Context,
         _rc: &mut RenderContext<'reg, 'rc>,
