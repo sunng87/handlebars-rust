@@ -29,7 +29,7 @@ fn update_block_context<'reg>(
     }
 }
 
-fn set_block_param<'reg: 'rc, 'rc>(
+fn set_block_param<'reg>(
     block: &mut BlockContext<'reg>,
     h: &Helper<'reg>,
     base_path: Option<&Vec<String>>,

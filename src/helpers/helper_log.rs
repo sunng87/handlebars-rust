@@ -41,7 +41,7 @@ impl HelperDef for LogHelper {
         let level = h
             .hash_get("level", r, ctx, rc)?
             .and_then(|v| v.value().as_str().map(|s| s.to_owned()))
-            .unwrap_or("info".to_string());
+            .unwrap_or_else(|| "info".to_string());
 
         if let Ok(log_level) = Level::from_str(&level) {
             log!(log_level, "{}", param_to_log)
