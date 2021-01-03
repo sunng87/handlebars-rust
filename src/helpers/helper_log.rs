@@ -59,10 +59,10 @@ impl HelperDef for LogHelper {
 impl HelperDef for LogHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper<'reg, 'rc>,
+        _: &Helper<'reg>,
         _: &Registry<'reg>,
         _: &Context,
-        _: &mut RenderContext<'reg, 'rc>,
+        _: &mut RenderContext<'reg>,
         _: &mut dyn Output,
     ) -> HelperResult {
         Ok(())

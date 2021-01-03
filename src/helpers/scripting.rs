@@ -49,10 +49,12 @@ impl HelperDef for ScriptHelper {
         &self,
         h: &Helper<'reg>,
         reg: &'reg Registry<'reg>,
-        _ctx: &'rc Context,
-        _rc: &mut RenderContext<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg>,
     ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        call_script_helper(h.params(), h.hash(), &reg.engine, &self.script)
+        let params = h.params(reg, ctx, rc)?;
+        let hash = h.hash(reg, ctx, rc)?;
+        call_script_helper(&params, &hash, &reg.engine, &self.script)
     }
 }
 
