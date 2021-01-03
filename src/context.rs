@@ -137,14 +137,14 @@ fn get_in_block_params<'a, 'reg>(
     None
 }
 
-pub(crate) fn merge_json(base: &Json, addition: &HashMap<&&str, &Json>) -> Json {
+pub(crate) fn merge_json(base: &Json, addition: &HashMap<&str, &Json>) -> Json {
     let mut base_map = match base {
         Json::Object(ref m) => m.clone(),
         _ => Map::new(),
     };
 
     for (k, v) in addition.iter() {
-        base_map.insert((*(*k)).to_string(), (*v).clone());
+        base_map.insert(k.to_string(), (*v).clone());
     }
 
     Json::Object(base_map)
@@ -333,7 +333,7 @@ mod test {
         let s = "hello".to_owned();
         let mut hash = HashMap::new();
         let v = value::to_json("h1");
-        hash.insert(&"tag", &v);
+        hash.insert("tag", &v);
 
         let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
         assert_eq!(
