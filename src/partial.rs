@@ -251,10 +251,10 @@ mod test {
         hbs.register_helper(
             "x",
             Box::new(
-                |_: &Helper<'_, '_>,
+                |_: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
-                 _: &mut RenderContext<'_, '_>,
+                 _: &mut RenderContext<'_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     out.write("two")?;

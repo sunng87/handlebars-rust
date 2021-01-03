@@ -13,16 +13,16 @@ use handlebars::{
 };
 
 // define a custom helper
-fn format_helper(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
+fn format_helper<'reg, 'rc>(
+    h: &Helper<'reg>,
+    r: &'reg Handlebars<'reg>,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     // get parameter from helper or throw an error
     let param = h
-        .param(0)
+        .param(0, r, ctx, rc)?
         .ok_or(RenderError::new("Param 0 is required for format helper."))?;
     let rendered = format!("{} pts", param.value().render());
     out.write(rendered.as_ref())?;
@@ -30,21 +30,21 @@ fn format_helper(
 }
 
 // another custom helper
-fn rank_helper(
-    h: &Helper,
-    _: &Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
+fn rank_helper<'reg, 'rc>(
+    h: &Helper<'reg>,
+    r: &'reg Handlebars<'reg>,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     let rank = h
-        .param(0)
+        .param(0, r, ctx, rc)?
         .and_then(|v| v.value().as_u64())
         .ok_or(RenderError::new(
             "Param 0 with u64 type is required for rank helper.",
         ))? as usize;
     let total = h
-        .param(1)
+        .param(1, r, ctx, rc)?
         .as_ref()
         .and_then(|v| v.value().as_array())
         .map(|arr| arr.len())

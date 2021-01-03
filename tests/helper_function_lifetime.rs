@@ -1,14 +1,14 @@
 use handlebars::*;
 
 fn ifcond<'reg, 'rc>(
-    h: &Helper<'reg, 'rc>,
+    h: &Helper<'reg>,
     handle: &'reg Handlebars,
     ctx: &'rc Context,
-    render_ctx: &mut RenderContext<'reg, 'rc>,
+    render_ctx: &mut RenderContext<'reg>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     let cond = h
-        .param(0)
+        .param(0, handle, ctx, render_ctx)?
         .and_then(|ref v| v.value().as_bool())
         .ok_or(RenderError::new("Ifcond takes a boolean !"))? as bool;
     let temp = if cond { h.template() } else { h.inverse() };

@@ -2,16 +2,16 @@ use handlebars::*;
 use serde_json::json;
 
 fn dump<'reg, 'rc>(
-    h: &Helper<'reg, 'rc>,
-    _: &'reg Handlebars,
-    _: &Context,
-    _: &mut RenderContext,
+    h: &Helper<'reg>,
+    r: &'reg Handlebars<'reg>,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    assert_eq!(2, h.params().len());
+    assert_eq!(2, h.params(r, ctx, rc)?.len());
 
     let result = h
-        .params()
+        .params(r, ctx, rc)?
         .iter()
         .map(|p| p.value().render())
         .collect::<Vec<String>>()

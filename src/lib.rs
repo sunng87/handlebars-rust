@@ -245,15 +245,15 @@
 //! ```
 //! use std::io::Write;
 //! # use std::error::Error;
-//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult, Output, RenderError};
+//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult, Output, RenderError, helper_fn};
 //!
 //! // implement by a structure impls HelperDef
 //! #[derive(Clone, Copy)]
 //! struct SimpleHelper;
 //!
 //! impl HelperDef for SimpleHelper {
-//!   fn call<'reg: 'rc, 'rc>(&self, h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output) -> HelperResult {
-//!     let param = h.param(0).unwrap();
+//!   fn call<'reg: 'rc, 'rc>(&self, h: &Helper<'reg>, r: &'reg Handlebars<'reg>, ctx: &'rc Context, rc: &mut RenderContext<'reg>, out: &mut dyn Output) -> HelperResult {
+//!     let param = h.param(0, r, ctx, rc)?.unwrap();
 //!
 //!     out.write("1st helper: ")?;
 //!     out.write(param.value().render().as_ref())?;
@@ -262,8 +262,8 @@
 //! }
 //!
 //! // implement via bare function
-//! fn another_simple_helper (h: &Helper, _: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output) -> HelperResult {
-//!     let param = h.param(0).unwrap();
+//! fn another_simple_helper<'reg, 'rc>(h: &Helper<'reg>, r: &'reg Handlebars<'reg>, ctx: &'rc Context, rc: &mut RenderContext<'reg>, out: &mut dyn Output) -> HelperResult {
+//!     let param = h.param(0, r, ctx, rc)?.unwrap();
 //!
 //!     out.write("2nd helper: ")?;
 //!     out.write(param.value().render().as_ref())?;
@@ -277,13 +277,13 @@
 //!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
-//!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output| -> HelperResult {
-//!           let param = h.param(0).ok_or(RenderError::new("param not found"))?;
+//!       Box::new(helper_fn(|h: &Helper, r: &Handlebars, ctx: &Context, rc: &mut RenderContext, out: &mut dyn Output| -> HelperResult {
+//!           let param = h.param(0, r, ctx, rc)?.ok_or(RenderError::new("param not found"))?;
 //!
 //!           out.write("3rd helper: ")?;
 //!           out.write(param.value().render().as_ref())?;
 //!           Ok(())
-//!       }));
+//!       })));
 //!
 //!   let tpl = "{{simple-helper 1}}\n{{another-simple-helper 2}}\n{{closure-helper 3}}";
 //!   assert_eq!(handlebars.render_template(tpl, &())?,
@@ -383,7 +383,7 @@ extern crate serde_json;
 pub use self::block::{BlockContext, BlockParams};
 pub use self::context::Context;
 pub use self::error::{RenderError, TemplateError};
-pub use self::helpers::{HelperDef, HelperResult};
+pub use self::helpers::{helper_fn, HelperDef, HelperResult};
 pub use self::json::path::Path;
 pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 pub use self::output::Output;

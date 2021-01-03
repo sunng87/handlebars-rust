@@ -560,7 +560,7 @@ impl<'reg> Registry<'reg> {
 mod test {
     use crate::context::Context;
     use crate::error::RenderError;
-    use crate::helpers::HelperDef;
+    use crate::helpers::{helper_fn, HelperDef};
     use crate::output::Output;
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext, Renderable};
@@ -579,7 +579,7 @@ mod test {
             h: &Helper<'reg>,
             r: &'reg Registry<'reg>,
             ctx: &'rc Context,
-            rc: &mut RenderContext<'reg, 'rc>,
+            rc: &mut RenderContext<'reg>,
             out: &mut dyn Output,
         ) -> Result<(), RenderError> {
             h.template().unwrap().render(r, ctx, rc, out)
@@ -844,7 +844,7 @@ mod test {
             _: &Helper<'reg>,
             _: &'reg Registry<'reg>,
             _: &'rc Context,
-            _: &mut RenderContext<'reg, 'rc>,
+            _: &mut RenderContext<'reg>,
         ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
             Ok(Some(ScopedJson::Missing))
         }
@@ -857,18 +857,18 @@ mod test {
 
         r.register_helper(
             "check_missing",
-            Box::new(
-                |h: &Helper<'_, '_>,
-                 _: &Registry<'_>,
-                 _: &Context,
-                 _: &mut RenderContext<'_, '_>,
+            Box::new(helper_fn(
+                |h: &Helper<'_>,
+                 r: &Registry<'_>,
+                 ctx: &Context,
+                 rc: &mut RenderContext<'_>,
                  _: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    let value = h.param(0).unwrap();
+                    let value = h.param(0, r, ctx, rc)?.unwrap();
                     assert!(value.is_value_missing());
                     Ok(())
                 },
-            ),
+            )),
         );
 
         r.register_helper("generate_missing_value", Box::new(GenMissingHelper));

@@ -32,11 +32,13 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper<'_, '_>, _: &Handlebars<'_>, _: &Context, rc: &mut RenderContext<'_, '_>, out: &mut Output)
+/// fn upper<'reg, 'rc>(h: &Helper<'reg>, r: &'reg Handlebars<'reg>, ctx: &'rc Context, rc: &mut RenderContext<'reg>, out: &mut dyn Output)
 ///     -> HelperResult {
-///    // get parameter from helper or throw an error
-///    let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
-///    out.write(param.to_uppercase().as_ref())?;
+///    let param = h.param(0, r, ctx, rc)?;
+///    if let Some(p) = param {
+///        let v = p.value().as_str().unwrap();
+///        out.write(v.to_uppercase().as_ref())?;
+///    }
 ///    Ok(())
 /// }
 /// ```
@@ -49,7 +51,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// use handlebars::*;
 ///
 /// fn dummy_block<'reg, 'rc>(
-///     h: &Helper<'reg, 'rc>,
+///     h: &Helper<'reg>,
 ///     r: &'reg Handlebars<'reg>,
 ///     ctx: &'rc Context,
 ///     rc: &mut RenderContext<'reg>,

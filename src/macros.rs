@@ -77,16 +77,15 @@ macro_rules! handlebars_helper {
                     $(
                         $(
                             let hash = h.hash_get(stringify!($hash_name), r, ctx, rc)?;
-                            let $hash_name = hash.map(|x| {
-                                let xv = x.value();
+                            let xv = hash.map(|x| x.value().to_owned()).unwrap_or_else(|| json!($dft_val));
+                            let $hash_name =
                                 handlebars_helper!(@as_json_value xv, $hash_tpe)
                                     .ok_or_else(|| $crate::RenderError::new(&format!(
                                         "`{}` helper: Couldn't convert hash {} to type `{}`. \
                                          It's {:?} as JSON. Got these hash: {:?}",
                                         stringify!($struct_name), stringify!($hash_name), stringify!($hash_tpe),
-                                        x, h.hash(r, ctx, rc),
-                                    )))
-                            }).unwrap_or_else(|| Ok($dft_val))?;
+                                        xv, h.hash(r, ctx, rc),
+                                    )))?;
                         )*
                     )?
 

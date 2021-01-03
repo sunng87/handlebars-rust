@@ -298,19 +298,9 @@ impl<'reg: 'rc, 'rc> Helper<'reg> {
     /// ## Example
     ///
     /// To get the first param in `{{my_helper abc}}` or `{{my_helper 2}}`,
-    /// use `h.param(0)` in helper definition.
-    /// Variable `abc` is auto resolved in current context.
-    ///
-    /// ```
-    /// use handlebars::*;
-    ///
-    /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
-    ///     let v = h.param(0).map(|v| v.value())
-    ///         .ok_or(RenderError::new("param not found"));
-    ///     // ..
-    ///     Ok(())
-    /// }
-    /// ```
+    /// use `h.param(0, registry, context, render_context)` in helper definition.
+    /// Variable `abc` is resolved in current context and returns `RenderError` if
+    /// error occured.
     pub fn param(
         &self,
         idx: usize,
@@ -346,19 +336,10 @@ impl<'reg: 'rc, 'rc> Helper<'reg> {
     /// ## Example
     ///
     /// To get the first param in `{{my_helper v=abc}}` or `{{my_helper v=2}}`,
-    /// use `h.hash_get("v")` in helper definition.
-    /// Variable `abc` is auto resolved in current context.
+    /// use `h.hash_get("v", registry, context, render_context)` in helper definition.
+    /// Variable `abc` is auto resolved in current context and returns `RenderError`
+    /// if error occured.
     ///
-    /// ```
-    /// use handlebars::*;
-    ///
-    /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
-    ///     let v = h.hash_get("v").map(|v| v.value())
-    ///         .ok_or(RenderError::new("param not found"));
-    ///     // ..
-    ///     Ok(())
-    /// }
-    /// ```
     pub fn hash_get(
         &self,
         key: &str,
@@ -978,23 +959,24 @@ fn test_render_subexpression() {
 
 #[test]
 fn test_render_subexpression_issue_115() {
+    use crate::helpers::helper_fn;
     use crate::support::str::StringWriter;
 
     let mut r = Registry::new();
     r.register_helper(
         "format",
-        Box::new(
-            |h: &Helper<'_, '_>,
-             _: &Registry<'_>,
-             _: &Context,
-             _: &mut RenderContext<'_, '_>,
+        Box::new(helper_fn(
+            |h: &Helper<'_>,
+             r: &Registry<'_>,
+             ctx: &Context,
+             rc: &mut RenderContext<'_>,
              out: &mut dyn Output|
              -> Result<(), RenderError> {
-                out.write(format!("{}", h.param(0).unwrap().value().render()).as_ref())
+                out.write(format!("{}", h.param(0, r, ctx, rc)?.unwrap().value().render()).as_ref())
                     .map(|_| ())
                     .map_err(RenderError::from)
             },
-        ),
+        )),
     );
 
     let mut sw = StringWriter::new();
@@ -1079,10 +1061,10 @@ fn test_zero_args_heler() {
     r.register_helper(
         "name",
         Box::new(
-            |_: &Helper<'_, '_>,
+            |_: &Helper<'_>,
              _: &Registry<'_>,
              _: &Context,
-             _: &mut RenderContext<'_, '_>,
+             _: &mut RenderContext<'_>,
              out: &mut dyn Output|
              -> Result<(), RenderError> { out.write("N/A").map_err(Into::into) },
         ),
@@ -1122,10 +1104,10 @@ fn test_zero_args_heler() {
     r.register_helper(
         "helperMissing",
         Box::new(
-            |h: &Helper<'_, '_>,
+            |h: &Helper<'_>,
              _: &Registry<'_>,
              _: &Context,
-             _: &mut RenderContext<'_, '_>,
+             _: &mut RenderContext<'_>,
              out: &mut dyn Output|
              -> Result<(), RenderError> {
                 let name = h.name();
