@@ -5,13 +5,13 @@
   <body>
     <h1>CSL {{year}}</h1>
     <ul>
-      {{#each teams as |t| ~}}
+      {{#each teams as |t|}}
       {{! ranking_label will produce a render error when first parameter is not a number }}
       <li class="{{ranking_label true ../teams}}">
       {{~log @index~}}
       <b>{{t.name}}</b>: {{format t.pts ~}}
       </li>
-    {{/each~}}
+    {{/each}}
     </ul>
 
     <p>Rendered by Handlebars from {{engine}} data.</p>
