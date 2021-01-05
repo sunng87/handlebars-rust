@@ -262,6 +262,7 @@ impl<'reg> Registry<'reg> {
     /// This method is not available by default.
     /// You will need to enable the `dir_source` feature to use it.
     #[cfg(feature = "dir_source")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "dir_source")))]
     pub fn register_templates_directory<P>(
         &mut self,
         tpl_extension: &'static str,
@@ -335,6 +336,7 @@ impl<'reg> Registry<'reg> {
     ///
     ///
     #[cfg(feature = "script_helper")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "script_helper")))]
     pub fn register_script_helper(&mut self, name: &str, script: &str) -> Result<(), ScriptError> {
         let compiled = self.engine.compile(script)?;
         let script_helper = ScriptHelper { script: compiled };
@@ -345,6 +347,7 @@ impl<'reg> Registry<'reg> {
 
     /// Register a [rhai](https://docs.rs/rhai/) script from file
     #[cfg(feature = "script_helper")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "script_helper")))]
     pub fn register_script_helper_file<P>(
         &mut self,
         name: &str,

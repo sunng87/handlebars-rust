@@ -56,4 +56,5 @@ name = "bench"
 harness = false
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["dir_source", "script_helper"]
+rustdoc-args = ["--cfg", "docsrs"]

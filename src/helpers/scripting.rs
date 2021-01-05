@@ -12,7 +12,7 @@ use rhai::{Dynamic, Engine, Scope, AST};
 
 use serde_json::value::Value as Json;
 
-pub struct ScriptHelper {
+pub(crate) struct ScriptHelper {
     pub(crate) script: AST,
 }
 
