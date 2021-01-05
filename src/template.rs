@@ -420,8 +420,7 @@ impl Template {
         }
     }
 
-    pub fn compile<'a, S: AsRef<str> + 'a>(source: S) -> Result<Template, TemplateError> {
-        let source = source.as_ref();
+    pub fn compile<'a>(source: &'a str) -> Result<Template, TemplateError> {
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut decorator_stack: VecDeque<DecoratorTemplate> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
@@ -710,7 +709,7 @@ impl Template {
         source: S,
         name: String,
     ) -> Result<Template, TemplateError> {
-        match Template::compile(source) {
+        match Template::compile(source.as_ref()) {
             Ok(mut t) => {
                 t.name = Some(name);
                 Ok(t)
