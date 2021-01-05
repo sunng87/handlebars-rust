@@ -735,7 +735,7 @@ pub enum TemplateElement {
 #[test]
 fn test_parse_escaped_tag_raw_string() {
     let source = r"foo \{{bar}}";
-    let t = Template::compile(source.to_string()).ok().unwrap();
+    let t = Template::compile(source).ok().unwrap();
     assert_eq!(t.elements.len(), 1);
     assert_eq!(
         *t.elements.get(0).unwrap(),
@@ -754,7 +754,7 @@ fn test_pure_backslash_raw_string() {
 #[test]
 fn test_parse_escaped_block_raw_string() {
     let source = r"\{{{{foo}}}} bar";
-    let t = Template::compile(source.to_string()).ok().unwrap();
+    let t = Template::compile(source).ok().unwrap();
     assert_eq!(t.elements.len(), 1);
     assert_eq!(
         *t.elements.get(0).unwrap(),
@@ -767,7 +767,7 @@ fn test_parse_template() {
     let source = "<h1>{{title}} 你好</h1> {{{content}}}
 {{#if date}}<p>good</p>{{else}}<p>bad</p>{{/if}}<img>{{foo bar}}中文你好
 {{#unless true}}kitkat{{^}}lollipop{{/unless}}";
-    let t = Template::compile(source.to_string()).ok().unwrap();
+    let t = Template::compile(source).ok().unwrap();
 
     assert_eq!(t.elements.len(), 10);
 
@@ -826,14 +826,14 @@ fn test_parse_template() {
 #[test]
 fn test_parse_block_partial_path_identifier() {
     let source = "{{#> foo/bar}}{{/foo/bar}}";
-    assert!(Template::compile(source.to_string()).is_ok());
+    assert!(Template::compile(source).is_ok());
 }
 
 #[test]
 fn test_parse_error() {
     let source = "{{#ifequals name compare=\"hello\"}}\nhello\n\t{{else}}\ngood";
 
-    let terr = Template::compile(source.to_string()).unwrap_err();
+    let terr = Template::compile(source).unwrap_err();
 
     assert!(matches!(terr.reason, TemplateErrorReason::InvalidSyntax));
     assert_eq!(terr.line_no.unwrap(), 4);
@@ -843,7 +843,7 @@ fn test_parse_error() {
 #[test]
 fn test_subexpression() {
     let source = "{{foo (bar)}}{{foo (bar baz)}} hello {{#if (baz bar) then=(bar)}}world{{/if}}";
-    let t = Template::compile(source.to_string()).ok().unwrap();
+    let t = Template::compile(source).ok().unwrap();
 
     assert_eq!(t.elements.len(), 4);
     match *t.elements.get(0).unwrap() {
@@ -912,7 +912,7 @@ fn test_subexpression() {
 
 #[test]
 fn test_white_space_omitter() {
-    let source = "hello~     {{~world~}} \n  !{{~#if true}}else{{/if~}}".to_string();
+    let source = "hello~     {{~world~}} \n  !{{~#if true}}else{{/if~}}";
     let t = Template::compile(source).ok().unwrap();
 
     assert_eq!(t.elements.len(), 4);
@@ -926,7 +926,7 @@ fn test_white_space_omitter() {
     );
     assert_eq!(t.elements[2], RawString("!".to_string()));
 
-    let t2 = Template::compile("{{#if true}}1  {{~ else ~}} 2 {{~/if}}".to_string())
+    let t2 = Template::compile("{{#if true}}1  {{~ else ~}} 2 {{~/if}}")
         .ok()
         .unwrap();
     assert_eq!(t2.elements.len(), 1);
@@ -966,7 +966,7 @@ fn test_unclosed_expression() {
 #[test]
 fn test_raw_helper() {
     let source = "hello{{{{raw}}}}good{{night}}{{{{/raw}}}}world";
-    match Template::compile(source.to_owned()) {
+    match Template::compile(source) {
         Ok(t) => {
             assert_eq!(t.elements.len(), 3);
             assert_eq!(t.elements[0], RawString("hello".to_owned()));

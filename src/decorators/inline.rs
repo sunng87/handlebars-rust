@@ -48,11 +48,10 @@ mod test {
 
     #[test]
     fn test_inline() {
-        let t0 = Template::compile(
-            "{{#*inline \"hello\"}}the hello world inline partial.{{/inline}}".to_string(),
-        )
-        .ok()
-        .unwrap();
+        let t0 =
+            Template::compile("{{#*inline \"hello\"}}the hello world inline partial.{{/inline}}")
+                .ok()
+                .unwrap();
 
         let hbs = Registry::new();
 
