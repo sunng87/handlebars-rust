@@ -54,7 +54,7 @@ pub fn no_escape(data: &str) -> String {
 /// It maintains compiled templates and registered helpers.
 #[derive(Clone)]
 pub struct Registry<'reg> {
-    templates: HashMap<String, Template>,
+    templates: HashMap<String, Arc<Template>>,
 
     helpers: HashMap<String, Arc<dyn HelperDef + Send + Sync + 'reg>>,
     decorators: HashMap<String, Arc<dyn DecoratorDef + Send + Sync + 'reg>>,
@@ -196,7 +196,7 @@ impl<'reg> Registry<'reg> {
     /// insert cannot fail. If there is an existing template with this name it
     /// will be overwritten.
     pub fn register_template(&mut self, name: &str, tpl: Template) {
-        self.templates.insert(name.to_string(), tpl);
+        self.templates.insert(name.to_string(), Arc::new(tpl));
     }
 
     /// Register a template string
@@ -398,7 +398,7 @@ impl<'reg> Registry<'reg> {
 
     /// Return a registered template,
     pub fn get_template(&self, name: &str) -> Option<&Template> {
-        self.templates.get(name)
+        self.templates.get(name).map(|x| &**x)
     }
 
     #[inline]
@@ -413,6 +413,7 @@ impl<'reg> Registry<'reg> {
         } else {
             self.templates
                 .get(name)
+                .map(|x| &**x)
                 .map(Cow::Borrowed)
                 .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
         }
@@ -454,7 +455,7 @@ impl<'reg> Registry<'reg> {
     }
 
     /// Return all templates registered
-    pub fn get_templates(&self) -> &HashMap<String, Template> {
+    pub fn get_templates(&self) -> &HashMap<String, Arc<Template>> {
         &self.templates
     }
 
