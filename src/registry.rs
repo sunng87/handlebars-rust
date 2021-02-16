@@ -215,6 +215,15 @@ impl<'reg> Registry<'reg> {
         Ok(())
     }
 
+    /// Register a template source
+    pub fn register_template_source<S>(&mut self, name: &str, tpl_src: S)
+    where
+        S: Source<Item = String, Error = IoError> + Send + Sync + 'reg,
+    {
+        self.template_sources
+            .insert(name.to_owned(), Arc::new(tpl_src));
+    }
+
     /// Register a partial string
     ///
     /// A named partial will be added to the registry. It will overwrite template with
