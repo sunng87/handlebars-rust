@@ -241,6 +241,8 @@ impl<'reg> Registry<'reg> {
             .map_err(|err| TemplateError::from((err, name.to_owned())))?;
 
         self.register_template_string(name, template_string)?;
+        // Register as template source only with dev_mode.
+        // The default FileSource has no cache so it doesn't perform well
         if self.dev_mode {
             self.template_sources
                 .insert(name.to_owned(), Arc::new(source));
@@ -307,6 +309,7 @@ impl<'reg> Registry<'reg> {
     /// Remove a template from the registry
     pub fn unregister_template(&mut self, name: &str) {
         self.templates.remove(name);
+        self.template_sources.remove(name);
     }
 
     /// Register a helper
@@ -393,17 +396,30 @@ impl<'reg> Registry<'reg> {
 
     /// Return `true` if a template is registered for the given name
     pub fn has_template(&self, name: &str) -> bool {
-        self.get_template(name).is_some()
+        self.templates.contains_key(name) || self.template_sources.contains_key(name)
     }
 
     /// Return a registered template,
-    pub fn get_template(&self, name: &str) -> Option<&Template> {
-        self.templates.get(name)
+    pub fn get_template(
+        &'reg self,
+        name: &str,
+    ) -> Option<Result<Cow<'reg, Template>, TemplateError>> {
+        self.templates
+            .get(name)
+            .map(|t| Ok(Cow::Borrowed(t)))
+            .or_else(|| {
+                self.template_sources.get(name).map(|src| {
+                    src.load()
+                        .map_err(|e| TemplateError::from((e, name.to_owned())))
+                        .and_then(|tpl_str| Template::compile_with_name(tpl_str, name.to_owned()))
+                        .map(Cow::Owned)
+                })
+            })
     }
 
     #[inline]
     fn get_or_load_template(&'reg self, name: &str) -> Result<Cow<'reg, Template>, RenderError> {
-        if let (true, Some(source)) = (self.dev_mode, self.template_sources.get(name)) {
+        if let Some(source) = self.template_sources.get(name) {
             source
                 .load()
                 .map_err(|e| TemplateError::from((e, name.to_owned())))
@@ -424,7 +440,7 @@ impl<'reg> Registry<'reg> {
         name: &str,
     ) -> Result<Option<Arc<dyn HelperDef + Send + Sync + 'reg>>, RenderError> {
         #[cfg(feature = "script_helper")]
-        if let (true, Some(source)) = (self.dev_mode, self.script_sources.get(name)) {
+        if let Some(source) = self.script_sources.get(name) {
             return source
                 .load()
                 .map_err(ScriptError::from)
@@ -453,14 +469,19 @@ impl<'reg> Registry<'reg> {
         self.decorators.get(name).map(|v| v.as_ref())
     }
 
-    /// Return all templates registered
-    pub fn get_templates(&self) -> &HashMap<String, Template> {
-        &self.templates
+    /// Return all  registered template names
+    pub fn get_template_names(&self) -> Vec<String> {
+        self.templates
+            .keys()
+            .chain(self.template_sources.keys())
+            .cloned()
+            .collect::<Vec<String>>()
     }
 
     /// Unregister all templates
     pub fn clear_templates(&mut self) {
         self.templates.clear();
+        self.template_sources.clear();
     }
 
     #[inline]

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use serde_json::value::Value as Json;
@@ -9,8 +10,34 @@ use crate::json::path::Path;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
+use crate::template::Template;
 
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
+
+#[inline]
+fn resolve_partial<'reg: 'rc, 'rc: 'p, 'p>(
+    tname: &str,
+    d: &Decorator<'reg, 'rc>,
+    r: &'reg Registry<'reg>,
+    rc: &'p RenderContext<'reg, 'rc>,
+) -> Result<Option<Cow<'p, Template>>, RenderError> {
+    let mut partial = rc.get_partial(tname).map(Cow::Borrowed);
+
+    // try fetch from registry with the same name
+    if partial.is_none() {
+        if let Some(tpl) = r.get_template(tname) {
+            let tpl = tpl.map_err(RenderError::from)?;
+            partial = Some(tpl);
+        }
+    }
+
+    // fallback to decorator's content
+    if partial.is_none() {
+        partial = d.template().map(Cow::Borrowed);
+    }
+
+    Ok(partial)
+}
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Decorator<'reg, 'rc>,
@@ -29,11 +56,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         return Err(RenderError::new("Cannot include self in >"));
     }
 
-    // if tname == PARTIAL_BLOCK
-    let partial = rc
-        .get_partial(tname)
-        .or_else(|| r.get_template(tname))
-        .or_else(|| d.template());
+    let partial = resolve_partial(tname, d, r, rc)?;
 
     if let Some(t) = partial {
         // clone to avoid lifetime issue
