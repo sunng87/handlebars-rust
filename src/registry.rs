@@ -486,7 +486,7 @@ impl<'reg> Registry<'reg> {
             .chain(self.template_sources.keys())
             .cloned()
             .collect::<Vec<String>>();
-        name.sort();
+        names.sort();
         names.dedup();
         names
     }
