@@ -480,11 +480,14 @@ impl<'reg> Registry<'reg> {
 
     /// Return all  registered template names
     pub fn get_template_names(&self) -> Vec<String> {
-        self.templates
+        let mut names = self
+            .templates
             .keys()
             .chain(self.template_sources.keys())
             .cloned()
-            .collect::<Vec<String>>()
+            .collect::<Vec<String>>();
+        names.dedup();
+        names
     }
 
     /// Unregister all templates
