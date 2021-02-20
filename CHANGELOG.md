@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.5.2...Unreleased) - ReleaseDate
+
+* [Fixed] value access issue when upper block has a base value [#419]
+
 ## [3.5.2](https://github.com/sunng87/handlebars-rust/compare/3.5.1...3.5.2) - 2020-12-29
 
 * [Fixed] allow `/` as trailing separator on Windows, backported from master [#405]
