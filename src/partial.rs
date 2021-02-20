@@ -293,4 +293,21 @@ mod test {
         let page = handlebars.render_template(&template3, &json!({})).unwrap();
         assert_eq!("<outer><inner>Hello</inner></outer>", page);
     }
+
+    #[test]
+    fn test_up_to_partial_level() {
+        let outer = r#"{{>inner name="fruit:" vegetables=fruits}}"#;
+        let inner = "{{#each vegetables}}{{../name}} {{this}},{{/each}}";
+
+        let data = json!({ "fruits": ["carrot", "tomato"] });
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template_string("outer", outer).unwrap();
+        handlebars.register_template_string("inner", inner).unwrap();
+
+        assert_eq!(
+            handlebars.render("outer", &data).unwrap(),
+            "fruit: carrot,fruit: tomato,"
+        );
+    }
 }
