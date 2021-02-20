@@ -264,4 +264,21 @@ mod test {
         let r0 = handlebars.render("t", &data);
         assert_eq!(r0.ok().unwrap(), "2 true2 false");
     }
+
+    #[test]
+    fn test_up_to_partial_level() {
+        let outer = r#"{{>inner name="fruit:" vegetables=fruits}}"#;
+        let inner = "{{#each vegetables}}{{../name}} {{this}},{{/each}}";
+
+        let data = json!({ "fruits": ["carrot", "tomato"] });
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template_string("outer", outer).unwrap();
+        handlebars.register_template_string("inner", inner).unwrap();
+
+        assert_eq!(
+            handlebars.render("outer", &data).unwrap(),
+            "fruit: carrot,fruit: tomato,"
+        );
+    }
 }

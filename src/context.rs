@@ -78,19 +78,20 @@ fn parse_json_visitor<'a, 'reg>(
         }
         None => {
             if path_context_depth > 0 {
-                if let Some(ref context_base_path) = block_contexts
+                let blk = block_contexts
                     .get(path_context_depth as usize)
-                    .map(|blk| blk.base_path())
-                {
-                    extend(&mut path_stack, context_base_path);
+                    .or_else(|| block_contexts.front());
+
+                if let Some(base_value) = blk.and_then(|blk| blk.base_value()) {
+                    merge_json_path(&mut path_stack, relative_path);
+                    Ok(ResolvedPath::LocalValue(path_stack, base_value))
                 } else {
-                    // TODO: is this correct behaviour?
-                    if let Some(ref base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                    if let Some(base_path) = blk.map(|blk| blk.base_path()) {
                         extend(&mut path_stack, base_path);
                     }
+                    merge_json_path(&mut path_stack, relative_path);
+                    Ok(ResolvedPath::AbsolutePath(path_stack))
                 }
-                merge_json_path(&mut path_stack, relative_path);
-                Ok(ResolvedPath::AbsolutePath(path_stack))
             } else if from_root {
                 merge_json_path(&mut path_stack, relative_path);
                 Ok(ResolvedPath::AbsolutePath(path_stack))
