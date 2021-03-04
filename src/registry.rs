@@ -147,6 +147,7 @@ impl<'reg> Registry<'reg> {
         self.register_helper("and", Box::new(helpers::helper_extras::and));
         self.register_helper("or", Box::new(helpers::helper_extras::or));
         self.register_helper("not", Box::new(helpers::helper_extras::not));
+        self.register_helper("len", Box::new(helpers::helper_extras::len));
 
         self.register_decorator("inline", Box::new(decorators::INLINE_DECORATOR));
         self

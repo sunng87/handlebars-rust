@@ -1,4 +1,5 @@
 //! Helpers for boolean operations
+use serde_json::Value as Json;
 
 use crate::json::value::JsonTruthy;
 
@@ -11,6 +12,13 @@ handlebars_helper!(lte: |x: i64, y: i64| x <= y);
 handlebars_helper!(and: |x: Json, y: Json| x.is_truthy(false) && y.is_truthy(false));
 handlebars_helper!(or: |x: Json, y: Json| x.is_truthy(false) || y.is_truthy(false));
 handlebars_helper!(not: |x: Json| !x.is_truthy(false));
+handlebars_helper!(len: |x: Json| {
+    match x {
+        Json::Array(a) => a.len(),
+        Json::Object(m) => m.len(),
+        _ => 0
+    }
+});
 
 #[cfg(test)]
 mod test_conditions {
