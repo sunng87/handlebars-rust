@@ -132,8 +132,8 @@ impl<
 }
 
 mod block_util;
-pub(crate) mod helper_boolean;
 mod helper_each;
+pub(crate) mod helper_extras;
 mod helper_if;
 mod helper_log;
 mod helper_lookup;
