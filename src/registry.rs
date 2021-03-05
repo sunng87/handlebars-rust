@@ -613,7 +613,7 @@ mod test {
 
         // built-in helpers plus 1
         let num_helpers = 7;
-        let num_boolean_helpers = 9; // stuff like gt and lte
+        let num_boolean_helpers = 10; // stuff like gt and lte
         let num_custom_helpers = 1; // dummy from above
         assert_eq!(
             r.helpers.len(),

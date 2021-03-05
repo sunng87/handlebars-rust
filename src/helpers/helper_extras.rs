@@ -16,6 +16,7 @@ handlebars_helper!(len: |x: Json| {
     match x {
         Json::Array(a) => a.len(),
         Json::Object(m) => m.len(),
+        Json::String(s) => s.len(),
         _ => 0
     }
 });
@@ -82,5 +83,30 @@ mod test_conditions {
             )
             .unwrap();
         assert_eq!(&result, "ipsum");
+    }
+
+    #[test]
+    fn test_len() {
+        let handlebars = crate::Handlebars::new();
+
+        let result = handlebars
+            .render_template("{{len value}}", &json!({"value": [1,2,3]}))
+            .unwrap();
+        assert_eq!(&result, "3");
+
+        let result = handlebars
+            .render_template("{{len value}}", &json!({"value": {"a" :1, "b": 2}}))
+            .unwrap();
+        assert_eq!(&result, "2");
+
+        let result = handlebars
+            .render_template("{{len value}}", &json!({"value": "tomcat"}))
+            .unwrap();
+        assert_eq!(&result, "6");
+
+        let result = handlebars
+            .render_template("{{len value}}", &json!({"value": 3}))
+            .unwrap();
+        assert_eq!(&result, "0");
     }
 }
