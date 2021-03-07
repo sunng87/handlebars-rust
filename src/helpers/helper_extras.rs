@@ -1,4 +1,5 @@
 //! Helpers for boolean operations
+use serde_json::Value as Json;
 
 use crate::json::value::JsonTruthy;
 
@@ -11,6 +12,14 @@ handlebars_helper!(lte: |x: i64, y: i64| x <= y);
 handlebars_helper!(and: |x: Json, y: Json| x.is_truthy(false) && y.is_truthy(false));
 handlebars_helper!(or: |x: Json, y: Json| x.is_truthy(false) || y.is_truthy(false));
 handlebars_helper!(not: |x: Json| !x.is_truthy(false));
+handlebars_helper!(len: |x: Json| {
+    match x {
+        Json::Array(a) => a.len(),
+        Json::Object(m) => m.len(),
+        Json::String(s) => s.len(),
+        _ => 0
+    }
+});
 
 #[cfg(test)]
 mod test_conditions {
@@ -74,5 +83,30 @@ mod test_conditions {
             )
             .unwrap();
         assert_eq!(&result, "ipsum");
+    }
+
+    #[test]
+    fn test_len() {
+        let handlebars = crate::Handlebars::new();
+
+        let result = handlebars
+            .render_template("{{len value}}", &json!({"value": [1,2,3]}))
+            .unwrap();
+        assert_eq!(&result, "3");
+
+        let result = handlebars
+            .render_template("{{len value}}", &json!({"value": {"a" :1, "b": 2}}))
+            .unwrap();
+        assert_eq!(&result, "2");
+
+        let result = handlebars
+            .render_template("{{len value}}", &json!({"value": "tomcat"}))
+            .unwrap();
+        assert_eq!(&result, "6");
+
+        let result = handlebars
+            .render_template("{{len value}}", &json!({"value": 3}))
+            .unwrap();
+        assert_eq!(&result, "0");
     }
 }
