@@ -761,8 +761,8 @@ impl Renderable for TemplateElement {
                 out.write(v.as_ref())?;
                 Ok(())
             }
-            Expression(ref ht) | HTMLExpression(ref ht) => {
-                let is_html_expression = matches!(self, HTMLExpression(_));
+            Expression(ref ht) | HtmlExpression(ref ht) => {
+                let is_html_expression = matches!(self, HtmlExpression(_));
                 if is_html_expression {
                     rc.set_disable_escape(true);
                 }
@@ -883,7 +883,7 @@ fn test_expression() {
 #[test]
 fn test_html_expression() {
     let r = Registry::new();
-    let element = HTMLExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+    let element = HtmlExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
         &["hello"],
     ))));
 
