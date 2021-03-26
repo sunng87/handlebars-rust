@@ -358,7 +358,7 @@
 //!
 //!
 
-#![allow(dead_code)]
+#![allow(dead_code, clippy::upper_case_acronyms)]
 #![warn(rust_2018_idioms)]
 #![recursion_limit = "200"]
 
