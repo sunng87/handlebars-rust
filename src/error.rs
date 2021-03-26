@@ -250,7 +250,7 @@ impl fmt::Display for TemplateError {
 quick_error! {
     #[derive(Debug)]
     pub enum ScriptError {
-        IOError(err: IOError) {
+        IoError(err: IOError) {
             from()
             source(err)
         }

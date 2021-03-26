@@ -602,7 +602,7 @@ impl Template {
                                 let el = if rule == Rule::expression {
                                     Expression(Box::new(helper_template))
                                 } else {
-                                    HTMLExpression(Box::new(helper_template))
+                                    HtmlExpression(Box::new(helper_template))
                                 };
                                 let t = template_stack.front_mut().unwrap();
                                 t.push_element(el, line_no, col_no);
@@ -722,7 +722,7 @@ impl Template {
 #[derive(PartialEq, Clone, Debug)]
 pub enum TemplateElement {
     RawString(String),
-    HTMLExpression(Box<HelperTemplate>),
+    HtmlExpression(Box<HelperTemplate>),
     Expression(Box<HelperTemplate>),
     HelperBlock(Box<HelperTemplate>),
     DecoratorExpression(Box<DecoratorTemplate>),
@@ -781,7 +781,7 @@ fn test_parse_template() {
 
     assert_eq!(
         *t.elements.get(3).unwrap(),
-        HTMLExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+        HtmlExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
             &["content"],
         ))))
     );
