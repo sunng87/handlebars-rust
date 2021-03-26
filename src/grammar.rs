@@ -125,8 +125,6 @@ mod test {
         let s = vec![
             "\"json string\"",
             "\"quot: \\\"\"",
-            "'json string'",
-            "'quot: \\''",
             "[]",
             "[\"hello\"]",
             "[1,2,3,4,true]",
@@ -174,6 +172,7 @@ mod test {
             "{{exp 1}}",
             "{{exp \"literal\"}}",
             "{{exp \"literal with space\"}}",
+            r#"{{exp "literal with escape \\\\"}}"#,
             "{{exp ref}}",
             "{{exp (sub)}}",
             "{{exp (sub 123)}}",
