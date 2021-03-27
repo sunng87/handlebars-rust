@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.5.3...Unreleased) - ReleaseDate
+## [3.5.4](https://github.com/sunng87/handlebars-rust/compare/3.5.3...3.5.4) - 2021-03-27
 
 * [Fixed] Json string literal with escape char [#422]
 
