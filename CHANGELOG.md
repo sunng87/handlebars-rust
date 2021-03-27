@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.5.3...Unreleased) - ReleaseDate
+
+* [Fixed] Json string literal with escape char [#422]
+
 ## [3.5.3](https://github.com/sunng87/handlebars-rust/compare/3.5.2...3.5.3) - 2021-02-20
 
 * [Fixed] value access issue when upper block has a base value [#419]
