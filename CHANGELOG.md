@@ -10,10 +10,12 @@
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
 * [Changed] `TemplateError` and `ScriptError` is now a cause of `RenderError` [#395]
 * [Changed] `RenderContext::get_partial` now returns `Option<&Template>`
+* [Changed] Capitalize names like `HtmlExpression` and `IoError` based on clippy recommendations [#424]
 * [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
 * [Fixed] dir source path separator bug on windows [#389] [#405]
 * [Fixed] stack overflow with nested `@partial-block` [#401]
 * [Fixed] value access issue when upper block has a base value [#419]
+* [Fixed] escape rules for Json string literal [#423]
 * [Removed] option to disable source map is removed [#395]
 * [Removed] `TemplateFileError` and `TemplateRenderError` are removed and merged into
   `TemplateError` and `RenderError` [#395]
