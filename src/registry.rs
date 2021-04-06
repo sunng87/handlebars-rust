@@ -1035,7 +1035,7 @@ mod test {
     fn test_script_helper() {
         let mut reg = Registry::new();
 
-        reg.register_script_helper("acc", "params.reduce(|sum, x| x + sum, || 0 )")
+        reg.register_script_helper("acc", "params.reduce(|sum, x| x + sum, 0)")
             .unwrap();
 
         assert_eq!(
@@ -1054,7 +1054,7 @@ mod test {
         let file1_path = dir.path().join("acc.rhai");
         {
             let mut file1: File = File::create(&file1_path).unwrap();
-            write!(file1, "params.reduce(|sum, x| x + sum, || 0 )").unwrap();
+            write!(file1, "params.reduce(|sum, x| x + sum, 0)").unwrap();
         }
 
         reg.register_script_helper_file("acc", &file1_path).unwrap();
@@ -1066,7 +1066,7 @@ mod test {
 
         {
             let mut file1: File = File::create(&file1_path).unwrap();
-            write!(file1, "params.reduce(|sum, x| x * sum, || 1 )").unwrap();
+            write!(file1, "params.reduce(|sum, x| x * sum, 1)").unwrap();
         }
 
         assert_eq!(
