@@ -637,8 +637,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedHelper(
-                                            h.name.as_name().unwrap().into(),
-                                            close_tag_name.unwrap().into(),
+                                            h.name.as_name().unwrap_or("<Invalid Name>").into(),
+                                            close_tag_name.unwrap_or("<Invalid Name>").into(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -659,8 +659,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedDecorator(
-                                            d.name.as_name().unwrap().into(),
-                                            close_tag_name.unwrap().into(),
+                                            d.name.as_name().unwrap_or("<Invalid Name>").into(),
+                                            close_tag_name.unwrap_or("<Invalid Name>").into(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -1131,4 +1131,10 @@ fn test_decorator() {
             }
         }
     }
+}
+
+#[test]
+fn test_panic_with_tag_name() {
+    let s = "{{#>(X)}}{{/X}}";
+    assert!(Template::compile(s).is_err());
 }
