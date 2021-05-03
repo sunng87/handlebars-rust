@@ -164,6 +164,14 @@ impl Parameter {
         let mut it = parser.flatten().peekable();
         Template::parse_param(s, &mut it, s.len() - 1)
     }
+
+    fn debug_name(&self) -> String {
+        if let Some(name) = self.as_name() {
+            name.to_owned()
+        } else {
+            format!("{:?}", self)
+        }
+    }
 }
 
 impl Template {
@@ -637,8 +645,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedHelper(
-                                            h.name.as_name().unwrap().into(),
-                                            close_tag_name.unwrap().into(),
+                                            h.name.debug_name(),
+                                            exp.name.debug_name(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -659,8 +667,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedDecorator(
-                                            d.name.as_name().unwrap().into(),
-                                            close_tag_name.unwrap().into(),
+                                            d.name.debug_name(),
+                                            exp.name.debug_name(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -1131,4 +1139,12 @@ fn test_decorator() {
             }
         }
     }
+}
+
+#[test]
+fn test_panic_with_tag_name() {
+    let s = "{{#>(X)}}{{/X}}";
+    let result = Template::compile(s);
+    assert!(result.is_err());
+    assert_eq!("decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false }) })\" was opened, but \"X\" is closing", format!("{}", result.unwrap_err().reason));
 }
