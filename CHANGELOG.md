@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.5.4...Unreleased) - ReleaseDate
+## [3.5.5](https://github.com/sunng87/handlebars-rust/compare/3.5.4...3.5.5) - 2021-05-03
 
 * [Fixed] Panic on reporting invalid tag name [#427]
 
