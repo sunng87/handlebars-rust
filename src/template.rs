@@ -164,6 +164,14 @@ impl Parameter {
         let mut it = parser.flatten().peekable();
         Template::parse_param(s, &mut it, s.len() - 1)
     }
+
+    fn into_debug_name(&self) -> String {
+        if let Some(name) = self.as_name() {
+            name.to_owned()
+        } else {
+            format!("{:?}", self)
+        }
+    }
 }
 
 impl Template {
@@ -637,8 +645,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedHelper(
-                                            h.name.as_name().unwrap_or("<Invalid Name>").into(),
-                                            close_tag_name.unwrap_or("<Invalid Name>").into(),
+                                            h.name.into_debug_name(),
+                                            exp.name.into_debug_name(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -659,8 +667,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedDecorator(
-                                            d.name.as_name().unwrap_or("<Invalid Name>").into(),
-                                            close_tag_name.unwrap_or("<Invalid Name>").into(),
+                                            d.name.into_debug_name(),
+                                            exp.name.into_debug_name(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
