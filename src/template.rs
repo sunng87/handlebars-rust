@@ -165,7 +165,7 @@ impl Parameter {
         Template::parse_param(s, &mut it, s.len() - 1)
     }
 
-    fn into_debug_name(&self) -> String {
+    fn debug_name(&self) -> String {
         if let Some(name) = self.as_name() {
             name.to_owned()
         } else {
@@ -645,8 +645,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedHelper(
-                                            h.name.into_debug_name(),
-                                            exp.name.into_debug_name(),
+                                            h.name.debug_name(),
+                                            exp.name.debug_name(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -667,8 +667,8 @@ impl Template {
                                 } else {
                                     return Err(TemplateError::of(
                                         TemplateErrorReason::MismatchingClosedDecorator(
-                                            d.name.into_debug_name(),
-                                            exp.name.into_debug_name(),
+                                            d.name.debug_name(),
+                                            exp.name.debug_name(),
                                         ),
                                     )
                                     .at(source, line_no, col_no));
@@ -1144,5 +1144,7 @@ fn test_decorator() {
 #[test]
 fn test_panic_with_tag_name() {
     let s = "{{#>(X)}}{{/X}}";
-    assert!(Template::compile(s).is_err());
+    let result = Template::compile(s);
+    assert!(result.is_err());
+    assert_eq!("decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false }) })\" was opened, but \"X\" is closing", format!("{}", result.unwrap_err().reason));
 }
