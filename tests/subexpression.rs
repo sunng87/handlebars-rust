@@ -53,3 +53,17 @@ fn test_subexpression() {
         "Success"
     );
 }
+
+#[test]
+fn invalid_json_path() {
+    // The data here is not important
+    let data = &Vec::<()>::new();
+
+    let hbs = Handlebars::new();
+
+    let error = hbs.render_template("{{x[]@this}}", &data).unwrap_err();
+
+    let expected = "Error rendering \"Unnamed template\" line 1, col 1: Helper not defined: \"x\"";
+
+    assert_eq!(format!("{}", error), expected);
+}
