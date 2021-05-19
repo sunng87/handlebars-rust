@@ -403,19 +403,32 @@ impl<'reg> Registry<'reg> {
     }
 
     #[inline]
-    fn get_or_load_template(&'reg self, name: &str) -> Result<Cow<'reg, Template>, RenderError> {
+    pub(crate) fn get_or_load_template_optional(
+        &'reg self,
+        name: &str,
+    ) -> Option<Result<Cow<'reg, Template>, RenderError>> {
         if let (true, Some(source)) = (self.dev_mode, self.template_sources.get(name)) {
-            source
+            let r = source
                 .load()
                 .map_err(|e| TemplateError::from((e, name.to_owned())))
                 .and_then(|tpl_str| Template::compile_with_name(tpl_str, name.to_owned()))
                 .map(Cow::Owned)
-                .map_err(RenderError::from)
+                .map_err(RenderError::from);
+            Some(r)
         } else {
-            self.templates
-                .get(name)
-                .map(Cow::Borrowed)
-                .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
+            self.templates.get(name).map(|t| Ok(Cow::Borrowed(t)))
+        }
+    }
+
+    #[inline]
+    pub(crate) fn get_or_load_template(
+        &'reg self,
+        name: &str,
+    ) -> Result<Cow<'reg, Template>, RenderError> {
+        if let Some(result) = self.get_or_load_template_optional(name) {
+            result
+        } else {
+            Err(RenderError::new(format!("Template not found: {}", name)))
         }
     }
 
