@@ -408,8 +408,7 @@ impl Template {
             // we would like to iterate pair reversely in order to remove certain
             // index from our string buffer so here we convert the inner pairs to
             // a vector.
-            let pairs: Vec<Pair<'a, Rule>> = pair.into_inner().collect();
-            for sub_pair in pairs.into_iter().rev() {
+            for sub_pair in pair.into_inner().rev() {
                 // remove escaped backslash
                 if sub_pair.as_rule() == Rule::escape {
                     let escape_span = sub_pair.as_span();
