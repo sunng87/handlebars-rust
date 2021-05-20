@@ -2,7 +2,7 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use handlebars::Handlebars;
+use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
 #[test]
 fn test_subexpression() {
@@ -35,11 +35,9 @@ fn test_subexpression() {
     );
 
     // no argument provided for not
-    assert_eq!(
-        hbs.render_template("{{#if (not)}}Success{{else}}Failed{{/if}}", &data)
-            .unwrap(),
-        "Failed"
-    );
+    assert!(hbs
+        .render_template("{{#if (not)}}Success{{else}}Failed{{/if}}", &data)
+        .is_err());
 
     // json literal
     assert_eq!(
@@ -66,4 +64,34 @@ fn invalid_json_path() {
     let expected = "Error rendering \"Unnamed template\" line 1, col 1: Helper not defined: \"x\"";
 
     assert_eq!(format!("{}", error), expected);
+}
+
+struct MyHelper;
+
+impl HelperDef for MyHelper {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        _: &Helper<'reg, 'rc>,
+        _: &'reg Handlebars,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg, 'rc>,
+    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+        Ok(Some(ScopedJson::Derived(json!({
+            "a": 1,
+            "b": 2,
+        }))))
+    }
+}
+
+#[test]
+fn test_lookup_with_subexpression() {
+    let mut registry = Handlebars::new();
+    registry.register_helper("myhelper", Box::new(MyHelper {}));
+    registry
+        .register_template_string("t", "{{ lookup (myhelper) \"a\" }}")
+        .unwrap();
+
+    let result = registry.render("t", &json!({})).unwrap();
+
+    assert_eq!("1", result);
 }
