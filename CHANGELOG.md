@@ -6,7 +6,7 @@
   reloaded when dev mode enabled [#395]
 * [Added] Registry is now `Clone` [#395]
 * [Added] New built-in helper `len` [#421]
-* [Changed] Updated `rhai` to 0.19.6 and above [#391]
+* [Changed] Updated `rhai` to 0.19 and then 0.20 [#391]
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
 * [Changed] `TemplateError` and `ScriptError` is now a cause of `RenderError` [#395]
 * [Changed] `RenderContext::get_partial` now returns `Option<&Template>`
