@@ -25,7 +25,7 @@ fn find_partial<'reg: 'rc, 'rc: 'a, 'a>(
     }
 
     if let Some(tpl) = r.get_or_load_template_optional(name) {
-        return tpl.map(|t| Some(t));
+        return tpl.map(Option::Some);
     }
 
     if let Some(tpl) = d.template() {
