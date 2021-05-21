@@ -14,12 +14,12 @@ use crate::template::Template;
 
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 
-fn find_partial<'reg: 'rc, 'rc>(
-    rc: &'rc mut RenderContext<'reg, 'rc>,
+fn find_partial<'reg: 'rc, 'rc: 'a, 'a>(
+    rc: &'a RenderContext<'reg, 'rc>,
     r: &'reg Registry<'reg>,
     d: &Decorator<'reg, 'rc>,
     name: &str,
-) -> Result<Option<Cow<'rc, Template>>, RenderError> {
+) -> Result<Option<Cow<'a, Template>>, RenderError> {
     if let Some(ref partial) = rc.get_partial(name) {
         return Ok(Some(Cow::Borrowed(partial)));
     }
