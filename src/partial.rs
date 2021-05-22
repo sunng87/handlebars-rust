@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use serde_json::value::Value as Json;
@@ -9,8 +10,30 @@ use crate::json::path::Path;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
+use crate::template::Template;
 
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
+
+fn find_partial<'reg: 'rc, 'rc: 'a, 'a>(
+    rc: &'a RenderContext<'reg, 'rc>,
+    r: &'reg Registry<'reg>,
+    d: &Decorator<'reg, 'rc>,
+    name: &str,
+) -> Result<Option<Cow<'a, Template>>, RenderError> {
+    if let Some(ref partial) = rc.get_partial(name) {
+        return Ok(Some(Cow::Borrowed(partial)));
+    }
+
+    if let Some(tpl) = r.get_or_load_template_optional(name) {
+        return tpl.map(Option::Some);
+    }
+
+    if let Some(tpl) = d.template() {
+        return Ok(Some(Cow::Borrowed(tpl)));
+    }
+
+    Ok(None)
+}
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
     d: &Decorator<'reg, 'rc>,
@@ -30,10 +53,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     }
 
     // if tname == PARTIAL_BLOCK
-    let partial = rc
-        .get_partial(tname)
-        .or_else(|| r.get_template(tname))
-        .or_else(|| d.template());
+    let partial = find_partial(rc, r, d, tname)?;
 
     if let Some(t) = partial {
         // clone to avoid lifetime issue
