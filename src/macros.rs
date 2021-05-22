@@ -54,7 +54,7 @@ macro_rules! handlebars_helper {
                 _: &'reg $crate::Handlebars<'reg>,
                 _: &'rc $crate::Context,
                 _: &mut $crate::RenderContext<'reg, 'rc>,
-            ) -> Result<Option<$crate::ScopedJson<'reg, 'rc>>, $crate::RenderError> {
+            ) -> Result<$crate::ScopedJson<'reg, 'rc>, $crate::RenderError> {
                 let mut param_idx = 0;
 
                 $(
@@ -97,7 +97,7 @@ macro_rules! handlebars_helper {
                     $(let $kwargs = h.hash().iter().map(|(k, v)| (k.to_owned(), v.value())).collect::<std::collections::BTreeMap<&str, &serde_json::Value>>();)?
 
                 let result = $body;
-                Ok(Some($crate::ScopedJson::Derived($crate::JsonValue::from(result))))
+                Ok($crate::ScopedJson::Derived($crate::JsonValue::from(result)))
             }
         }
     };

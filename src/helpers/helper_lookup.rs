@@ -17,7 +17,7 @@ impl HelperDef for LookupHelper {
         r: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         let collection_value = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"lookup\""))?;
@@ -30,18 +30,18 @@ impl HelperDef for LookupHelper {
                 .value()
                 .as_u64()
                 .and_then(|u| v.get(u as usize))
-                .map(|i| ScopedJson::Derived(i.clone())),
+                .unwrap_or(&Json::Null),
             Json::Object(ref m) => index
                 .value()
                 .as_str()
                 .and_then(|k| m.get(k))
-                .map(|i| ScopedJson::Derived(i.clone())),
-            _ => None,
+                .unwrap_or(&Json::Null),
+            _ => &Json::Null,
         };
-        if r.strict_mode() && value.is_none() {
+        if r.strict_mode() && value.is_null() {
             Err(RenderError::strict_error(None))
         } else {
-            Ok(value)
+            Ok(value.clone().into())
         }
     }
 }
