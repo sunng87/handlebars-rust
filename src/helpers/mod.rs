@@ -97,7 +97,7 @@ pub trait HelperDef {
         match self.call_inner(h, r, ctx, rc) {
             Ok(result) => {
                 if r.strict_mode() && result.is_missing() {
-                    return Err(RenderError::strict_error(None));
+                    Err(RenderError::strict_error(None))
                 } else {
                     // auto escape according to settings
                     let output = do_escape(r, rc, result.render());
