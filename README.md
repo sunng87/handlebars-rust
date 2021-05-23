@@ -78,6 +78,7 @@ and clarify in CHANGELOG.
 
 | Handlebars version range | Minimum Rust version |
 | --- | --- |
+| ~4.0.0 | 1.45 |
 | ~3.0.0 | 1.32 |
 | ~2.0.0 | 1.32 |
 | ~1.1.0 | 1.30 |
