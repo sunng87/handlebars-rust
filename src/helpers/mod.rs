@@ -74,8 +74,19 @@ pub type HelperResult = Result<(), RenderError>;
 /// hbs.register_helper("plus", Box::new(plus));
 /// ```
 ///
-
 pub trait HelperDef {
+    /// A simplified api to define helper
+    ///
+    /// To implement your own `call_inner`, you will return a new `ScopedJson`
+    /// which has a JSON value computed from current context.
+    ///
+    /// ### Calling from subexpression
+    ///
+    /// When calling the helper as a subexpression, the value and its type can
+    /// be received by upper level helpers.
+    ///
+    /// Note that the value can be `json!(null)` which is treated as `false` in
+    /// helpers like `if` and rendered as empty string.
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         _: &Helper<'reg, 'rc>,
@@ -86,6 +97,19 @@ pub trait HelperDef {
         Err(RenderError::unimplemented())
     }
 
+    /// A complex version of helper interface.
+    ///
+    /// This function offers `Output`, which you can write custom string into
+    /// and render child template. Helpers like `if` and `each` are implemented
+    /// with this. Because the data written into `Output` are typically without
+    /// type information. So helpers defined by this function are not composable.
+    ///
+    /// ### Calling from subexpression
+    ///
+    /// Although helpers defined by this are not composable, when called from
+    /// subexpression, handlebars tries to parse the string output as JSON to
+    /// re-build its type. This can be buggy with numrical and other literal values.
+    /// So it is not recommended to use these helpers in subexpression.
     fn call<'reg: 'rc, 'rc>(
         &self,
         h: &Helper<'reg, 'rc>,

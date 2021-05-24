@@ -17,9 +17,35 @@
 * [Fixed] stack overflow with nested `@partial-block` [#401]
 * [Fixed] value access issue when upper block has a base value [#419]
 * [Fixed] escape rules for Json string literal [#423]
+* [Fixed] zero-arity subexpressions support [#433]
 * [Removed] **Breaking** option to disable source map is removed [#395]
 * [Removed] **Breaking** `TemplateFileError` and `TemplateRenderError` are removed and merged into
   `TemplateError` and `RenderError` [#395]
+
+## [3.5.5](https://github.com/sunng87/handlebars-rust/compare/3.5.4...3.5.5) - 2021-05-03
+
+* [Fixed] Panic on reporting invalid tag name [#427]
+
+## [3.5.4](https://github.com/sunng87/handlebars-rust/compare/3.5.3...3.5.4) - 2021-03-27
+
+* [Fixed] Json string literal with escape char [#422]
+
+## [3.5.3](https://github.com/sunng87/handlebars-rust/compare/3.5.2...3.5.3) - 2021-02-20
+
+* [Fixed] value access issue when upper block has a base value [#419]
+
+## [3.5.2](https://github.com/sunng87/handlebars-rust/compare/3.5.1...3.5.2) - 2020-12-29
+
+* [Fixed] allow `/` as trailing separator on Windows, backported from master [#405]
+
+## [3.5.1](https://github.com/sunng87/handlebars-rust/compare/3.5.0...3.5.1) - 2020-10-25
+
+* [Fixed] dir source path separator bug on windows [#389]
+
+## [3.5.0](https://github.com/sunng87/handlebars-rust/compare/3.4.0...3.5.0) - 2020-09-23
+
+* [Changed] `#each` helper now renders else block for non-iterable data [#380]
+* [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
 
 ## [3.4.0](https://github.com/sunng87/handlebars-rust/compare/3.3.0...3.4.0) - 2020-08-14
 
