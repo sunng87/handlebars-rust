@@ -9,15 +9,16 @@
 * [Changed] Updated `rhai` to 0.19 and then 0.20 [#391]
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
 * [Changed] `TemplateError` and `ScriptError` is now a cause of `RenderError` [#395]
-* [Changed] `RenderContext::get_partial` now returns `Option<&Template>`
-* [Changed] Capitalize names like `HtmlExpression` and `IoError` based on clippy recommendations [#424]
+* [Changed] **Breaking** `RenderContext::get_partial` now returns `Option<&Template>`
+* [Changed] **Breaking** Capitalize names like `HtmlExpression` and `IoError` based on clippy recommendations [#424]
+* [Changed] **Breaking** Improved return type of `call_inner` from `HelperDef` to avoid misleading [#437]
 * [Fixed] reference starts with `null`, `true` and `false` were parsed incorrectly [#382]
 * [Fixed] dir source path separator bug on windows [#389] [#405]
 * [Fixed] stack overflow with nested `@partial-block` [#401]
 * [Fixed] value access issue when upper block has a base value [#419]
 * [Fixed] escape rules for Json string literal [#423]
-* [Removed] option to disable source map is removed [#395]
-* [Removed] `TemplateFileError` and `TemplateRenderError` are removed and merged into
+* [Removed] **Breaking** option to disable source map is removed [#395]
+* [Removed] **Breaking** `TemplateFileError` and `TemplateRenderError` are removed and merged into
   `TemplateError` and `RenderError` [#395]
 
 ## [3.4.0](https://github.com/sunng87/handlebars-rust/compare/3.3.0...3.4.0) - 2020-08-14

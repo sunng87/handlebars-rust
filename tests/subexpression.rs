@@ -2,6 +2,9 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
+use std::sync::atomic::{AtomicU16, Ordering};
+use std::sync::Arc;
+
 use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
 
 #[test]
@@ -75,11 +78,11 @@ impl HelperDef for MyHelper {
         _: &'reg Handlebars,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        Ok(Some(ScopedJson::Derived(json!({
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+        Ok(ScopedJson::Derived(json!({
             "a": 1,
             "b": 2,
-        }))))
+        })))
     }
 }
 
@@ -94,4 +97,58 @@ fn test_lookup_with_subexpression() {
     let result = registry.render("t", &json!({})).unwrap();
 
     assert_eq!("1", result);
+}
+
+struct CallCounterHelper {
+    pub(crate) c: Arc<AtomicU16>,
+}
+
+impl HelperDef for CallCounterHelper {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &Helper<'reg, 'rc>,
+        _: &'reg Handlebars,
+        _: &'rc Context,
+        _: &mut RenderContext<'reg, 'rc>,
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+        // inc counter
+        self.c.fetch_add(1, Ordering::SeqCst);
+
+        if let Some(_) = h.param(0) {
+            Ok(json!({
+                "a": 1,
+            })
+            .into())
+        } else {
+            Ok(json!(null).into())
+        }
+    }
+}
+
+#[test]
+fn test_helper_call_count() {
+    let mut registry = Handlebars::new();
+
+    let counter = Arc::new(AtomicU16::new(0));
+    let helper = Box::new(CallCounterHelper { c: counter.clone() });
+
+    registry.register_helper("myhelper", helper);
+
+    registry
+        .render_template(
+            "{{#if (myhelper a)}}something{{else}}nothing{{/if}}",
+            &json!(null),
+        ) // If returns true
+        .unwrap();
+
+    assert_eq!(1, counter.load(Ordering::SeqCst));
+
+    registry
+        .render_template(
+            "{{#if (myhelper)}}something{{else}}nothing{{/if}}",
+            &json!(null),
+        ) // If returns false
+        .unwrap();
+
+    assert_eq!(2, counter.load(Ordering::SeqCst));
 }

@@ -539,25 +539,30 @@ fn call_helper_for_value<'reg: 'rc, 'rc>(
     ctx: &'rc Context,
     rc: &mut RenderContext<'reg, 'rc>,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
-    if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
-        Ok(PathAndJson::new(None, result))
-    } else {
-        // parse value from output
-        let mut so = StringOutput::new();
+    match hd.call_inner(ht, r, ctx, rc) {
+        Ok(result) => Ok(PathAndJson::new(None, result)),
+        Err(e) => {
+            if e.is_unimplemented() {
+                // parse value from output
+                let mut so = StringOutput::new();
 
-        // here we don't want subexpression result escaped,
-        // so we temporarily disable it
-        let disable_escape = rc.is_disable_escape();
-        rc.set_disable_escape(true);
+                // here we don't want subexpression result escaped,
+                // so we temporarily disable it
+                let disable_escape = rc.is_disable_escape();
+                rc.set_disable_escape(true);
 
-        hd.call(ht, r, ctx, rc, &mut so)?;
-        rc.set_disable_escape(disable_escape);
+                hd.call(ht, r, ctx, rc, &mut so)?;
+                rc.set_disable_escape(disable_escape);
 
-        let string = so.into_string().map_err(RenderError::from)?;
-        Ok(PathAndJson::new(
-            None,
-            ScopedJson::Derived(Json::String(string)),
-        ))
+                let string = so.into_string().map_err(RenderError::from)?;
+                Ok(PathAndJson::new(
+                    None,
+                    ScopedJson::Derived(Json::String(string)),
+                ))
+            } else {
+                Err(e)
+            }
+        }
     }
 }
 

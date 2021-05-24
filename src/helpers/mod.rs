@@ -82,8 +82,8 @@ pub trait HelperDef {
         _: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        Ok(None)
+    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+        Err(RenderError::unimplemented())
     }
 
     fn call<'reg: 'rc, 'rc>(
@@ -94,17 +94,26 @@ pub trait HelperDef {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        if let Some(result) = self.call_inner(h, r, ctx, rc)? {
-            if r.strict_mode() && result.is_missing() {
-                return Err(RenderError::strict_error(None));
-            } else {
-                // auto escape according to settings
-                let output = do_escape(r, rc, result.render());
-                out.write(output.as_ref())?;
+        match self.call_inner(h, r, ctx, rc) {
+            Ok(result) => {
+                if r.strict_mode() && result.is_missing() {
+                    Err(RenderError::strict_error(None))
+                } else {
+                    // auto escape according to settings
+                    let output = do_escape(r, rc, result.render());
+                    out.write(output.as_ref())?;
+                    Ok(())
+                }
+            }
+            Err(e) => {
+                if e.is_unimplemented() {
+                    // default implementation, do nothing
+                    Ok(())
+                } else {
+                    Err(e)
+                }
             }
         }
-
-        Ok(())
     }
 }
 

@@ -862,8 +862,8 @@ mod test {
             _: &'reg Registry<'reg>,
             _: &'rc Context,
             _: &mut RenderContext<'reg, 'rc>,
-        ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-            Ok(Some(ScopedJson::Missing))
+        ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+            Ok(ScopedJson::Missing)
         }
     }
 
