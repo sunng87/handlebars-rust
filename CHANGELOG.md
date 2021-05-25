@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/3.4.0...Unreleased) - ReleaseDate
+## [4.0.0](https://github.com/sunng87/handlebars-rust/compare/3.4.0...4.0.0) - 2021-05-25
 
 * [Added] `dev_mode` for registry: templates and scripts loaded from file are always
   reloaded when dev mode enabled [#395]
