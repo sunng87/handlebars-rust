@@ -9,6 +9,7 @@
 * [Changed] Updated `rhai` to 0.19 and then 0.20 [#391]
 * [Changed] `#each` helper now renders else block for non-iterable data [#380]
 * [Changed] `TemplateError` and `ScriptError` is now a cause of `RenderError` [#395]
+* [Changed] Empty lines around block helpers are now stripped [#404]
 * [Changed] **Breaking** `RenderContext::get_partial` now returns `Option<&Template>`
 * [Changed] **Breaking** Capitalize names like `HtmlExpression` and `IoError` based on clippy recommendations [#424]
 * [Changed] **Breaking** Improved return type of `call_inner` from `HelperDef` to avoid misleading [#437]
