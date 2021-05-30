@@ -18,7 +18,8 @@
 * [Fixed] stack overflow with nested `@partial-block` [#401]
 * [Fixed] value access issue when upper block has a base value [#419]
 * [Fixed] escape rules for Json string literal [#423]
-* [Fixed] zero-arity subexpressions support [#433]
+* [Fixed] **Breaking** zero-arity subexpressions support [#433]
+  Zero-arity subexpression no longer resolved as variable. The behaviour is now aligned with handlebarsjs.
 * [Removed] **Breaking** option to disable source map is removed [#395]
 * [Removed] **Breaking** `TemplateFileError` and `TemplateRenderError` are removed and merged into
   `TemplateError` and `RenderError` [#395]
