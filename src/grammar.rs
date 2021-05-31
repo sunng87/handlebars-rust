@@ -183,6 +183,7 @@ mod test {
             "{{exp key=(sub)}}",
             "{{exp key=(sub 0)}}",
             "{{exp key=(sub 0 key=1)}}",
+            "{{exp .}}",
         ];
         for i in s.iter() {
             assert_rule!(Rule::expression, i);
@@ -306,6 +307,8 @@ mod test {
             "[foo]",
             "@root/a/b",
             "nullable",
+            ".",
+            "this",
         ];
         for i in s.iter() {
             assert_rule_match!(Rule::path, i);
