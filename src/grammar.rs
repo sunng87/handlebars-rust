@@ -85,6 +85,8 @@ mod test {
             "[$id]",
             "$id",
             "this.[null]",
+            ".",
+            "this",
         ];
         for i in s.iter() {
             assert_rule!(Rule::reference, i);
