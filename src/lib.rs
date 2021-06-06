@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/handlebars/3.4.0")]
+#![doc(html_root_url = "https://docs.rs/handlebars/4.0.0")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 //! # Handlebars
 //!
@@ -237,7 +237,7 @@
 //!
 //! #### Escaping
 //!
-//! As per the handlebars spec, output using `{{expression}}` is escaped by default (to be precise, the characters `&"<>` are replaced by their respective html / xml entities). However, since the use cases of a rust template engine are probably a bit more diverse than those of a JavaScript one, this implementation allows the user to supply a custom escape function to be used instead. For more information see the `EscapeFn` type and `Handlebars::register_escape_fn()` method.
+//! As per the handlebars spec, output using `{{expression}}` is escaped by default (to be precise, the characters `&"<>` are replaced by their respective html / xml entities). However, since the use cases of a rust template engine are probably a bit more diverse than those of a JavaScript one, this implementation allows the user to supply a custom escape function to be used instead. For more information see the `EscapeFn` type and `Handlebars::register_escape_fn()` method. In particular, `no_escape()` can be used as the escape function if no escaping at all should be performed.
 //!
 //! ### Custom Helper
 //!
@@ -332,13 +332,13 @@
 //!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#if) on how to use this helper.)
 //! * `{{#unless ...}} ... {{else}} .. {{/unless}}` if-not-else block
 //!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#unless) on how to use this helper.)
-//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebars-rust doesn't support mustache iteration syntax so use this instead.
+//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebars-rust doesn't support mustache iteration syntax so use `each` instead.
 //!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#each) on how to use this helper.)
 //! * `{{#with ...}} ... {{/with}}` change current context. Similar to `{{#each}}`, used for replace corresponding mustache syntax.
 //!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#with) on how to use this helper.)
 //! * `{{lookup ... ...}}` get value from array by `@index` or `@key`
 //!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#lookup) on how to use this helper.)
-//! * `{{> ...}}` include template with name
+//! * `{{> ...}}` include template by its name
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //! * Boolean helpers that can be used in `if` as subexpression, for example `{{#if (gt 2 1)}} ...`:
 //!   * `eq`
@@ -350,6 +350,7 @@
 //!   * `and`
 //!   * `or`
 //!   * `not`
+//! * `{{len ...}}` returns length of array/object/string
 //!
 //! ### Template inheritance
 //!
@@ -358,7 +359,7 @@
 //!
 //!
 
-#![allow(dead_code)]
+#![allow(dead_code, clippy::upper_case_acronyms)]
 #![warn(rust_2018_idioms)]
 #![recursion_limit = "200"]
 

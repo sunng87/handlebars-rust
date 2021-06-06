@@ -12,13 +12,14 @@ use walkdir::Error as WalkdirError;
 use rhai::{EvalAltResult, ParseError};
 
 /// Error when rendering data on template.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RenderError {
     pub desc: String,
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
     cause: Option<Box<dyn Error + Send + Sync + 'static>>,
+    unimplemented: bool,
 }
 
 impl fmt::Display for RenderError {
@@ -93,10 +94,14 @@ impl RenderError {
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
         RenderError {
             desc: desc.as_ref().to_owned(),
-            template_name: None,
-            line_no: None,
-            column_no: None,
-            cause: None,
+            ..Default::default()
+        }
+    }
+
+    pub(crate) fn unimplemented() -> RenderError {
+        RenderError {
+            unimplemented: true,
+            ..Default::default()
         }
     }
 
@@ -116,6 +121,11 @@ impl RenderError {
         e.cause = Some(Box::new(cause));
 
         e
+    }
+
+    #[inline]
+    pub(crate) fn is_unimplemented(&self) -> bool {
+        self.unimplemented
     }
 }
 
@@ -250,7 +260,7 @@ impl fmt::Display for TemplateError {
 quick_error! {
     #[derive(Debug)]
     pub enum ScriptError {
-        IOError(err: IOError) {
+        IoError(err: IOError) {
             from()
             source(err)
         }
