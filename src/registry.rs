@@ -617,8 +617,9 @@ mod test {
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
     use crate::template::Template;
+    use crate::Source;
     use std::fs::File;
-    use std::io::Write;
+    use std::io::{Error as IoError, ErrorKind as IoErrorKind, Write};
     use tempfile::tempdir;
 
     #[derive(Clone, Copy)]
@@ -666,6 +667,31 @@ mod test {
             r.helpers.len(),
             num_helpers + num_boolean_helpers + num_custom_helpers
         );
+    }
+
+    #[test]
+    fn test_register_template_source() {
+        let mut r = Registry::new();
+
+        impl Source for &'static str {
+            type Item = String;
+            type Error = IoError;
+            fn load(&self) -> Result<Self::Item, Self::Error> {
+                Ok(String::from(*self))
+            }
+        }
+        r.register_template_source("test", "<h1>Hello world!</h1>");
+        assert_eq!("<h1>Hello world!</h1>", r.render("test", &()).unwrap());
+
+        impl Source for () {
+            type Item = String;
+            type Error = IoError;
+            fn load(&self) -> Result<Self::Item, Self::Error> {
+                Err(IoError::from(IoErrorKind::Other))
+            }
+        }
+        r.register_template_source("test2", ());
+        assert!(r.render("test2", &()).is_err());
     }
 
     #[test]
