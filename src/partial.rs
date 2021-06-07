@@ -14,29 +14,25 @@ use crate::template::Template;
 
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 
-#[inline]
-fn resolve_partial<'reg: 'rc, 'rc: 'p, 'p>(
-    tname: &str,
-    d: &Decorator<'reg, 'rc>,
+fn find_partial<'reg: 'rc, 'rc: 'a, 'a>(
+    rc: &'a RenderContext<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    rc: &'p RenderContext<'reg, 'rc>,
-) -> Result<Option<Cow<'p, Template>>, RenderError> {
-    let mut partial = rc.get_partial(tname).map(Cow::Borrowed);
-
-    // try fetch from registry with the same name
-    if partial.is_none() {
-        if let Some(tpl) = r.get_template(tname) {
-            let tpl = tpl.map_err(RenderError::from)?;
-            partial = Some(tpl);
-        }
+    d: &Decorator<'reg, 'rc>,
+    name: &str,
+) -> Result<Option<Cow<'a, Template>>, RenderError> {
+    if let Some(ref partial) = rc.get_partial(name) {
+        return Ok(Some(Cow::Borrowed(partial)));
     }
 
-    // fallback to decorator's content
-    if partial.is_none() {
-        partial = d.template().map(Cow::Borrowed);
+    if let Some(tpl) = r.get_or_load_template_optional(name) {
+        return tpl.map(Option::Some);
     }
 
-    Ok(partial)
+    if let Some(tpl) = d.template() {
+        return Ok(Some(Cow::Borrowed(tpl)));
+    }
+
+    Ok(None)
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
@@ -56,7 +52,8 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         return Err(RenderError::new("Cannot include self in >"));
     }
 
-    let partial = resolve_partial(tname, d, r, rc)?;
+    // if tname == PARTIAL_BLOCK
+    let partial = find_partial(rc, r, d, tname)?;
 
     if let Some(t) = partial {
         // clone to avoid lifetime issue
@@ -315,5 +312,22 @@ mod test {
 
         let page = handlebars.render_template(&template3, &json!({})).unwrap();
         assert_eq!("<outer><inner>Hello</inner></outer>", page);
+    }
+
+    #[test]
+    fn test_up_to_partial_level() {
+        let outer = r#"{{>inner name="fruit:" vegetables=fruits}}"#;
+        let inner = "{{#each vegetables}}{{../name}} {{this}},{{/each}}";
+
+        let data = json!({ "fruits": ["carrot", "tomato"] });
+
+        let mut handlebars = Registry::new();
+        handlebars.register_template_string("outer", outer).unwrap();
+        handlebars.register_template_string("inner", inner).unwrap();
+
+        assert_eq!(
+            handlebars.render("outer", &data).unwrap(),
+            "fruit: carrot,fruit: tomato,"
+        );
     }
 }

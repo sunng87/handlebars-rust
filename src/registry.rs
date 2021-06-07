@@ -138,15 +138,16 @@ impl<'reg> Registry<'reg> {
         self.register_helper("raw", Box::new(helpers::RAW_HELPER));
         self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
-        self.register_helper("eq", Box::new(helpers::helper_boolean::eq));
-        self.register_helper("ne", Box::new(helpers::helper_boolean::ne));
-        self.register_helper("gt", Box::new(helpers::helper_boolean::gt));
-        self.register_helper("gte", Box::new(helpers::helper_boolean::gte));
-        self.register_helper("lt", Box::new(helpers::helper_boolean::lt));
-        self.register_helper("lte", Box::new(helpers::helper_boolean::lte));
-        self.register_helper("and", Box::new(helpers::helper_boolean::and));
-        self.register_helper("or", Box::new(helpers::helper_boolean::or));
-        self.register_helper("not", Box::new(helpers::helper_boolean::not));
+        self.register_helper("eq", Box::new(helpers::helper_extras::eq));
+        self.register_helper("ne", Box::new(helpers::helper_extras::ne));
+        self.register_helper("gt", Box::new(helpers::helper_extras::gt));
+        self.register_helper("gte", Box::new(helpers::helper_extras::gte));
+        self.register_helper("lt", Box::new(helpers::helper_extras::lt));
+        self.register_helper("lte", Box::new(helpers::helper_extras::lte));
+        self.register_helper("and", Box::new(helpers::helper_extras::and));
+        self.register_helper("or", Box::new(helpers::helper_extras::or));
+        self.register_helper("not", Box::new(helpers::helper_extras::not));
+        self.register_helper("len", Box::new(helpers::helper_extras::len));
 
         self.register_decorator("inline", Box::new(decorators::INLINE_DECORATOR));
         self
@@ -427,19 +428,32 @@ impl<'reg> Registry<'reg> {
     }
 
     #[inline]
-    fn get_or_load_template(&'reg self, name: &str) -> Result<Cow<'reg, Template>, RenderError> {
+    pub(crate) fn get_or_load_template_optional(
+        &'reg self,
+        name: &str,
+    ) -> Option<Result<Cow<'reg, Template>, RenderError>> {
         if let Some(source) = self.template_sources.get(name) {
-            source
+            let r = source
                 .load()
                 .map_err(|e| TemplateError::from((e, name.to_owned())))
                 .and_then(|tpl_str| Template::compile_with_name(tpl_str, name.to_owned()))
                 .map(Cow::Owned)
-                .map_err(RenderError::from)
+                .map_err(RenderError::from);
+            Some(r)
         } else {
-            self.templates
-                .get(name)
-                .map(Cow::Borrowed)
-                .ok_or_else(|| RenderError::new(format!("Template not found: {}", name)))
+            self.templates.get(name).map(|t| Ok(Cow::Borrowed(t)))
+        }
+    }
+
+    #[inline]
+    pub(crate) fn get_or_load_template(
+        &'reg self,
+        name: &str,
+    ) -> Result<Cow<'reg, Template>, RenderError> {
+        if let Some(result) = self.get_or_load_template_optional(name) {
+            result
+        } else {
+            Err(RenderError::new(format!("Template not found: {}", name)))
         }
     }
 
@@ -603,8 +617,9 @@ mod test {
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
     use crate::template::Template;
+    use crate::Source;
     use std::fs::File;
-    use std::io::Write;
+    use std::io::{Error as IoError, ErrorKind as IoErrorKind, Write};
     use tempfile::tempdir;
 
     #[derive(Clone, Copy)]
@@ -646,12 +661,37 @@ mod test {
 
         // built-in helpers plus 1
         let num_helpers = 7;
-        let num_boolean_helpers = 9; // stuff like gt and lte
+        let num_boolean_helpers = 10; // stuff like gt and lte
         let num_custom_helpers = 1; // dummy from above
         assert_eq!(
             r.helpers.len(),
             num_helpers + num_boolean_helpers + num_custom_helpers
         );
+    }
+
+    #[test]
+    fn test_register_template_source() {
+        let mut r = Registry::new();
+
+        impl Source for &'static str {
+            type Item = String;
+            type Error = IoError;
+            fn load(&self) -> Result<Self::Item, Self::Error> {
+                Ok(String::from(*self))
+            }
+        }
+        r.register_template_source("test", "<h1>Hello world!</h1>");
+        assert_eq!("<h1>Hello world!</h1>", r.render("test", &()).unwrap());
+
+        impl Source for () {
+            type Item = String;
+            type Error = IoError;
+            fn load(&self) -> Result<Self::Item, Self::Error> {
+                Err(IoError::from(IoErrorKind::Other))
+            }
+        }
+        r.register_template_source("test2", ());
+        assert!(r.render("test2", &()).is_err());
     }
 
     #[test]
@@ -882,8 +922,8 @@ mod test {
             _: &'reg Registry<'reg>,
             _: &'rc Context,
             _: &mut RenderContext<'reg, 'rc>,
-        ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-            Ok(Some(ScopedJson::Missing))
+        ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+            Ok(ScopedJson::Missing)
         }
     }
 
@@ -1068,7 +1108,7 @@ mod test {
     fn test_script_helper() {
         let mut reg = Registry::new();
 
-        reg.register_script_helper("acc", "params.reduce(|sum, x| x + sum, || 0 )")
+        reg.register_script_helper("acc", "params.reduce(|sum, x| x + sum, 0)")
             .unwrap();
 
         assert_eq!(
@@ -1087,7 +1127,7 @@ mod test {
         let file1_path = dir.path().join("acc.rhai");
         {
             let mut file1: File = File::create(&file1_path).unwrap();
-            write!(file1, "params.reduce(|sum, x| x + sum, || 0 )").unwrap();
+            write!(file1, "params.reduce(|sum, x| x + sum, 0)").unwrap();
         }
 
         reg.register_script_helper_file("acc", &file1_path).unwrap();
@@ -1099,7 +1139,7 @@ mod test {
 
         {
             let mut file1: File = File::create(&file1_path).unwrap();
-            write!(file1, "params.reduce(|sum, x| x * sum, || 1 )").unwrap();
+            write!(file1, "params.reduce(|sum, x| x * sum, 1)").unwrap();
         }
 
         assert_eq!(

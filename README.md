@@ -21,11 +21,8 @@ book](https://doc.rust-lang.org/book/).
 ### Quick Start
 
 ```rust
-extern crate handlebars;
-#[macro_use]
-extern crate serde_json;
-
 use handlebars::Handlebars;
+use serde_json::json;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut reg = Handlebars::new();
@@ -38,6 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // register template using given name
     reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?;
     println!("{}", reg.render("tpl_1", &json!({"name": "foo"}))?);
+
     Ok(())
 }
 ```
@@ -80,6 +78,7 @@ and clarify in CHANGELOG.
 
 | Handlebars version range | Minimum Rust version |
 | --- | --- |
+| ~4.0.0 | 1.45 |
 | ~3.0.0 | 1.32 |
 | ~2.0.0 | 1.32 |
 | ~1.1.0 | 1.30 |
@@ -185,7 +184,7 @@ Handlebars 3.0 can be used in WebAssembly projects.
   example](https://github.com/seanmonstar/warp/blob/master/examples/handlebars_template.rs)
 * Tower-web: [Built-in](https://github.com/carllerche/tower-web)
 * Actix: [handlebars
-  example](https://github.com/actix/examples/blob/master/template_handlebars/src/main.rs)
+  example](https://github.com/actix/examples/blob/master/template_engines/handlebars/src/main.rs)
 * Tide: [tide-handlebars](https://github.com/No9/tide-handlebars)
 
 ### Adopters

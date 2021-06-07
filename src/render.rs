@@ -539,25 +539,30 @@ fn call_helper_for_value<'reg: 'rc, 'rc>(
     ctx: &'rc Context,
     rc: &mut RenderContext<'reg, 'rc>,
 ) -> Result<PathAndJson<'reg, 'rc>, RenderError> {
-    if let Some(result) = hd.call_inner(ht, r, ctx, rc)? {
-        Ok(PathAndJson::new(None, result))
-    } else {
-        // parse value from output
-        let mut so = StringOutput::new();
+    match hd.call_inner(ht, r, ctx, rc) {
+        Ok(result) => Ok(PathAndJson::new(None, result)),
+        Err(e) => {
+            if e.is_unimplemented() {
+                // parse value from output
+                let mut so = StringOutput::new();
 
-        // here we don't want subexpression result escaped,
-        // so we temporarily disable it
-        let disable_escape = rc.is_disable_escape();
-        rc.set_disable_escape(true);
+                // here we don't want subexpression result escaped,
+                // so we temporarily disable it
+                let disable_escape = rc.is_disable_escape();
+                rc.set_disable_escape(true);
 
-        hd.call(ht, r, ctx, rc, &mut so)?;
-        rc.set_disable_escape(disable_escape);
+                hd.call(ht, r, ctx, rc, &mut so)?;
+                rc.set_disable_escape(disable_escape);
 
-        let string = so.into_string().map_err(RenderError::from)?;
-        Ok(PathAndJson::new(
-            None,
-            ScopedJson::Derived(Json::String(string)),
-        ))
+                let string = so.into_string().map_err(RenderError::from)?;
+                Ok(PathAndJson::new(
+                    None,
+                    ScopedJson::Derived(Json::String(string)),
+                ))
+            } else {
+                Err(e)
+            }
+        }
     }
 }
 
@@ -605,33 +610,27 @@ impl Parameter {
             Parameter::Literal(ref j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
             Parameter::Subexpression(ref t) => match *t.as_element() {
                 Expression(ref ht) => {
-                    if ht.is_name_only() {
-                        ht.name.expand(registry, ctx, rc)
+                    let name = ht.name.expand_as_name(registry, ctx, rc)?;
+
+                    let h = Helper::try_from_template(ht, registry, ctx, rc)?;
+                    if let Some(ref d) = rc.get_local_helper(&name) {
+                        call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
                     } else {
-                        let name = ht.name.expand_as_name(registry, ctx, rc)?;
+                        let mut helper = registry.get_or_load_helper(&name)?;
 
-                        let h = Helper::try_from_template(ht, registry, ctx, rc)?;
-                        if let Some(ref d) = rc.get_local_helper(&name) {
-                            call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
-                        } else {
-                            let mut helper = registry.get_or_load_helper(&name)?;
-
-                            if helper.is_none() {
-                                helper = registry.get_or_load_helper(if ht.block {
-                                    BLOCK_HELPER_MISSING
-                                } else {
-                                    HELPER_MISSING
-                                })?;
-                            }
-
-                            helper
-                                .ok_or_else(|| {
-                                    RenderError::new(format!("Helper not defined: {:?}", ht.name))
-                                })
-                                .and_then(|d| {
-                                    call_helper_for_value(d.as_ref(), &h, registry, ctx, rc)
-                                })
+                        if helper.is_none() {
+                            helper = registry.get_or_load_helper(if ht.block {
+                                BLOCK_HELPER_MISSING
+                            } else {
+                                HELPER_MISSING
+                            })?;
                         }
+
+                        helper
+                            .ok_or_else(|| {
+                                RenderError::new(format!("Helper not defined: {:?}", ht.name))
+                            })
+                            .and_then(|d| call_helper_for_value(d.as_ref(), &h, registry, ctx, rc))
                     }
                 }
                 _ => unreachable!(),
@@ -761,8 +760,8 @@ impl Renderable for TemplateElement {
                 out.write(v.as_ref())?;
                 Ok(())
             }
-            Expression(ref ht) | HTMLExpression(ref ht) => {
-                let is_html_expression = matches!(self, HTMLExpression(_));
+            Expression(ref ht) | HtmlExpression(ref ht) => {
+                let is_html_expression = matches!(self, HtmlExpression(_));
                 if is_html_expression {
                     rc.set_disable_escape(true);
                 }
@@ -883,7 +882,7 @@ fn test_expression() {
 #[test]
 fn test_html_expression() {
     let r = Registry::new();
-    let element = HTMLExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+    let element = HtmlExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
         &["hello"],
     ))));
 
@@ -953,29 +952,6 @@ fn test_render_context_promotion_and_demotion() {
         render_context.get_local_var(0, "index").unwrap(),
         &to_json(0)
     );
-}
-
-#[test]
-fn test_render_subexpression() {
-    use crate::support::str::StringWriter;
-
-    let r = Registry::new();
-    let mut sw = StringWriter::new();
-
-    let mut m: BTreeMap<String, String> = BTreeMap::new();
-    m.insert("hello".to_string(), "world".to_string());
-    m.insert("world".to_string(), "nice".to_string());
-    m.insert("const".to_string(), "truthy".to_string());
-
-    {
-        if let Err(e) =
-            r.render_template_to_write("<h1>{{#if (const)}}{{(hello)}}{{/if}}</h1>", &m, &mut sw)
-        {
-            panic!("{}", e);
-        }
-    }
-
-    assert_eq!(sw.into_string(), "<h1>world</h1>".to_string());
 }
 
 #[test]
