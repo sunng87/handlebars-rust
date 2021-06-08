@@ -162,6 +162,19 @@ mod test {
     use std::str::FromStr;
 
     #[test]
+    fn test_empty_each() {
+        let mut hbs = Registry::new();
+        hbs.set_strict_mode(true);
+
+        let data = json!({
+            "a": [ ],
+        });
+
+        let template = "{{#each a}}each{{/each}}";
+        assert_eq!(hbs.render_template(template, &data).unwrap(), "");
+    }
+
+    #[test]
     fn test_each() {
         let mut handlebars = Registry::new();
         assert!(handlebars
