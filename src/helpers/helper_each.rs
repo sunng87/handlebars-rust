@@ -80,7 +80,9 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => match *value.value() {
-                Json::Array(ref list) if !list.is_empty() => {
+                Json::Array(ref list)
+                    if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
+                {
                     let block_context = create_block(&value);
                     rc.push_block(block_context);
 
@@ -108,7 +110,9 @@ impl HelperDef for EachHelper {
                     rc.pop_block();
                     Ok(())
                 }
-                Json::Object(ref obj) if !obj.is_empty() => {
+                Json::Object(ref obj)
+                    if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
+                {
                     let block_context = create_block(&value);
                     rc.push_block(block_context);
 
@@ -160,6 +164,19 @@ mod test {
     use serde_json::value::Value as Json;
     use std::collections::BTreeMap;
     use std::str::FromStr;
+
+    #[test]
+    fn test_empty_each() {
+        let mut hbs = Registry::new();
+        hbs.set_strict_mode(true);
+
+        let data = json!({
+            "a": [ ],
+        });
+
+        let template = "{{#each a}}each{{/each}}";
+        assert_eq!(hbs.render_template(template, &data).unwrap(), "");
+    }
 
     #[test]
     fn test_each() {
