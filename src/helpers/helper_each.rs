@@ -80,7 +80,9 @@ impl HelperDef for EachHelper {
 
         match template {
             Some(t) => match *value.value() {
-                Json::Array(ref list) if !list.is_empty() => {
+                Json::Array(ref list)
+                    if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
+                {
                     let block_context = create_block(&value);
                     rc.push_block(block_context);
 
@@ -108,7 +110,9 @@ impl HelperDef for EachHelper {
                     rc.pop_block();
                     Ok(())
                 }
-                Json::Object(ref obj) if !obj.is_empty() => {
+                Json::Object(ref obj)
+                    if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
+                {
                     let block_context = create_block(&value);
                     rc.push_block(block_context);
 
