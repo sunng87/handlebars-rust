@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.0.0...Unreleased) - ReleaseDate
+
+* [Fixed] Each block render error with empty array or object [#445]
+
 ## [4.0.0](https://github.com/sunng87/handlebars-rust/compare/3.4.0...4.0.0) - 2021-05-25
 
 * [Added] `dev_mode` for registry: templates and scripts loaded from file are always
