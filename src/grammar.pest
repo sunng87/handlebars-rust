@@ -62,8 +62,8 @@ pro_whitespace_omitter? ~ "}}" }
 partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
                      ~ pro_whitespace_omitter? ~ "}}" }
 
-brackets_open = @{ (NEWLINE ~ (" "|"\t")*)? ~ "{{" }
-brackets_close = @{ "}}" ~ ((" "|"\t")* ~ NEWLINE)? }
+brackets_open = @{ PUSH(NEWLINE?) ~ (" "|"\t")* ~ "{{" }
+brackets_close = @{ "}}" ~ (" "|"\t")* ~ POP }
 
 invert_tag_item = { "else"|"^" }
 invert_tag = { !escape ~ brackets_open ~ pre_whitespace_omitter? ~ invert_tag_item
@@ -97,7 +97,7 @@ raw_block_end = { double_brackets_open ~ pre_whitespace_omitter? ~ "/" ~ identif
                   pro_whitespace_omitter? ~ double_brackets_close }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-comment_brackets_open = @{ ("\r"? ~ "\n" ~ (" "|"\t")*)? ~ "{{!" }
+comment_brackets_open = @{ PUSH(NEWLINE?) ~ (" "|"\t")* ~ "{{!" }
 hbs_comment = { comment_brackets_open ~ "--" ~ (!"--}}" ~ ANY)* ~ "--" ~ brackets_close }
 hbs_comment_compact = { comment_brackets_open ~ (!"}}" ~ ANY)* ~ brackets_close }
 
