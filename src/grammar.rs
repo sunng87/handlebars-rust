@@ -15,12 +15,13 @@ pub(crate) fn newline_matcher(c: char) -> bool {
 }
 
 pub(crate) fn ends_with_empty_line(text: &str) -> bool {
-    text.trim_end_matches(whitespace_matcher).ends_with("\n")
+    text.trim_end_matches(whitespace_matcher)
+        .ends_with(newline_matcher)
 }
 
 pub(crate) fn starts_with_empty_line(text: &str) -> bool {
     text.trim_start_matches(whitespace_matcher)
-        .starts_with("\n")
+        .starts_with(newline_matcher)
 }
 
 #[cfg(test)]

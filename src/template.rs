@@ -403,26 +403,15 @@ impl Template {
     }
 
     // test if a statement is followed by a rawstring
-    fn is_adjust_to_rawstring<'a, I>(it: &mut Peekable<I>) -> bool
-    where
-        I: Iterator<Item = Pair<'a, Rule>>,
-    {
-        if let Some(pair) = it.peek() {
-            return pair.as_rule() == Rule::raw_text;
-        }
-
-        false
+    fn is_adjust_to_newline(source: &str) -> bool {
+        grammar::starts_with_empty_line(source)
     }
 
-    fn is_standalone_statement<'a, I>(
-        template_stack: &VecDeque<Template>,
-        it: &mut Peekable<I>,
-    ) -> bool
-    where
-        I: Iterator<Item = Pair<'a, Rule>>,
-    {
-        Template::check_previous_rawstring_for_newline(template_stack)
-            && Template::is_adjust_to_rawstring(it)
+    fn is_standalone_statement(template_stack: &VecDeque<Template>, source: &str) -> bool {
+        let r1 = Template::check_previous_rawstring_for_newline(template_stack);
+        let r2 = Template::is_adjust_to_newline(source);
+        // dbg!(&r1, &r2);
+        r1 && r2
     }
 
     fn raw_string<'a>(
@@ -487,14 +476,14 @@ impl Template {
             TemplateError::of(TemplateErrorReason::InvalidSyntax).at(source, line_no, col_no)
         })?;
 
-        // dbg!(parser_queue.clone());
+        // dbg!(parser_queue.clone().flatten());
 
         // remove escape from our pair queue
         let mut it = parser_queue
             .flatten()
             .filter(|p| {
                 // remove rules that should be silent but not for now due to pest limitation
-                !matches!(p.as_rule(), Rule::escape)
+                !matches!(p.as_rule(), Rule::escape | Rule::helper_block)
             })
             .peekable();
         let mut end_pos: Option<Position<'_>> = None;
@@ -606,8 +595,10 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         // standalone line check part 1, for the leading whitespaces and newline
-                        trim_line_requiered =
-                            Template::is_standalone_statement(&template_stack, it.by_ref());
+                        trim_line_requiered = Template::is_standalone_statement(
+                            &template_stack,
+                            &source[span.end()..],
+                        );
 
                         let t = template_stack.front_mut().unwrap();
                         t.mapping.push(TemplateMapping(line_no, col_no));
@@ -623,8 +614,10 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         // standalone line check part 1, for the leading whitespaces and newline
-                        trim_line_requiered =
-                            Template::is_standalone_statement(&template_stack, it.by_ref());
+                        trim_line_requiered = Template::is_standalone_statement(
+                            &template_stack,
+                            &source[span.end()..],
+                        );
 
                         let t = template_stack.pop_front().unwrap();
                         let h = helper_stack.front_mut().unwrap();
@@ -695,8 +688,10 @@ impl Template {
                             }
                             Rule::helper_block_end | Rule::raw_block_end => {
                                 // standalone line check part 1, for the leading whitespaces and newline
-                                trim_line_requiered =
-                                    Template::is_standalone_statement(&template_stack, it.by_ref());
+                                trim_line_requiered = Template::is_standalone_statement(
+                                    &template_stack,
+                                    &source[span.end()..],
+                                );
 
                                 let mut h = helper_stack.pop_front().unwrap();
                                 let close_tag_name = exp.name.as_name();
@@ -721,8 +716,10 @@ impl Template {
                             }
                             Rule::decorator_block_end | Rule::partial_block_end => {
                                 // standalone line check part 1, for the leading whitespaces and newline
-                                trim_line_requiered =
-                                    Template::is_standalone_statement(&template_stack, it.by_ref());
+                                trim_line_requiered = Template::is_standalone_statement(
+                                    &template_stack,
+                                    &source[span.end()..],
+                                );
 
                                 let mut d = decorator_stack.pop_front().unwrap();
                                 let close_tag_name = exp.name.as_name();
@@ -749,8 +746,10 @@ impl Template {
                         }
                     }
                     Rule::hbs_comment_compact => {
-                        trim_line_requiered =
-                            Template::is_standalone_statement(&template_stack, it.by_ref());
+                        trim_line_requiered = Template::is_standalone_statement(
+                            &template_stack,
+                            &source[span.end()..],
+                        );
 
                         let text = span
                             .as_str()
@@ -760,8 +759,10 @@ impl Template {
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     Rule::hbs_comment => {
-                        trim_line_requiered =
-                            Template::is_standalone_statement(&template_stack, it.by_ref());
+                        trim_line_requiered = Template::is_standalone_statement(
+                            &template_stack,
+                            &source[span.end()..],
+                        );
 
                         let text = span
                             .as_str()
@@ -802,11 +803,6 @@ impl Template {
             }
             Err(e) => Err(e.in_template(name)),
         }
-    }
-
-    fn check_standalone_statements(&mut self) {
-        // loop over the template element tree and remove trailing whitespaces and
-        // line breakers for standalone statements
     }
 }
 
@@ -1134,7 +1130,7 @@ mod test {
         );
         let r = c.unwrap();
         // the \n after last raw block is dropped by pest
-        assert_eq!(r.elements.len(), 6);
+        assert_eq!(r.elements.len(), 9);
     }
 
     #[test]
