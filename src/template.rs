@@ -9,7 +9,7 @@ use pest::{Parser, Position};
 use serde_json::value::Value as Json;
 
 use crate::error::{TemplateError, TemplateErrorReason};
-use crate::grammar::{HandlebarsParser, Rule};
+use crate::grammar::{self, HandlebarsParser, Rule};
 use crate::json::path::{parse_json_path_from_iter, Path};
 
 use self::TemplateElement::*;
@@ -389,10 +389,47 @@ impl Template {
         }
     }
 
+    fn check_previous_rawstring_for_newline(template_stack: &VecDeque<Template>) -> bool {
+        let t = template_stack.front().unwrap();
+        if let Some(el) = t.elements.get(0) {
+            if let RawString(ref text) = el {
+                grammar::ends_with_empty_line(text)
+            } else {
+                false
+            }
+        } else {
+            true
+        }
+    }
+
+    // test if a statement is followed by a rawstring
+    fn is_adjust_to_rawstring<'a, I>(it: &mut Peekable<I>) -> bool
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
+        if let Some(pair) = it.peek() {
+            return pair.as_rule() == Rule::raw_text;
+        }
+
+        false
+    }
+
+    fn is_standalone_statement<'a, I>(
+        template_stack: &VecDeque<Template>,
+        it: &mut Peekable<I>,
+    ) -> bool
+    where
+        I: Iterator<Item = Pair<'a, Rule>>,
+    {
+        Template::check_previous_rawstring_for_newline(template_stack)
+            && Template::is_adjust_to_rawstring(it)
+    }
+
     fn raw_string<'a>(
         source: &'a str,
         pair: Option<Pair<'a, Rule>>,
         trim_start: bool,
+        trim_start_line: bool,
     ) -> TemplateElement {
         let mut s = String::from(source);
 
@@ -422,6 +459,12 @@ impl Template {
 
         if trim_start {
             RawString(s.trim_start().to_owned())
+        } else if trim_start_line {
+            RawString(
+                s.trim_start_matches(grammar::whitespace_matcher)
+                    .trim_start_matches(grammar::newline_matcher)
+                    .to_owned(),
+            )
         } else {
             RawString(s)
         }
@@ -433,6 +476,8 @@ impl Template {
         let mut template_stack: VecDeque<Template> = VecDeque::new();
 
         let mut omit_pro_ws = false;
+        // flag for tracking standalone statement like {{#if}} and {{/if}}
+        let mut trim_line_requiered = false;
 
         let parser_queue = HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| {
             let (line_no, col_no) = match e.line_col {
@@ -449,15 +494,7 @@ impl Template {
             .flatten()
             .filter(|p| {
                 // remove rules that should be silent but not for now due to pest limitation
-                !matches!(
-                    p.as_rule(),
-                    Rule::escape
-                        | Rule::brackets_open
-                        | Rule::brackets_close
-                        | Rule::double_brackets_open
-                        | Rule::double_brackets_close
-                        | Rule::comment_brackets_open
-                )
+                !matches!(p.as_rule(), Rule::escape)
             })
             .peekable();
         let mut end_pos: Option<Position<'_>> = None;
@@ -479,7 +516,12 @@ impl Template {
                     if rule == Rule::raw_block_end {
                         let mut t = Template::new();
                         t.push_element(
-                            Template::raw_string(&source[prev_end..span.start()], None, false),
+                            Template::raw_string(
+                                &source[prev_end..span.start()],
+                                None,
+                                false,
+                                trim_line_requiered,
+                            ),
                             line_no,
                             col_no,
                         );
@@ -487,7 +529,12 @@ impl Template {
                     } else {
                         let t = template_stack.front_mut().unwrap();
                         t.push_element(
-                            Template::raw_string(&source[prev_end..span.start()], None, false),
+                            Template::raw_string(
+                                &source[prev_end..span.start()],
+                                None,
+                                false,
+                                trim_line_requiered,
+                            ),
                             line_no,
                             col_no,
                         );
@@ -513,10 +560,14 @@ impl Template {
                                 &source[start..span.end()],
                                 Some(pair.clone()),
                                 omit_pro_ws,
+                                trim_line_requiered,
                             ),
                             line_no,
                             col_no,
                         );
+
+                        // reset standalone statement marker
+                        trim_line_requiered = false;
                     }
                     Rule::helper_block_start
                     | Rule::raw_block_start
@@ -554,6 +605,10 @@ impl Template {
                         }
                         omit_pro_ws = exp.omit_pro_ws;
 
+                        // standalone line check part 1, for the leading whitespaces and newline
+                        trim_line_requiered =
+                            Template::is_standalone_statement(&template_stack, it.by_ref());
+
                         let t = template_stack.front_mut().unwrap();
                         t.mapping.push(TemplateMapping(line_no, col_no));
                     }
@@ -567,6 +622,10 @@ impl Template {
                         }
                         omit_pro_ws = exp.omit_pro_ws;
 
+                        // standalone line check part 1, for the leading whitespaces and newline
+                        trim_line_requiered =
+                            Template::is_standalone_statement(&template_stack, it.by_ref());
+
                         let t = template_stack.pop_front().unwrap();
                         let h = helper_stack.front_mut().unwrap();
                         h.template = Some(t);
@@ -574,7 +633,12 @@ impl Template {
                     Rule::raw_block_text => {
                         let mut t = Template::new();
                         t.push_element(
-                            Template::raw_string(span.as_str(), Some(pair.clone()), omit_pro_ws),
+                            Template::raw_string(
+                                span.as_str(),
+                                Some(pair.clone()),
+                                omit_pro_ws,
+                                trim_line_requiered,
+                            ),
                             line_no,
                             col_no,
                         );
@@ -589,10 +653,10 @@ impl Template {
                     | Rule::decorator_block_end
                     | Rule::partial_block_end => {
                         let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
+
                         if exp.omit_pre_ws {
                             Template::remove_previous_whitespace(&mut template_stack);
                         }
-
                         omit_pro_ws = exp.omit_pro_ws;
 
                         match rule {
@@ -630,6 +694,10 @@ impl Template {
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::helper_block_end | Rule::raw_block_end => {
+                                // standalone line check part 1, for the leading whitespaces and newline
+                                trim_line_requiered =
+                                    Template::is_standalone_statement(&template_stack, it.by_ref());
+
                                 let mut h = helper_stack.pop_front().unwrap();
                                 let close_tag_name = exp.name.as_name();
                                 if h.name.as_name() == close_tag_name {
@@ -652,6 +720,10 @@ impl Template {
                                 }
                             }
                             Rule::decorator_block_end | Rule::partial_block_end => {
+                                // standalone line check part 1, for the leading whitespaces and newline
+                                trim_line_requiered =
+                                    Template::is_standalone_statement(&template_stack, it.by_ref());
+
                                 let mut d = decorator_stack.pop_front().unwrap();
                                 let close_tag_name = exp.name.as_name();
                                 if d.name.as_name() == close_tag_name {
@@ -677,6 +749,9 @@ impl Template {
                         }
                     }
                     Rule::hbs_comment_compact => {
+                        trim_line_requiered =
+                            Template::is_standalone_statement(&template_stack, it.by_ref());
+
                         let text = span
                             .as_str()
                             .trim_start_matches("{{!")
@@ -685,6 +760,9 @@ impl Template {
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     Rule::hbs_comment => {
+                        trim_line_requiered =
+                            Template::is_standalone_statement(&template_stack, it.by_ref());
+
                         let text = span
                             .as_str()
                             .trim_start_matches("{{!--")
@@ -707,7 +785,8 @@ impl Template {
                     let t = template_stack.front_mut().unwrap();
                     t.push_element(RawString(text.to_owned()), line_no, col_no);
                 }
-                return Ok(template_stack.pop_front().unwrap());
+                let root_template = template_stack.pop_front().unwrap();
+                return Ok(root_template);
             }
         }
     }
@@ -723,6 +802,11 @@ impl Template {
             }
             Err(e) => Err(e.in_template(name)),
         }
+    }
+
+    fn check_standalone_statements(&mut self) {
+        // loop over the template element tree and remove trailing whitespaces and
+        // line breakers for standalone statements
     }
 }
 
