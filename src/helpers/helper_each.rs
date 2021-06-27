@@ -571,4 +571,22 @@ mod test {
             .render_template("{{#each data}}{{else}}food{{/each}}", &json!({"data": 24}))
             .is_ok());
     }
+
+    #[test]
+    fn newline_stripping_for_each() {
+        let reg = Registry::new();
+
+        let tpl = r#"<ul>
+  {{#each a}}
+    <li>{{this}}</li>
+  {{/each}}
+</ul>"#;
+        assert_eq!(
+            r#"<ul>
+    <li>0</li>
+    <li>1</li>
+</ul>"#,
+            reg.render_template(tpl, &json!({"a": [0, 1]})).unwrap()
+        );
+    }
 }
