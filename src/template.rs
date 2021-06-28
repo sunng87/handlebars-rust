@@ -389,29 +389,36 @@ impl Template {
         }
     }
 
-    fn check_previous_rawstring_for_newline(template_stack: &VecDeque<Template>) -> bool {
-        let t = template_stack.front().unwrap();
-        if let Some(el) = t.elements.get(0) {
-            if let RawString(ref text) = el {
-                grammar::ends_with_empty_line(text)
-            } else {
-                false
-            }
-        } else {
-            true
-        }
-    }
-
     // test if a statement is followed by a rawstring
     fn is_adjust_to_newline(source: &str) -> bool {
         grammar::starts_with_empty_line(source)
     }
 
-    fn is_standalone_statement(template_stack: &VecDeque<Template>, source: &str) -> bool {
-        let r1 = Template::check_previous_rawstring_for_newline(template_stack);
-        let r2 = Template::is_adjust_to_newline(source);
-        // dbg!(&r1, &r2);
-        r1 && r2
+    fn process_standalone_statement(template_stack: &mut VecDeque<Template>, source: &str) -> bool {
+        let with_trailing_newline = Template::is_adjust_to_newline(source);
+
+        if with_trailing_newline {
+            let t = template_stack.front_mut().unwrap();
+            // check the last element before current
+            if let Some(el) = t.elements.last_mut() {
+                if let RawString(ref mut text) = el {
+                    let standalone = grammar::ends_with_empty_line(text);
+                    // trim leading space for standalone statement
+                    if standalone {
+                        *text = text
+                            .trim_end_matches(grammar::whitespace_matcher)
+                            .to_owned();
+                    }
+                    standalone
+                } else {
+                    false
+                }
+            } else {
+                true
+            }
+        } else {
+            false
+        }
     }
 
     fn raw_string<'a>(
@@ -595,8 +602,8 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         // standalone line check part 1, for the leading whitespaces and newline
-                        trim_line_requiered = Template::is_standalone_statement(
-                            &template_stack,
+                        trim_line_requiered = Template::process_standalone_statement(
+                            &mut template_stack,
                             &source[span.end()..],
                         );
 
@@ -614,8 +621,8 @@ impl Template {
                         omit_pro_ws = exp.omit_pro_ws;
 
                         // standalone line check part 1, for the leading whitespaces and newline
-                        trim_line_requiered = Template::is_standalone_statement(
-                            &template_stack,
+                        trim_line_requiered = Template::process_standalone_statement(
+                            &mut template_stack,
                             &source[span.end()..],
                         );
 
@@ -688,8 +695,8 @@ impl Template {
                             }
                             Rule::helper_block_end | Rule::raw_block_end => {
                                 // standalone line check part 1, for the leading whitespaces and newline
-                                trim_line_requiered = Template::is_standalone_statement(
-                                    &template_stack,
+                                trim_line_requiered = Template::process_standalone_statement(
+                                    &mut template_stack,
                                     &source[span.end()..],
                                 );
 
@@ -716,8 +723,8 @@ impl Template {
                             }
                             Rule::decorator_block_end | Rule::partial_block_end => {
                                 // standalone line check part 1, for the leading whitespaces and newline
-                                trim_line_requiered = Template::is_standalone_statement(
-                                    &template_stack,
+                                trim_line_requiered = Template::process_standalone_statement(
+                                    &mut template_stack,
                                     &source[span.end()..],
                                 );
 
@@ -746,8 +753,8 @@ impl Template {
                         }
                     }
                     Rule::hbs_comment_compact => {
-                        trim_line_requiered = Template::is_standalone_statement(
-                            &template_stack,
+                        trim_line_requiered = Template::process_standalone_statement(
+                            &mut template_stack,
                             &source[span.end()..],
                         );
 
@@ -759,8 +766,8 @@ impl Template {
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     Rule::hbs_comment => {
-                        trim_line_requiered = Template::is_standalone_statement(
-                            &template_stack,
+                        trim_line_requiered = Template::process_standalone_statement(
+                            &mut template_stack,
                             &source[span.end()..],
                         );
 
