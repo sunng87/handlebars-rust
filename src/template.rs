@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use pest::error::LineColLocation;
 use pest::iterators::Pair;
-use pest::{Parser, Position};
+use pest::{Parser, Position, Span};
 use serde_json::value::Value as Json;
 
 use crate::error::{TemplateError, TemplateErrorReason};
@@ -380,42 +380,39 @@ impl Template {
 
     fn remove_previous_whitespace(template_stack: &mut VecDeque<Template>) {
         let t = template_stack.front_mut().unwrap();
-        if let Some(el) = t.elements.pop() {
-            if let RawString(ref text) = el {
-                t.elements.push(RawString(text.trim_end().to_owned()));
-            } else {
-                t.elements.push(el);
+        if let Some(el) = t.elements.last_mut() {
+            if let RawString(ref mut text) = el {
+                *text = text.trim_end().to_owned();
             }
         }
     }
 
-    // test if a statement is followed by a rawstring
-    fn is_adjust_to_newline(source: &str) -> bool {
-        grammar::starts_with_empty_line(source)
-    }
-
-    fn process_standalone_statement(template_stack: &mut VecDeque<Template>, source: &str) -> bool {
-        let with_trailing_newline = Template::is_adjust_to_newline(source);
+    fn process_standalone_statement(
+        template_stack: &mut VecDeque<Template>,
+        source: &str,
+        current_span: &Span<'_>,
+    ) -> bool {
+        let with_trailing_newline = grammar::starts_with_empty_line(&source[current_span.end()..]);
 
         if with_trailing_newline {
-            let t = template_stack.front_mut().unwrap();
-            // check the last element before current
-            if let Some(el) = t.elements.last_mut() {
-                if let RawString(ref mut text) = el {
-                    let standalone = grammar::ends_with_empty_line(text);
-                    // trim leading space for standalone statement
-                    if standalone {
+            let with_leading_newline =
+                grammar::ends_with_empty_line(&source[..current_span.start()]);
+
+            if with_leading_newline {
+                let t = template_stack.front_mut().unwrap();
+                // check the last element before current
+                if let Some(el) = t.elements.last_mut() {
+                    if let RawString(ref mut text) = el {
+                        // trim leading space for standalone statement
                         *text = text
                             .trim_end_matches(grammar::whitespace_matcher)
                             .to_owned();
                     }
-                    standalone
-                } else {
-                    false
                 }
-            } else {
-                true
             }
+
+            // return true when the item is the first element in root template
+            current_span.start() == 0 || with_leading_newline
         } else {
             false
         }
@@ -604,7 +601,8 @@ impl Template {
                         // standalone line check part 1, for the leading whitespaces and newline
                         trim_line_requiered = Template::process_standalone_statement(
                             &mut template_stack,
-                            &source[span.end()..],
+                            source,
+                            &span,
                         );
 
                         let t = template_stack.front_mut().unwrap();
@@ -623,7 +621,8 @@ impl Template {
                         // standalone line check part 1, for the leading whitespaces and newline
                         trim_line_requiered = Template::process_standalone_statement(
                             &mut template_stack,
-                            &source[span.end()..],
+                            source,
+                            &span,
                         );
 
                         let t = template_stack.pop_front().unwrap();
@@ -697,7 +696,8 @@ impl Template {
                                 // standalone line check part 1, for the leading whitespaces and newline
                                 trim_line_requiered = Template::process_standalone_statement(
                                     &mut template_stack,
-                                    &source[span.end()..],
+                                    source,
+                                    &span,
                                 );
 
                                 let mut h = helper_stack.pop_front().unwrap();
@@ -725,7 +725,8 @@ impl Template {
                                 // standalone line check part 1, for the leading whitespaces and newline
                                 trim_line_requiered = Template::process_standalone_statement(
                                     &mut template_stack,
-                                    &source[span.end()..],
+                                    source,
+                                    &span,
                                 );
 
                                 let mut d = decorator_stack.pop_front().unwrap();
@@ -755,7 +756,8 @@ impl Template {
                     Rule::hbs_comment_compact => {
                         trim_line_requiered = Template::process_standalone_statement(
                             &mut template_stack,
-                            &source[span.end()..],
+                            source,
+                            &span,
                         );
 
                         let text = span
@@ -768,7 +770,8 @@ impl Template {
                     Rule::hbs_comment => {
                         trim_line_requiered = Template::process_standalone_statement(
                             &mut template_stack,
-                            &source[span.end()..],
+                            source,
+                            &span,
                         );
 
                         let text = span

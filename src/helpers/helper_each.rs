@@ -578,6 +578,7 @@ mod test {
 
         let tpl = r#"<ul>
   {{#each a}}
+    {{!-- comment --}}
     <li>{{this}}</li>
   {{/each}}
 </ul>"#;
