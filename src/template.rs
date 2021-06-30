@@ -469,7 +469,9 @@ impl Template {
         let mut template_stack: VecDeque<Template> = VecDeque::new();
 
         let mut omit_pro_ws = false;
-        // flag for tracking standalone statement like {{#if}} and {{/if}}
+        // flag for newline removal of standalone statements
+        // this option is marked as true when standalone statement is detected
+        // then the leading whitespaces and newline of next rawstring will be trimed
         let mut trim_line_requiered = false;
 
         let parser_queue = HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| {
@@ -487,7 +489,7 @@ impl Template {
             .flatten()
             .filter(|p| {
                 // remove rules that should be silent but not for now due to pest limitation
-                !matches!(p.as_rule(), Rule::escape | Rule::helper_block)
+                !matches!(p.as_rule(), Rule::escape)
             })
             .peekable();
         let mut end_pos: Option<Position<'_>> = None;
@@ -598,7 +600,8 @@ impl Template {
                         }
                         omit_pro_ws = exp.omit_pro_ws;
 
-                        // standalone line check part 1, for the leading whitespaces and newline
+                        // standalone statement check, it also removes leading whitespaces of
+                        // previous rawstring when standalone statement detected
                         trim_line_requiered = Template::process_standalone_statement(
                             &mut template_stack,
                             source,
@@ -618,7 +621,8 @@ impl Template {
                         }
                         omit_pro_ws = exp.omit_pro_ws;
 
-                        // standalone line check part 1, for the leading whitespaces and newline
+                        // standalone statement check, it also removes leading whitespaces of
+                        // previous rawstring when standalone statement detected
                         trim_line_requiered = Template::process_standalone_statement(
                             &mut template_stack,
                             source,
@@ -693,7 +697,8 @@ impl Template {
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::helper_block_end | Rule::raw_block_end => {
-                                // standalone line check part 1, for the leading whitespaces and newline
+                                // standalone statement check, it also removes leading whitespaces of
+                                // previous rawstring when standalone statement detected
                                 trim_line_requiered = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
@@ -722,7 +727,8 @@ impl Template {
                                 }
                             }
                             Rule::decorator_block_end | Rule::partial_block_end => {
-                                // standalone line check part 1, for the leading whitespaces and newline
+                                // standalone statement check, it also removes leading whitespaces of
+                                // previous rawstring when standalone statement detected
                                 trim_line_requiered = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
