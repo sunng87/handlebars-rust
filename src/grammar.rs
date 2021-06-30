@@ -4,6 +4,26 @@
 #[grammar = "grammar.pest"]
 pub struct HandlebarsParser;
 
+#[inline]
+pub(crate) fn whitespace_matcher(c: char) -> bool {
+    c == ' ' || c == '\t'
+}
+
+#[inline]
+pub(crate) fn newline_matcher(c: char) -> bool {
+    c == '\n' || c == '\r'
+}
+
+pub(crate) fn ends_with_empty_line(text: &str) -> bool {
+    text.trim_end_matches(whitespace_matcher)
+        .ends_with(newline_matcher)
+}
+
+pub(crate) fn starts_with_empty_line(text: &str) -> bool {
+    text.trim_start_matches(whitespace_matcher)
+        .starts_with(newline_matcher)
+}
+
 #[cfg(test)]
 mod test {
     use super::{HandlebarsParser, Rule};
@@ -144,7 +164,6 @@ mod test {
                  "{{!--
                     <li><a href=\"{{up-dir nest-count}}{{base-url}}index.html\">{{this.title}}</a></li>
                 --}}",
-                     "\r\n     {{!-- yes --}}    \r\n",
                      "{{!    -- good  --}}"];
         for i in s.iter() {
             assert_rule!(Rule::hbs_comment, i);
@@ -226,10 +245,6 @@ mod test {
             "{{#each people as |person|}}",
             "{{#each-obj obj as |val key|}}",
             "{{#each assets}}",
-            "\n{{#each assets}}\n",
-            "\r\n{{#each assets}}\r\n",
-            "\r\n      {{#each assets}}\r\n",
-            "\r\n\t\t{{#each assets}}\r\n",
         ];
         for i in s.iter() {
             assert_rule!(Rule::helper_block_start, i);
@@ -257,7 +272,6 @@ mod test {
             "{{#if}}hello{{else~}}world{{/if}}",
             "{{#if}}hello{{~^~}}world{{/if}}",
             "{{#if}}{{/if}}",
-            "\r\n{{#if}}\r\n\r\n{{/if}}\r\n",
         ];
         for i in s.iter() {
             assert_rule!(Rule::helper_block, i);
@@ -269,7 +283,6 @@ mod test {
         let s = vec![
             "{{{{if hello}}}}good {{hello}}{{{{/if}}}}",
             "{{{{if hello}}}}{{#if nice}}{{/if}}{{{{/if}}}}",
-            "\n{{{{if hello}}}}\n{{#if nice}}{{/if}}{{{{/if}}}}",
         ];
         for i in s.iter() {
             assert_rule!(Rule::raw_block, i);
