@@ -389,7 +389,7 @@ pub use self::error::{RenderError, TemplateError};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::json::path::Path;
 pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
-pub use self::output::Output;
+pub use self::output::{Output, StringOutput};
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
 pub use self::render::{Decorator, Evaluable, Helper, RenderContext, Renderable};
 pub use self::template::Template;

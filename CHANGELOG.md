@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.0.1...Unreleased) - ReleaseDate
+
+* [Added] export `StringOutput` as requested in #442
+
 ## [4.0.1](https://github.com/sunng87/handlebars-rust/compare/4.0.0...4.0.1) - 2021-06-15
 
 * [Fixed] Each block render error with empty array or object [#445]
