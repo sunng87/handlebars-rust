@@ -13,7 +13,7 @@ book](https://doc.rust-lang.org/book/).
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Docs](https://docs.rs/handlebars/badge.svg)](https://docs.rs/crate/handlebars/)
-![rustc](https://img.shields.io/badge/rustc-1.45+-lightgray.svg)
+![rustc](https://img.shields.io/badge/rustc-1.50+-lightgray.svg)
 [![Donate](https://img.shields.io/badge/donate-liberapay-yellow.svg)](https://liberapay.com/Sunng/donate)
 
 ## Getting Started
@@ -73,16 +73,6 @@ Examples are provided in source tree to demo usage of various api.
 Handlebars will track Rust nightly and stable channel. When dropping
 support for previous stable versions, I will bump **major** version
 and clarify in CHANGELOG.
-
-### Rust compatibility table
-
-| Handlebars version range | Minimum Rust version |
-| --- | --- |
-| ~4.0.0 | 1.45 |
-| ~3.0.0 | 1.32 |
-| ~2.0.0 | 1.32 |
-| ~1.1.0 | 1.30 |
-| ~1.0.0 | 1.23 |
 
 ## Document
 
