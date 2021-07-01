@@ -56,6 +56,17 @@ fn test_subexpression() {
 }
 
 #[test]
+fn test_strict_mode() {
+    let mut hbs = Handlebars::new();
+    hbs.set_strict_mode(true);
+
+    let data = json!({"a": 1});
+
+    assert!(hbs.render_template("{{#if (eq a 1)}}Success{{else}}Failed{{/if}}", &data).is_ok());
+    assert!(hbs.render_template("{{#if (eq z 1)}}Success{{else}}Failed{{/if}}", &data).is_err())
+}
+
+#[test]
 fn invalid_json_path() {
     // The data here is not important
     let data = &Vec::<()>::new();
