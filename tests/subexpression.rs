@@ -62,8 +62,12 @@ fn test_strict_mode() {
 
     let data = json!({"a": 1});
 
-    assert!(hbs.render_template("{{#if (eq a 1)}}Success{{else}}Failed{{/if}}", &data).is_ok());
-    assert!(hbs.render_template("{{#if (eq z 1)}}Success{{else}}Failed{{/if}}", &data).is_err())
+    assert!(hbs
+        .render_template("{{#if (eq a 1)}}Success{{else}}Failed{{/if}}", &data)
+        .is_ok());
+    assert!(hbs
+        .render_template("{{#if (eq z 1)}}Success{{else}}Failed{{/if}}", &data)
+        .is_err())
 }
 
 #[test]
