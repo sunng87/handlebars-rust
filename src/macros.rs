@@ -51,7 +51,7 @@ macro_rules! handlebars_helper {
             fn call_inner<'reg: 'rc, 'rc>(
                 &self,
                 h: &$crate::Helper<'reg, 'rc>,
-                _: &'reg $crate::Handlebars<'reg>,
+                r: &'reg $crate::Handlebars<'reg>,
                 _: &'rc $crate::Context,
                 _: &mut $crate::RenderContext<'reg, 'rc>,
             ) -> Result<$crate::ScopedJson<'reg, 'rc>, $crate::RenderError> {
@@ -59,7 +59,13 @@ macro_rules! handlebars_helper {
 
                 $(
                     let $name = h.param(param_idx)
-                        .map(|x| x.value())
+                        .and_then(|x| {
+                            if r.strict_mode() && x.is_value_missing() {
+                                None
+                            } else {
+                                Some(x.value())
+                            }
+                        })
                         .ok_or_else(|| $crate::RenderError::new(&format!(
                             "`{}` helper: Couldn't read parameter {}",
                             stringify!($struct_name), stringify!($name),
