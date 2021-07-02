@@ -3,6 +3,10 @@
 ## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.0.1...Unreleased) - ReleaseDate
 
 * [Added] export `StringOutput` as requested in #442
+* [Changed] strict mode now applies to our helper macro `handlebars_helper!` and
+  built-in helpers based on it.
+* [Fixed] Line stripping feature for standalone statment introduced in #404 is now
+  aligned with handlebarsjs. #448
 
 ## [4.0.1](https://github.com/sunng87/handlebars-rust/compare/4.0.0...4.0.1) - 2021-06-15
 
@@ -28,6 +32,8 @@
 * [Fixed] escape rules for Json string literal [#423]
 * [Fixed] **Breaking** zero-arity subexpressions support [#433]
   Zero-arity subexpression no longer resolved as variable. The behaviour is now aligned with handlebarsjs.
+  For instance, `{{(parent)}}` can no longer access `parent` field of the context object, use
+  `{{lookup this "parent"}}` instead. This change applies to partial inclusion, too.
 * [Removed] **Breaking** option to disable source map is removed [#395]
 * [Removed] **Breaking** `TemplateFileError` and `TemplateRenderError` are removed and merged into
   `TemplateError` and `RenderError` [#395]
