@@ -1,7 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
-use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
+use valuable::Valuable;
 
 use crate::block::{BlockContext, BlockParamHolder};
 use crate::error::RenderError;
@@ -15,8 +15,8 @@ pub type Object = HashMap<String, Json>;
 /// The context wrap data you render on your templates.
 ///
 #[derive(Debug, Clone)]
-pub struct Context {
-    data: Json,
+pub struct Context<'rc, V: Valuable> {
+    data: &'rc V,
 }
 
 #[derive(Debug)]
@@ -151,21 +151,14 @@ pub(crate) fn merge_json(base: &Json, addition: &HashMap<&str, &Json>) -> Json {
     Json::Object(base_map)
 }
 
-impl Context {
-    /// Create a context with null data
-    pub fn null() -> Context {
-        Context { data: Json::Null }
-    }
-
+impl<'rc, V: Valuable> Context<'rc, V> {
     /// Create a context with given data
-    pub fn wraps<T: Serialize>(e: T) -> Result<Context, RenderError> {
-        to_value(e)
-            .map_err(RenderError::from)
-            .map(|d| Context { data: d })
+    pub fn wraps(e: &'rc V) -> Result<Context<'rc, V>, RenderError> {
+        Ok(Context { data: e })
     }
 
     /// Navigate the context with relative path and block scopes
-    pub(crate) fn navigate<'reg, 'rc>(
+    pub(crate) fn navigate<'reg>(
         &'rc self,
         relative_path: &[PathSeg],
         block_contexts: &VecDeque<BlockContext<'reg>>,

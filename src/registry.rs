@@ -5,7 +5,7 @@ use std::io::{Error as IoError, Write};
 use std::path::Path;
 use std::sync::Arc;
 
-use serde::Serialize;
+use valuable::Valuable;
 
 use crate::context::Context;
 use crate::decorators::{self, DecoratorDef};
@@ -496,12 +496,12 @@ impl<'reg> Registry<'reg> {
     /// Render a registered template with some data into a string
     ///
     /// * `name` is the template name you registered previously
-    /// * `data` is the data that implements `serde::Serialize`
+    /// * `data` is the data that implements `valuable::Valuable`
     ///
     /// Returns rendered string or a struct with error information
     pub fn render<T>(&self, name: &str, data: &T) -> Result<String, RenderError>
     where
-        T: Serialize,
+        T: Valuable,
     {
         let mut output = StringOutput::new();
         let ctx = Context::wraps(&data)?;
@@ -519,7 +519,7 @@ impl<'reg> Registry<'reg> {
     /// Render a registered template and write some data to the `std::io::Write`
     pub fn render_to_write<T, W>(&self, name: &str, data: &T, writer: W) -> Result<(), RenderError>
     where
-        T: Serialize,
+        T: Valuable,
         W: Write,
     {
         let mut output = WriteOutput::new(writer);
@@ -530,7 +530,7 @@ impl<'reg> Registry<'reg> {
     /// Render a template string using current registry without registering it
     pub fn render_template<T>(&self, template_string: &str, data: &T) -> Result<String, RenderError>
     where
-        T: Serialize,
+        T: Valuable,
     {
         let mut writer = StringWriter::new();
         self.render_template_to_write(template_string, data, &mut writer)?;
@@ -562,7 +562,7 @@ impl<'reg> Registry<'reg> {
         writer: W,
     ) -> Result<(), RenderError>
     where
-        T: Serialize,
+        T: Valuable,
         W: Write,
     {
         let tpl = Template::compile(template_string)?;
