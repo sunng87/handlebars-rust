@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.0.1...Unreleased) - ReleaseDate
+## [4.1.0](https://github.com/sunng87/handlebars-rust/compare/4.0.1...4.1.0) - 2021-07-05
 
 * [Added] export `StringOutput` as requested in #442
 * [Changed] strict mode now applies to our helper macro `handlebars_helper!` and
