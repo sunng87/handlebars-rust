@@ -1,3 +1,5 @@
+use valuable::Value;
+
 use serde::Serialize;
 use serde_json::value::{to_value, Value as Json};
 
@@ -8,13 +10,14 @@ pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 /// * Constant: the JSON value hardcoded into template
 /// * Context:  the JSON value referenced in your provided data context
 /// * Derived:  the owned JSON value computed during rendering process
+/// * Missing: the value was not found
 ///
 #[derive(Debug)]
 pub enum ScopedJson<'reg: 'rc, 'rc> {
     Constant(&'reg Json),
     Derived(Json),
     // represents a json reference to context value, its full path
-    Context(&'rc Json, Vec<String>),
+    Context(Value<'rc>, Vec<String>),
     Missing,
 }
 
