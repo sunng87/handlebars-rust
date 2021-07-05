@@ -392,6 +392,7 @@ pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 pub use self::output::{Output, StringOutput};
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
 pub use self::render::{Decorator, Evaluable, Helper, RenderContext, Renderable};
+pub use self::sources::Source;
 pub use self::template::Template;
 
 #[doc(hidden)]

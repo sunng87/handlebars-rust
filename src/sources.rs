@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, Error as IOError, Read};
 use std::path::PathBuf;
 
-pub(crate) trait Source {
+pub trait Source {
     type Item;
     type Error;
 
