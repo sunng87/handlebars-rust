@@ -147,5 +147,20 @@ mod test {
             hbs.render_template("{{#if a}}\nx\n{{^}}\ny\n{{/if}}\nz", &json!({"a": false}))
                 .unwrap()
         );
+
+        assert_eq!(
+            r#"  foo
+  bar
+  baz"#,
+            hbs.render_template(
+                r#"{{~#if true}}
+  foo
+  bar
+{{/if}}
+  baz"#,
+                &json!({})
+            )
+            .unwrap()
+        );
     }
 }
