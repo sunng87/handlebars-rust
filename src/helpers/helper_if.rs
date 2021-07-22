@@ -153,10 +153,10 @@ mod test {
   bar
   baz"#,
             hbs.render_template(
-                r#"{{~#if true}}
+                r#"  {{#if true}}
   foo
   bar
-{{/if}}
+  {{/if}}
   baz"#,
                 &json!({})
             )
