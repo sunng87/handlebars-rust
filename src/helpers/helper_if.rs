@@ -149,6 +149,23 @@ mod test {
         );
 
         assert_eq!(
+            r#"yes
+  foo
+  bar
+  baz"#,
+            hbs.render_template(
+                r#"yes
+  {{#if true}}
+  foo
+  bar
+  {{/if}}
+  baz"#,
+                &json!({})
+            )
+            .unwrap()
+        );
+
+        assert_eq!(
             r#"  foo
   bar
   baz"#,
