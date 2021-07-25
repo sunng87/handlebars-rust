@@ -137,6 +137,12 @@ mod test {
         );
 
         assert_eq!(
+            "yes\r\n",
+            hbs.render_template("{{#if a}}\r\nyes\r\n{{/if}}\r\n", &json!({"a": true}))
+                .unwrap()
+        );
+
+        assert_eq!(
             "x\ny",
             hbs.render_template("{{#if a}}x{{/if}}\ny", &json!({"a": true}))
                 .unwrap()
