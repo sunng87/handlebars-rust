@@ -330,4 +330,30 @@ mod test {
             "fruit: carrot,fruit: tomato,"
         );
     }
+
+    #[test]
+    fn line_stripping_with_inline_and_partial() {
+        let tpl0 = r#"{{#*inline "foo"}}foo
+{{/inline}}
+{{> foo}}
+{{> foo}}
+{{> foo}}"#;
+        let tpl1 = r#"{{#*inline "foo"}}foo{{/inline}}
+{{> foo}}
+{{> foo}}
+{{> foo}}"#;
+
+        let hbs = Registry::new();
+        assert_eq!(
+            r#"foo
+foo
+foo
+"#,
+            hbs.render_template(tpl0, &json!({})).unwrap()
+        );
+        assert_eq!(
+            r#"foofoofoo"#,
+            hbs.render_template(tpl1, &json!({})).unwrap()
+        );
+    }
 }
