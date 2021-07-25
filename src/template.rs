@@ -682,6 +682,14 @@ impl Template {
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::decorator_expression | Rule::partial_expression => {
+                                // standalone statement check, it also removes leading whitespaces of
+                                // previous rawstring when standalone statement detected
+                                trim_line_requiered = Template::process_standalone_statement(
+                                    &mut template_stack,
+                                    source,
+                                    &span,
+                                );
+
                                 let decorator = DecoratorTemplate {
                                     name: exp.name,
                                     params: exp.params,

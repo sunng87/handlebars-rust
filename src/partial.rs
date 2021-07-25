@@ -352,7 +352,8 @@ foo
             hbs.render_template(tpl0, &json!({})).unwrap()
         );
         assert_eq!(
-            r#"foofoofoo"#,
+            r#"
+foofoofoo"#,
             hbs.render_template(tpl1, &json!({})).unwrap()
         );
     }
