@@ -15,8 +15,9 @@ pub(crate) fn newline_matcher(c: char) -> bool {
 }
 
 pub(crate) fn ends_with_empty_line(text: &str) -> bool {
-    text.trim_end_matches(whitespace_matcher)
-        .ends_with(newline_matcher)
+    let s = text.trim_end_matches(whitespace_matcher);
+    // also matches when text is just whitespaces
+    s.ends_with(newline_matcher) || s.is_empty()
 }
 
 pub(crate) fn starts_with_empty_line(text: &str) -> bool {

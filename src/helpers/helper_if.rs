@@ -137,6 +137,12 @@ mod test {
         );
 
         assert_eq!(
+            "yes\r\n",
+            hbs.render_template("{{#if a}}\r\nyes\r\n{{/if}}\r\n", &json!({"a": true}))
+                .unwrap()
+        );
+
+        assert_eq!(
             "x\ny",
             hbs.render_template("{{#if a}}x{{/if}}\ny", &json!({"a": true}))
                 .unwrap()
@@ -146,6 +152,38 @@ mod test {
             "y\nz",
             hbs.render_template("{{#if a}}\nx\n{{^}}\ny\n{{/if}}\nz", &json!({"a": false}))
                 .unwrap()
+        );
+
+        assert_eq!(
+            r#"yes
+  foo
+  bar
+  baz"#,
+            hbs.render_template(
+                r#"yes
+  {{#if true}}
+  foo
+  bar
+  {{/if}}
+  baz"#,
+                &json!({})
+            )
+            .unwrap()
+        );
+
+        assert_eq!(
+            r#"  foo
+  bar
+  baz"#,
+            hbs.render_template(
+                r#"  {{#if true}}
+  foo
+  bar
+  {{/if}}
+  baz"#,
+                &json!({})
+            )
+            .unwrap()
         );
     }
 }
