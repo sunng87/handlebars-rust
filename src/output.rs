@@ -46,3 +46,9 @@ impl StringOutput {
         String::from_utf8(self.buf)
     }
 }
+
+impl Default for StringOutput {
+    fn default() -> Self {
+        StringOutput::new()
+    }
+}
