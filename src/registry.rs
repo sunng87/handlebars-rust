@@ -489,7 +489,7 @@ impl<'reg> Registry<'reg> {
     {
         self.get_or_load_template(name).and_then(|t| {
             let mut render_context = RenderContext::new(t.name.as_ref());
-            t.render(self, &ctx, &mut render_context, output)
+            t.render(self, ctx, &mut render_context, output)
         })
     }
 
@@ -548,7 +548,7 @@ impl<'reg> Registry<'reg> {
         let mut out = StringOutput::new();
         {
             let mut render_context = RenderContext::new(None);
-            tpl.render(self, &ctx, &mut render_context, &mut out)?;
+            tpl.render(self, ctx, &mut render_context, &mut out)?;
         }
 
         out.into_string().map_err(RenderError::from)

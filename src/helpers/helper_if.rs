@@ -36,7 +36,7 @@ impl HelperDef for IfHelper {
 
         let tmpl = if value { h.template() } else { h.inverse() };
         match tmpl {
-            Some(ref t) => t.render(r, ctx, rc, out),
+            Some(t) => t.render(r, ctx, rc, out),
             None => Ok(()),
         }
     }

@@ -201,7 +201,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
         self.blocks
             .get(level)
-            .and_then(|blk| blk.get_local_var(&name))
+            .and_then(|blk| blk.get_local_var(name))
     }
 
     /// Test if given template name is current template.

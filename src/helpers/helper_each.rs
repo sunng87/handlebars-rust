@@ -18,7 +18,7 @@ fn update_block_context<'reg>(
     is_first: bool,
     value: &Json,
 ) {
-    if let Some(ref p) = base_path {
+    if let Some(p) = base_path {
         if is_first {
             *block.base_path_mut() = copy_on_push_vec(p, relative_path);
         } else if let Some(ptr) = block.base_path_mut().last_mut() {
@@ -83,7 +83,7 @@ impl HelperDef for EachHelper {
                 Json::Array(ref list)
                     if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
                 {
-                    let block_context = create_block(&value);
+                    let block_context = create_block(value);
                     rc.push_block(block_context);
 
                     let len = list.len();
@@ -100,8 +100,8 @@ impl HelperDef for EachHelper {
                             block.set_local_var("last", to_json(is_last));
                             block.set_local_var("index", index.clone());
 
-                            update_block_context(block, array_path, i.to_string(), is_first, &v);
-                            set_block_param(block, h, array_path, &index, &v)?;
+                            update_block_context(block, array_path, i.to_string(), is_first, v);
+                            set_block_param(block, h, array_path, &index, v)?;
                         }
 
                         t.render(r, ctx, rc, out)?;
@@ -113,7 +113,7 @@ impl HelperDef for EachHelper {
                 Json::Object(ref obj)
                     if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
                 {
-                    let block_context = create_block(&value);
+                    let block_context = create_block(value);
                     rc.push_block(block_context);
 
                     let mut is_first = true;
@@ -126,8 +126,8 @@ impl HelperDef for EachHelper {
                             block.set_local_var("first", to_json(is_first));
                             block.set_local_var("key", key.clone());
 
-                            update_block_context(block, obj_path, k.to_string(), is_first, &v);
-                            set_block_param(block, h, obj_path, &key, &v)?;
+                            update_block_context(block, obj_path, k.to_string(), is_first, v);
+                            set_block_param(block, h, obj_path, &key, v)?;
                         }
 
                         t.render(r, ctx, rc, out)?;

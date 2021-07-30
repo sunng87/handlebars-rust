@@ -45,7 +45,7 @@ fn parse_json_visitor<'a, 'reg>(
     for path_seg in relative_path {
         match path_seg {
             PathSeg::Named(the_path) => {
-                if let Some((holder, base_path)) = get_in_block_params(&block_contexts, the_path) {
+                if let Some((holder, base_path)) = get_in_block_params(block_contexts, the_path) {
                     with_block_param = Some((holder, base_path));
                 }
                 break;
@@ -171,7 +171,7 @@ impl Context {
         block_contexts: &VecDeque<BlockContext<'reg>>,
     ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
         // always use absolute at the moment until we get base_value lifetime issue fixed
-        let resolved_visitor = parse_json_visitor(&relative_path, block_contexts, true);
+        let resolved_visitor = parse_json_visitor(relative_path, block_contexts, true);
 
         // debug logging
         debug!("Accessing context value: {:?}", resolved_visitor);
