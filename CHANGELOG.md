@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.0...Unreleased) - ReleaseDate
+## [4.1.1](https://github.com/sunng87/handlebars-rust/compare/4.1.0...4.1.1) - 2021-07-31
 
 * [Changed] Update rhai to 1.0 [#455]
 * [Fixed] Empty line stripping for partial include statement, and other corner cases [#458]
