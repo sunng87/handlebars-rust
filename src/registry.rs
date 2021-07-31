@@ -216,6 +216,15 @@ impl<'reg> Registry<'reg> {
         Ok(())
     }
 
+    /// Register a template source
+    pub fn register_template_source<S>(&mut self, name: &str, tpl_src: S)
+    where
+        S: Source<Item = String, Error = IoError> + Send + Sync + 'reg,
+    {
+        self.template_sources
+            .insert(name.to_owned(), Arc::new(tpl_src));
+    }
+
     /// Register a partial string
     ///
     /// A named partial will be added to the registry. It will overwrite template with
@@ -242,6 +251,8 @@ impl<'reg> Registry<'reg> {
             .map_err(|err| TemplateError::from((err, name.to_owned())))?;
 
         self.register_template_string(name, template_string)?;
+        // Register as template source only with dev_mode.
+        // The default FileSource has no cache so it doesn't perform well
         if self.dev_mode {
             self.template_sources
                 .insert(name.to_owned(), Arc::new(source));
@@ -308,6 +319,7 @@ impl<'reg> Registry<'reg> {
     /// Remove a template from the registry
     pub fn unregister_template(&mut self, name: &str) {
         self.templates.remove(name);
+        self.template_sources.remove(name);
     }
 
     /// Register a helper
@@ -394,12 +406,25 @@ impl<'reg> Registry<'reg> {
 
     /// Return `true` if a template is registered for the given name
     pub fn has_template(&self, name: &str) -> bool {
-        self.get_template(name).is_some()
+        self.templates.contains_key(name) || self.template_sources.contains_key(name)
     }
 
     /// Return a registered template,
-    pub fn get_template(&self, name: &str) -> Option<&Template> {
-        self.templates.get(name)
+    pub fn get_template(
+        &'reg self,
+        name: &str,
+    ) -> Option<Result<Cow<'reg, Template>, TemplateError>> {
+        self.templates
+            .get(name)
+            .map(|t| Ok(Cow::Borrowed(t)))
+            .or_else(|| {
+                self.template_sources.get(name).map(|src| {
+                    src.load()
+                        .map_err(|e| TemplateError::from((e, name.to_owned())))
+                        .and_then(|tpl_str| Template::compile_with_name(tpl_str, name.to_owned()))
+                        .map(Cow::Owned)
+                })
+            })
     }
 
     #[inline]
@@ -407,7 +432,7 @@ impl<'reg> Registry<'reg> {
         &'reg self,
         name: &str,
     ) -> Option<Result<Cow<'reg, Template>, RenderError>> {
-        if let (true, Some(source)) = (self.dev_mode, self.template_sources.get(name)) {
+        if let Some(source) = self.template_sources.get(name) {
             let r = source
                 .load()
                 .map_err(|e| TemplateError::from((e, name.to_owned())))
@@ -438,7 +463,7 @@ impl<'reg> Registry<'reg> {
         name: &str,
     ) -> Result<Option<Arc<dyn HelperDef + Send + Sync + 'reg>>, RenderError> {
         #[cfg(feature = "script_helper")]
-        if let (true, Some(source)) = (self.dev_mode, self.script_sources.get(name)) {
+        if let Some(source) = self.script_sources.get(name) {
             return source
                 .load()
                 .map_err(ScriptError::from)
@@ -467,14 +492,23 @@ impl<'reg> Registry<'reg> {
         self.decorators.get(name).map(|v| v.as_ref())
     }
 
-    /// Return all templates registered
-    pub fn get_templates(&self) -> &HashMap<String, Template> {
-        &self.templates
+    /// Return all  registered template names
+    pub fn get_template_names(&self) -> Vec<String> {
+        let mut names = self
+            .templates
+            .keys()
+            .chain(self.template_sources.keys())
+            .cloned()
+            .collect::<Vec<String>>();
+        names.sort();
+        names.dedup();
+        names
     }
 
     /// Unregister all templates
     pub fn clear_templates(&mut self) {
         self.templates.clear();
+        self.template_sources.clear();
     }
 
     #[inline]
@@ -583,8 +617,9 @@ mod test {
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
     use crate::template::Template;
+    use crate::Source;
     use std::fs::File;
-    use std::io::Write;
+    use std::io::{Error as IoError, ErrorKind as IoErrorKind, Write};
     use tempfile::tempdir;
 
     #[derive(Clone, Copy)]
@@ -632,6 +667,31 @@ mod test {
             r.helpers.len(),
             num_helpers + num_boolean_helpers + num_custom_helpers
         );
+    }
+
+    #[test]
+    fn test_register_template_source() {
+        let mut r = Registry::new();
+
+        impl Source for &'static str {
+            type Item = String;
+            type Error = IoError;
+            fn load(&self) -> Result<Self::Item, Self::Error> {
+                Ok(String::from(*self))
+            }
+        }
+        r.register_template_source("test", "<h1>Hello world!</h1>");
+        assert_eq!("<h1>Hello world!</h1>", r.render("test", &()).unwrap());
+
+        impl Source for () {
+            type Item = String;
+            type Error = IoError;
+            fn load(&self) -> Result<Self::Item, Self::Error> {
+                Err(IoError::from(IoErrorKind::Other))
+            }
+        }
+        r.register_template_source("test2", ());
+        assert!(r.render("test2", &()).is_err());
     }
 
     #[test]
