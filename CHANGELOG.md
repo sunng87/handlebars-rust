@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased]
+
+* [Added] Support for generic types in `handlebars_helper!`.
+
 ## [4.1.1](https://github.com/sunng87/handlebars-rust/compare/4.1.0...4.1.1) - 2021-07-31
 
 * [Changed] Update rhai to 1.0 [#455]
