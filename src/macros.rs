@@ -38,7 +38,7 @@
 
 #[macro_export]
 macro_rules! handlebars_helper {
-    ($struct_name:ident: |$($name:ident: $tpe:tt),*
+    ($struct_name:ident: |$($name:ident: $tpe:tt$(<$($gen:ty),+>)?),*
      $($(,)?{$($hash_name:ident: $hash_tpe:tt=$dft_val:literal),*})?
      $($(,)?*$args:ident)?
      $($(,)?**$kwargs:ident)?|
@@ -71,11 +71,11 @@ macro_rules! handlebars_helper {
                             stringify!($struct_name), stringify!($name),
                         )))
                         .and_then(|x|
-                                  handlebars_helper!(@as_json_value x, $tpe)
+                                  handlebars_helper!(@as_json_value x, $tpe$(<$($gen),+>)?)
                                   .ok_or_else(|| $crate::RenderError::new(&format!(
                                       "`{}` helper: Couldn't convert parameter {} to type `{}`. \
                                        It's {:?} as JSON. Got these params: {:?}",
-                                      stringify!($struct_name), stringify!($name), stringify!($tpe),
+                                      stringify!($struct_name), stringify!($name), stringify!($tpe$(<$($gen),+>)?),
                                       x, h.params(),
                                   )))
                         )?;
@@ -117,6 +117,7 @@ macro_rules! handlebars_helper {
     (@as_json_value $x:ident, bool) => { $x.as_bool() };
     (@as_json_value $x:ident, null) => { $x.as_null() };
     (@as_json_value $x:ident, Json) => { Some($x) };
+    (@as_json_value $x:ident, $tpe:tt$(<$($gen:ty),+>)?) => { serde_json::from_value::<$tpe$(<$($gen),+>)?>($x.clone()).ok() };
 }
 
 #[cfg(feature = "no_logging")]
