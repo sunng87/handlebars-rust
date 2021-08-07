@@ -4,8 +4,7 @@ use handlebars::Handlebars;
 use serde_json::json;
 use warp::{self, Filter};
 
-#[tokio::main]
-async fn main() {
+fn handlebars() -> Handlebars<'static> {
     let mut reg = Handlebars::new();
     // enable dev mode for template reloading
     reg.set_dev_mode(true);
@@ -14,7 +13,12 @@ async fn main() {
     reg.register_template_file("tpl", "./examples/dev_mode/template.hbs")
         .unwrap();
 
-    let hbs = Arc::new(reg);
+    reg
+}
+
+#[tokio::main]
+async fn main() {
+    let hbs = Arc::new(handlebars());
     let route = warp::get().map(move || {
         let result = hbs
             .render("tpl", &json!({"model": "t14s", "brand": "Thinkpad"}))
@@ -22,6 +26,6 @@ async fn main() {
         warp::reply::html(result)
     });
 
-    println!("Edit ./examples/dev_mode/template.hbs and request http://localhost:3030 to see the change on the run.");
+    println!("Edit ./examples/dev_mode/template.hbs and request http://localhost:3030 to see the change on the fly.");
     warp::serve(route).run(([127, 0, 0, 1], 3030)).await;
 }
