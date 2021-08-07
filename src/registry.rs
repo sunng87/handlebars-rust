@@ -192,6 +192,11 @@ impl<'reg> Registry<'reg> {
     /// the registry**. Otherwise it won't take effect at all.
     pub fn set_dev_mode(&mut self, enabled: bool) {
         self.dev_mode = enabled;
+
+        // clear template source when disabling dev mode
+        if !enabled {
+            self.template_sources.clear();
+        }
     }
 
     /// Register a `Template`
