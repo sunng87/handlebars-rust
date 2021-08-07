@@ -320,6 +320,7 @@ impl<'reg> Registry<'reg> {
     /// Remove a template from the registry
     pub fn unregister_template(&mut self, name: &str) {
         self.templates.remove(name);
+        self.template_sources.remove(name);
     }
 
     /// Register a helper
@@ -495,6 +496,7 @@ impl<'reg> Registry<'reg> {
     /// Unregister all templates
     pub fn clear_templates(&mut self) {
         self.templates.clear();
+        self.template_sources.clear();
     }
 
     #[inline]
