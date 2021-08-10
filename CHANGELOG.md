@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.1...Unreleased) - ReleaseDate
+## [4.1.2](https://github.com/sunng87/handlebars-rust/compare/4.1.1...4.1.2) - 2021-08-11
 
 * [Added] Support for generic types in `handlebars_helper!`.
 * [Added] Getter and setter for rhai `Engine` from registry.
