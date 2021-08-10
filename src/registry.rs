@@ -385,6 +385,22 @@ impl<'reg> Registry<'reg> {
         self.register_script_helper(name, &script)
     }
 
+    /// Borrow a read-only reference to current rhai engine
+    #[cfg(feature = "script_helper")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "script_helper")))]
+    pub fn engine(&self) -> &Engine {
+        self.engine.as_ref()
+    }
+
+    /// Set a custom rhai engine for the registry.
+    ///
+    /// *Note that* you need to set custom engine before adding scripts.
+    #[cfg(feature = "script_helper")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "script_helper")))]
+    pub fn set_engine(&mut self, engine: Engine) {
+        self.engine = Arc::new(engine);
+    }
+
     /// Register a decorator
     pub fn register_decorator(
         &mut self,
