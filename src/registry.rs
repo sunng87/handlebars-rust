@@ -1132,4 +1132,17 @@ mod test {
 
         dir.close().unwrap();
     }
+
+    #[test]
+    #[cfg(feature = "script_helper")]
+    fn test_engine_access() {
+        use rhai::Engine;
+
+        let mut registry = Registry::new();
+        let mut eng = Engine::new();
+        eng.set_max_string_size(1000);
+        registry.set_engine(eng);
+
+        assert_eq!(1000, registry.engine().max_string_size());
+    }
 }
