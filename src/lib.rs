@@ -73,7 +73,7 @@
 //! Every time I look into a templating system, I will investigate its
 //! support for [template inheritance][t].
 //!
-//! [t]: https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance
+//! [t]: https://docs.djangoproject.com/en/3.2/ref/templates/language/#template-inheritance
 //!
 //! Template include is not sufficient for template reuse. In most cases
 //! you will need a skeleton of page as parent (header, footer, etc.), and
