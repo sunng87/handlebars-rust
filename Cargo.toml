@@ -41,7 +41,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 
 [target.'cfg(unix)'.dev-dependencies]
-pprof = { version = "0.4", features = ["flamegraph", "protobuf"] }
+pprof = { version = "0.5", features = ["flamegraph", "protobuf"] }
 
 [features]
 dir_source = ["walkdir"]
