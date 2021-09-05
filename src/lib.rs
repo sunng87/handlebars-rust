@@ -155,7 +155,7 @@
 //! use handlebars::Handlebars;
 //! use std::collections::BTreeMap;
 //!
-//! # fn main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<dyn Error>> {
 //!   let mut handlebars = Handlebars::new();
 //!   let source = "hello {{world}}";
 //!
@@ -188,7 +188,7 @@
 //!   age: i16,
 //! }
 //!
-//! # fn main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<dyn Error>> {
 //!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();

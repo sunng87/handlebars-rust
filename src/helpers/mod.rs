@@ -32,7 +32,8 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper<'_, '_>, _: &Handlebars<'_>, _: &Context, rc: &mut RenderContext<'_, '_>, out: &mut Output)
+/// fn upper(h: &Helper<'_, '_>, _: &Handlebars<'_>, _: &Context, rc:
+/// &mut RenderContext<'_, '_>, out: &mut dyn Output)
 ///     -> HelperResult {
 ///    // get parameter from helper or throw an error
 ///    let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
