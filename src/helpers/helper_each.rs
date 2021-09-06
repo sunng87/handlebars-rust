@@ -116,14 +116,18 @@ impl HelperDef for EachHelper {
                     let block_context = create_block(value);
                     rc.push_block(block_context);
 
-                    let mut is_first = true;
+                    let len = obj.len();
+
                     let obj_path = value.context_path();
 
-                    for (k, v) in obj.iter() {
+                    for (i, (k, v)) in obj.iter().enumerate() {
                         if let Some(ref mut block) = rc.block_mut() {
-                            let key = to_json(k);
+                            let is_first = i == 0usize;
+                            let is_last = i == len - 1;
 
+                            let key = to_json(k);
                             block.set_local_var("first", to_json(is_first));
+                            block.set_local_var("last", to_json(is_last));
                             block.set_local_var("key", key.clone());
 
                             update_block_context(block, obj_path, k.to_string(), is_first, v);
@@ -131,10 +135,6 @@ impl HelperDef for EachHelper {
                         }
 
                         t.render(r, ctx, rc, out)?;
-
-                        if is_first {
-                            is_first = false;
-                        }
                     }
 
                     rc.pop_block();
@@ -188,7 +188,10 @@ mod test {
             )
             .is_ok());
         assert!(handlebars
-            .register_template_string("t1", "{{#each this}}{{@first}}|{{@key}}:{{this}}|{{/each}}")
+            .register_template_string(
+                "t1",
+                "{{#each this}}{{@first}}|{{@last}}|{{@key}}:{{this}}|{{/each}}"
+            )
             .is_ok());
 
         let r0 = handlebars.render("t0", &vec![1u16, 2u16, 3u16]);
@@ -199,9 +202,13 @@ mod test {
 
         let mut m: BTreeMap<String, u16> = BTreeMap::new();
         m.insert("ftp".to_string(), 21);
+        m.insert("gopher".to_string(), 70);
         m.insert("http".to_string(), 80);
         let r1 = handlebars.render("t1", &m);
-        assert_eq!(r1.ok().unwrap(), "true|ftp:21|false|http:80|".to_string());
+        assert_eq!(
+            r1.ok().unwrap(),
+            "true|false|ftp:21|false|false|gopher:70|false|true|http:80|".to_string()
+        );
     }
 
     #[test]
