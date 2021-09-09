@@ -468,7 +468,7 @@ impl Template {
         // flag for newline removal of standalone statements
         // this option is marked as true when standalone statement is detected
         // then the leading whitespaces and newline of next rawstring will be trimed
-        let mut trim_line_requiered = false;
+        let mut trim_line_required = false;
 
         let parser_queue = HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| {
             let (line_no, col_no) = match e.line_col {
@@ -511,7 +511,7 @@ impl Template {
                                 &source[prev_end..span.start()],
                                 None,
                                 false,
-                                trim_line_requiered,
+                                trim_line_required,
                             ),
                             line_no,
                             col_no,
@@ -524,12 +524,15 @@ impl Template {
                                 &source[prev_end..span.start()],
                                 None,
                                 false,
-                                trim_line_requiered,
+                                trim_line_required,
                             ),
                             line_no,
                             col_no,
                         );
                     }
+
+                    // reset standalone statement marker
+                    trim_line_required = false;
                 }
 
                 let (line_no, col_no) = span.start_pos().line_col();
@@ -551,14 +554,14 @@ impl Template {
                                 &source[start..span.end()],
                                 Some(pair.clone()),
                                 omit_pro_ws,
-                                trim_line_requiered,
+                                trim_line_required,
                             ),
                             line_no,
                             col_no,
                         );
 
                         // reset standalone statement marker
-                        trim_line_requiered = false;
+                        trim_line_required = false;
                     }
                     Rule::helper_block_start
                     | Rule::raw_block_start
@@ -598,7 +601,7 @@ impl Template {
 
                         // standalone statement check, it also removes leading whitespaces of
                         // previous rawstring when standalone statement detected
-                        trim_line_requiered = Template::process_standalone_statement(
+                        trim_line_required = Template::process_standalone_statement(
                             &mut template_stack,
                             source,
                             &span,
@@ -619,7 +622,7 @@ impl Template {
 
                         // standalone statement check, it also removes leading whitespaces of
                         // previous rawstring when standalone statement detected
-                        trim_line_requiered = Template::process_standalone_statement(
+                        trim_line_required = Template::process_standalone_statement(
                             &mut template_stack,
                             source,
                             &span,
@@ -636,7 +639,7 @@ impl Template {
                                 span.as_str(),
                                 Some(pair.clone()),
                                 omit_pro_ws,
-                                trim_line_requiered,
+                                trim_line_required,
                             ),
                             line_no,
                             col_no,
@@ -680,7 +683,7 @@ impl Template {
                             Rule::decorator_expression | Rule::partial_expression => {
                                 // standalone statement check, it also removes leading whitespaces of
                                 // previous rawstring when standalone statement detected
-                                trim_line_requiered = Template::process_standalone_statement(
+                                trim_line_required = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
                                     &span,
@@ -703,7 +706,7 @@ impl Template {
                             Rule::helper_block_end | Rule::raw_block_end => {
                                 // standalone statement check, it also removes leading whitespaces of
                                 // previous rawstring when standalone statement detected
-                                trim_line_requiered = Template::process_standalone_statement(
+                                trim_line_required = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
                                     &span,
@@ -733,7 +736,7 @@ impl Template {
                             Rule::decorator_block_end | Rule::partial_block_end => {
                                 // standalone statement check, it also removes leading whitespaces of
                                 // previous rawstring when standalone statement detected
-                                trim_line_requiered = Template::process_standalone_statement(
+                                trim_line_required = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
                                     &span,
@@ -764,7 +767,7 @@ impl Template {
                         }
                     }
                     Rule::hbs_comment_compact => {
-                        trim_line_requiered = Template::process_standalone_statement(
+                        trim_line_required = Template::process_standalone_statement(
                             &mut template_stack,
                             source,
                             &span,
@@ -778,7 +781,7 @@ impl Template {
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
                     Rule::hbs_comment => {
-                        trim_line_requiered = Template::process_standalone_statement(
+                        trim_line_required = Template::process_standalone_statement(
                             &mut template_stack,
                             source,
                             &span,
