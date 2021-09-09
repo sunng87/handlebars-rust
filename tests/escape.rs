@@ -3,7 +3,7 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use handlebars::{handlebars_helper, Handlebars};
+use handlebars::{handlebars_helper, no_escape, Handlebars};
 
 #[test]
 fn test_escape_216() {
@@ -40,4 +40,22 @@ fn test_string_no_escape_422() {
         hbs.render_template(r#"{{replace "some/path" "/" "\\" }}"#, &())
             .unwrap()
     );
+}
+
+#[test]
+fn test_string_whitespace_467() {
+    const TEMPLATE_UNQUOTED: &str = r#"{{#each synonyms}}
+    {{this.name}} => '{{this.sym}}',
+    {{/each}}
+"#;
+
+    let mut hbs = Handlebars::new();
+    hbs.register_escape_fn(no_escape);
+    hbs.register_template_string("perl", TEMPLATE_UNQUOTED)
+        .unwrap();
+
+    let r = hbs
+        .render("perl", &json!({"synonyms": [{"name": "lt", "sym": "<"}]}))
+        .unwrap();
+    assert_eq!("    lt => '<',\n", r);
 }
