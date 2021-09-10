@@ -1,5 +1,10 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.2...Unreleased) - ReleaseDate
+
+* [Added] `@last` variable for `each` block with object [#466]
+* [Fixed] Missing whitespaces behind expression [#468]
+
 ## [4.1.2](https://github.com/sunng87/handlebars-rust/compare/4.1.1...4.1.2) - 2021-08-11
 
 * [Added] Support for generic types in `handlebars_helper!`.
