@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.2...Unreleased) - ReleaseDate
+## [4.1.3](https://github.com/sunng87/handlebars-rust/compare/4.1.2...4.1.3) - 2021-09-10
 
 * [Added] `@last` variable for `each` block with object [#466]
 * [Fixed] Missing whitespaces behind expression [#468]
