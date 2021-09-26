@@ -178,7 +178,7 @@ impl<'reg> Registry<'reg> {
     /// Return dev mode state, default is false
     ///
     /// With dev mode turned on, handlebars enables a set of development
-    /// firendly features, that may affect its performance.
+    /// friendly features, that may affect its performance.
     pub fn dev_mode(&self) -> bool {
         self.dev_mode
     }
@@ -186,7 +186,7 @@ impl<'reg> Registry<'reg> {
     /// Enable or disable dev mode
     ///
     /// With dev mode turned on, handlebars enables a set of development
-    /// firendly features, that may affect its performance.
+    /// friendly features, that may affect its performance.
     ///
     /// **Note that you have to enable dev mode before adding templates to
     /// the registry**. Otherwise it won't take effect at all.
