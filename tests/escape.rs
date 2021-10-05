@@ -59,3 +59,25 @@ fn test_string_whitespace_467() {
         .unwrap();
     assert_eq!("    lt => '<',\n", r);
 }
+
+#[test]
+fn test_triple_bracket_expression_471() {
+    let mut hbs = Handlebars::new();
+
+    handlebars_helper!(replace: |input: str| {
+        input.replace("\n", "<br/>")
+    });
+    hbs.register_helper("replace", Box::new(replace));
+
+    assert_eq!(
+        "some&lt;br/&gt;path",
+        hbs.render_template("{{replace h}}", &json!({"h": "some\npath"}))
+            .unwrap()
+    );
+
+    assert_eq!(
+        "some<br/>path",
+        hbs.render_template("{{{replace h}}}", &json!({"h": "some\npath"}))
+            .unwrap()
+    );
+}
