@@ -8,7 +8,7 @@ Handlebars-rust is the template engine that renders the official Rust website
 [rust-lang.org](https://www.rust-lang.org), [its
 book](https://doc.rust-lang.org/book/).
 
-[![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
+[![CI](https://github.com/sunng87/handlebars-rust/actions/workflows/main.yml/badge.svg)](https://github.com/sunng87/handlebars-rust/actions/workflows/main.yml)
 [![](https://img.shields.io/crates/v/handlebars)](https://crates.io/crates/handlebars)
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
