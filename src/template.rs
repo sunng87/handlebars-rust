@@ -449,11 +449,8 @@ impl Template {
         if trim_start {
             RawString(s.trim_start().to_owned())
         } else if trim_start_line {
-            RawString(
-                s.trim_start_matches(grammar::whitespace_matcher)
-                    .trim_start_matches(grammar::newline_matcher)
-                    .to_owned(),
-            )
+            let s = s.trim_start_matches(grammar::whitespace_matcher);
+            RawString(grammar::strip_first_newline(s).to_owned())
         } else {
             RawString(s)
         }
