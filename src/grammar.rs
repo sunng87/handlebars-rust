@@ -14,6 +14,17 @@ pub(crate) fn newline_matcher(c: char) -> bool {
     c == '\n' || c == '\r'
 }
 
+#[inline]
+pub(crate) fn strip_first_newline(s: &str) -> &str {
+    if let Some(s) = s.strip_prefix("\r\n") {
+        s
+    } else if let Some(s) = s.strip_prefix('\n') {
+        s
+    } else {
+        s
+    }
+}
+
 pub(crate) fn ends_with_empty_line(text: &str) -> bool {
     let s = text.trim_end_matches(whitespace_matcher);
     // also matches when text is just whitespaces
