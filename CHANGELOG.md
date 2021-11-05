@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.3...Unreleased) - ReleaseDate
+## [4.1.4](https://github.com/sunng87/handlebars-rust/compare/4.1.3...4.1.4) - 2021-11-06
 
 * [Fixed] Corrected empty line stripping strategy [#473]
 
