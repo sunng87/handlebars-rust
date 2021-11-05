@@ -51,11 +51,24 @@ addEventListener('fetch', (event) => {
     )
     .unwrap();
 
+    r.register_template_string(
+        "t2",
+        r#"addEventListener('fetch', (event) => {
+  event.respondWith(handleEvent(event))
+})
+
+{{#each routes}}
+import { default as {{this.handler}} } from '{{this.file_path}}'
+{{/each}}
+"#,
+    )
+    .unwrap();
+
     let data = json!({"routes": [{"handler": "__hello_handler", "file_path": "./hello.js"},
                                  {"handler": "__world_index_handler", "file_path": "./world/index.js"},
                                  {"handler": "__index_handler", "file_path": "./index.js"}]});
 
-    let exp = r#"import { default as __hello_handler } from './hello.js'
+    let exp1 = r#"import { default as __hello_handler } from './hello.js'
 import { default as __world_index_handler } from './world/index.js'
 import { default as __index_handler } from './index.js'
 
@@ -63,5 +76,15 @@ addEventListener('fetch', (event) => {
   event.respondWith(handleEvent(event))
 })"#;
 
-    assert_eq!(r.render("t1", &data).unwrap(), exp);
+    let exp2 = r#"addEventListener('fetch', (event) => {
+  event.respondWith(handleEvent(event))
+})
+
+import { default as __hello_handler } from './hello.js'
+import { default as __world_index_handler } from './world/index.js'
+import { default as __index_handler } from './index.js'
+"#;
+
+    assert_eq!(r.render("t1", &data).unwrap(), exp1);
+    assert_eq!(r.render("t2", &data).unwrap(), exp2);
 }
