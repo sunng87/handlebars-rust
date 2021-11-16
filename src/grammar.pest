@@ -15,13 +15,19 @@ literal = { string_literal |
 null_literal = @{ "null" ~ !symbol_char }
 boolean_literal = @{ ("true"|"false") ~ !symbol_char }
 number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
-json_char = {
+json_char_double_quote = {
     !("\"" | "\\") ~ ANY
     | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
     | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
 }
-string_inner = @{ json_char* }
-string_literal = ${ "\"" ~ string_inner ~ "\"" }
+json_char_single_quote = {
+    !("'" | "\\") ~ ANY
+    | "\\" ~ ("'" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+string_inner_double_quote = @{ json_char_double_quote* }
+string_inner_single_quote = @{ json_char_single_quote* }
+string_literal = ${ ("\"" ~ string_inner_double_quote ~ "\"") | ("'" ~ string_inner_single_quote ~ "'") }
 array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
