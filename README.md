@@ -133,7 +133,7 @@ And using it in your template:
 {{hex 16}}
 ```
 
-By default, handlebars-rust ships [additional helpers](https://github.com/sunng87/handlebars-rust/blob/master/src/helpers/helper_boolean.rs#L5)
+By default, handlebars-rust ships [additional helpers](https://github.com/sunng87/handlebars-rust/blob/master/src/helpers/helper_extras.rs#L6)
 (compared with original js version)
 that is useful when working with `if`.
 
