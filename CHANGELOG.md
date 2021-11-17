@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.4...Unreleased) - ReleaseDate
+## [4.1.5](https://github.com/sunng87/handlebars-rust/compare/4.1.4...4.1.5) - 2021-11-17
 
 * [Fixed] Single-quote string literal is supported, again [#475]
 
