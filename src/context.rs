@@ -223,6 +223,12 @@ impl Context {
     }
 }
 
+impl From<Json> for Context {
+    fn from(data: Json) -> Context {
+        Context { data }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::block::{BlockContext, BlockParams};

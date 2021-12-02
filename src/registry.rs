@@ -987,8 +987,7 @@ mod test {
             .unwrap();
         assert_eq!(
             "0123",
-            reg.render_with_context("t0", &Context::wraps(&data).unwrap())
-                .unwrap()
+            reg.render_with_context("t0", &Context::from(data)).unwrap()
         );
     }
 
