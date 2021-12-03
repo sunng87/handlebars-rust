@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.5...Unreleased) - ReleaseDate
+## [4.1.6](https://github.com/sunng87/handlebars-rust/compare/4.1.5...4.1.6) - 2021-12-03
 
 * [Added] Create `Context` from owned `serde_json::Value` [#477]
 
