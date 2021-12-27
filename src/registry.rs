@@ -30,6 +30,9 @@ use rhai::Engine;
 #[cfg(feature = "script_helper")]
 use crate::helpers::scripting::ScriptHelper;
 
+#[cfg(feature = "rust-embed")]
+use rust_embed::RustEmbed;
+
 /// This type represents an *escape fn*, that is a function whose purpose it is
 /// to escape potentially problematic characters in a string.
 ///
@@ -319,6 +322,25 @@ impl<'reg> Registry<'reg> {
             self.register_template_file(&tpl_canonical_name, &tpl_path)?;
         }
 
+        Ok(())
+    }
+
+    /// Register templates using a RustEmbed type
+    #[cfg(feature = "rust-embed")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "rust-embed")))]
+    pub fn register_embed_templates<E>(&mut self) -> Result<(), TemplateError>
+    where
+        E: RustEmbed,
+    {
+        for item in E::iter() {
+            let file_name = item.as_ref();
+            if let Some(file) = E::get(file_name) {
+                let data = file.data;
+
+                let tpl_content = String::from_utf8_lossy(data.as_ref());
+                self.register_template_string(&file_name.to_owned(), tpl_content)?;
+            }
+        }
         Ok(())
     }
 
