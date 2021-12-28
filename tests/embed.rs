@@ -22,5 +22,8 @@ fn test_embed() {
         "name": "Andy"
     });
 
-    assert_eq!(hbs.render("hello.hbs", &data).unwrap(), "Hello, Andy\n");
+    assert_eq!(
+        hbs.render("hello.hbs", &data).unwrap().trim(),
+        "Hello, Andy"
+    );
 }
