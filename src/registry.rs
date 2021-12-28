@@ -325,7 +325,20 @@ impl<'reg> Registry<'reg> {
         Ok(())
     }
 
-    /// Register templates using a RustEmbed type
+    /// Register templates using a
+    /// [RustEmbed](https://github.com/pyros2097/rust-embed) type
+    ///
+    /// File names from embed struct are used as template name.
+    ///
+    /// ```skip
+    /// #[derive(RustEmbed)]
+    /// #[folder = "templates"]
+    /// struct Assets;
+    ///
+    /// let mut hbs = Handlebars::new();
+    /// hbs.register_embed_templates::<Assets>();
+    /// ```
+    ///
     #[cfg(feature = "rust-embed")]
     #[cfg_attr(docsrs, doc(cfg(feature = "rust-embed")))]
     pub fn register_embed_templates<E>(&mut self) -> Result<(), TemplateError>
