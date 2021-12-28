@@ -1,6 +1,6 @@
 name: CI
 on:
-  # Only run when merging to master, or open/synchronize/reopen a PR.
+  schedule: [{cron: "0 13 * * *"}]
   push:
     branches:
       - master
