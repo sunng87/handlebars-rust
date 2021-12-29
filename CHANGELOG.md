@@ -1,5 +1,11 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.6...Unreleased) - ReleaseDate
+
+* [Added] RustEmbed support for loading templates from [#484]
+* [Fixed] Parser support for variables begins with digit [#479]
+* [Changed] Update MSRV to 1.51 due to dependency changes
+
 ## [4.1.6](https://github.com/sunng87/handlebars-rust/compare/4.1.5...4.1.6) - 2021-12-03
 
 * [Added] Create `Context` from owned `serde_json::Value` [#477]
