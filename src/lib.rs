@@ -166,6 +166,14 @@
 //! # }
 //! ```
 //!
+//! #### Additional features for loading template from
+//!
+//! * Feature `dir_source` enables template loading
+//! `register_templates_directory` from given directory.
+//! * Feature `rust-embed` enables template loading
+//! `register_embed_templates` from embedded resources in rust struct
+//! generated with `RustEmbed`.
+//!
 //! ### Rendering Something
 //!
 //! Since handlebars is originally based on JavaScript type system. It supports dynamic features like duck-typing, truthy/falsey values. But for a static language like Rust, this is a little difficult. As a solution, we are using the `serde_json::value::Value` internally for data rendering.
