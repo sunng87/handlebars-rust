@@ -277,7 +277,7 @@ impl<'reg, 'rc> fmt::Debug for RenderContextInner<'reg, 'rc> {
             .field("partial_block_stack", &self.partial_block_stack)
             .field("root_template", &self.root_template)
             .field("current_template", &self.current_template)
-            .field("disable_eacape", &self.disable_escape)
+            .field("disable_escape", &self.disable_escape)
             .finish()
     }
 }
