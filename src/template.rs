@@ -685,13 +685,12 @@ impl Template {
                             Rule::decorator_expression | Rule::partial_expression => {
                                 // do not auto trim ident spaces for
                                 // partial_expression(>)
+                                let prevent_indent = rule != Rule::partial_expression;
                                 trim_line_required = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
                                     &span,
-                                    // preventIndent set to false when
-                                    // rule is partial_expression
-                                    !(rule == Rule::partial_expression),
+                                    prevent_indent,
                                 );
 
                                 let decorator = DecoratorTemplate {
