@@ -17,7 +17,7 @@ use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
 use crate::sources::{FileSource, Source};
 use crate::support::str::{self, StringWriter};
-use crate::template::Template;
+use crate::template::{Template, TemplateOptions};
 
 #[cfg(feature = "dir_source")]
 use std::path;
@@ -65,6 +65,7 @@ pub struct Registry<'reg> {
     escape_fn: EscapeFn,
     strict_mode: bool,
     dev_mode: bool,
+    prevent_indent: bool,
     #[cfg(feature = "script_helper")]
     pub(crate) engine: Arc<Engine>,
 
@@ -123,6 +124,7 @@ impl<'reg> Registry<'reg> {
             escape_fn: Arc::new(html_escape),
             strict_mode: false,
             dev_mode: false,
+            prevent_indent: false,
             #[cfg(feature = "script_helper")]
             engine: Arc::new(rhai_engine()),
             #[cfg(feature = "script_helper")]
@@ -202,6 +204,19 @@ impl<'reg> Registry<'reg> {
         }
     }
 
+    /// Enable or disable indent for partial include tag `{{>}}`
+    ///
+    /// By default handlebars keeps indent whitespaces for partial
+    /// include tag, to change this behaviour, set this toggle to `true`.
+    pub fn set_prevent_indent(&mut self, enable: bool) {
+        self.prevent_indent = enable;
+    }
+
+    /// Return state for `prevent_indent` option, default to `false`.
+    pub fn prevent_indent(&self) -> bool {
+        self.prevent_indent
+    }
+
     /// Register a `Template`
     ///
     /// This is infallible since the template has already been parsed and
@@ -225,7 +240,13 @@ impl<'reg> Registry<'reg> {
     where
         S: AsRef<str>,
     {
-        let template = Template::compile_with_name(tpl_str, name.to_owned())?;
+        let template = Template::compile2(
+            tpl_str.as_ref(),
+            TemplateOptions {
+                name: Some(name.to_owned()),
+                prevent_indent: self.prevent_indent,
+            },
+        )?;
         self.register_template(name, template);
         Ok(())
     }
@@ -482,7 +503,15 @@ impl<'reg> Registry<'reg> {
             let r = source
                 .load()
                 .map_err(|e| TemplateError::from((e, name.to_owned())))
-                .and_then(|tpl_str| Template::compile_with_name(tpl_str, name.to_owned()))
+                .and_then(|tpl_str| {
+                    Template::compile2(
+                        tpl_str.as_ref(),
+                        TemplateOptions {
+                            name: Some(name.to_owned()),
+                            prevent_indent: self.prevent_indent,
+                        },
+                    )
+                })
                 .map(Cow::Owned)
                 .map_err(RenderError::from);
             Some(r)
@@ -621,7 +650,13 @@ impl<'reg> Registry<'reg> {
         template_string: &str,
         ctx: &Context,
     ) -> Result<String, RenderError> {
-        let tpl = Template::compile(template_string)?;
+        let tpl = Template::compile2(
+            template_string,
+            TemplateOptions {
+                prevent_indent: self.prevent_indent,
+                ..Default::default()
+            },
+        )?;
 
         let mut out = StringOutput::new();
         {
@@ -643,7 +678,13 @@ impl<'reg> Registry<'reg> {
         T: Serialize,
         W: Write,
     {
-        let tpl = Template::compile(template_string)?;
+        let tpl = Template::compile2(
+            template_string,
+            TemplateOptions {
+                prevent_indent: self.prevent_indent,
+                ..Default::default()
+            },
+        )?;
         let ctx = Context::wraps(data)?;
         let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);

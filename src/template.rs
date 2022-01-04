@@ -25,6 +25,21 @@ pub struct Template {
     pub mapping: Vec<TemplateMapping>,
 }
 
+#[derive(Default)]
+pub(crate) struct TemplateOptions {
+    pub(crate) prevent_indent: bool,
+    pub(crate) name: Option<String>,
+}
+
+impl TemplateOptions {
+    fn name(&self) -> String {
+        self.name
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| "Unnamed".to_owned())
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub struct Subexpression {
     // we use box here avoid resursive struct definition
@@ -389,6 +404,7 @@ impl Template {
         template_stack: &mut VecDeque<Template>,
         source: &str,
         current_span: &Span<'_>,
+        prevent_indent: bool,
     ) -> bool {
         let with_trailing_newline = grammar::starts_with_empty_line(&source[current_span.end()..]);
 
@@ -396,7 +412,9 @@ impl Template {
             let with_leading_newline =
                 grammar::ends_with_empty_line(&source[..current_span.start()]);
 
-            if with_leading_newline {
+            // prevent_indent: a special toggle for partial expression
+            // (>) that leading whitespaces are kept, default to false
+            if prevent_indent && with_leading_newline {
                 let t = template_stack.front_mut().unwrap();
                 // check the last element before current
                 if let Some(RawString(ref mut text)) = t.elements.last_mut() {
@@ -456,7 +474,10 @@ impl Template {
         }
     }
 
-    pub fn compile<'a>(source: &'a str) -> Result<Template, TemplateError> {
+    pub(crate) fn compile2<'a>(
+        source: &'a str,
+        options: TemplateOptions,
+    ) -> Result<Template, TemplateError> {
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
         let mut decorator_stack: VecDeque<DecoratorTemplate> = VecDeque::new();
         let mut template_stack: VecDeque<Template> = VecDeque::new();
@@ -472,7 +493,9 @@ impl Template {
                 LineColLocation::Pos(line_col) => line_col,
                 LineColLocation::Span(line_col, _) => line_col,
             };
-            TemplateError::of(TemplateErrorReason::InvalidSyntax).at(source, line_no, col_no)
+            TemplateError::of(TemplateErrorReason::InvalidSyntax)
+                .at(source, line_no, col_no)
+                .in_template(options.name())
         })?;
 
         // dbg!(parser_queue.clone().flatten());
@@ -602,6 +625,7 @@ impl Template {
                             &mut template_stack,
                             source,
                             &span,
+                            true,
                         );
 
                         let t = template_stack.front_mut().unwrap();
@@ -623,6 +647,7 @@ impl Template {
                             &mut template_stack,
                             source,
                             &span,
+                            true,
                         );
 
                         let t = template_stack.pop_front().unwrap();
@@ -678,12 +703,15 @@ impl Template {
                                 t.push_element(el, line_no, col_no);
                             }
                             Rule::decorator_expression | Rule::partial_expression => {
-                                // standalone statement check, it also removes leading whitespaces of
-                                // previous rawstring when standalone statement detected
+                                // do not auto trim ident spaces for
+                                // partial_expression(>)
+                                let prevent_indent =
+                                    options.prevent_indent || rule != Rule::partial_expression;
                                 trim_line_required = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
                                     &span,
+                                    prevent_indent,
                                 );
 
                                 let decorator = DecoratorTemplate {
@@ -707,6 +735,7 @@ impl Template {
                                     &mut template_stack,
                                     source,
                                     &span,
+                                    true,
                                 );
 
                                 let mut h = helper_stack.pop_front().unwrap();
@@ -727,7 +756,8 @@ impl Template {
                                             exp.name.debug_name(),
                                         ),
                                     )
-                                    .at(source, line_no, col_no));
+                                    .at(source, line_no, col_no)
+                                    .in_template(options.name()));
                                 }
                             }
                             Rule::decorator_block_end | Rule::partial_block_end => {
@@ -737,6 +767,7 @@ impl Template {
                                     &mut template_stack,
                                     source,
                                     &span,
+                                    true,
                                 );
 
                                 let mut d = decorator_stack.pop_front().unwrap();
@@ -757,7 +788,8 @@ impl Template {
                                             exp.name.debug_name(),
                                         ),
                                     )
-                                    .at(source, line_no, col_no));
+                                    .at(source, line_no, col_no)
+                                    .in_template(options.name()));
                                 }
                             }
                             _ => unreachable!(),
@@ -768,6 +800,7 @@ impl Template {
                             &mut template_stack,
                             source,
                             &span,
+                            true,
                         );
 
                         let text = span
@@ -782,6 +815,7 @@ impl Template {
                             &mut template_stack,
                             source,
                             &span,
+                            true,
                         );
 
                         let text = span
@@ -806,23 +840,32 @@ impl Template {
                     let t = template_stack.front_mut().unwrap();
                     t.push_element(RawString(text.to_owned()), line_no, col_no);
                 }
-                let root_template = template_stack.pop_front().unwrap();
+                let mut root_template = template_stack.pop_front().unwrap();
+                root_template.name = options.name;
                 return Ok(root_template);
             }
         }
+    }
+
+    // These two compile functions are kept for compatibility with 4.x
+    // Template APIs in case that some developers are using them
+    // without registry.
+
+    pub fn compile(source: &str) -> Result<Template, TemplateError> {
+        Self::compile2(source, TemplateOptions::default())
     }
 
     pub fn compile_with_name<S: AsRef<str>>(
         source: S,
         name: String,
     ) -> Result<Template, TemplateError> {
-        match Template::compile(source.as_ref()) {
-            Ok(mut t) => {
-                t.name = Some(name);
-                Ok(t)
-            }
-            Err(e) => Err(e.in_template(name)),
-        }
+        Self::compile2(
+            source.as_ref(),
+            TemplateOptions {
+                name: Some(name),
+                ..Default::default()
+            },
+        )
     }
 }
 
