@@ -17,7 +17,7 @@ use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
 use crate::sources::{FileSource, Source};
 use crate::support::str::{self, StringWriter};
-use crate::template::Template;
+use crate::template::{Template, TemplateOptions};
 
 #[cfg(feature = "dir_source")]
 use std::path;
@@ -225,7 +225,13 @@ impl<'reg> Registry<'reg> {
     where
         S: AsRef<str>,
     {
-        let template = Template::compile_with_name(tpl_str, name.to_owned())?;
+        let template = Template::compile2(
+            tpl_str.as_ref(),
+            TemplateOptions {
+                name: Some(name.to_owned()),
+                ..Default::default()
+            },
+        )?;
         self.register_template(name, template);
         Ok(())
     }
@@ -482,7 +488,15 @@ impl<'reg> Registry<'reg> {
             let r = source
                 .load()
                 .map_err(|e| TemplateError::from((e, name.to_owned())))
-                .and_then(|tpl_str| Template::compile_with_name(tpl_str, name.to_owned()))
+                .and_then(|tpl_str| {
+                    Template::compile2(
+                        tpl_str.as_ref(),
+                        TemplateOptions {
+                            name: Some(name.to_owned()),
+                            ..Default::default()
+                        },
+                    )
+                })
                 .map(Cow::Owned)
                 .map_err(RenderError::from);
             Some(r)
@@ -621,7 +635,7 @@ impl<'reg> Registry<'reg> {
         template_string: &str,
         ctx: &Context,
     ) -> Result<String, RenderError> {
-        let tpl = Template::compile(template_string)?;
+        let tpl = Template::compile2(template_string, TemplateOptions::default())?;
 
         let mut out = StringOutput::new();
         {
@@ -643,7 +657,7 @@ impl<'reg> Registry<'reg> {
         T: Serialize,
         W: Write,
     {
-        let tpl = Template::compile(template_string)?;
+        let tpl = Template::compile2(template_string, TemplateOptions::default())?;
         let ctx = Context::wraps(data)?;
         let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
