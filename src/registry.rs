@@ -65,6 +65,7 @@ pub struct Registry<'reg> {
     escape_fn: EscapeFn,
     strict_mode: bool,
     dev_mode: bool,
+    prevent_indent: bool,
     #[cfg(feature = "script_helper")]
     pub(crate) engine: Arc<Engine>,
 
@@ -123,6 +124,7 @@ impl<'reg> Registry<'reg> {
             escape_fn: Arc::new(html_escape),
             strict_mode: false,
             dev_mode: false,
+            prevent_indent: false,
             #[cfg(feature = "script_helper")]
             engine: Arc::new(rhai_engine()),
             #[cfg(feature = "script_helper")]
@@ -202,6 +204,19 @@ impl<'reg> Registry<'reg> {
         }
     }
 
+    /// Enable or disable indent for partial include tag `{{>}}`
+    ///
+    /// By default handlebars keeps indent whitespaces for partial
+    /// include tag, to change this behaviour, set this toggle to `true`.
+    pub fn set_prevent_indent(&mut self, enable: bool) {
+        self.prevent_indent = enable;
+    }
+
+    /// Return state for `prevent_indent` option, default to `false`.
+    pub fn prevent_indent(&self) -> bool {
+        self.prevent_indent
+    }
+
     /// Register a `Template`
     ///
     /// This is infallible since the template has already been parsed and
@@ -229,7 +244,7 @@ impl<'reg> Registry<'reg> {
             tpl_str.as_ref(),
             TemplateOptions {
                 name: Some(name.to_owned()),
-                ..Default::default()
+                prevent_indent: self.prevent_indent,
             },
         )?;
         self.register_template(name, template);
@@ -493,7 +508,7 @@ impl<'reg> Registry<'reg> {
                         tpl_str.as_ref(),
                         TemplateOptions {
                             name: Some(name.to_owned()),
-                            ..Default::default()
+                            prevent_indent: self.prevent_indent,
                         },
                     )
                 })
@@ -635,7 +650,13 @@ impl<'reg> Registry<'reg> {
         template_string: &str,
         ctx: &Context,
     ) -> Result<String, RenderError> {
-        let tpl = Template::compile2(template_string, TemplateOptions::default())?;
+        let tpl = Template::compile2(
+            template_string,
+            TemplateOptions {
+                prevent_indent: self.prevent_indent,
+                ..Default::default()
+            },
+        )?;
 
         let mut out = StringOutput::new();
         {
@@ -657,7 +678,13 @@ impl<'reg> Registry<'reg> {
         T: Serialize,
         W: Write,
     {
-        let tpl = Template::compile2(template_string, TemplateOptions::default())?;
+        let tpl = Template::compile2(
+            template_string,
+            TemplateOptions {
+                prevent_indent: self.prevent_indent,
+                ..Default::default()
+            },
+        )?;
         let ctx = Context::wraps(data)?;
         let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
