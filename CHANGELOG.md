@@ -4,6 +4,9 @@
 
 * [Added] RustEmbed support for loading templates from [#484]
 * [Fixed] Parser support for variables begins with digit [#479]
+* [Changed] Keep indent whitespaces for partial expression `{{>
+  partial}}` as default in handlebarsjs. A new option `prevent_indent`
+  is provided on `Handlebars` to turn off this behaviour. [#486]
 * [Changed] Update MSRV to 1.51 due to dependency changes
 
 ## [4.1.6](https://github.com/sunng87/handlebars-rust/compare/4.1.5...4.1.6) - 2021-12-03
