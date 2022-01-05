@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.1.6...Unreleased) - ReleaseDate
+## [4.2.0](https://github.com/sunng87/handlebars-rust/compare/4.1.6...4.2.0) - 2022-01-05
 
 * [Added] RustEmbed support for loading templates from [#484]
 * [Fixed] Parser support for variables begins with digit [#479]
