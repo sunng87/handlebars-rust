@@ -451,4 +451,26 @@ name: there
 "#
         );
     }
+
+    #[test]
+    fn test_nested_partial() {
+        let mut hb = Registry::new();
+        hb.register_template_string("partial", "{{> @partial-block}}")
+            .unwrap();
+        hb.register_template_string(
+            "index",
+            r#"{{#>partial}}
+    Yo
+    {{#>partial}}
+    Yo 2
+    {{/partial}}
+{{/partial}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"    Yo
+    Yo 2"#,
+            hb.render("index", &()).unwrap()
+        );
+    }
 }
