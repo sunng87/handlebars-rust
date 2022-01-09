@@ -476,5 +476,19 @@ name: there
 "#,
             hb.render("index", &()).unwrap()
         );
+
+        hb.register_template_string("partial2", "{{> @partial-block}}")
+            .unwrap();
+        let r2 = hb
+            .render_template(
+                r#"{{#> partial}}
+{{#> partial2}}
+:(
+{{/partial2}}
+{{/partial}}"#,
+                &(),
+            )
+            .unwrap();
+        assert_eq!(":(\n", r2);
     }
 }
