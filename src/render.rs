@@ -190,7 +190,10 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     pub(crate) fn dec_partial_block_depth(&mut self) {
-        self.inner_mut().partial_block_depth -= 1;
+        let depth = &mut self.inner_mut().partial_block_depth;
+        if *depth > 0 {
+            *depth -= 1;
+        }
     }
 
     /// Remove a registered partial
@@ -275,6 +278,7 @@ impl<'reg, 'rc> fmt::Debug for RenderContextInner<'reg, 'rc> {
         f.debug_struct("RenderContextInner")
             .field("partials", &self.partials)
             .field("partial_block_stack", &self.partial_block_stack)
+            .field("partial_block_depth", &self.partial_block_depth)
             .field("root_template", &self.root_template)
             .field("current_template", &self.current_template)
             .field("disable_escape", &self.disable_escape)
