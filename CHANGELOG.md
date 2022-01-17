@@ -1,5 +1,10 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.2.0...Unreleased) - ReleaseDate
+
+* [Fixed] Nested partial `@partial-block` referencing issue [#488]
+* [Fixed] Docs generation on docs.rs for `rust-embed` feature
+
 ## [4.2.0](https://github.com/sunng87/handlebars-rust/compare/4.1.6...4.2.0) - 2022-01-05
 
 * [Added] RustEmbed support for loading templates from [#484]
