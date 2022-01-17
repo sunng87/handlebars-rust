@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.2.0...Unreleased) - ReleaseDate
+## [4.2.1](https://github.com/sunng87/handlebars-rust/compare/4.2.0...4.2.1) - 2022-01-17
 
 * [Fixed] Nested partial `@partial-block` referencing issue [#488]
 * [Fixed] Docs generation on docs.rs for `rust-embed` feature
