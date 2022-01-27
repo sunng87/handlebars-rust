@@ -37,8 +37,7 @@ maplit = "1.0.0"
 serde_derive = "1.0.75"
 tempfile = "3.0.0"
 criterion = "0.3"
-warp = "0.3"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tiny_http = "0.10"
 chrono = { version = "0.4.19", features = ["serde"] }
 
 [target.'cfg(unix)'.dev-dependencies]
