@@ -38,7 +38,7 @@ serde_derive = "1.0.75"
 tempfile = "3.0.0"
 criterion = "0.3"
 tiny_http = "0.10"
-chrono = { version = "0.4.19", features = ["serde"] }
+time = { version = "0.3.7", features = ["serde", "formatting", "parsing"]}
 
 [target.'cfg(unix)'.dev-dependencies]
 pprof = { version = "0.6", features = ["flamegraph", "protobuf"] }

@@ -3,8 +3,9 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use chrono::{DateTime, FixedOffset};
 use handlebars::Handlebars;
+use time::format_description::{parse, well_known::Rfc2822};
+use time::OffsetDateTime;
 
 handlebars_helper!(lower: |s: str| s.to_lowercase());
 handlebars_helper!(upper: |s: str| s.to_uppercase());
@@ -15,7 +16,7 @@ handlebars_helper!(nargs: |*args| args.len());
 handlebars_helper!(has_a: |{a:i64 = 99}, **kwargs|
                    format!("{}, {}", a, kwargs.get("a").is_some()));
 handlebars_helper!(tag: |t: str| format!("<{}>", t));
-handlebars_helper!(date: |dt: DateTime<FixedOffset>| dt.format("%F").to_string());
+handlebars_helper!(date: |dt: OffsetDateTime| dt.format(&parse("[year]-[month]-[day]").unwrap()).unwrap());
 
 #[test]
 fn test_macro_helper() {
@@ -80,7 +81,7 @@ fn test_macro_helper() {
     assert_eq!(
         hbs.render_template(
             "{{date this}}",
-            &DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap()
+            &OffsetDateTime::parse("Wed, 18 Feb 2015 23:16:09 GMT", &Rfc2822).unwrap()
         )
         .unwrap(),
         "2015-02-18"
