@@ -53,18 +53,6 @@ jobs:
         override: true
     - run: cargo fmt -- --check
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        components: clippy
-        override: true
-    - run: cargo clippy --all-features
-
   msrv:
     name: MSRV
     runs-on: ubuntu-latest
@@ -75,3 +63,12 @@ jobs:
         toolchain: "1.51"
         override: true
     - run: cargo build --all-features
+
+  security_audit:
+    name: rust_audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.TOKEN }}
