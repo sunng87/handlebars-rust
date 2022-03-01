@@ -372,7 +372,7 @@ impl<'reg> Registry<'reg> {
                 let data = file.data;
 
                 let tpl_content = String::from_utf8_lossy(data.as_ref());
-                self.register_template_string(&file_name.to_owned(), tpl_content)?;
+                self.register_template_string(file_name, tpl_content)?;
             }
         }
         Ok(())
