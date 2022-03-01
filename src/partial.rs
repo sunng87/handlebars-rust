@@ -491,4 +491,33 @@ name: there
             .unwrap();
         assert_eq!(":(\n", r2);
     }
+
+    #[test]
+    fn test_partial_context_issue_495() {
+        let mut hb = Registry::new();
+        hb.register_template_string(
+            "t",
+            r#"{{~#*inline "displayName"~}}
+Template:{{name}}
+{{/inline}}
+{{#each data as |name|}}
+Name:{{name}}
+{{>displayName name="aaaa"}}
+{{/each}}"#,
+        )
+        .unwrap();
+
+        let data = json!({
+            "data": ["hudel", "test"]
+        });
+
+        assert_eq!(
+            r#"Name:hudel
+Template:aaaa
+Name:test
+Template:aaaa
+"#,
+            hb.render("t", &data).unwrap()
+        );
+    }
 }
