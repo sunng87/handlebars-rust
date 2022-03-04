@@ -79,6 +79,8 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             let mut block = BlockContext::new();
             *block.base_path_mut() = base_path.to_vec();
             block_created = true;
+            // TODO: temporary fix
+            local_rc.clear_blocks();
             local_rc.push_block(block);
         } else if !d.hash().is_empty() {
             let mut block = BlockContext::new();
@@ -89,13 +91,13 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
                 .map(|(k, v)| (*k, v.value()))
                 .collect::<HashMap<&str, &Json>>();
 
-            // let merged_context = merge_json(
-            //     // FIXME: not current path, should be current block
-            //     // context path
-            //     local_rc.evaluate2(ctx, )?.as_json(),
-            //     &hash_ctx,
-            // );
-            block.set_base_value(to_value(hash_ctx)?);
+            let merged_context = merge_json(
+                local_rc.evaluate2(ctx, &Path::current())?.as_json(),
+                &hash_ctx,
+            );
+            // TODO: temporary fix
+            local_rc.clear_blocks();
+            block.set_base_value(merged_context);
             block_created = true;
             local_rc.push_block(block);
         }

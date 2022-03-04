@@ -101,6 +101,10 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.blocks.pop_front();
     }
 
+    pub(crate) fn clear_blocks(&mut self) {
+        self.blocks.clear();
+    }
+
     /// Borrow a reference to current block context
     pub fn block(&self) -> Option<&BlockContext<'reg>> {
         self.blocks.front()

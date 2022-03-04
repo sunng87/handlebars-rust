@@ -45,7 +45,7 @@ fn parse_json_visitor<'a, 'reg>(
     for path_seg in relative_path {
         match path_seg {
             PathSeg::Named(the_path) => {
-                // FIXME: block params resolution for 495
+                // FIXME: partial block params resolution for 495
                 // we should not search whole block stack for the
                 // param, if there is a same name in current block
                 if let Some((holder, base_path)) = get_in_block_params(block_contexts, the_path) {
