@@ -79,7 +79,9 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             let mut block = BlockContext::new();
             *block.base_path_mut() = base_path.to_vec();
             block_created = true;
-            // TODO: temporary fix
+
+            // clear blocks to prevent block params from parent
+            // template to be leaked into partials
             local_rc.clear_blocks();
             local_rc.push_block(block);
         } else if !d.hash().is_empty() {
@@ -95,10 +97,14 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
                 local_rc.evaluate2(ctx, &Path::current())?.as_json(),
                 &hash_ctx,
             );
-            // TODO: temporary fix
-            local_rc.clear_blocks();
+
             block.set_base_value(merged_context);
             block_created = true;
+
+            // clear blocks to prevent block params from parent
+            // template to be leaked into partials
+            // see `test_partial_context_issue_495` for the case.
+            local_rc.clear_blocks();
             local_rc.push_block(block);
         }
 
