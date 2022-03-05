@@ -500,7 +500,7 @@ name: there
     fn test_partial_context_issue_495() {
         let mut hb = Registry::new();
         hb.register_template_string(
-            "t",
+            "t1",
             r#"{{~#*inline "displayName"~}}
 Template:{{name}}
 {{/inline}}
@@ -511,17 +511,29 @@ Name:{{name}}
         )
         .unwrap();
 
+        hb.register_template_string(
+            "t1",
+            r#"{{~#*inline "displayName"~}}
+Template:{{this}}
+{{/inline}}
+{{#each data as |name|}}
+Name:{{name}}
+{{>displayName}}
+{{/each}}"#,
+        )
+        .unwrap();
+
         let data = json!({
             "data": ["hudel", "test"]
         });
 
         assert_eq!(
             r#"Name:hudel
-Template:aaaa
+Template:hudel
 Name:test
-Template:aaaa
+Template:test
 "#,
-            hb.render("t", &data).unwrap()
+            hb.render("t1", &data).unwrap()
         );
     }
 }
