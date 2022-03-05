@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-use serde_json::value::{to_value, Value as Json};
+use serde_json::value::Value as Json;
 
 use crate::block::BlockContext;
 use crate::context::{merge_json, Context};
