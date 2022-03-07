@@ -173,9 +173,6 @@ impl Context {
         // always use absolute at the moment until we get base_value lifetime issue fixed
         let resolved_visitor = parse_json_visitor(relative_path, block_contexts, true);
 
-        // debug logging
-        debug!("Accessing context value: {:?}", resolved_visitor);
-
         match resolved_visitor {
             ResolvedPath::AbsolutePath(paths) => {
                 let mut ptr = Some(self.data());

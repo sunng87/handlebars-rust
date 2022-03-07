@@ -79,6 +79,10 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             let mut block = BlockContext::new();
             *block.base_path_mut() = base_path.to_vec();
             block_created = true;
+
+            // clear blocks to prevent block params from parent
+            // template to be leaked into partials
+            local_rc.clear_blocks();
             local_rc.push_block(block);
         } else if !d.hash().is_empty() {
             let mut block = BlockContext::new();
@@ -93,8 +97,14 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
                 local_rc.evaluate2(ctx, &Path::current())?.as_json(),
                 &hash_ctx,
             );
+
             block.set_base_value(merged_context);
             block_created = true;
+
+            // clear blocks to prevent block params from parent
+            // template to be leaked into partials
+            // see `test_partial_context_issue_495` for the case.
+            local_rc.clear_blocks();
             local_rc.push_block(block);
         }
 
@@ -490,5 +500,46 @@ name: there
             )
             .unwrap();
         assert_eq!(":(\n", r2);
+    }
+
+    #[test]
+    fn test_partial_context_issue_495() {
+        let mut hb = Registry::new();
+        hb.register_template_string(
+            "t1",
+            r#"{{~#*inline "displayName"~}}
+Template:{{name}}
+{{/inline}}
+{{#each data as |name|}}
+Name:{{name}}
+{{>displayName name="aaaa"}}
+{{/each}}"#,
+        )
+        .unwrap();
+
+        hb.register_template_string(
+            "t1",
+            r#"{{~#*inline "displayName"~}}
+Template:{{this}}
+{{/inline}}
+{{#each data as |name|}}
+Name:{{name}}
+{{>displayName}}
+{{/each}}"#,
+        )
+        .unwrap();
+
+        let data = json!({
+            "data": ["hudel", "test"]
+        });
+
+        assert_eq!(
+            r#"Name:hudel
+Template:hudel
+Name:test
+Template:test
+"#,
+            hb.render("t1", &data).unwrap()
+        );
     }
 }
