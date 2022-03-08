@@ -71,7 +71,7 @@ Examples are provided in source tree to demo usage of various api.
 ## Minimum Rust Version Policy
 
 Handlebars will track Rust nightly and stable channel. When dropping
-support for previous stable versions, I will bump **major** version
+support for previous stable versions, I will bump **patch** version
 and clarify in CHANGELOG.
 
 ## Document
