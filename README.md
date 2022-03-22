@@ -174,7 +174,7 @@ Handlebars 3.0 can be used in WebAssembly projects.
   example](https://github.com/seanmonstar/warp/blob/master/examples/handlebars_template.rs)
 * Tower-web: [Built-in](https://github.com/carllerche/tower-web)
 * Actix: [handlebars
-  example](https://github.com/actix/examples/blob/master/template_engines/handlebars/src/main.rs)
+  example](https://github.com/actix/examples/blob/master/templating/handlebars/src/main.rs)
 * Tide: [tide-handlebars](https://github.com/No9/tide-handlebars)
 
 ### Adopters
