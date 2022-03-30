@@ -11,6 +11,7 @@ repository = "https://github.com/sunng87/handlebars-rust"
 documentation = "https://docs.rs/crate/handlebars/"
 readme = "README.md"
 edition = "2021"
+rust-version = "1.57"
 
 [lib]
 name = "handlebars"
