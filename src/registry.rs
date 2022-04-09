@@ -306,22 +306,41 @@ impl<'reg> Registry<'reg> {
         };
 
         let walker = WalkDir::new(dir_path);
-        let dir_iter = walker.min_depth(1).into_iter().filter_map(|e| {
-            let e = e.ok()?;
-            let path = e.path();
-            path.extension()
-                .and_then(|extension| {
-                    if extension == tpl_extension {
-                        path.file_stem()
-                    } else {
-                        None
-                    }
-                })
-                .and_then(|stem| stem.to_str())
-                .map(|stem| (path.to_owned(), stem.to_owned()))
-        });
+        let dir_iter = walker
+            .min_depth(1)
+            .into_iter()
+            .filter_map(|e| e.ok().map(|e| e.into_path()))
+            // Checks if extension matches
+            .filter(|tpl_path| {
+                tpl_path
+                    .extension()
+                    .map(|extension| extension == tpl_extension)
+                    .unwrap_or(false)
+            })
+            // Rejects any hidden or temporary files.
+            .filter(|tpl_path| {
+                tpl_path
+                    .file_stem()
+                    .map(|stem| stem.to_string_lossy())
+                    .map(|stem| !(stem.starts_with(".") || stem.starts_with("#")))
+                    .unwrap_or(false)
+            })
+            .filter_map(|tpl_path| {
+                tpl_path
+                    .strip_prefix(dir_path)
+                    .ok()
+                    .map(|tpl_canonical_name| {
+                        tpl_canonical_name
+                            .with_extension("")
+                            .components()
+                            .map(|component| component.as_os_str().to_string_lossy())
+                            .collect::<Vec<_>>()
+                            .join("/")
+                    })
+                    .map(|tpl_canonical_name| (tpl_canonical_name, tpl_path))
+            });
 
-        for (tpl_path, tpl_canonical_name) in dir_iter {
+        for (tpl_canonical_name, tpl_path) in dir_iter {
             self.register_template_file(&tpl_canonical_name, &tpl_path)?;
         }
 
