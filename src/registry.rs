@@ -20,9 +20,7 @@ use crate::support::str::{self, StringWriter};
 use crate::template::{Template, TemplateOptions};
 
 #[cfg(feature = "dir_source")]
-use std::path;
-#[cfg(feature = "dir_source")]
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 #[cfg(feature = "script_helper")]
 use rhai::Engine;
@@ -92,21 +90,6 @@ impl<'reg> Default for Registry<'reg> {
     fn default() -> Self {
         Self::new()
     }
-}
-
-#[cfg(feature = "dir_source")]
-fn filter_file(entry: &DirEntry, suffix: &str) -> bool {
-    let path = entry.path();
-
-    // ignore hidden files, emacs buffers and files with wrong suffix
-    !path.is_file()
-        || path
-            .file_name()
-            .map(|s| {
-                let ds = s.to_string_lossy();
-                ds.starts_with('.') || ds.starts_with('#') || !ds.ends_with(suffix)
-            })
-            .unwrap_or(true)
 }
 
 #[cfg(feature = "script_helper")]
@@ -307,7 +290,7 @@ impl<'reg> Registry<'reg> {
     #[cfg_attr(docsrs, doc(cfg(feature = "dir_source")))]
     pub fn register_templates_directory<P>(
         &mut self,
-        tpl_extension: &'static str,
+        tpl_extension: &str,
         dir_path: P,
     ) -> Result<(), TemplateError>
     where
@@ -315,31 +298,49 @@ impl<'reg> Registry<'reg> {
     {
         let dir_path = dir_path.as_ref();
 
-        let prefix_len = if dir_path
-            .to_string_lossy()
-            .ends_with(|c| c == '\\' || c == '/')
-        // `/` will work on windows too so we still need to check
-        {
-            dir_path.to_string_lossy().len()
+        // Allowing dots at the beginning as to not break old applications.
+        let tpl_extension = if tpl_extension.starts_with(".") {
+            &tpl_extension[1..]
         } else {
-            dir_path.to_string_lossy().len() + 1
+            tpl_extension
         };
 
         let walker = WalkDir::new(dir_path);
         let dir_iter = walker
             .min_depth(1)
             .into_iter()
-            .filter(|e| e.is_ok() && !filter_file(e.as_ref().unwrap(), tpl_extension));
+            .filter_map(|e| e.ok().map(|e| e.into_path()))
+            // Checks if extension matches
+            .filter(|tpl_path| {
+                tpl_path
+                    .extension()
+                    .map(|extension| extension == tpl_extension)
+                    .unwrap_or(false)
+            })
+            // Rejects any hidden or temporary files.
+            .filter(|tpl_path| {
+                tpl_path
+                    .file_stem()
+                    .map(|stem| stem.to_string_lossy())
+                    .map(|stem| !(stem.starts_with(".") || stem.starts_with("#")))
+                    .unwrap_or(false)
+            })
+            .filter_map(|tpl_path| {
+                tpl_path
+                    .strip_prefix(dir_path)
+                    .ok()
+                    .map(|tpl_canonical_name| {
+                        tpl_canonical_name
+                            .with_extension("")
+                            .components()
+                            .map(|component| component.as_os_str().to_string_lossy())
+                            .collect::<Vec<_>>()
+                            .join("/")
+                    })
+                    .map(|tpl_canonical_name| (tpl_canonical_name, tpl_path))
+            });
 
-        for entry in dir_iter {
-            let entry = entry?;
-
-            let tpl_path = entry.path();
-            let tpl_file_path = entry.path().to_string_lossy();
-
-            let tpl_name = &tpl_file_path[prefix_len..tpl_file_path.len() - tpl_extension.len()];
-            // replace platform path separator with our internal one
-            let tpl_canonical_name = tpl_name.replace(path::MAIN_SEPARATOR, "/");
+        for (tpl_canonical_name, tpl_path) in dir_iter {
             self.register_template_file(&tpl_canonical_name, &tpl_path)?;
         }
 
