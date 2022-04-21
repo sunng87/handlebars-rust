@@ -42,7 +42,7 @@ tiny_http = "0.11"
 time = { version = "0.3.7", features = ["serde", "formatting", "parsing"]}
 
 [target.'cfg(unix)'.dev-dependencies]
-pprof = { version = "0.7", features = ["flamegraph", "protobuf"] }
+pprof = { version = "0.8", features = ["flamegraph", "protobuf"] }
 
 [features]
 dir_source = ["walkdir"]
