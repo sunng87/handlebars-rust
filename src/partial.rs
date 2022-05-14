@@ -542,4 +542,26 @@ Template:test
             hb.render("t1", &data).unwrap()
         );
     }
+
+    #[test]
+    fn test_multiline_partial() {
+        let mut hb = Registry::new();
+        hb.set_prevent_indent(false);
+
+        hb.register_template_string(
+            "t1",
+            r#"{{#*inline "thepartial"}}
+  inner first line
+  inner second line
+{{/inline}}
+  {{> thepartial}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"    inner first line
+    inner second line
+"#,
+            hb.render("t1", &()).unwrap()
+        );
+    }
 }
