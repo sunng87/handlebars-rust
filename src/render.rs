@@ -443,6 +443,7 @@ pub struct Decorator<'reg, 'rc> {
     params: Vec<PathAndJson<'reg, 'rc>>,
     hash: BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
+    indent: Option<&'reg str>,
 }
 
 impl<'reg: 'rc, 'rc> Decorator<'reg, 'rc> {
@@ -471,6 +472,7 @@ impl<'reg: 'rc, 'rc> Decorator<'reg, 'rc> {
             params: pv,
             hash: hm,
             template: dt.template.as_ref(),
+            indent: dt.indent.as_ref().map(|s| s.as_ref()),
         })
     }
 

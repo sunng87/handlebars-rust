@@ -25,6 +25,15 @@ pub(crate) fn strip_first_newline(s: &str) -> &str {
     }
 }
 
+pub(crate) fn find_trailing_whitespace_chars(s: &str) -> Option<&str> {
+    let trimmed = s.trim_end_matches(whitespace_matcher);
+    if trimmed.len() == s.len() {
+        None
+    } else {
+        Some(&s[trimmed.len()..])
+    }
+}
+
 pub(crate) fn ends_with_empty_line(text: &str) -> bool {
     let s = text.trim_end_matches(whitespace_matcher);
     // also matches when text is just whitespaces

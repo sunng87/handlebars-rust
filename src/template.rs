@@ -161,6 +161,20 @@ pub struct DecoratorTemplate {
     pub params: Vec<Parameter>,
     pub hash: HashMap<String, Parameter>,
     pub template: Option<Template>,
+    // for partial indent
+    pub indent: Option<String>,
+}
+
+impl DecoratorTemplate {
+    pub fn new(exp: ExpressionSpec) -> DecoratorTemplate {
+        DecoratorTemplate {
+            name: exp.name,
+            params: exp.params,
+            hash: exp.hash,
+            template: None,
+            indent: None,
+        }
+    }
 }
 
 impl Parameter {
@@ -400,6 +414,12 @@ impl Template {
         }
     }
 
+    // in handlebars, the whitespaces around statement are
+    // automatically trimed.
+    // this function checks if current span has both leading and
+    // trailing whitespaces, which we treat as a standalone statement.
+    //
+    //
     fn process_standalone_statement(
         template_stack: &mut VecDeque<Template>,
         source: &str,
@@ -603,12 +623,7 @@ impl Template {
                                 helper_stack.push_front(helper_template);
                             }
                             Rule::decorator_block_start | Rule::partial_block_start => {
-                                let decorator = DecoratorTemplate {
-                                    name: exp.name,
-                                    params: exp.params,
-                                    hash: exp.hash,
-                                    template: None,
-                                };
+                                let decorator = DecoratorTemplate::new(exp.clone());
                                 decorator_stack.push_front(decorator);
                             }
                             _ => unreachable!(),
@@ -714,12 +729,17 @@ impl Template {
                                     prevent_indent,
                                 );
 
-                                let decorator = DecoratorTemplate {
-                                    name: exp.name,
-                                    params: exp.params,
-                                    hash: exp.hash,
-                                    template: None,
-                                };
+                                // count indent for partial
+                                let mut indent = None;
+                                if rule == Rule::partial_expression && !prevent_indent {
+                                    indent = grammar::find_trailing_whitespace_chars(
+                                        &source[..span.start()],
+                                    );
+                                }
+
+                                let mut decorator = DecoratorTemplate::new(exp.clone());
+                                decorator.indent = indent.map(|s| s.to_owned());
+
                                 let el = if rule == Rule::decorator_expression {
                                     DecoratorExpression(Box::new(decorator))
                                 } else {
