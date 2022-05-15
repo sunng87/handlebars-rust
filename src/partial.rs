@@ -113,6 +113,9 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             local_rc.push_partial_block(pb);
         }
 
+        // indent
+        local_rc.set_indent_string(d.indent());
+
         let result = t.render(r, ctx, &mut local_rc, out);
 
         // cleanup
@@ -546,7 +549,6 @@ Template:test
     #[test]
     fn test_multiline_partial() {
         let mut hb = Registry::new();
-        hb.set_prevent_indent(false);
 
         hb.register_template_string(
             "t1",
@@ -562,6 +564,21 @@ Template:test
     inner second line
 "#,
             hb.render("t1", &()).unwrap()
+        );
+
+        hb.register_template_string(
+            "t2",
+            r#"{{#*inline "thepartial"}}inner first line
+inner second line
+{{/inline}}
+  {{> thepartial}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"  inner first line
+  inner second line
+"#,
+            hb.render("t2", &()).unwrap()
         );
     }
 }

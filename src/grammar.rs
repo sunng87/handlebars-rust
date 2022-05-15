@@ -4,47 +4,6 @@
 #[grammar = "grammar.pest"]
 pub struct HandlebarsParser;
 
-#[inline]
-pub(crate) fn whitespace_matcher(c: char) -> bool {
-    c == ' ' || c == '\t'
-}
-
-#[inline]
-pub(crate) fn newline_matcher(c: char) -> bool {
-    c == '\n' || c == '\r'
-}
-
-#[inline]
-pub(crate) fn strip_first_newline(s: &str) -> &str {
-    if let Some(s) = s.strip_prefix("\r\n") {
-        s
-    } else if let Some(s) = s.strip_prefix('\n') {
-        s
-    } else {
-        s
-    }
-}
-
-pub(crate) fn find_trailing_whitespace_chars(s: &str) -> Option<&str> {
-    let trimmed = s.trim_end_matches(whitespace_matcher);
-    if trimmed.len() == s.len() {
-        None
-    } else {
-        Some(&s[trimmed.len()..])
-    }
-}
-
-pub(crate) fn ends_with_empty_line(text: &str) -> bool {
-    let s = text.trim_end_matches(whitespace_matcher);
-    // also matches when text is just whitespaces
-    s.ends_with(newline_matcher) || s.is_empty()
-}
-
-pub(crate) fn starts_with_empty_line(text: &str) -> bool {
-    text.trim_start_matches(whitespace_matcher)
-        .starts_with(newline_matcher)
-}
-
 #[cfg(test)]
 mod test {
     use super::{HandlebarsParser, Rule};

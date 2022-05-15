@@ -9,8 +9,9 @@ use pest::{Parser, Position, Span};
 use serde_json::value::Value as Json;
 
 use crate::error::{TemplateError, TemplateErrorReason};
-use crate::grammar::{self, HandlebarsParser, Rule};
+use crate::grammar::{HandlebarsParser, Rule};
 use crate::json::path::{parse_json_path_from_iter, Path};
+use crate::support;
 
 use self::TemplateElement::*;
 
@@ -426,21 +427,23 @@ impl Template {
         current_span: &Span<'_>,
         prevent_indent: bool,
     ) -> bool {
-        let with_trailing_newline = grammar::starts_with_empty_line(&source[current_span.end()..]);
+        let with_trailing_newline =
+            support::str::starts_with_empty_line(&source[current_span.end()..]);
 
         if with_trailing_newline {
             let with_leading_newline =
-                grammar::ends_with_empty_line(&source[..current_span.start()]);
+                support::str::ends_with_empty_line(&source[..current_span.start()]);
 
             // prevent_indent: a special toggle for partial expression
             // (>) that leading whitespaces are kept, default to false
+            // to partial_expression and true for any other statements
             if prevent_indent && with_leading_newline {
                 let t = template_stack.front_mut().unwrap();
                 // check the last element before current
                 if let Some(RawString(ref mut text)) = t.elements.last_mut() {
                     // trim leading space for standalone statement
                     *text = text
-                        .trim_end_matches(grammar::whitespace_matcher)
+                        .trim_end_matches(support::str::whitespace_matcher)
                         .to_owned();
                 }
             }
@@ -487,8 +490,8 @@ impl Template {
         if trim_start {
             RawString(s.trim_start().to_owned())
         } else if trim_start_line {
-            let s = s.trim_start_matches(grammar::whitespace_matcher);
-            RawString(grammar::strip_first_newline(s).to_owned())
+            let s = s.trim_start_matches(support::str::whitespace_matcher);
+            RawString(support::str::strip_first_newline(s).to_owned())
         } else {
             RawString(s)
         }
@@ -729,10 +732,10 @@ impl Template {
                                     prevent_indent,
                                 );
 
-                                // count indent for partial
+                                // indent for partial expression >
                                 let mut indent = None;
-                                if rule == Rule::partial_expression && !prevent_indent {
-                                    indent = grammar::find_trailing_whitespace_chars(
+                                if rule == Rule::partial_expression && !options.prevent_indent {
+                                    indent = support::str::find_trailing_whitespace_chars(
                                         &source[..span.start()],
                                     );
                                 }
