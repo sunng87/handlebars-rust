@@ -771,6 +771,20 @@ pub(crate) fn do_escape(r: &Registry<'_>, rc: &RenderContext<'_, '_>, content: S
     }
 }
 
+#[inline]
+fn indent_aware_write(
+    v: &str,
+    rc: &mut RenderContext<'_, '_>,
+    out: &mut dyn Output,
+) -> Result<(), RenderError> {
+    if let Some(indent) = rc.get_indent_string() {
+        out.write(support::str::with_indent(v.as_ref(), indent).as_ref())?;
+    } else {
+        out.write(v.as_ref())?;
+    }
+    Ok(())
+}
+
 impl Renderable for TemplateElement {
     fn render<'reg: 'rc, 'rc>(
         &'reg self,
@@ -780,14 +794,7 @@ impl Renderable for TemplateElement {
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         match self {
-            RawString(ref v) => {
-                if let Some(indent) = rc.get_indent_string() {
-                    out.write(support::str::with_indent(v.as_ref(), indent).as_ref())?;
-                } else {
-                    out.write(v.as_ref())?;
-                }
-                Ok(())
-            }
+            RawString(ref v) => indent_aware_write(v.as_ref(), rc, out),
             Expression(ref ht) | HtmlExpression(ref ht) => {
                 let is_html_expression = matches!(self, HtmlExpression(_));
                 if is_html_expression {
@@ -817,8 +824,7 @@ impl Renderable for TemplateElement {
                         } else {
                             let rendered = context_json.value().render();
                             let output = do_escape(registry, rc, rendered);
-                            out.write(output.as_ref())?;
-                            Ok(())
+                            indent_aware_write(output.as_ref(), rc, out)
                         }
                     }
                 } else {
