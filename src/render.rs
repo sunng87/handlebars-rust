@@ -14,6 +14,7 @@ use crate::json::value::{JsonRender, PathAndJson, ScopedJson};
 use crate::output::{Output, StringOutput};
 use crate::partial;
 use crate::registry::Registry;
+use crate::support;
 use crate::template::TemplateElement::*;
 use crate::template::{
     BlockParam, DecoratorTemplate, HelperTemplate, Parameter, Template, TemplateElement,
@@ -47,10 +48,11 @@ pub struct RenderContextInner<'reg: 'rc, 'rc> {
     /// root template name
     root_template: Option<&'reg String>,
     disable_escape: bool,
+    indent_string: Option<&'reg String>,
 }
 
 impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
-    /// Create a render context from a `Write`
+    /// Create a render context
     pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg, 'rc> {
         let inner = Rc::new(RenderContextInner {
             partials: BTreeMap::new(),
@@ -60,6 +62,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             current_template: None,
             root_template,
             disable_escape: false,
+            indent_string: None,
         });
 
         let mut blocks = VecDeque::with_capacity(5);
@@ -73,7 +76,6 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         }
     }
 
-    // TODO: better name
     pub(crate) fn new_for_block(&self) -> RenderContext<'reg, 'rc> {
         let inner = self.inner.clone();
 
@@ -198,6 +200,15 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         if *depth > 0 {
             *depth -= 1;
         }
+    }
+
+    pub(crate) fn set_indent_string(&mut self, indent: Option<&'reg String>) {
+        self.inner_mut().indent_string = indent;
+    }
+
+    #[inline]
+    pub(crate) fn get_indent_string(&self) -> Option<&'reg String> {
+        self.inner.indent_string
     }
 
     /// Remove a registered partial
@@ -443,6 +454,7 @@ pub struct Decorator<'reg, 'rc> {
     params: Vec<PathAndJson<'reg, 'rc>>,
     hash: BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
     template: Option<&'reg Template>,
+    indent: Option<&'reg String>,
 }
 
 impl<'reg: 'rc, 'rc> Decorator<'reg, 'rc> {
@@ -471,6 +483,7 @@ impl<'reg: 'rc, 'rc> Decorator<'reg, 'rc> {
             params: pv,
             hash: hm,
             template: dt.template.as_ref(),
+            indent: dt.indent.as_ref(),
         })
     }
 
@@ -502,6 +515,10 @@ impl<'reg: 'rc, 'rc> Decorator<'reg, 'rc> {
     /// Returns the default inner template if any
     pub fn template(&self) -> Option<&'reg Template> {
         self.template
+    }
+
+    pub fn indent(&self) -> Option<&'reg String> {
+        self.indent
     }
 }
 
@@ -755,6 +772,20 @@ pub(crate) fn do_escape(r: &Registry<'_>, rc: &RenderContext<'_, '_>, content: S
     }
 }
 
+#[inline]
+fn indent_aware_write(
+    v: &str,
+    rc: &mut RenderContext<'_, '_>,
+    out: &mut dyn Output,
+) -> Result<(), RenderError> {
+    if let Some(indent) = rc.get_indent_string() {
+        out.write(support::str::with_indent(v.as_ref(), indent).as_ref())?;
+    } else {
+        out.write(v.as_ref())?;
+    }
+    Ok(())
+}
+
 impl Renderable for TemplateElement {
     fn render<'reg: 'rc, 'rc>(
         &'reg self,
@@ -763,11 +794,8 @@ impl Renderable for TemplateElement {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
-        match *self {
-            RawString(ref v) => {
-                out.write(v.as_ref())?;
-                Ok(())
-            }
+        match self {
+            RawString(ref v) => indent_aware_write(v.as_ref(), rc, out),
             Expression(ref ht) | HtmlExpression(ref ht) => {
                 let is_html_expression = matches!(self, HtmlExpression(_));
                 if is_html_expression {
@@ -797,8 +825,7 @@ impl Renderable for TemplateElement {
                         } else {
                             let rendered = context_json.value().render();
                             let output = do_escape(registry, rc, rendered);
-                            out.write(output.as_ref())?;
-                            Ok(())
+                            indent_aware_write(output.as_ref(), rc, out)
                         }
                     }
                 } else {

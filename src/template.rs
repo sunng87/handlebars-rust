@@ -9,8 +9,9 @@ use pest::{Parser, Position, Span};
 use serde_json::value::Value as Json;
 
 use crate::error::{TemplateError, TemplateErrorReason};
-use crate::grammar::{self, HandlebarsParser, Rule};
+use crate::grammar::{HandlebarsParser, Rule};
 use crate::json::path::{parse_json_path_from_iter, Path};
+use crate::support;
 
 use self::TemplateElement::*;
 
@@ -161,6 +162,20 @@ pub struct DecoratorTemplate {
     pub params: Vec<Parameter>,
     pub hash: HashMap<String, Parameter>,
     pub template: Option<Template>,
+    // for partial indent
+    pub indent: Option<String>,
+}
+
+impl DecoratorTemplate {
+    pub fn new(exp: ExpressionSpec) -> DecoratorTemplate {
+        DecoratorTemplate {
+            name: exp.name,
+            params: exp.params,
+            hash: exp.hash,
+            template: None,
+            indent: None,
+        }
+    }
 }
 
 impl Parameter {
@@ -400,27 +415,34 @@ impl Template {
         }
     }
 
+    // in handlebars, the whitespaces around statement are
+    // automatically trimed.
+    // this function checks if current span has both leading and
+    // trailing whitespaces, which we treat as a standalone statement.
+    //
+    //
     fn process_standalone_statement(
         template_stack: &mut VecDeque<Template>,
         source: &str,
         current_span: &Span<'_>,
         prevent_indent: bool,
     ) -> bool {
-        let with_trailing_newline = grammar::starts_with_empty_line(&source[current_span.end()..]);
+        let with_trailing_newline =
+            support::str::starts_with_empty_line(&source[current_span.end()..]);
 
         if with_trailing_newline {
             let with_leading_newline =
-                grammar::ends_with_empty_line(&source[..current_span.start()]);
+                support::str::ends_with_empty_line(&source[..current_span.start()]);
 
             // prevent_indent: a special toggle for partial expression
-            // (>) that leading whitespaces are kept, default to false
+            // (>) that leading whitespaces are kept
             if prevent_indent && with_leading_newline {
                 let t = template_stack.front_mut().unwrap();
                 // check the last element before current
                 if let Some(RawString(ref mut text)) = t.elements.last_mut() {
                     // trim leading space for standalone statement
                     *text = text
-                        .trim_end_matches(grammar::whitespace_matcher)
+                        .trim_end_matches(support::str::whitespace_matcher)
                         .to_owned();
                 }
             }
@@ -467,8 +489,8 @@ impl Template {
         if trim_start {
             RawString(s.trim_start().to_owned())
         } else if trim_start_line {
-            let s = s.trim_start_matches(grammar::whitespace_matcher);
-            RawString(grammar::strip_first_newline(s).to_owned())
+            let s = s.trim_start_matches(support::str::whitespace_matcher);
+            RawString(support::str::strip_first_newline(s).to_owned())
         } else {
             RawString(s)
         }
@@ -603,12 +625,7 @@ impl Template {
                                 helper_stack.push_front(helper_template);
                             }
                             Rule::decorator_block_start | Rule::partial_block_start => {
-                                let decorator = DecoratorTemplate {
-                                    name: exp.name,
-                                    params: exp.params,
-                                    hash: exp.hash,
-                                    template: None,
-                                };
+                                let decorator = DecoratorTemplate::new(exp.clone());
                                 decorator_stack.push_front(decorator);
                             }
                             _ => unreachable!(),
@@ -705,8 +722,7 @@ impl Template {
                             Rule::decorator_expression | Rule::partial_expression => {
                                 // do not auto trim ident spaces for
                                 // partial_expression(>)
-                                let prevent_indent =
-                                    options.prevent_indent || rule != Rule::partial_expression;
+                                let prevent_indent = rule != Rule::partial_expression;
                                 trim_line_required = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
@@ -714,12 +730,17 @@ impl Template {
                                     prevent_indent,
                                 );
 
-                                let decorator = DecoratorTemplate {
-                                    name: exp.name,
-                                    params: exp.params,
-                                    hash: exp.hash,
-                                    template: None,
-                                };
+                                // indent for partial expression >
+                                let mut indent = None;
+                                if rule == Rule::partial_expression && !options.prevent_indent {
+                                    indent = support::str::find_trailing_whitespace_chars(
+                                        &source[..span.start()],
+                                    );
+                                }
+
+                                let mut decorator = DecoratorTemplate::new(exp.clone());
+                                decorator.indent = indent.map(|s| s.to_owned());
+
                                 let el = if rule == Rule::decorator_expression {
                                     DecoratorExpression(Box::new(decorator))
                                 } else {

@@ -113,6 +113,9 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             local_rc.push_partial_block(pb);
         }
 
+        // indent
+        local_rc.set_indent_string(d.indent());
+
         let result = t.render(r, ctx, &mut local_rc, out);
 
         // cleanup
@@ -454,13 +457,13 @@ foofoofoo"#,
 
         assert_eq!(
             result,
-            r#"name: inner_solo
+            r#"                name: inner_solo
 
-name: hello
-name: there
+                name: hello
+                name: there
 
-name: hello
-name: there
+        name: hello
+        name: there
 "#
         );
     }
@@ -541,5 +544,78 @@ Template:test
 "#,
             hb.render("t1", &data).unwrap()
         );
+    }
+
+    #[test]
+    fn test_multiline_partial_indent() {
+        let mut hb = Registry::new();
+
+        hb.register_template_string(
+            "t1",
+            r#"{{#*inline "thepartial"}}
+  inner first line
+  inner second line
+{{/inline}}
+  {{> thepartial}}
+outer third line"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"    inner first line
+    inner second line
+outer third line"#,
+            hb.render("t1", &()).unwrap()
+        );
+
+        hb.register_template_string(
+            "t2",
+            r#"{{#*inline "thepartial"}}inner first line
+inner second line
+{{/inline}}
+  {{> thepartial}}
+outer third line"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"  inner first line
+  inner second line
+outer third line"#,
+            hb.render("t2", &()).unwrap()
+        );
+
+        hb.register_template_string(
+            "t3",
+            r#"{{#*inline "thepartial"}}{{a}}{{/inline}}
+  {{> thepartial}}
+outer third line"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"
+  inner first line
+  inner second lineouter third line"#,
+            hb.render("t3", &json!({"a": "inner first line\ninner second line"}))
+                .unwrap()
+        );
+
+        let mut hb2 = Registry::new();
+        hb2.set_prevent_indent(true);
+
+        hb2.register_template_string(
+            "t1",
+            r#"{{#*inline "thepartial"}}
+  inner first line
+  inner second line
+{{/inline}}
+  {{> thepartial}}
+outer third line"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"    inner first line
+  inner second line
+outer third line"#,
+            hb2.render("t1", &()).unwrap()
+        )
     }
 }
