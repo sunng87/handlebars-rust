@@ -4,10 +4,6 @@ handlebars-rust
 [Handlebars templating language](https://handlebarsjs.com) implemented
 in Rust and for Rust.
 
-Handlebars-rust is the template engine that renders the official Rust website
-[rust-lang.org](https://www.rust-lang.org), [its
-book](https://doc.rust-lang.org/book/).
-
 [![CI](https://github.com/sunng87/handlebars-rust/actions/workflows/main.yml/badge.svg)](https://github.com/sunng87/handlebars-rust/actions/workflows/main.yml)
 [![](https://img.shields.io/crates/v/handlebars)](https://crates.io/crates/handlebars)
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
@@ -164,6 +160,13 @@ loaded from files or directory. This can be handy for template development.
 #### WebAssembly compatible
 
 Handlebars 3.0 can be used in WebAssembly projects.
+
+#### Fully scriptable
+
+With [rhai](https://github.com/rhaiscript/rhai) script support, you
+can implement your own helper with the scripting language. Together
+with the template lanaguage itself, template development can be fully
+scriptable without changing rust code.
 
 ## Related Projects
 
