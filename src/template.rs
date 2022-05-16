@@ -435,8 +435,7 @@ impl Template {
                 support::str::ends_with_empty_line(&source[..current_span.start()]);
 
             // prevent_indent: a special toggle for partial expression
-            // (>) that leading whitespaces are kept, default to false
-            // to partial_expression and true for any other statements
+            // (>) that leading whitespaces are kept
             if prevent_indent && with_leading_newline {
                 let t = template_stack.front_mut().unwrap();
                 // check the last element before current
@@ -723,8 +722,7 @@ impl Template {
                             Rule::decorator_expression | Rule::partial_expression => {
                                 // do not auto trim ident spaces for
                                 // partial_expression(>)
-                                let prevent_indent =
-                                    options.prevent_indent || rule != Rule::partial_expression;
+                                let prevent_indent = rule != Rule::partial_expression;
                                 trim_line_required = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,

@@ -457,13 +457,13 @@ foofoofoo"#,
 
         assert_eq!(
             result,
-            r#"name: inner_solo
+            r#"                name: inner_solo
 
-name: hello
-name: there
+                name: hello
+                name: there
 
-name: hello
-name: there
+        name: hello
+        name: there
 "#
         );
     }
@@ -556,13 +556,14 @@ Template:test
   inner first line
   inner second line
 {{/inline}}
-  {{> thepartial}}"#,
+  {{> thepartial}}
+outer third line"#,
         )
         .unwrap();
         assert_eq!(
             r#"    inner first line
     inner second line
-"#,
+outer third line"#,
             hb.render("t1", &()).unwrap()
         );
 
@@ -571,26 +572,28 @@ Template:test
             r#"{{#*inline "thepartial"}}inner first line
 inner second line
 {{/inline}}
-  {{> thepartial}}"#,
+  {{> thepartial}}
+outer third line"#,
         )
         .unwrap();
         assert_eq!(
             r#"  inner first line
   inner second line
-"#,
+outer third line"#,
             hb.render("t2", &()).unwrap()
         );
 
         hb.register_template_string(
             "t3",
             r#"{{#*inline "thepartial"}}{{a}}{{/inline}}
-  {{> thepartial}}"#,
+  {{> thepartial}}
+outer third line"#,
         )
         .unwrap();
         assert_eq!(
             r#"
   inner first line
-  inner second line"#,
+  inner second lineouter third line"#,
             hb.render("t3", &json!({"a": "inner first line\ninner second line"}))
                 .unwrap()
         );
@@ -604,13 +607,14 @@ inner second line
   inner first line
   inner second line
 {{/inline}}
-  {{> thepartial}}"#,
+  {{> thepartial}}
+outer third line"#,
         )
         .unwrap();
         assert_eq!(
             r#"    inner first line
   inner second line
-"#,
+outer third line"#,
             hb2.render("t1", &()).unwrap()
         )
     }
