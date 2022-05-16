@@ -105,9 +105,9 @@ mod test {
             .register_template_string("t0", "{{*foo}}".to_string())
             .unwrap();
 
-        let data = btreemap! {
-            "hello".to_string() => "world".to_string()
-        };
+        let data = json!({
+            "hello": "world"
+        });
 
         assert!(handlebars.render("t0", &data).is_err());
 
@@ -132,9 +132,9 @@ mod test {
             .register_template_string("t0", "{{hello}}{{*foo}}{{hello}}".to_string())
             .unwrap();
 
-        let data = btreemap! {
-            "hello".to_string() => "world".to_string()
-        };
+        let data = json!({
+            "hello": "world"
+        });
 
         handlebars.register_decorator(
             "foo",

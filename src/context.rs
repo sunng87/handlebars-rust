@@ -362,9 +362,9 @@ mod test {
 
     #[test]
     fn test_key_name_with_this() {
-        let m = btreemap! {
-            "this_name".to_string() => "the_value".to_string()
-        };
+        let m = json!({
+            "this_name": "the_value"
+        });
         let ctx = Context::wraps(&m).unwrap();
         assert_eq!(
             navigate_from_root(&ctx, "this_name").unwrap().render(),

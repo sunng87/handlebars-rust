@@ -375,9 +375,6 @@
 #[macro_use]
 extern crate log;
 
-#[cfg(test)]
-#[macro_use]
-extern crate maplit;
 #[macro_use]
 extern crate pest_derive;
 #[macro_use]

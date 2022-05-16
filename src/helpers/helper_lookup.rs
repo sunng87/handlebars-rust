@@ -52,8 +52,6 @@ pub static LOOKUP_HELPER: LookupHelper = LookupHelper;
 mod test {
     use crate::registry::Registry;
 
-    use std::collections::BTreeMap;
-
     #[test]
     fn test_lookup() {
         let mut handlebars = Registry::new();
@@ -67,13 +65,11 @@ mod test {
             .register_template_string("t2", "{{lookup kk \"a\"}}")
             .is_ok());
 
-        let mut m: BTreeMap<String, Vec<u16>> = BTreeMap::new();
-        m.insert("v1".to_string(), vec![1u16, 2u16, 3u16]);
-        m.insert("v2".to_string(), vec![9u16, 8u16, 7u16]);
+        let m = json!({"v1": [1,2,3], "v2": [9,8,7]});
 
-        let m2 = btreemap! {
-            "kk".to_string() => btreemap!{"a".to_string() => "world".to_string()}
-        };
+        let m2 = json!({
+            "kk": {"a": "world"}
+        });
 
         let r0 = handlebars.render("t0", &m);
         assert_eq!(r0.ok().unwrap(), "987".to_string());

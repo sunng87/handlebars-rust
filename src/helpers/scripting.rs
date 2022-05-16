@@ -98,10 +98,16 @@ mod test {
         let ast = engine.compile(&script).unwrap();
 
         let params = vec![PathAndJson::new(None, ScopedJson::Derived(json!(true)))];
-        let hash = btreemap! {
-            "me" => PathAndJson::new(None, ScopedJson::Derived(json!("no"))),
-            "you" => PathAndJson::new(None, ScopedJson::Derived(json!("yes"))),
-        };
+
+        let mut hash = BTreeMap::new();
+        hash.insert(
+            "me",
+            PathAndJson::new(None, ScopedJson::Derived(json!("no"))),
+        );
+        hash.insert(
+            "you",
+            PathAndJson::new(None, ScopedJson::Derived(json!("yes"))),
+        );
 
         let result = call_script_helper(&params, &hash, &engine, &ast)
             .unwrap()

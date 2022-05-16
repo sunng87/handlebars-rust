@@ -190,10 +190,7 @@ mod test {
             "include navbar".to_string()
         );
         assert_eq!(
-            handlebars
-                .render("t6", &btreemap! {"a".to_string() => "2".to_string()})
-                .ok()
-                .unwrap(),
+            handlebars.render("t6", &json!({"a": "2"})).ok().unwrap(),
             "2".to_string()
         );
         assert_eq!(

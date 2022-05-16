@@ -159,7 +159,6 @@ pub static EACH_HELPER: EachHelper = EachHelper;
 
 #[cfg(test)]
 mod test {
-    use crate::json::value::to_json;
     use crate::registry::Registry;
     use serde_json::value::Value as Json;
     use std::collections::BTreeMap;
@@ -310,15 +309,15 @@ mod test {
         assert!(handlebars
             .register_template_string("t0", "{{#each a}}1{{else}}empty{{/each}}")
             .is_ok());
-        let m1 = btreemap! {
-            "a".to_string() => Vec::<String>::new(),
-        };
+        let m1 = json!({
+            "a": []
+        });
         let r0 = handlebars.render("t0", &m1).unwrap();
         assert_eq!(r0, "empty");
 
-        let m2 = btreemap! {
-            "b".to_string() => Vec::<String>::new()
-        };
+        let m2 = json!({
+            "b": []
+        });
         let r1 = handlebars.render("t0", &m2).unwrap();
         assert_eq!(r1, "empty");
     }
@@ -329,9 +328,9 @@ mod test {
         assert!(handlebars
             .register_template_string("t0", "{{#each a as |i|}}{{i}}{{/each}}")
             .is_ok());
-        let m1 = btreemap! {
-            "a".to_string() => vec![1,2,3,4,5]
-        };
+        let m1 = json!({
+            "a": [1,2,3,4,5]
+        });
         let r0 = handlebars.render("t0", &m1).unwrap();
         assert_eq!(r0, "12345");
     }
@@ -344,10 +343,10 @@ mod test {
                         {{/each}}";
         assert!(handlebars.register_template_string("t0", template).is_ok());
 
-        let m = btreemap! {
-            "ftp".to_string() => 21,
-            "http".to_string() => 80
-        };
+        let m = json!({
+            "ftp": 21,
+            "http": 80
+        });
         let r0 = handlebars.render("t0", &m);
         assert_eq!(r0.ok().unwrap(), "ftp:21|http:80|".to_string());
     }
@@ -361,10 +360,10 @@ mod test {
 
         assert!(handlebars.register_template_string("t0", template).is_ok());
 
-        let m = btreemap! {
-            "ftp".to_string() => 21,
-            "http".to_string() => 80
-        };
+        let m = json!({
+            "ftp": 21,
+            "http": 80
+        });
         let r0 = handlebars.render("t0", &m);
         assert_eq!(r0.ok().unwrap(), "ftp:21|http:80|".to_string());
     }
@@ -378,12 +377,12 @@ mod test {
             )
             .is_ok());
 
-        let data = btreemap! {
-            "a".to_string() => to_json(&btreemap! {
-                "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
-            }),
-            "d".to_string() => to_json(&1)
-        };
+        let data = json!({
+            "a": {
+                "b": [{"c": [1]}]
+            },
+            "d": 1
+        });
 
         let r0 = handlebars.render("t0", &data);
         assert_eq!(r0.ok().unwrap(), "1".to_string());
@@ -396,10 +395,10 @@ mod test {
                         {{#if @first}}template<{{/if}}{{this}}{{#if @last}}>{{else}},{{/if}}\
                         {{/each}}{{/each}}";
         assert!(handlebars.register_template_string("t0", template).is_ok());
-        let data = btreemap! {
-            "typearg".to_string() => vec!["T".to_string()],
-            "variant".to_string() => vec!["1".to_string(), "2".to_string()]
-        };
+        let data = json!({
+            "typearg": ["T"],
+            "variant": ["1", "2"]
+        });
         let r0 = handlebars.render("t0", &data);
         assert_eq!(r0.ok().unwrap(), "template<T>template<T>".to_string());
     }

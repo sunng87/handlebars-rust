@@ -60,7 +60,6 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 
 #[cfg(test)]
 mod test {
-    use crate::json::value::to_json;
     use crate::registry::Registry;
 
     #[derive(Serialize)]
@@ -211,12 +210,12 @@ mod test {
         assert!(handlebars
             .register_template_string("t0", "{{#with a}}{{#with b}}{{../../d}}{{/with}}{{/with}}")
             .is_ok());
-        let data = btreemap! {
-            "a".to_string() => to_json(&btreemap! {
-                "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
-            }),
-            "d".to_string() => to_json(1)
-        };
+        let data = json!({
+            "a": {
+                "b": [{"c": [1]}]
+            },
+            "d": 1
+        });
 
         let r0 = handlebars.render("t0", &data);
         assert_eq!(r0.ok().unwrap(), "1".to_string());
