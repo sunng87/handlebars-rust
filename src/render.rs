@@ -206,6 +206,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.inner_mut().indent_string = indent;
     }
 
+    #[inline]
     pub(crate) fn get_indent_string(&self) -> Option<&'reg String> {
         self.inner.indent_string
     }
