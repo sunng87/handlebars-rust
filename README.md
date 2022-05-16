@@ -54,6 +54,8 @@ Examples are provided in source tree to demo usage of various api.
   to use custom helpers.
 * [render_file](https://github.com/sunng87/handlebars-rust/blob/master/examples/render_file.rs)
   similar to render, but render to file instead of string
+* [helper_macro](https://github.com/sunng87/handlebars-rust/blob/master/examples/helper_macro.rs)
+  demos usage of `handlebars_helper!` to simplify helper development
 * [partials](https://github.com/sunng87/handlebars-rust/blob/master/examples/partials.rs)
   template inheritance with handlebars
 * [decorator](https://github.com/sunng87/handlebars-rust/blob/master/examples/decorator.rs)
