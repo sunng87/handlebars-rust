@@ -547,7 +547,7 @@ Template:test
     }
 
     #[test]
-    fn test_multiline_partial() {
+    fn test_multiline_partial_indent() {
         let mut hb = Registry::new();
 
         hb.register_template_string(
@@ -580,5 +580,38 @@ inner second line
 "#,
             hb.render("t2", &()).unwrap()
         );
+
+        hb.register_template_string(
+            "t3",
+            r#"{{#*inline "thepartial"}}{{a}}{{/inline}}
+  {{> thepartial}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"
+  inner first line
+  inner second line"#,
+            hb.render("t3", &json!({"a": "inner first line\ninner second line"}))
+                .unwrap()
+        );
+
+        let mut hb2 = Registry::new();
+        hb2.set_prevent_indent(true);
+
+        hb2.register_template_string(
+            "t1",
+            r#"{{#*inline "thepartial"}}
+  inner first line
+  inner second line
+{{/inline}}
+  {{> thepartial}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"    inner first line
+  inner second line
+"#,
+            hb2.render("t1", &()).unwrap()
+        )
     }
 }
