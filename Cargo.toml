@@ -23,7 +23,7 @@ path = "src/cli.rs"
 
 [dependencies]
 log = { version = "0.4.0" }
-quick-error = "2.0"
+thiserror = "1"
 pest = "2.1.0"
 pest_derive = "2.1.0"
 serde = "1.0.0"

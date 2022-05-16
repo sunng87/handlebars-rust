@@ -377,8 +377,6 @@ extern crate log;
 
 #[macro_use]
 extern crate pest_derive;
-#[macro_use]
-extern crate quick_error;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_derive;
