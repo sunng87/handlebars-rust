@@ -1,10 +1,13 @@
-use std::error::Error;
+// use std::backtrace::Backtrace;
+use std::error::Error as StdError;
 use std::fmt;
 use std::io::Error as IOError;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 
 use serde_json::error::Error as SerdeError;
+use thiserror::Error;
+
 #[cfg(feature = "dir_source")]
 use walkdir::Error as WalkdirError;
 
@@ -12,14 +15,16 @@ use walkdir::Error as WalkdirError;
 use rhai::{EvalAltResult, ParseError};
 
 /// Error when rendering data on template.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Error)]
 pub struct RenderError {
     pub desc: String,
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    cause: Option<Box<dyn Error + Send + Sync + 'static>>,
+    #[source]
+    cause: Option<Box<dyn StdError + Send + Sync + 'static>>,
     unimplemented: bool,
+    // backtrace: Backtrace,
 }
 
 impl fmt::Display for RenderError {
@@ -35,14 +40,6 @@ impl fmt::Display for RenderError {
             ),
             _ => write!(f, "{}", self.desc),
         }
-    }
-}
-
-impl Error for RenderError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        self.cause
-            .as_ref()
-            .map(|e| e.as_ref() as &(dyn Error + 'static))
     }
 }
 
@@ -115,7 +112,7 @@ impl RenderError {
 
     pub fn from_error<E>(error_info: &str, cause: E) -> RenderError
     where
-        E: Error + Send + Sync + 'static,
+        E: StdError + Send + Sync + 'static,
     {
         let mut e = RenderError::new(error_info);
         e.cause = Some(Box::new(cause));
@@ -129,39 +126,31 @@ impl RenderError {
     }
 }
 
-quick_error! {
 /// Template parsing error
-    #[derive(Debug)]
-    pub enum TemplateErrorReason {
-        MismatchingClosedHelper(open: String, closed: String) {
-            display("helper {:?} was opened, but {:?} is closing",
-                open, closed)
-        }
-        MismatchingClosedDecorator(open: String, closed: String) {
-            display("decorator {:?} was opened, but {:?} is closing",
-                open, closed)
-        }
-        InvalidSyntax {
-            display("invalid handlebars syntax.")
-        }
-        InvalidParam (param: String) {
-            display("invalid parameter {:?}", param)
-        }
-        NestedSubexpression {
-            display("nested subexpression is not supported")
-        }
-        IoError(err: IOError, name: String) {
-             display("Template \"{}\": {}", name, err)
-        }
-        #[cfg(feature = "dir_source")]
-        WalkdirError(err: WalkdirError) {
-             display("Walk dir error: {}", err)
-        }
-    }
+#[derive(Debug, Error)]
+pub enum TemplateErrorReason {
+    #[error("helper {0:?} was opened, but {1:?} is closing")]
+    MismatchingClosedHelper(String, String),
+    #[error("decorator {0:?} was opened, but {1:?} is closing")]
+    MismatchingClosedDecorator(String, String),
+    #[error("invalid handlebars syntax.")]
+    InvalidSyntax,
+    #[error("invalid parameter {0:?}")]
+    InvalidParam(String),
+    #[error("nested subexpression is not supported")]
+    NestedSubexpression,
+    #[error("Template \"{1}\": {0}")]
+    IoError(IOError, String),
+    #[cfg(feature = "dir_source")]
+    #[error("Walk dir error: {err}")]
+    WalkdirError {
+        #[from]
+        err: WalkdirError,
+    },
 }
 
 /// Error on parsing template.
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub struct TemplateError {
     pub reason: TemplateErrorReason,
     pub template_name: Option<String>,
@@ -194,8 +183,6 @@ impl TemplateError {
     }
 }
 
-impl Error for TemplateError {}
-
 impl From<(IOError, String)> for TemplateError {
     fn from(err_info: (IOError, String)) -> TemplateError {
         let (e, name) = err_info;
@@ -206,7 +193,7 @@ impl From<(IOError, String)> for TemplateError {
 #[cfg(feature = "dir_source")]
 impl From<WalkdirError> for TemplateError {
     fn from(e: WalkdirError) -> TemplateError {
-        TemplateError::of(TemplateErrorReason::WalkdirError(e))
+        TemplateError::of(TemplateErrorReason::from(e))
     }
 }
 
@@ -257,16 +244,11 @@ impl fmt::Display for TemplateError {
 }
 
 #[cfg(feature = "script_helper")]
-quick_error! {
-    #[derive(Debug)]
-    pub enum ScriptError {
-        IoError(err: IOError) {
-            from()
-            source(err)
-        }
-        ParseError(err: ParseError) {
-            from()
-            source(err)
-        }
-    }
+#[derive(Debug, Error)]
+pub enum ScriptError {
+    #[error(transparent)]
+    IoError(#[from] IOError),
+
+    #[error(transparent)]
+    ParseError(#[from] ParseError),
 }
