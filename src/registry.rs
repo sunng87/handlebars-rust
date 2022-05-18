@@ -298,12 +298,9 @@ impl<'reg> Registry<'reg> {
     {
         let dir_path = dir_path.as_ref();
 
-        // Allowing dots at the beginning as to not break old applications.
-        let tpl_extension = if tpl_extension.starts_with(".") {
-            &tpl_extension[1..]
-        } else {
-            tpl_extension
-        };
+        // Allowing dots at the beginning as to not break old
+        // applications.
+        let tpl_extension = tpl_extension.strip_prefix('.').unwrap_or(tpl_extension);
 
         let walker = WalkDir::new(dir_path);
         let dir_iter = walker
@@ -322,7 +319,7 @@ impl<'reg> Registry<'reg> {
                 tpl_path
                     .file_stem()
                     .map(|stem| stem.to_string_lossy())
-                    .map(|stem| !(stem.starts_with(".") || stem.starts_with("#")))
+                    .map(|stem| !(stem.starts_with('.') || stem.starts_with('#')))
                     .unwrap_or(false)
             })
             .filter_map(|tpl_path| {

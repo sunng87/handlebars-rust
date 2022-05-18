@@ -58,7 +58,7 @@ pub mod str {
     }
 
     /// add indent for lines but last
-    pub fn with_indent<'a>(s: &'a str, indent: &String) -> String {
+    pub fn with_indent(s: &str, indent: &str) -> String {
         let mut output = String::new();
 
         let mut it = s.chars().peekable();

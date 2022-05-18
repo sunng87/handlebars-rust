@@ -779,7 +779,7 @@ fn indent_aware_write(
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     if let Some(indent) = rc.get_indent_string() {
-        out.write(support::str::with_indent(v.as_ref(), indent).as_ref())?;
+        out.write(support::str::with_indent(v, indent).as_ref())?;
     } else {
         out.write(v.as_ref())?;
     }

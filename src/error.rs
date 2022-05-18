@@ -1,6 +1,6 @@
 // use std::backtrace::Backtrace;
 use std::error::Error as StdError;
-use std::fmt;
+use std::fmt::{self, Write};
 use std::io::Error as IOError;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
@@ -205,7 +205,7 @@ fn template_segment(template_str: &str, line: usize, col: usize) -> String {
     let mut buf = String::new();
     for (line_count, line_content) in template_str.lines().enumerate() {
         if line_count >= line_start && line_count <= line_end {
-            buf.push_str(&format!("{:4} | {}\n", line_count, line_content));
+            let _ = writeln!(&mut buf, "{:4} | {}", line_count, line_content);
             if line_count == line - 1 {
                 buf.push_str("     |");
                 for c in 0..line_content.len() {
