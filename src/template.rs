@@ -138,6 +138,18 @@ pub struct HelperTemplate {
 }
 
 impl HelperTemplate {
+    pub fn new(exp: ExpressionSpec, block: bool) -> HelperTemplate {
+        HelperTemplate {
+            name: exp.name,
+            params: exp.params,
+            hash: exp.hash,
+            block_param: exp.block_param,
+            block,
+            template: None,
+            inverse: None,
+        }
+    }
+
     // test only
     pub(crate) fn with_path(path: Path) -> HelperTemplate {
         HelperTemplate {
@@ -613,15 +625,7 @@ impl Template {
 
                         match rule {
                             Rule::helper_block_start | Rule::raw_block_start => {
-                                let helper_template = HelperTemplate {
-                                    name: exp.name,
-                                    params: exp.params,
-                                    hash: exp.hash,
-                                    block_param: exp.block_param,
-                                    block: true,
-                                    template: None,
-                                    inverse: None,
-                                };
+                                let helper_template = HelperTemplate::new(exp.clone(), true);
                                 helper_stack.push_front(helper_template);
                             }
                             Rule::decorator_block_start | Rule::partial_block_start => {
@@ -702,15 +706,7 @@ impl Template {
 
                         match rule {
                             Rule::expression | Rule::html_expression => {
-                                let helper_template = HelperTemplate {
-                                    name: exp.name,
-                                    params: exp.params,
-                                    hash: exp.hash,
-                                    block_param: exp.block_param,
-                                    block: false,
-                                    template: None,
-                                    inverse: None,
-                                };
+                                let helper_template = HelperTemplate::new(exp.clone(), false);
                                 let el = if rule == Rule::expression {
                                     Expression(Box::new(helper_template))
                                 } else {
