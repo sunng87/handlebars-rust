@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.2.2...Unreleased) - ReleaseDate
+## [4.3.0](https://github.com/sunng87/handlebars-rust/compare/4.2.2...4.3.0) - 2022-05-18
 
 * [Changed] update MSRV to 1.57 as rhai requires
 * [Fixed] Reimplemented indent support for partial expression `{{>
