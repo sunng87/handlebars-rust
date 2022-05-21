@@ -5,7 +5,6 @@ use std::error::Error;
 #[macro_use]
 extern crate serde_json;
 
-#[cfg(feature = "script_helper")]
 fn main() -> Result<(), Box<dyn Error>> {
     let mut handlebars = Handlebars::new();
 
@@ -29,11 +28,5 @@ fn main() -> Result<(), Box<dyn Error>> {
         }]
     ]};
     println!("{}", handlebars.render("tpl", &data)?);
-    Ok(())
-}
-
-#[cfg(not(feature = "script_helper"))]
-fn main() -> Result<(), Box<dyn Error>> {
-    println!("Please enable feature flag script_helper for this example");
     Ok(())
 }

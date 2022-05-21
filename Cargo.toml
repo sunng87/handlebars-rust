@@ -59,3 +59,7 @@ harness = false
 [package.metadata.docs.rs]
 features = ["dir_source", "script_helper", "rust-embed"]
 rustdoc-args = ["--cfg", "docsrs"]
+
+[[example]]
+name = "script"
+required-features = ["script_helper"]
