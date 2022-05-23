@@ -6,7 +6,7 @@ use pest::Parser;
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum PathSeg {
     Named(String),
     Ruled(Rule),
@@ -16,7 +16,7 @@ pub enum PathSeg {
 ///
 /// It can be either a local variable like `@first`, `../@index`,
 /// or a normal relative path like `a/b/c`.
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Path {
     Relative((Vec<PathSeg>, String)),
     Local((usize, String, String)),

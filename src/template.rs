@@ -15,11 +15,11 @@ use crate::support;
 
 use self::TemplateElement::*;
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct TemplateMapping(pub usize, pub usize);
 
 /// A handlebars template
-#[derive(PartialEq, Clone, Debug, Default)]
+#[derive(PartialEq, Eq, Clone, Debug, Default)]
 pub struct Template {
     pub name: Option<String>,
     pub elements: Vec<TemplateElement>,
@@ -41,7 +41,7 @@ impl TemplateOptions {
     }
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Subexpression {
     // we use box here avoid resursive struct definition
     pub element: Box<TemplateElement>,
@@ -100,13 +100,13 @@ impl Subexpression {
     }
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum BlockParam {
     Single(Parameter),
     Pair((Parameter, Parameter)),
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ExpressionSpec {
     pub name: Parameter,
     pub params: Vec<Parameter>,
@@ -116,7 +116,7 @@ pub struct ExpressionSpec {
     pub omit_pro_ws: bool,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Parameter {
     // for helper name only
     Name(String),
@@ -126,7 +126,7 @@ pub enum Parameter {
     Subexpression(Subexpression),
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct HelperTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
@@ -168,7 +168,7 @@ impl HelperTemplate {
     }
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct DecoratorTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
@@ -886,7 +886,7 @@ impl Template {
     }
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TemplateElement {
     RawString(String),
     HtmlExpression(Box<HelperTemplate>),
