@@ -56,12 +56,17 @@ pro_whitespace_omitter = { "~" }
 expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~
               ((identifier ~ (hash|param)+) | name )
               ~ pro_whitespace_omitter? ~ "}}" }
-html_expression_triple_bracket = _{ "{{{" ~ pre_whitespace_omitter? ~
-                                    ((identifier ~ (hash|param)+) | name ) ~
-                                    pro_whitespace_omitter? ~ "}}}" }
+html_expression_triple_bracket_legacy = _{ "{{{" ~ pre_whitespace_omitter? ~
+                                           ((identifier ~ (hash|param)+) | name ) ~
+                                           pro_whitespace_omitter? ~ "}}}" }
+html_expression_triple_bracket = _{ "{{" ~ pre_whitespace_omitter? ~ "{" ~
+                                              ((identifier ~ (hash|param)+) | name ) ~
+                                              "}" ~ pro_whitespace_omitter? ~ "}}" }
+
 amp_expression = _{ "{{" ~ pre_whitespace_omitter? ~ "&" ~ name ~
                        pro_whitespace_omitter? ~ "}}" }
-html_expression = { html_expression_triple_bracket | amp_expression }
+html_expression = { (html_expression_triple_bracket_legacy | html_expression_triple_bracket)
+                   | amp_expression }
 
 decorator_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
 pro_whitespace_omitter? ~ "}}" }

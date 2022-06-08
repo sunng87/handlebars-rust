@@ -208,6 +208,12 @@ mod test {
             "{{&html}}",
             "{{{html 1}}}",
             "{{{html p=true}}}",
+            "{{{~ html}}}",
+            "{{{html ~}}}",
+            "{{{~ html ~}}}",
+            "{{~{ html }~}}",
+            "{{~{ html }}}",
+            "{{{ html }~}}",
         ];
         for i in s.iter() {
             assert_rule!(Rule::html_expression, i);
