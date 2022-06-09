@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.0...Unreleased) - ReleaseDate
+## [4.3.1](https://github.com/sunng87/handlebars-rust/compare/4.3.0...4.3.1) - 2022-06-09
 
 * [Added] Added support for `{{~{variable}~}}` syntax [#509]
 
