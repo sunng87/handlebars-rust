@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.0...Unreleased) - ReleaseDate
+
+* [Added] Added support for `{{~{variable}~}}` syntax [#509]
+
 ## [4.3.0](https://github.com/sunng87/handlebars-rust/compare/4.2.2...4.3.0) - 2022-05-18
 
 * [Changed] update MSRV to 1.57 as rhai requires
