@@ -12,6 +12,8 @@ use crate::decorators::{self, DecoratorDef};
 #[cfg(feature = "script_helper")]
 use crate::error::ScriptError;
 use crate::error::{RenderError, TemplateError};
+#[cfg(feature = "async_helper")]
+use crate::helpers::AsyncHelperDef;
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
@@ -59,6 +61,8 @@ pub struct Registry<'reg> {
 
     helpers: HashMap<String, Arc<dyn HelperDef + Send + Sync + 'reg>>,
     decorators: HashMap<String, Arc<dyn DecoratorDef + Send + Sync + 'reg>>,
+    #[cfg(feature = "async_helper")]
+    async_helpers: HashMap<String, Arc<dyn AsyncHelperDef + Send + Sync + 'reg>>,
 
     escape_fn: EscapeFn,
     strict_mode: bool,
@@ -100,18 +104,12 @@ fn rhai_engine() -> Engine {
 impl<'reg> Registry<'reg> {
     pub fn new() -> Registry<'reg> {
         let r = Registry {
-            templates: HashMap::new(),
-            template_sources: HashMap::new(),
-            helpers: HashMap::new(),
-            decorators: HashMap::new(),
             escape_fn: Arc::new(html_escape),
-            strict_mode: false,
-            dev_mode: false,
-            prevent_indent: false,
             #[cfg(feature = "script_helper")]
             engine: Arc::new(rhai_engine()),
             #[cfg(feature = "script_helper")]
             script_sources: HashMap::new(),
+            ..Default::default()
         };
 
         r.setup_builtins()
@@ -611,6 +609,20 @@ impl<'reg> Registry<'reg> {
         let mut output = StringOutput::new();
         let ctx = Context::wraps(&data)?;
         self.render_to_output(name, &ctx, &mut output)?;
+        output.into_string().map_err(RenderError::from)
+    }
+
+    #[cfg(feature = "async_helper")]
+    pub async fn render_async<T>(&self, name: &str, data: &T) -> Result<String, RenderError>
+    where
+        T: Serialize,
+    {
+        let mut output = StringOutput::new();
+        let ctx = Context::wraps(&data)?;
+        self.get_or_load_template(name).and_then(|t| {
+            let mut render_context = RenderContext::new(t.name.as_ref());
+            t.render(self, &ctx, &mut render_context, &mut output)
+        })?;
         output.into_string().map_err(RenderError::from)
     }
 
