@@ -479,7 +479,7 @@ impl<'reg> Registry<'reg> {
 
     /// Get a reference to the current *escape fn*.
     pub fn get_escape_fn(&self) -> &dyn Fn(&str) -> String {
-        &*self.escape_fn
+        self.escape_fn.as_ref()
     }
 
     /// Return `true` if a template is registered for the given name
