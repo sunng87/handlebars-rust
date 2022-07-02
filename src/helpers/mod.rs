@@ -145,19 +145,6 @@ pub trait HelperDef {
     }
 }
 
-#[cfg(feature = "async_helper")]
-#[async_trait]
-pub trait AsyncHelperDef {
-    async fn call<'reg: 'rc, 'rc>(
-        &self,
-        h: &Helper<'reg, 'rc>,
-        r: &'reg Registry<'reg>,
-        ctx: &'rc Context,
-        //   rc: &mut RenderContext<'reg, 'rc>,
-        out: &mut (dyn Output + Send + Sync),
-    ) -> HelperResult;
-}
-
 /// implement HelperDef for bare function so we can use function as helper
 impl<
         F: for<'reg, 'rc> Fn(

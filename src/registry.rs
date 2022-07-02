@@ -62,7 +62,7 @@ pub struct Registry<'reg> {
     helpers: HashMap<String, Arc<dyn HelperDef + Send + Sync + 'reg>>,
     decorators: HashMap<String, Arc<dyn DecoratorDef + Send + Sync + 'reg>>,
     #[cfg(feature = "async_helper")]
-    async_helpers: HashMap<String, Arc<dyn AsyncHelperDef + Send + Sync + 'reg>>,
+    pub async_helpers: HashMap<String, Arc<dyn AsyncHelperDef + Send + Sync + 'reg>>,
 
     escape_fn: EscapeFn,
     strict_mode: bool,
