@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use handlebars::JsonRender;
+
 use handlebars::{handlebars_helper, Handlebars};
 use time::format_description::parse;
 use time::OffsetDateTime;
@@ -10,6 +12,11 @@ handlebars_helper!(date: |dt: OffsetDateTime| dt.format(&parse("[year]-[month]-[
 
 // a helper returns number of provided parameters
 handlebars_helper!(nargs: |*args| args.len());
+
+// a helper joins all values, using both hash and parameters
+handlebars_helper!(join: |{sep:str=","}, *args|
+                   args.iter().map(|a| a.render()).collect::<Vec<String>>().join(sep)
+);
 
 // a helper provides format
 handlebars_helper!(date2: |dt: OffsetDateTime, {fmt:str = "[year]-[month]-[day]"}|
@@ -23,6 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     handlebars.register_helper("date", Box::new(date));
     handlebars.register_helper("date2", Box::new(date2));
     handlebars.register_helper("nargs", Box::new(nargs));
+    handlebars.register_helper("join", Box::new(join));
 
     let data = OffsetDateTime::now_utc();
 
@@ -34,6 +42,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     println!("{}", handlebars.render_template("{{nargs 1 2 3 4}}", &())?);
+
+    println!(
+        "{}",
+        handlebars.render_template("{{join 1 2 3 4 sep=\"|\" }}", &())?
+    );
 
     Ok(())
 }
