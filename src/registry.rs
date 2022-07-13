@@ -621,7 +621,7 @@ impl<'reg> Registry<'reg> {
         output.into_string().map_err(RenderError::from)
     }
 
-    /// Render a registered template and write some data to the `std::io::Write`
+    /// Render a registered template and write data to the `std::io::Write`
     pub fn render_to_write<T, W>(&self, name: &str, data: &T, writer: W) -> Result<(), RenderError>
     where
         T: Serialize,
@@ -630,6 +630,21 @@ impl<'reg> Registry<'reg> {
         let mut output = WriteOutput::new(writer);
         let ctx = Context::wraps(data)?;
         self.render_to_output(name, &ctx, &mut output)
+    }
+
+    /// Render a registered template using reusable `Context`, and write data to
+    /// the `std::io::Write`
+    pub fn render_with_context_to_write<W>(
+        &self,
+        name: &str,
+        ctx: &Context,
+        writer: W,
+    ) -> Result<(), RenderError>
+    where
+        W: Write,
+    {
+        let mut output = WriteOutput::new(writer);
+        self.render_to_output(name, ctx, &mut output)
     }
 
     /// Render a template string using current registry without registering it
@@ -642,7 +657,7 @@ impl<'reg> Registry<'reg> {
         Ok(writer.into_string())
     }
 
-    /// Render a template string using reused context data
+    /// Render a template string using reusable context data
     pub fn render_template_with_context(
         &self,
         template_string: &str,
@@ -665,6 +680,29 @@ impl<'reg> Registry<'reg> {
         out.into_string().map_err(RenderError::from)
     }
 
+    /// Render a template string using resuable context, and write data into
+    /// `std::io::Write`
+    pub fn render_template_with_context_to_write<W>(
+        &self,
+        template_string: &str,
+        ctx: &Context,
+        writer: W,
+    ) -> Result<(), RenderError>
+    where
+        W: Write,
+    {
+        let tpl = Template::compile2(
+            template_string,
+            TemplateOptions {
+                prevent_indent: self.prevent_indent,
+                ..Default::default()
+            },
+        )?;
+        let mut render_context = RenderContext::new(None);
+        let mut out = WriteOutput::new(writer);
+        tpl.render(self, ctx, &mut render_context, &mut out)
+    }
+
     /// Render a template string using current registry without registering it
     pub fn render_template_to_write<T, W>(
         &self,
@@ -676,17 +714,8 @@ impl<'reg> Registry<'reg> {
         T: Serialize,
         W: Write,
     {
-        let tpl = Template::compile2(
-            template_string,
-            TemplateOptions {
-                prevent_indent: self.prevent_indent,
-                ..Default::default()
-            },
-        )?;
         let ctx = Context::wraps(data)?;
-        let mut render_context = RenderContext::new(None);
-        let mut out = WriteOutput::new(writer);
-        tpl.render(self, &ctx, &mut render_context, &mut out)
+        self.render_template_with_context_to_write(template_string, &ctx, writer)
     }
 }
 
