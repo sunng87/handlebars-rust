@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.1...Unreleased) - ReleaseDate
+## [4.3.2](https://github.com/sunng87/handlebars-rust/compare/4.3.1...4.3.2) - 2022-07-14
 
 * [Added] Render functions that reuse `Context` for custom `std::io::Write`:
   `render_with_context_to_write` and `render_template_with_context_to_write`
