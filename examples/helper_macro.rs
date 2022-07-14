@@ -1,8 +1,7 @@
 use std::error::Error;
 
-use handlebars::JsonRender;
-
-use handlebars::{handlebars_helper, Handlebars};
+use handlebars::{handlebars_helper, Handlebars, JsonRender};
+use serde_json::{json, Value};
 use time::format_description::parse;
 use time::OffsetDateTime;
 
@@ -18,6 +17,8 @@ handlebars_helper!(join: |{sep:str=","}, *args|
                    args.iter().map(|a| a.render()).collect::<Vec<String>>().join(sep)
 );
 
+handlebars_helper!(isdefined: |v: Value| !v.is_null());
+
 // a helper provides format
 handlebars_helper!(date2: |dt: OffsetDateTime, {fmt:str = "[year]-[month]-[day]"}|
     dt.format(&parse(fmt).unwrap()).unwrap()
@@ -31,6 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     handlebars.register_helper("date2", Box::new(date2));
     handlebars.register_helper("nargs", Box::new(nargs));
     handlebars.register_helper("join", Box::new(join));
+    handlebars.register_helper("isdefined", Box::new(isdefined));
 
     let data = OffsetDateTime::now_utc();
 
@@ -46,6 +48,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "{}",
         handlebars.render_template("{{join 1 2 3 4 sep=\"|\" }}", &())?
+    );
+
+    println!(
+        "{}",
+        handlebars.render_template(
+            r#"{{isdefined a}} {{isdefined b}}
+{{#if (isdefined a)}}a{{/if}} {{#if (isdefined b)}}b{{/if}}"#,
+            &json!({"a": 1})
+        )?
     );
 
     Ok(())
