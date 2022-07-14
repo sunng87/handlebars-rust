@@ -1,5 +1,10 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.1...Unreleased) - ReleaseDate
+
+* [Added] Render functions that reuse `Context` for custom `std::io::Write`:
+  `render_with_context_to_write` and `render_template_with_context_to_write`
+
 ## [4.3.1](https://github.com/sunng87/handlebars-rust/compare/4.3.0...4.3.1) - 2022-06-09
 
 * [Added] Added support for `{{~{variable}~}}` syntax [#509]
