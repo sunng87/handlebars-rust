@@ -595,6 +595,23 @@ outer third line"#,
                 .unwrap()
         );
 
+        hb.register_template_string(
+            "t4",
+            r#"{{#*inline "thepartial"}}
+  inner first line
+  inner second line
+{{/inline}}
+  {{~> thepartial}}
+outer third line"#,
+        )
+        .unwrap();
+        assert_eq!(
+            r#"  inner first line
+  inner second line
+outer third line"#,
+            hb.render("t4", &()).unwrap()
+        );
+
         let mut hb2 = Registry::new();
         hb2.set_prevent_indent(true);
 
