@@ -271,6 +271,19 @@ mod test {
     }
 
     #[test]
+    fn teset_partial_context_with_both_hash_and_param() {
+        let mut hbs = Registry::new();
+        hbs.register_template_string("one", "This is a test. {{> two this name=\"fred\" }}")
+            .unwrap();
+        hbs.register_template_string("two", "Lets test {{name}} and {{root_name}}")
+            .unwrap();
+        assert_eq!(
+            "This is a test. Lets test fred and tom",
+            hbs.render("one", &json!({"root_name": "tom"})).unwrap()
+        );
+    }
+
+    #[test]
     fn test_partial_subexpression_context_hash() {
         let mut hbs = Registry::new();
         hbs.register_template_string("one", "This is a test. {{> (x @root) name=\"fred\" }}")
