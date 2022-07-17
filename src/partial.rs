@@ -72,20 +72,17 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             local_rc.dec_partial_block_depth();
         }
 
+        let mut block = BlockContext::new();
         let mut block_created = false;
 
+        // create context if param given
         if let Some(base_path) = d.param(0).and_then(|p| p.context_path()) {
             // path given, update base_path
-            let mut block = BlockContext::new();
             *block.base_path_mut() = base_path.to_vec();
             block_created = true;
+        }
 
-            // clear blocks to prevent block params from parent
-            // template to be leaked into partials
-            local_rc.clear_blocks();
-            local_rc.push_block(block);
-        } else if !d.hash().is_empty() {
-            let mut block = BlockContext::new();
+        if !d.hash().is_empty() {
             // hash given, update base_value
             let hash_ctx = d
                 .hash()
@@ -100,7 +97,9 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
             block.set_base_value(merged_context);
             block_created = true;
+        }
 
+        if block_created {
             // clear blocks to prevent block params from parent
             // template to be leaked into partials
             // see `test_partial_context_issue_495` for the case.
