@@ -728,7 +728,10 @@ impl Template {
 
                                 // indent for partial expression >
                                 let mut indent = None;
-                                if rule == Rule::partial_expression && !options.prevent_indent {
+                                if rule == Rule::partial_expression
+                                    && !options.prevent_indent
+                                    && !exp.omit_pre_ws
+                                {
                                     indent = support::str::find_trailing_whitespace_chars(
                                         &source[..span.start()],
                                     );

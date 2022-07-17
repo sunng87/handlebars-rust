@@ -1,5 +1,10 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.2...Unreleased) - ReleaseDate
+
+* [Fixed] Disable partial expression indentation with `{{~> partial}}` to
+  bring behavior closer in line with original javascript version. [#518]
+
 ## [4.3.2](https://github.com/sunng87/handlebars-rust/compare/4.3.1...4.3.2) - 2022-07-14
 
 * [Added] Render functions that reuse `Context` for custom `std::io::Write`:
