@@ -4,6 +4,8 @@
 
 * [Fixed] Disable partial expression indentation with `{{~> partial}}` to
   bring behavior closer in line with original javascript version. [#518]
+* [Fixed] Support for using partial context together with partial parameters
+  [#520]
 
 ## [4.3.2](https://github.com/sunng87/handlebars-rust/compare/4.3.1...4.3.2) - 2022-07-14
 
