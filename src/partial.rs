@@ -72,20 +72,18 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             local_rc.dec_partial_block_depth();
         }
 
+        let mut block = None;
         let mut block_created = false;
 
+        // create context if param given
         if let Some(base_path) = d.param(0).and_then(|p| p.context_path()) {
             // path given, update base_path
-            let mut block = BlockContext::new();
-            *block.base_path_mut() = base_path.to_vec();
-            block_created = true;
+            let mut block_inner = BlockContext::new();
+            *block_inner.base_path_mut() = base_path.to_vec();
+            block = Some(block_inner);
+        }
 
-            // clear blocks to prevent block params from parent
-            // template to be leaked into partials
-            local_rc.clear_blocks();
-            local_rc.push_block(block);
-        } else if !d.hash().is_empty() {
-            let mut block = BlockContext::new();
+        if !d.hash().is_empty() {
             // hash given, update base_value
             let hash_ctx = d
                 .hash()
@@ -98,14 +96,24 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
                 &hash_ctx,
             );
 
-            block.set_base_value(merged_context);
-            block_created = true;
+            if let Some(ref mut block_inner) = block {
+                block_inner.set_base_value(merged_context);
+            } else {
+                let mut block_inner = BlockContext::new();
+                block_inner.set_base_value(merged_context);
+                block = Some(block_inner);
+            }
+        }
 
+        if let Some(block_inner) = block {
+            // because block is moved here, we need another bool variable to track
+            // its status for later cleanup
+            block_created = true;
             // clear blocks to prevent block params from parent
             // template to be leaked into partials
             // see `test_partial_context_issue_495` for the case.
             local_rc.clear_blocks();
-            local_rc.push_block(block);
+            local_rc.push_block(block_inner);
         }
 
         // @partial-block
@@ -267,6 +275,19 @@ mod test {
         assert_eq!(
             "This is a test. Lets test fred",
             hbs.render("one", &0).unwrap()
+        );
+    }
+
+    #[test]
+    fn teset_partial_context_with_both_hash_and_param() {
+        let mut hbs = Registry::new();
+        hbs.register_template_string("one", "This is a test. {{> two this name=\"fred\" }}")
+            .unwrap();
+        hbs.register_template_string("two", "Lets test {{name}} and {{root_name}}")
+            .unwrap();
+        assert_eq!(
+            "This is a test. Lets test fred and tom",
+            hbs.render("one", &json!({"root_name": "tom"})).unwrap()
         );
     }
 
