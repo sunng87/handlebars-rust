@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.2...Unreleased) - ReleaseDate
+## [4.3.3](https://github.com/sunng87/handlebars-rust/compare/4.3.2...4.3.3) - 2022-07-20
 
 * [Fixed] Disable partial expression indentation with `{{~> partial}}` to
   bring behavior closer in line with original javascript version. [#518]

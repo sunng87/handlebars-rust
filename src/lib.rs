@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/handlebars/4.3.2")]
+#![doc(html_root_url = "https://docs.rs/handlebars/4.3.3")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 //! # Handlebars
 //!
