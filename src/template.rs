@@ -508,8 +508,8 @@ impl Template {
         }
     }
 
-    pub(crate) fn compile2<'a>(
-        source: &'a str,
+    pub(crate) fn compile2(
+        source: &str,
         options: TemplateOptions,
     ) -> Result<Template, TemplateError> {
         let mut helper_stack: VecDeque<HelperTemplate> = VecDeque::new();
