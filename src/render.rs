@@ -874,315 +874,333 @@ impl Evaluable for TemplateElement {
     }
 }
 
-#[test]
-fn test_raw_string() {
-    let r = Registry::new();
-    let raw_string = RawString("<h1>hello world</h1>".to_string());
+#[cfg(test)]
+mod test {
+    use std::collections::BTreeMap;
 
-    let mut out = StringOutput::new();
-    let ctx = Context::null();
-    {
-        let mut rc = RenderContext::new(None);
-        raw_string.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
-    }
-    assert_eq!(
-        out.into_string().unwrap(),
-        "<h1>hello world</h1>".to_string()
-    );
-}
+    use super::{Helper, RenderContext, Renderable};
+    use crate::block::BlockContext;
+    use crate::context::Context;
+    use crate::error::RenderError;
+    use crate::json::path::Path;
+    use crate::json::value::JsonRender;
+    use crate::output::{Output, StringOutput};
+    use crate::registry::Registry;
+    use crate::template::TemplateElement::*;
+    use crate::template::{HelperTemplate, Template, TemplateElement};
 
-#[test]
-fn test_expression() {
-    let r = Registry::new();
-    let element = Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
-        &["hello"],
-    ))));
+    #[test]
+    fn test_raw_string() {
+        let r = Registry::new();
+        let raw_string = RawString("<h1>hello world</h1>".to_string());
 
-    let mut out = StringOutput::new();
-    let mut m: BTreeMap<String, String> = BTreeMap::new();
-    let value = "<p></p>".to_string();
-    m.insert("hello".to_string(), value);
-    let ctx = Context::wraps(&m).unwrap();
-    {
-        let mut rc = RenderContext::new(None);
-        element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+        let mut out = StringOutput::new();
+        let ctx = Context::null();
+        {
+            let mut rc = RenderContext::new(None);
+            raw_string.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+        }
+        assert_eq!(
+            out.into_string().unwrap(),
+            "<h1>hello world</h1>".to_string()
+        );
     }
 
-    assert_eq!(
-        out.into_string().unwrap(),
-        "&lt;p&gt;&lt;/p&gt;".to_string()
-    );
-}
-
-#[test]
-fn test_html_expression() {
-    let r = Registry::new();
-    let element = HtmlExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
-        &["hello"],
-    ))));
-
-    let mut out = StringOutput::new();
-    let mut m: BTreeMap<String, String> = BTreeMap::new();
-    let value = "world";
-    m.insert("hello".to_string(), value.to_string());
-    let ctx = Context::wraps(&m).unwrap();
-    {
-        let mut rc = RenderContext::new(None);
-        element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
-    }
-
-    assert_eq!(out.into_string().unwrap(), value.to_string());
-}
-
-#[test]
-fn test_template() {
-    let r = Registry::new();
-    let mut out = StringOutput::new();
-    let mut m: BTreeMap<String, String> = BTreeMap::new();
-    let value = "world".to_string();
-    m.insert("hello".to_string(), value);
-    let ctx = Context::wraps(&m).unwrap();
-
-    let elements: Vec<TemplateElement> = vec![
-        RawString("<h1>".to_string()),
-        Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+    #[test]
+    fn test_expression() {
+        let r = Registry::new();
+        let element = Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
             &["hello"],
-        )))),
-        RawString("</h1>".to_string()),
-        Comment("".to_string()),
-    ];
+        ))));
 
-    let template = Template {
-        elements,
-        name: None,
-        mapping: Vec::new(),
-    };
+        let mut out = StringOutput::new();
+        let mut m: BTreeMap<String, String> = BTreeMap::new();
+        let value = "<p></p>".to_string();
+        m.insert("hello".to_string(), value);
+        let ctx = Context::wraps(&m).unwrap();
+        {
+            let mut rc = RenderContext::new(None);
+            element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+        }
 
-    {
-        let mut rc = RenderContext::new(None);
-        template.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+        assert_eq!(
+            out.into_string().unwrap(),
+            "&lt;p&gt;&lt;/p&gt;".to_string()
+        );
     }
 
-    assert_eq!(out.into_string().unwrap(), "<h1>world</h1>".to_string());
-}
+    #[test]
+    fn test_html_expression() {
+        let r = Registry::new();
+        let element = HtmlExpression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+            &["hello"],
+        ))));
 
-#[test]
-fn test_render_context_promotion_and_demotion() {
-    use crate::json::value::to_json;
-    let mut render_context = RenderContext::new(None);
-    let mut block = BlockContext::new();
+        let mut out = StringOutput::new();
+        let mut m: BTreeMap<String, String> = BTreeMap::new();
+        let value = "world";
+        m.insert("hello".to_string(), value.to_string());
+        let ctx = Context::wraps(&m).unwrap();
+        {
+            let mut rc = RenderContext::new(None);
+            element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+        }
 
-    block.set_local_var("index", to_json(0));
-    render_context.push_block(block);
+        assert_eq!(out.into_string().unwrap(), value.to_string());
+    }
 
-    render_context.push_block(BlockContext::new());
-    assert_eq!(
-        render_context.get_local_var(1, "index").unwrap(),
-        &to_json(0)
-    );
+    #[test]
+    fn test_template() {
+        let r = Registry::new();
+        let mut out = StringOutput::new();
+        let mut m: BTreeMap<String, String> = BTreeMap::new();
+        let value = "world".to_string();
+        m.insert("hello".to_string(), value);
+        let ctx = Context::wraps(&m).unwrap();
 
-    render_context.pop_block();
+        let elements: Vec<TemplateElement> = vec![
+            RawString("<h1>".to_string()),
+            Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
+                &["hello"],
+            )))),
+            RawString("</h1>".to_string()),
+            Comment("".to_string()),
+        ];
 
-    assert_eq!(
-        render_context.get_local_var(0, "index").unwrap(),
-        &to_json(0)
-    );
-}
+        let template = Template {
+            elements,
+            name: None,
+            mapping: Vec::new(),
+        };
 
-#[test]
-fn test_render_subexpression_issue_115() {
-    use crate::support::str::StringWriter;
+        {
+            let mut rc = RenderContext::new(None);
+            template.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+        }
 
-    let mut r = Registry::new();
-    r.register_helper(
-        "format",
-        Box::new(
-            |h: &Helper<'_, '_>,
-             _: &Registry<'_>,
-             _: &Context,
-             _: &mut RenderContext<'_, '_>,
-             out: &mut dyn Output|
-             -> Result<(), RenderError> {
-                out.write(format!("{}", h.param(0).unwrap().value().render()).as_ref())
-                    .map(|_| ())
-                    .map_err(RenderError::from)
-            },
-        ),
-    );
+        assert_eq!(out.into_string().unwrap(), "<h1>world</h1>".to_string());
+    }
 
-    let mut sw = StringWriter::new();
-    let mut m: BTreeMap<String, String> = BTreeMap::new();
-    m.insert("a".to_string(), "123".to_string());
+    #[test]
+    fn test_render_context_promotion_and_demotion() {
+        use crate::json::value::to_json;
+        let mut render_context = RenderContext::new(None);
+        let mut block = BlockContext::new();
 
-    {
-        if let Err(e) = r.render_template_to_write("{{format (format a)}}", &m, &mut sw) {
-            panic!("{}", e);
+        block.set_local_var("index", to_json(0));
+        render_context.push_block(block);
+
+        render_context.push_block(BlockContext::new());
+        assert_eq!(
+            render_context.get_local_var(1, "index").unwrap(),
+            &to_json(0)
+        );
+
+        render_context.pop_block();
+
+        assert_eq!(
+            render_context.get_local_var(0, "index").unwrap(),
+            &to_json(0)
+        );
+    }
+
+    #[test]
+    fn test_render_subexpression_issue_115() {
+        use crate::support::str::StringWriter;
+
+        let mut r = Registry::new();
+        r.register_helper(
+            "format",
+            Box::new(
+                |h: &Helper<'_, '_>,
+                 _: &Registry<'_>,
+                 _: &Context,
+                 _: &mut RenderContext<'_, '_>,
+                 out: &mut dyn Output|
+                 -> Result<(), RenderError> {
+                    out.write(format!("{}", h.param(0).unwrap().value().render()).as_ref())
+                        .map(|_| ())
+                        .map_err(RenderError::from)
+                },
+            ),
+        );
+
+        let mut sw = StringWriter::new();
+        let mut m: BTreeMap<String, String> = BTreeMap::new();
+        m.insert("a".to_string(), "123".to_string());
+
+        {
+            if let Err(e) = r.render_template_to_write("{{format (format a)}}", &m, &mut sw) {
+                panic!("{}", e);
+            }
+        }
+
+        assert_eq!(sw.into_string(), "123".to_string());
+    }
+
+    #[test]
+    fn test_render_error_line_no() {
+        let mut r = Registry::new();
+        let m: BTreeMap<String, String> = BTreeMap::new();
+
+        let name = "invalid_template";
+        assert!(r
+            .register_template_string(name, "<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}")
+            .is_ok());
+
+        if let Err(e) = r.render(name, &m) {
+            assert_eq!(e.line_no.unwrap(), 3);
+            assert_eq!(e.column_no.unwrap(), 3);
+            assert_eq!(e.template_name, Some(name.to_owned()));
+        } else {
+            panic!("Error expected");
         }
     }
 
-    assert_eq!(sw.into_string(), "123".to_string());
-}
+    #[test]
+    fn test_partial_failback_render() {
+        let mut r = Registry::new();
 
-#[test]
-fn test_render_error_line_no() {
-    let mut r = Registry::new();
-    let m: BTreeMap<String, String> = BTreeMap::new();
+        assert!(r
+            .register_template_string("parent", "<html>{{> layout}}</html>")
+            .is_ok());
+        assert!(r
+            .register_template_string(
+                "child",
+                "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}"
+            )
+            .is_ok());
+        assert!(r.register_template_string("seg", "1234").is_ok());
 
-    let name = "invalid_template";
-    assert!(r
-        .register_template_string(name, "<h1>\n{{#if true}}\n  {{#each}}{{/each}}\n{{/if}}")
-        .is_ok());
-
-    if let Err(e) = r.render(name, &m) {
-        assert_eq!(e.line_no.unwrap(), 3);
-        assert_eq!(e.column_no.unwrap(), 3);
-        assert_eq!(e.template_name, Some(name.to_owned()));
-    } else {
-        panic!("Error expected");
+        let r = r.render("child", &true).expect("should work");
+        assert_eq!(r, "<html>content</html>");
     }
-}
 
-#[test]
-fn test_partial_failback_render() {
-    let mut r = Registry::new();
+    #[test]
+    fn test_key_with_slash() {
+        let mut r = Registry::new();
 
-    assert!(r
-        .register_template_string("parent", "<html>{{> layout}}</html>")
-        .is_ok());
-    assert!(r
-        .register_template_string(
-            "child",
-            "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}"
-        )
-        .is_ok());
-    assert!(r.register_template_string("seg", "1234").is_ok());
+        assert!(r
+            .register_template_string("t", "{{#each this}}{{@key}}: {{this}}\n{{/each}}")
+            .is_ok());
 
-    let r = r.render("child", &true).expect("should work");
-    assert_eq!(r, "<html>content</html>");
-}
+        let r = r.render("t", &json!({"/foo": "bar"})).unwrap();
 
-#[test]
-fn test_key_with_slash() {
-    let mut r = Registry::new();
+        assert_eq!(r, "/foo: bar\n");
+    }
 
-    assert!(r
-        .register_template_string("t", "{{#each this}}{{@key}}: {{this}}\n{{/each}}")
-        .is_ok());
+    #[test]
+    fn test_comment() {
+        let r = Registry::new();
 
-    let r = r.render("t", &json!({"/foo": "bar"})).unwrap();
+        assert_eq!(
+            r.render_template("Hello {{this}} {{! test me }}", &0)
+                .unwrap(),
+            "Hello 0 "
+        );
+    }
 
-    assert_eq!(r, "/foo: bar\n");
-}
+    #[test]
+    fn test_zero_args_heler() {
+        let mut r = Registry::new();
 
-#[test]
-fn test_comment() {
-    let r = Registry::new();
+        r.register_helper(
+            "name",
+            Box::new(
+                |_: &Helper<'_, '_>,
+                 _: &Registry<'_>,
+                 _: &Context,
+                 _: &mut RenderContext<'_, '_>,
+                 out: &mut dyn Output|
+                 -> Result<(), RenderError> {
+                    out.write("N/A").map_err(Into::into)
+                },
+            ),
+        );
 
-    assert_eq!(
-        r.render_template("Hello {{this}} {{! test me }}", &0)
-            .unwrap(),
-        "Hello 0 "
-    );
-}
+        r.register_template_string("t0", "Output name: {{name}}")
+            .unwrap();
+        r.register_template_string("t1", "Output name: {{first_name}}")
+            .unwrap();
+        r.register_template_string("t2", "Output name: {{./name}}")
+            .unwrap();
 
-#[test]
-fn test_zero_args_heler() {
-    let mut r = Registry::new();
+        // when "name" is available in context, use context first
+        assert_eq!(
+            r.render("t0", &json!({"name": "Alex"})).unwrap(),
+            "Output name: N/A"
+        );
 
-    r.register_helper(
-        "name",
-        Box::new(
-            |_: &Helper<'_, '_>,
-             _: &Registry<'_>,
-             _: &Context,
-             _: &mut RenderContext<'_, '_>,
-             out: &mut dyn Output|
-             -> Result<(), RenderError> { out.write("N/A").map_err(Into::into) },
-        ),
-    );
+        // when "name" is unavailable, call helper with same name
+        assert_eq!(
+            r.render("t2", &json!({"name": "Alex"})).unwrap(),
+            "Output name: Alex"
+        );
 
-    r.register_template_string("t0", "Output name: {{name}}")
-        .unwrap();
-    r.register_template_string("t1", "Output name: {{first_name}}")
-        .unwrap();
-    r.register_template_string("t2", "Output name: {{./name}}")
-        .unwrap();
+        // output nothing when neither context nor helper available
+        assert_eq!(
+            r.render("t1", &json!({"name": "Alex"})).unwrap(),
+            "Output name: "
+        );
 
-    // when "name" is available in context, use context first
-    assert_eq!(
-        r.render("t0", &json!({"name": "Alex"})).unwrap(),
-        "Output name: N/A"
-    );
+        // generate error in strict mode for above case
+        r.set_strict_mode(true);
+        assert!(r.render("t1", &json!({"name": "Alex"})).is_err());
 
-    // when "name" is unavailable, call helper with same name
-    assert_eq!(
-        r.render("t2", &json!({"name": "Alex"})).unwrap(),
-        "Output name: Alex"
-    );
+        // output nothing when helperMissing was defined
+        r.set_strict_mode(false);
+        r.register_helper(
+            "helperMissing",
+            Box::new(
+                |h: &Helper<'_, '_>,
+                 _: &Registry<'_>,
+                 _: &Context,
+                 _: &mut RenderContext<'_, '_>,
+                 out: &mut dyn Output|
+                 -> Result<(), RenderError> {
+                    let name = h.name();
+                    out.write(&format!("{} not resolved", name))?;
+                    Ok(())
+                },
+            ),
+        );
+        assert_eq!(
+            r.render("t1", &json!({"name": "Alex"})).unwrap(),
+            "Output name: first_name not resolved"
+        );
+    }
 
-    // output nothing when neither context nor helper available
-    assert_eq!(
-        r.render("t1", &json!({"name": "Alex"})).unwrap(),
-        "Output name: "
-    );
+    #[test]
+    fn test_identifiers_starting_with_numbers() {
+        let mut r = Registry::new();
 
-    // generate error in strict mode for above case
-    r.set_strict_mode(true);
-    assert!(r.render("t1", &json!({"name": "Alex"})).is_err());
+        assert!(r
+            .register_template_string("r1", "{{#if 0a}}true{{/if}}")
+            .is_ok());
+        let r1 = r.render("r1", &json!({"0a": true})).unwrap();
+        assert_eq!(r1, "true");
 
-    // output nothing when helperMissing was defined
-    r.set_strict_mode(false);
-    r.register_helper(
-        "helperMissing",
-        Box::new(
-            |h: &Helper<'_, '_>,
-             _: &Registry<'_>,
-             _: &Context,
-             _: &mut RenderContext<'_, '_>,
-             out: &mut dyn Output|
-             -> Result<(), RenderError> {
-                let name = h.name();
-                out.write(&format!("{} not resolved", name))?;
-                Ok(())
-            },
-        ),
-    );
-    assert_eq!(
-        r.render("t1", &json!({"name": "Alex"})).unwrap(),
-        "Output name: first_name not resolved"
-    );
-}
+        assert!(r.register_template_string("r2", "{{eq 1a 1}}").is_ok());
+        let r2 = r.render("r2", &json!({"1a": 2, "a": 1})).unwrap();
+        assert_eq!(r2, "false");
 
-#[test]
-fn test_identifiers_starting_with_numbers() {
-    let mut r = Registry::new();
-
-    assert!(r
-        .register_template_string("r1", "{{#if 0a}}true{{/if}}")
-        .is_ok());
-    let r1 = r.render("r1", &json!({"0a": true})).unwrap();
-    assert_eq!(r1, "true");
-
-    assert!(r.register_template_string("r2", "{{eq 1a 1}}").is_ok());
-    let r2 = r.render("r2", &json!({"1a": 2, "a": 1})).unwrap();
-    assert_eq!(r2, "false");
-
-    assert!(r
+        assert!(r
         .register_template_string("r3", "0: {{0}} {{#if (eq 0 true)}}resolved from context{{/if}}\n1a: {{1a}} {{#if (eq 1a true)}}resolved from context{{/if}}\n2_2: {{2_2}} {{#if (eq 2_2 true)}}resolved from context{{/if}}") // YUP it is just eq that barfs! is if handled specially? maybe this test should go nearer to specific helpers that fail?
         .is_ok());
-    let r3 = r
-        .render("r3", &json!({"0": true, "1a": true, "2_2": true}))
-        .unwrap();
-    assert_eq!(
-        r3,
-        "0: true \n1a: true resolved from context\n2_2: true resolved from context"
-    );
+        let r3 = r
+            .render("r3", &json!({"0": true, "1a": true, "2_2": true}))
+            .unwrap();
+        assert_eq!(
+            r3,
+            "0: true \n1a: true resolved from context\n2_2: true resolved from context"
+        );
 
-    // these should all be errors:
-    assert!(r.register_template_string("r4", "{{eq 1}}").is_ok());
-    assert!(r.register_template_string("r5", "{{eq a1}}").is_ok());
-    assert!(r.register_template_string("r6", "{{eq 1a}}").is_ok());
-    assert!(r.render("r4", &()).is_err());
-    assert!(r.render("r5", &()).is_err());
-    assert!(r.render("r6", &()).is_err());
+        // these should all be errors:
+        assert!(r.register_template_string("r4", "{{eq 1}}").is_ok());
+        assert!(r.register_template_string("r5", "{{eq a1}}").is_ok());
+        assert!(r.register_template_string("r6", "{{eq 1a}}").is_ok());
+        assert!(r.render("r4", &()).is_err());
+        assert!(r.render("r5", &()).is_err());
+        assert!(r.render("r6", &()).is_err());
+    }
 }
