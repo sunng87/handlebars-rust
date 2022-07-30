@@ -1018,7 +1018,7 @@ mod test {
                  _: &mut RenderContext<'_, '_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    out.write(format!("{}", h.param(0).unwrap().value().render()).as_ref())
+                    out.write(&h.param(0).unwrap().value().render())
                         .map(|_| ())
                         .map_err(RenderError::from)
                 },
