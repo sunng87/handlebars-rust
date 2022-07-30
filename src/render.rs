@@ -1159,7 +1159,7 @@ mod test {
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let name = h.name();
-                    out.write(&format!("{} not resolved", name))?;
+                    write!(out, "{} not resolved", name)?;
                     Ok(())
                 },
             ),

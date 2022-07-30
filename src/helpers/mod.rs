@@ -209,12 +209,9 @@ mod test {
             let v = h.param(0).unwrap();
 
             if !h.is_block() {
-                let output = format!("{}:{}", h.name(), v.value().render());
-                out.write(output.as_ref())?;
+                write!(out, "{}:{}", h.name(), v.value().render())?;
             } else {
-                let output = format!("{}:{}", h.name(), v.value().render());
-                out.write(output.as_ref())?;
-                out.write("->")?;
+                write!(out, "{}:{}->", h.name(), v.value().render())?;
                 h.template().unwrap().render(r, ctx, rc, out)?;
             };
             Ok(())
@@ -258,8 +255,7 @@ mod test {
                  _: &mut RenderContext<'_, '_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
-                    out.write(output.as_ref())?;
+                    write!(out, "{}{}", h.name(), h.param(0).unwrap().value())?;
                     Ok(())
                 },
             ),
@@ -273,8 +269,7 @@ mod test {
                  _: &mut RenderContext<'_, '_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}", h.hash_get("value").unwrap().value().render());
-                    out.write(output.as_ref())?;
+                    write!(out, "{}", h.hash_get("value").unwrap().value().render())?;
                     Ok(())
                 },
             ),

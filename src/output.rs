@@ -6,6 +6,7 @@ use std::string::FromUtf8Error;
 /// Handlebars uses this trait to define rendered output.
 pub trait Output {
     fn write(&mut self, seg: &str) -> Result<(), IOError>;
+    fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError>;
 }
 
 pub struct WriteOutput<W: Write> {
@@ -15,6 +16,10 @@ pub struct WriteOutput<W: Write> {
 impl<W: Write> Output for WriteOutput<W> {
     fn write(&mut self, seg: &str) -> Result<(), IOError> {
         self.write.write_all(seg.as_bytes())
+    }
+
+    fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError> {
+        self.write.write_fmt(args)
     }
 }
 
@@ -32,6 +37,10 @@ impl Output for StringOutput {
     fn write(&mut self, seg: &str) -> Result<(), IOError> {
         self.buf.extend_from_slice(seg.as_bytes());
         Ok(())
+    }
+
+    fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError> {
+        self.buf.write_fmt(args)
     }
 }
 

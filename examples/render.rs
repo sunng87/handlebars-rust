@@ -24,8 +24,7 @@ fn format_helper(
     let param = h
         .param(0)
         .ok_or(RenderError::new("Param 0 is required for format helper."))?;
-    let rendered = format!("{} pts", param.value().render());
-    out.write(rendered.as_ref())?;
+    write!(out, "{} pts", param.value().render())?;
     Ok(())
 }
 
