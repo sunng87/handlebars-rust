@@ -6,7 +6,13 @@ use std::string::FromUtf8Error;
 /// Handlebars uses this trait to define rendered output.
 pub trait Output {
     fn write(&mut self, seg: &str) -> Result<(), IOError>;
-    fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError>;
+
+    /// Designed to be used with `write!` macro.
+    /// for backward compatibility and to avoid breakage the default implementation
+    /// uses `format!` this may be not what you want.
+    fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError> {
+        self.write(&std::fmt::format(args))
+    }
 }
 
 pub struct WriteOutput<W: Write> {
