@@ -208,12 +208,11 @@ mod test {
         ) -> Result<(), RenderError> {
             let v = h.param(0).unwrap();
 
-            if !h.is_block() {
-                write!(out, "{}:{}", h.name(), v.value().render())?;
-            } else {
-                write!(out, "{}:{}->", h.name(), v.value().render())?;
+            write!(out, "{}:{}", h.name(), v.value().render())?;
+            if h.is_block() {
+                out.write("->")?;
                 h.template().unwrap().render(r, ctx, rc, out)?;
-            };
+            }
             Ok(())
         }
     }
