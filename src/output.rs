@@ -11,7 +11,13 @@ pub trait Output {
     /// for backward compatibility and to avoid breakage the default implementation
     /// uses `format!` this may be not what you want.
     fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError> {
-        self.write(&std::fmt::format(args))
+        // Check if there is nothing to format to avoid allocation on case like
+        // write!(out, "hey")?;
+        if let Some(content) = args.as_str() {
+            self.write(content)
+        } else {
+            self.write(&std::fmt::format(args))
+        }
     }
 }
 
