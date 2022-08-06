@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.3...Unreleased) - ReleaseDate
+
+* [Added] New `write_fmt` function for `Output` [#522]
+
 ## [4.3.3](https://github.com/sunng87/handlebars-rust/compare/4.3.2...4.3.3) - 2022-07-20
 
 * [Fixed] Disable partial expression indentation with `{{~> partial}}` to
