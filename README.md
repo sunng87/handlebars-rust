@@ -180,6 +180,7 @@ scriptable without changing rust code.
 * Actix: [handlebars
   example](https://github.com/actix/examples/blob/master/templating/handlebars/src/main.rs)
 * Tide: [tide-handlebars](https://github.com/No9/tide-handlebars)
+* Axum: [axum-template](https://github.com/Altair-Bueno/axum-template)
 
 ### Adopters
 
