@@ -609,7 +609,7 @@ impl<'reg> Registry<'reg> {
         T: Serialize,
     {
         let mut output = StringOutput::new();
-        let ctx = Context::wraps(&data)?;
+        let ctx = Context::wraps(data)?;
         self.render_to_output(name, &ctx, &mut output)?;
         output.into_string().map_err(RenderError::from)
     }
