@@ -152,7 +152,7 @@ pub enum TemplateErrorReason {
 /// Error on parsing template.
 #[derive(Debug, Error)]
 pub struct TemplateError {
-    pub reason: TemplateErrorReason,
+    pub reason: Box<TemplateErrorReason>,
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
@@ -162,7 +162,7 @@ pub struct TemplateError {
 impl TemplateError {
     pub fn of(e: TemplateErrorReason) -> TemplateError {
         TemplateError {
-            reason: e,
+            reason: Box::new(e),
             template_name: None,
             line_no: None,
             column_no: None,
