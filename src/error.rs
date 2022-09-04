@@ -181,6 +181,11 @@ impl TemplateError {
         self.template_name = Some(name);
         self
     }
+
+    /// Get underlying reason for the error
+    pub fn reason(&self) -> &TemplateErrorReason {
+        self.reason.as_ref()
+    }
 }
 
 impl From<(IOError, String)> for TemplateError {

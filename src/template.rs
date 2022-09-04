@@ -1010,7 +1010,7 @@ mod test {
 
         let terr = Template::compile(source).unwrap_err();
 
-        assert!(matches!(*terr.reason, TemplateErrorReason::InvalidSyntax));
+        assert!(matches!(terr.reason(), TemplateErrorReason::InvalidSyntax));
         assert_eq!(terr.line_no.unwrap(), 4);
         assert_eq!(terr.column_no.unwrap(), 5);
     }
@@ -1127,7 +1127,7 @@ mod test {
         for s in sources.iter() {
             let result = Template::compile(s.to_owned());
             assert!(matches!(
-                *result.unwrap_err().reason,
+                *result.unwrap_err().reason(),
                 TemplateErrorReason::InvalidSyntax
             ));
         }
