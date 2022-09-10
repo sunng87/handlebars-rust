@@ -5,9 +5,7 @@
 * [Added] New `write_fmt` function for `Output` [#522]
 * [Added] `reason()` method for `TemplateError` to access underlying reason,
   this replaces original direct `.reason` access.
-* [Changed] Potential break change: changed `TemplateError`'s `reason` field to
-  a Boxed `TemplateErrorReason` to reduce the size of `TemplateError`. Use
-  `.reason()` to get a reference instead. Direct access to `reason` field will
+* [Changed] Direct access to `TemplateError`'s `reason` field is depreacted will
   be removed in future.
 
 ## [4.3.3](https://github.com/sunng87/handlebars-rust/compare/4.3.2...4.3.3) - 2022-07-20
