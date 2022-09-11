@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.3...Unreleased) - ReleaseDate
+## [4.3.4](https://github.com/sunng87/handlebars-rust/compare/4.3.3...4.3.4) - 2022-09-11
 
 * [Added] New `write_fmt` function for `Output` [#522]
 * [Added] `reason()` method for `TemplateError` to access underlying reason,
