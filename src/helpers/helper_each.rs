@@ -7,10 +7,10 @@ use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 use crate::json::value::to_json;
 use crate::output::Output;
-use crate::PathAndJson;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
+use crate::PathAndJson;
 
 fn update_block_context<'reg>(
     block: &mut BlockContext<'reg>,
@@ -73,7 +73,7 @@ impl HelperDef for EachHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let value : PathAndJson<'rc > = h
+        let value: PathAndJson<'rc> = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?
             .clone();
@@ -83,65 +83,65 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => match *value.value() {
                 Json::Array(ref list)
-                if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
-                    {
-                        let block_context = create_block(&value);
-                        rc.push_block(block_context);
+                    if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
+                {
+                    let block_context = create_block(&value);
+                    rc.push_block(block_context);
 
-                        let len = list.len();
+                    let len = list.len();
 
-                        let array_path = value.context_path();
+                    let array_path = value.context_path();
 
-                        for (i, v) in list.iter().enumerate().take(len) {
-                            if let Some(ref mut block) = rc.block_mut() {
-                                let is_first = i == 0usize;
-                                let is_last = i == len - 1;
+                    for (i, v) in list.iter().enumerate().take(len) {
+                        if let Some(ref mut block) = rc.block_mut() {
+                            let is_first = i == 0usize;
+                            let is_last = i == len - 1;
 
-                                let index = to_json(i);
-                                block.set_local_var("first", to_json(is_first));
-                                block.set_local_var("last", to_json(is_last));
-                                block.set_local_var("index", index.clone());
+                            let index = to_json(i);
+                            block.set_local_var("first", to_json(is_first));
+                            block.set_local_var("last", to_json(is_last));
+                            block.set_local_var("index", index.clone());
 
-                                update_block_context(block, array_path, i.to_string(), is_first, v);
-                                set_block_param(block, h, array_path, &index, v)?;
-                            }
-
-                            t.render(r, ctx, rc, out)?;
+                            update_block_context(block, array_path, i.to_string(), is_first, v);
+                            set_block_param(block, h, array_path, &index, v)?;
                         }
 
-                        rc.pop_block();
-                        Ok(())
+                        t.render(r, ctx, rc, out)?;
                     }
+
+                    rc.pop_block();
+                    Ok(())
+                }
                 Json::Object(ref obj)
-                if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
-                    {
-                        let block_context = create_block(&value);
-                        rc.push_block(block_context);
+                    if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
+                {
+                    let block_context = create_block(&value);
+                    rc.push_block(block_context);
 
-                        let len = obj.len();
+                    let len = obj.len();
 
-                        let obj_path = value.context_path();
+                    let obj_path = value.context_path();
 
-                        for (i, (k, v)) in obj.iter().enumerate() {
-                            if let Some(ref mut block) = rc.block_mut() {
-                                let is_first = i == 0usize;
-                                let is_last = i == len - 1;
+                    for (i, (k, v)) in obj.iter().enumerate() {
+                        if let Some(ref mut block) = rc.block_mut() {
+                            let is_first = i == 0usize;
+                            let is_last = i == len - 1;
 
-                                let key = to_json(k);
-                                block.set_local_var("first", to_json(is_first));
-                                block.set_local_var("last", to_json(is_last));
-                                block.set_local_var("key", key.clone());
+                            let key = to_json(k);
+                            block.set_local_var("first", to_json(is_first));
+                            block.set_local_var("last", to_json(is_last));
+                            block.set_local_var("key", key.clone());
 
-                                update_block_context(block, obj_path, k.to_string(), is_first, v);
-                                set_block_param(block, h, obj_path, &key, v)?;
-                            }
-
-                            t.render(r, ctx, rc, out)?;
+                            update_block_context(block, obj_path, k.to_string(), is_first, v);
+                            set_block_param(block, h, obj_path, &key, v)?;
                         }
 
-                        rc.pop_block();
-                        Ok(())
+                        t.render(r, ctx, rc, out)?;
                     }
+
+                    rc.pop_block();
+                    Ok(())
+                }
                 _ => {
                     if let Some(else_template) = h.inverse() {
                         else_template.render(r, ctx, rc, out)

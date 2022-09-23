@@ -438,7 +438,7 @@ impl<'reg: 'rc, 'rc> Helper<'rc> {
     /// Return block param pair (for example |key, val|) if any
     pub fn block_param_pair(&self) -> Option<(&'rc str, &'rc str)> {
         if let Some(&BlockParam::Pair((Parameter::Name(ref s1), Parameter::Name(ref s2)))) =
-        self.block_param
+            self.block_param
         {
             Some((s1, s2))
         } else {
@@ -1012,7 +1012,7 @@ mod test {
         r.register_helper(
             "format",
             Box::new(
-                |h: &Helper< '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,
@@ -1107,7 +1107,7 @@ mod test {
         r.register_helper(
             "name",
             Box::new(
-                |_: &Helper< '_>,
+                |_: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,
@@ -1152,7 +1152,7 @@ mod test {
         r.register_helper(
             "helperMissing",
             Box::new(
-                |h: &Helper< '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,

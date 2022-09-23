@@ -1021,7 +1021,7 @@ mod test {
         r.register_helper(
             "check_missing",
             Box::new(
-                |h: &Helper< '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,

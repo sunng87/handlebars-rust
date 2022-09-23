@@ -144,14 +144,14 @@ pub trait HelperDef {
 
 /// implement HelperDef for bare function so we can use function as helper
 impl<
-    F: for<'reg, 'rc> Fn(
-        &Helper<'rc>,
-        &'reg Registry<'reg>,
-        &'rc Context,
-        &mut RenderContext<'reg, 'rc>,
-        &mut dyn Output,
-    ) -> HelperResult,
-> HelperDef for F
+        F: for<'reg, 'rc> Fn(
+            &Helper<'rc>,
+            &'reg Registry<'reg>,
+            &'rc Context,
+            &mut RenderContext<'reg, 'rc>,
+            &mut dyn Output,
+        ) -> HelperResult,
+    > HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &self,

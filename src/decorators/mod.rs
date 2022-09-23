@@ -68,13 +68,13 @@ pub trait DecoratorDef {
 
 /// Implement DecoratorDef for bare function so we can use function as decorator
 impl<
-    F: for<'reg, 'rc> Fn(
-        &Decorator<'rc>,
-        &'reg Registry<'reg>,
-        &'rc Context,
-        &mut RenderContext<'reg, 'rc>,
-    ) -> DecoratorResult,
-> DecoratorDef for F
+        F: for<'reg, 'rc> Fn(
+            &Decorator<'rc>,
+            &'reg Registry<'reg>,
+            &'rc Context,
+            &mut RenderContext<'reg, 'rc>,
+        ) -> DecoratorResult,
+    > DecoratorDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
@@ -261,7 +261,7 @@ mod test {
                                            _: &Context,
                                            _: &mut RenderContext<'_, '_>,
                                            out: &mut dyn Output|
-                                           -> Result<(), RenderError> {
+                          -> Result<(), RenderError> {
                         write!(
                             out,
                             "{}{}",

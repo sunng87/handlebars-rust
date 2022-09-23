@@ -65,10 +65,7 @@ pub struct PathAndJson<'rc> {
 }
 
 impl<'rc> PathAndJson<'rc> {
-    pub fn new(
-        relative_path: Option<String>,
-        value: ScopedJson<'rc>,
-    ) -> PathAndJson<'rc> {
+    pub fn new(relative_path: Option<String>, value: ScopedJson<'rc>) -> PathAndJson<'rc> {
         PathAndJson {
             relative_path,
             value,
@@ -134,8 +131,8 @@ impl JsonRender for Json {
 
 /// Convert any serializable data into Serde Json type
 pub fn to_json<T>(src: T) -> Json
-    where
-        T: Serialize,
+where
+    T: Serialize,
 {
     to_value(src).unwrap_or_default()
 }

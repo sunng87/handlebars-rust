@@ -1,9 +1,7 @@
 use crate::block::BlockContext;
 use crate::json::value::PathAndJson;
 
-pub(crate) fn create_block<'rc>(
-    param: &PathAndJson<'rc>,
-) -> BlockContext<'rc> {
+pub(crate) fn create_block<'rc>(param: &PathAndJson<'rc>) -> BlockContext<'rc> {
     let mut block = BlockContext::new();
 
     if let Some(new_path) = param.context_path() {
