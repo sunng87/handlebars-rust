@@ -113,7 +113,7 @@ impl HelperDef for EachHelper {
                 Json::Object(ref obj)
                     if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
                 {
-                    let block_context = create_block(&value);
+                    let block_context = create_block(value);
                     rc.push_block(block_context);
 
                     let len = obj.len();
