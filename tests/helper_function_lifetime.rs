@@ -1,7 +1,7 @@
 use handlebars::*;
 
 fn ifcond<'reg, 'rc>(
-    h: &Helper<'reg, 'rc>,
+    h: &Helper<'rc>,
     handle: &'reg Handlebars,
     ctx: &'rc Context,
     render_ctx: &mut RenderContext<'reg, 'rc>,

@@ -89,11 +89,11 @@ struct MyHelper;
 impl HelperDef for MyHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper<'reg, 'rc>,
+        _: &Helper<'rc>,
         _: &'reg Handlebars,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         Ok(ScopedJson::Derived(json!({
             "a": 1,
             "b": 2,
@@ -121,11 +121,11 @@ struct CallCounterHelper {
 impl HelperDef for CallCounterHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         _: &'reg Handlebars,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         // inc counter
         self.c.fetch_add(1, Ordering::SeqCst);
 

@@ -6,7 +6,7 @@ struct HelperWithBorrowedData<'a>(&'a String);
 impl<'a> HelperDef for HelperWithBorrowedData<'a> {
     fn call<'_reg: '_rc, '_rc>(
         &self,
-        _: &Helper<'_reg, '_rc>,
+        _: &Helper<'_rc>,
         _: &'_reg Handlebars,
         _: &Context,
         _: &mut RenderContext,

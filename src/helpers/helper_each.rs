@@ -73,9 +73,10 @@ impl HelperDef for EachHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let value : &PathAndJson<'rc > = h
+        let value : PathAndJson<'rc > = h
             .param(0)
-            .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
+            .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?
+            .clone();
 
         let template = h.template();
 
@@ -84,7 +85,7 @@ impl HelperDef for EachHelper {
                 Json::Array(ref list)
                 if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
                     {
-                        let block_context = create_block(value);
+                        let block_context = create_block(&value);
                         rc.push_block(block_context);
 
                         let len = list.len();
@@ -114,7 +115,7 @@ impl HelperDef for EachHelper {
                 Json::Object(ref obj)
                 if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
                     {
-                        let block_context = create_block(value);
+                        let block_context = create_block(&value);
                         rc.push_block(block_context);
 
                         let len = obj.len();

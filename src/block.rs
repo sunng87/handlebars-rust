@@ -68,9 +68,9 @@ pub struct BlockContext<'rc> {
     local_variables: LocalVars,
 }
 
-impl<'reg> BlockContext<'reg> {
+impl<'rc> BlockContext<'rc> {
     /// create a new `BlockContext` with default data
-    pub fn new() -> BlockContext<'reg> {
+    pub fn new() -> BlockContext<'rc> {
         BlockContext::default()
     }
 
@@ -120,7 +120,7 @@ impl<'reg> BlockContext<'reg> {
     }
 
     /// Set a block parameter into this block.
-    pub fn set_block_params(&mut self, block_params: BlockParams<'reg>) {
+    pub fn set_block_params(&mut self, block_params: BlockParams<'rc>) {
         self.block_params = block_params;
     }
 }

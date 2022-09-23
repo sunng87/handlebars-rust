@@ -302,7 +302,7 @@ impl<'reg, 'rc> fmt::Debug for RenderContextInner<'reg, 'rc> {
 }
 
 /// Render-time Helper data when using in a helper definition
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Helper<'rc> {
     name: Cow<'rc, str>,
     params: Vec<PathAndJson<'rc>>,

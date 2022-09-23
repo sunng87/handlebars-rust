@@ -9,7 +9,7 @@ pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 /// * Context:  the JSON value referenced in your provided data context
 /// * Derived:  the owned JSON value computed during rendering process
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ScopedJson<'rc> {
     Constant(&'rc Json),
     Derived(Json),
@@ -58,7 +58,7 @@ impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'rc> {
 
 /// Json wrapper that holds the Json value and reference path information
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PathAndJson<'rc> {
     relative_path: Option<String>,
     value: ScopedJson<'rc>,
