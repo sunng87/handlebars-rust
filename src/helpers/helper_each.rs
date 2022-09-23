@@ -10,7 +10,6 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
-use crate::PathAndJson;
 
 fn update_block_context<'reg>(
     block: &mut BlockContext<'reg>,
@@ -73,10 +72,9 @@ impl HelperDef for EachHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let value: PathAndJson<'rc> = h
+        let value = h
             .param(0)
-            .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?
-            .clone();
+            .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
 
         let template = h.template();
 
@@ -85,7 +83,7 @@ impl HelperDef for EachHelper {
                 Json::Array(ref list)
                     if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
                 {
-                    let block_context = create_block(&value);
+                    let block_context = create_block(value);
                     rc.push_block(block_context);
 
                     let len = list.len();
