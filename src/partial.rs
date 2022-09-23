@@ -17,7 +17,7 @@ pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 fn find_partial<'reg: 'rc, 'rc: 'a, 'a>(
     rc: &'a RenderContext<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    d: &Decorator<'reg, 'rc>,
+    d: &Decorator<'rc>,
     name: &str,
 ) -> Result<Option<Cow<'a, Template>>, RenderError> {
     if let Some(partial) = rc.get_partial(name) {
@@ -36,7 +36,7 @@ fn find_partial<'reg: 'rc, 'rc: 'a, 'a>(
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
-    d: &Decorator<'reg, 'rc>,
+    d: &Decorator<'rc>,
     r: &'reg Registry<'reg>,
     ctx: &'rc Context,
     rc: &mut RenderContext<'reg, 'rc>,
@@ -302,7 +302,7 @@ mod test {
         hbs.register_helper(
             "x",
             Box::new(
-                |_: &Helper<'_, '_>,
+                |_: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,

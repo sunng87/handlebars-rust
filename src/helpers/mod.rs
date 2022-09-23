@@ -32,7 +32,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper<'_, '_>, _: &Handlebars<'_>, _: &Context, rc:
+/// fn upper(h: &Helper< '_>, _: &Handlebars<'_>, _: &Context, rc:
 /// &mut RenderContext<'_, '_>, out: &mut dyn Output)
 ///     -> HelperResult {
 ///    // get parameter from helper or throw an error
@@ -50,7 +50,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// use handlebars::*;
 ///
 /// fn dummy_block<'reg, 'rc>(
-///     h: &Helper<'reg, 'rc>,
+///     h: &Helper<'rc>,
 ///     r: &'reg Handlebars<'reg>,
 ///     ctx: &'rc Context,
 ///     rc: &mut RenderContext<'reg, 'rc>,
@@ -90,11 +90,11 @@ pub trait HelperDef {
     /// helpers like `if` and rendered as empty string.
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper<'reg, 'rc>,
+        _: &Helper<'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         Err(RenderError::unimplemented())
     }
 
@@ -113,7 +113,7 @@ pub trait HelperDef {
     /// So it is not recommended to use these helpers in subexpression.
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -144,18 +144,18 @@ pub trait HelperDef {
 
 /// implement HelperDef for bare function so we can use function as helper
 impl<
-        F: for<'reg, 'rc> Fn(
-            &Helper<'reg, 'rc>,
-            &'reg Registry<'reg>,
-            &'rc Context,
-            &mut RenderContext<'reg, 'rc>,
-            &mut dyn Output,
-        ) -> HelperResult,
-    > HelperDef for F
+    F: for<'reg, 'rc> Fn(
+        &Helper<'rc>,
+        &'reg Registry<'reg>,
+        &'rc Context,
+        &mut RenderContext<'reg, 'rc>,
+        &mut dyn Output,
+    ) -> HelperResult,
+> HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -200,7 +200,7 @@ mod test {
     impl HelperDef for MetaHelper {
         fn call<'reg: 'rc, 'rc>(
             &self,
-            h: &Helper<'reg, 'rc>,
+            h: &Helper<'rc>,
             r: &'reg Registry<'reg>,
             ctx: &'rc Context,
             rc: &mut RenderContext<'reg, 'rc>,
@@ -248,7 +248,7 @@ mod test {
         handlebars.register_helper(
             "helperMissing",
             Box::new(
-                |h: &Helper<'_, '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,
@@ -262,7 +262,7 @@ mod test {
         handlebars.register_helper(
             "foo",
             Box::new(
-                |h: &Helper<'_, '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,

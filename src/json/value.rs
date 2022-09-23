@@ -10,15 +10,15 @@ pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 /// * Derived:  the owned JSON value computed during rendering process
 ///
 #[derive(Debug)]
-pub enum ScopedJson<'reg: 'rc, 'rc> {
-    Constant(&'reg Json),
+pub enum ScopedJson<'rc> {
+    Constant(&'rc Json),
     Derived(Json),
     // represents a json reference to context value, its full path
     Context(&'rc Json, Vec<String>),
     Missing,
 }
 
-impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
+impl<'rc> ScopedJson<'rc> {
     /// get the JSON reference
     pub fn as_json(&self) -> &Json {
         match self {
@@ -37,7 +37,7 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
         matches!(self, ScopedJson::Missing)
     }
 
-    pub fn into_derived(self) -> ScopedJson<'reg, 'rc> {
+    pub fn into_derived(self) -> ScopedJson<'rc> {
         let v = self.as_json();
         ScopedJson::Derived(v.clone())
     }
@@ -50,8 +50,8 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
     }
 }
 
-impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'reg, 'rc> {
-    fn from(v: Json) -> ScopedJson<'reg, 'rc> {
+impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'rc> {
+    fn from(v: Json) -> ScopedJson<'rc> {
         ScopedJson::Derived(v)
     }
 }
@@ -59,16 +59,16 @@ impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'reg, 'rc> {
 /// Json wrapper that holds the Json value and reference path information
 ///
 #[derive(Debug)]
-pub struct PathAndJson<'reg, 'rc> {
+pub struct PathAndJson<'rc> {
     relative_path: Option<String>,
-    value: ScopedJson<'reg, 'rc>,
+    value: ScopedJson<'rc>,
 }
 
-impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
+impl<'rc> PathAndJson<'rc> {
     pub fn new(
         relative_path: Option<String>,
-        value: ScopedJson<'reg, 'rc>,
-    ) -> PathAndJson<'reg, 'rc> {
+        value: ScopedJson<'rc>,
+    ) -> PathAndJson<'rc> {
         PathAndJson {
             relative_path,
             value,
@@ -134,8 +134,8 @@ impl JsonRender for Json {
 
 /// Convert any serializable data into Serde Json type
 pub fn to_json<T>(src: T) -> Json
-where
-    T: Serialize,
+    where
+        T: Serialize,
 {
     to_value(src).unwrap_or_default()
 }

@@ -50,11 +50,11 @@ macro_rules! handlebars_helper {
             #[allow(unused_assignments)]
             fn call_inner<'reg: 'rc, 'rc>(
                 &self,
-                h: &$crate::Helper<'reg, 'rc>,
+                h: &$crate::Helper<'rc>,
                 r: &'reg $crate::Handlebars<'reg>,
                 _: &'rc $crate::Context,
                 _: &mut $crate::RenderContext<'reg, 'rc>,
-            ) -> Result<$crate::ScopedJson<'reg, 'rc>, $crate::RenderError> {
+            ) -> Result<$crate::ScopedJson<'rc>, $crate::RenderError> {
                 let mut param_idx = 0;
 
                 $(

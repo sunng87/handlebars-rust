@@ -7,6 +7,7 @@ use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 use crate::json::value::to_json;
 use crate::output::Output;
+use crate::PathAndJson;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
@@ -29,9 +30,9 @@ fn update_block_context<'reg>(
     }
 }
 
-fn set_block_param<'reg: 'rc, 'rc>(
-    block: &mut BlockContext<'reg>,
-    h: &Helper<'reg, 'rc>,
+fn set_block_param<'rc>(
+    block: &mut BlockContext<'rc>,
+    h: &Helper<'rc>,
     base_path: Option<&Vec<String>>,
     k: &Json,
     v: &Json,
@@ -66,13 +67,13 @@ pub struct EachHelper;
 impl HelperDef for EachHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let value = h
+        let value : &PathAndJson<'rc > = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
 
@@ -81,65 +82,65 @@ impl HelperDef for EachHelper {
         match template {
             Some(t) => match *value.value() {
                 Json::Array(ref list)
-                    if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
-                {
-                    let block_context = create_block(value);
-                    rc.push_block(block_context);
+                if !list.is_empty() || (list.is_empty() && h.inverse().is_none()) =>
+                    {
+                        let block_context = create_block(value);
+                        rc.push_block(block_context);
 
-                    let len = list.len();
+                        let len = list.len();
 
-                    let array_path = value.context_path();
+                        let array_path = value.context_path();
 
-                    for (i, v) in list.iter().enumerate().take(len) {
-                        if let Some(ref mut block) = rc.block_mut() {
-                            let is_first = i == 0usize;
-                            let is_last = i == len - 1;
+                        for (i, v) in list.iter().enumerate().take(len) {
+                            if let Some(ref mut block) = rc.block_mut() {
+                                let is_first = i == 0usize;
+                                let is_last = i == len - 1;
 
-                            let index = to_json(i);
-                            block.set_local_var("first", to_json(is_first));
-                            block.set_local_var("last", to_json(is_last));
-                            block.set_local_var("index", index.clone());
+                                let index = to_json(i);
+                                block.set_local_var("first", to_json(is_first));
+                                block.set_local_var("last", to_json(is_last));
+                                block.set_local_var("index", index.clone());
 
-                            update_block_context(block, array_path, i.to_string(), is_first, v);
-                            set_block_param(block, h, array_path, &index, v)?;
+                                update_block_context(block, array_path, i.to_string(), is_first, v);
+                                set_block_param(block, h, array_path, &index, v)?;
+                            }
+
+                            t.render(r, ctx, rc, out)?;
                         }
 
-                        t.render(r, ctx, rc, out)?;
+                        rc.pop_block();
+                        Ok(())
                     }
-
-                    rc.pop_block();
-                    Ok(())
-                }
                 Json::Object(ref obj)
-                    if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
-                {
-                    let block_context = create_block(value);
-                    rc.push_block(block_context);
+                if !obj.is_empty() || (obj.is_empty() && h.inverse().is_none()) =>
+                    {
+                        let block_context = create_block(value);
+                        rc.push_block(block_context);
 
-                    let len = obj.len();
+                        let len = obj.len();
 
-                    let obj_path = value.context_path();
+                        let obj_path = value.context_path();
 
-                    for (i, (k, v)) in obj.iter().enumerate() {
-                        if let Some(ref mut block) = rc.block_mut() {
-                            let is_first = i == 0usize;
-                            let is_last = i == len - 1;
+                        for (i, (k, v)) in obj.iter().enumerate() {
+                            if let Some(ref mut block) = rc.block_mut() {
+                                let is_first = i == 0usize;
+                                let is_last = i == len - 1;
 
-                            let key = to_json(k);
-                            block.set_local_var("first", to_json(is_first));
-                            block.set_local_var("last", to_json(is_last));
-                            block.set_local_var("key", key.clone());
+                                let key = to_json(k);
+                                block.set_local_var("first", to_json(is_first));
+                                block.set_local_var("last", to_json(is_last));
+                                block.set_local_var("key", key.clone());
 
-                            update_block_context(block, obj_path, k.to_string(), is_first, v);
-                            set_block_param(block, h, obj_path, &key, v)?;
+                                update_block_context(block, obj_path, k.to_string(), is_first, v);
+                                set_block_param(block, h, obj_path, &key, v)?;
+                            }
+
+                            t.render(r, ctx, rc, out)?;
                         }
 
-                        t.render(r, ctx, rc, out)?;
+                        rc.pop_block();
+                        Ok(())
                     }
-
-                    rc.pop_block();
-                    Ok(())
-                }
                 _ => {
                     if let Some(else_template) = h.inverse() {
                         else_template.render(r, ctx, rc, out)
@@ -183,13 +184,13 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t0",
-                "{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}"
+                "{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}",
             )
             .is_ok());
         assert!(handlebars
             .register_template_string(
                 "t1",
-                "{{#each this}}{{@first}}|{{@last}}|{{@key}}:{{this}}|{{/each}}"
+                "{{#each this}}{{@first}}|{{@last}}|{{@key}}:{{this}}|{{/each}}",
             )
             .is_ok());
 
@@ -238,7 +239,7 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t0",
-                "{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}"
+                "{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}",
             )
             .is_ok());
 
@@ -256,7 +257,7 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t0",
-                "{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}"
+                "{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}",
             )
             .is_ok());
 
@@ -373,7 +374,7 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t0",
-                "{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}"
+                "{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}",
             )
             .is_ok());
 
