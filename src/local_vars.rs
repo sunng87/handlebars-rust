@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde_json::value::Value as Json;
 
 #[derive(Default, Debug, Clone)]
-pub(crate) struct LocalVars {
+pub struct LocalVars {
     first: Option<Json>,
     last: Option<Json>,
     index: Option<Json>,
