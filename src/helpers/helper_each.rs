@@ -29,9 +29,9 @@ fn update_block_context<'reg>(
     }
 }
 
-fn set_block_param<'reg: 'rc, 'rc>(
-    block: &mut BlockContext<'reg>,
-    h: &Helper<'reg, 'rc>,
+fn set_block_param<'rc>(
+    block: &mut BlockContext<'rc>,
+    h: &Helper<'rc>,
     base_path: Option<&Vec<String>>,
     k: &Json,
     v: &Json,
@@ -66,7 +66,7 @@ pub struct EachHelper;
 impl HelperDef for EachHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -183,13 +183,13 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t0",
-                "{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}"
+                "{{#each this}}{{@first}}|{{@last}}|{{@index}}:{{this}}|{{/each}}",
             )
             .is_ok());
         assert!(handlebars
             .register_template_string(
                 "t1",
-                "{{#each this}}{{@first}}|{{@last}}|{{@key}}:{{this}}|{{/each}}"
+                "{{#each this}}{{@first}}|{{@last}}|{{@key}}:{{this}}|{{/each}}",
             )
             .is_ok());
 
@@ -238,7 +238,7 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t0",
-                "{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}"
+                "{{#each a}}{{#each b}}{{d}}:{{../c}}{{/each}}{{/each}}",
             )
             .is_ok());
 
@@ -256,7 +256,7 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t0",
-                "{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}"
+                "{{#each b}}{{#if ../a}}{{#each this}}{{this}}{{/each}}{{/if}}{{/each}}",
             )
             .is_ok());
 
@@ -373,7 +373,7 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t0",
-                "{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}"
+                "{{#each a.b}}{{#each c}}{{../../d}}{{/each}}{{/each}}",
             )
             .is_ok());
 

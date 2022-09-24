@@ -7,7 +7,7 @@ use crate::render::{Decorator, RenderContext};
 #[derive(Clone, Copy)]
 pub struct InlineDecorator;
 
-fn get_name<'reg: 'rc, 'rc>(d: &Decorator<'reg, 'rc>) -> Result<String, RenderError> {
+fn get_name<'reg: 'rc, 'rc>(d: &Decorator<'rc>) -> Result<String, RenderError> {
     d.param(0)
         .ok_or_else(|| RenderError::new("Param required for decorator \"inline\""))
         .and_then(|v| {
@@ -21,7 +21,7 @@ fn get_name<'reg: 'rc, 'rc>(d: &Decorator<'reg, 'rc>) -> Result<String, RenderEr
 impl DecoratorDef for InlineDecorator {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        d: &Decorator<'reg, 'rc>,
+        d: &Decorator<'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,

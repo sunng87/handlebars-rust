@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate serde_json;
 
-use handlebars::Handlebars;
-
 #[test]
 #[cfg(feature = "rust-embed")]
 fn test_embed() {
@@ -13,7 +11,7 @@ fn test_embed() {
     #[include = "*.hbs"]
     struct Templates;
 
-    let mut hbs = Handlebars::new();
+    let mut hbs = handlebars::Handlebars::new();
     hbs.register_embed_templates::<Templates>().unwrap();
 
     assert_eq!(1, hbs.get_templates().len());

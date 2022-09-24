@@ -739,7 +739,7 @@ mod test {
     impl HelperDef for DummyHelper {
         fn call<'reg: 'rc, 'rc>(
             &self,
-            h: &Helper<'reg, 'rc>,
+            h: &Helper<'rc>,
             r: &'reg Registry<'reg>,
             ctx: &'rc Context,
             rc: &mut RenderContext<'reg, 'rc>,
@@ -1004,11 +1004,11 @@ mod test {
     impl HelperDef for GenMissingHelper {
         fn call_inner<'reg: 'rc, 'rc>(
             &self,
-            _: &Helper<'reg, 'rc>,
+            _: &Helper<'rc>,
             _: &'reg Registry<'reg>,
             _: &'rc Context,
             _: &mut RenderContext<'reg, 'rc>,
-        ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+        ) -> Result<ScopedJson<'rc>, RenderError> {
             Ok(ScopedJson::Missing)
         }
     }
@@ -1021,7 +1021,7 @@ mod test {
         r.register_helper(
             "check_missing",
             Box::new(
-                |h: &Helper<'_, '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,

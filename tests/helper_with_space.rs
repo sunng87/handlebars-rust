@@ -2,7 +2,7 @@ use handlebars::*;
 use serde_json::json;
 
 fn dump<'reg, 'rc>(
-    h: &Helper<'reg, 'rc>,
+    h: &Helper<'rc>,
     _: &'reg Handlebars,
     _: &Context,
     _: &mut RenderContext,

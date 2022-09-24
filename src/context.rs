@@ -169,7 +169,7 @@ impl Context {
         &'rc self,
         relative_path: &[PathSeg],
         block_contexts: &VecDeque<BlockContext<'reg>>,
-    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         // always use absolute at the moment until we get base_value lifetime issue fixed
         let resolved_visitor = parse_json_visitor(relative_path, block_contexts, true);
 
@@ -239,7 +239,7 @@ mod test {
     fn navigate_from_root<'reg, 'rc>(
         ctx: &'rc Context,
         path: &str,
-    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         let relative_path = Path::parse(path).unwrap();
         ctx.navigate(relative_path.segs().unwrap(), &VecDeque::new())
     }

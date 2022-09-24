@@ -19,7 +19,7 @@ pub struct LogHelper;
 impl HelperDef for LogHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
@@ -59,7 +59,7 @@ impl HelperDef for LogHelper {
 impl HelperDef for LogHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper<'reg, 'rc>,
+        _: &Helper<'rc>,
         _: &Registry<'reg>,
         _: &Context,
         _: &mut RenderContext<'reg, 'rc>,

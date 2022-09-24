@@ -18,11 +18,11 @@ pub(crate) struct ScriptHelper {
 
 #[inline]
 fn call_script_helper<'reg: 'rc, 'rc>(
-    params: &[PathAndJson<'reg, 'rc>],
-    hash: &BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
+    params: &[PathAndJson<'rc>],
+    hash: &BTreeMap<&'reg str, PathAndJson<'rc>>,
     engine: &Engine,
     script: &AST,
-) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+) -> Result<ScopedJson<'rc>, RenderError> {
     let params: Dynamic = to_dynamic(params.iter().map(|p| p.value()).collect::<Vec<&Json>>())?;
 
     let hash: Dynamic = to_dynamic(
@@ -47,11 +47,11 @@ fn call_script_helper<'reg: 'rc, 'rc>(
 impl HelperDef for ScriptHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         reg: &'reg Registry<'reg>,
         _ctx: &'rc Context,
         _rc: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         call_script_helper(h.params(), h.hash(), &reg.engine, &self.script)
     }
 }

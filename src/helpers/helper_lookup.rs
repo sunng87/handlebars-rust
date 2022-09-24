@@ -13,11 +13,11 @@ pub struct LookupHelper;
 impl HelperDef for LookupHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<ScopedJson<'reg, 'rc>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         let collection_value = h
             .param(0)
             .ok_or_else(|| RenderError::new("Param not found for helper \"lookup\""))?;
