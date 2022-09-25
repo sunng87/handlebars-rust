@@ -79,6 +79,11 @@ impl<'rc> BlockContext<'rc> {
         self.local_variables.put(name, value);
     }
 
+    /// Get mutable access to the local variables
+    pub fn local_variables_mut(&mut self) -> &mut LocalVars {
+        &mut self.local_variables
+    }
+
     /// get a local variable from current scope
     pub fn get_local_var(&self, name: &str) -> Option<&Json> {
         self.local_variables.get(name)
