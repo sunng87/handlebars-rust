@@ -1011,8 +1011,7 @@ mod test {
         let terr = Template::compile(source).unwrap_err();
 
         assert!(matches!(terr.reason(), TemplateErrorReason::InvalidSyntax));
-        assert_eq!(terr.line_no.unwrap(), 4);
-        assert_eq!(terr.column_no.unwrap(), 5);
+        assert_eq!(terr.pos(), Some((4, 5)));
     }
 
     #[test]

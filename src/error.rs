@@ -151,11 +151,10 @@ pub enum TemplateErrorReason {
 /// Error on parsing template.
 #[derive(Debug, Error)]
 pub struct TemplateError {
-    #[deprecated(note = "public access to reason to be removed soon, use .reason() instead.")]
-    pub reason: TemplateErrorReason,
-    pub template_name: Option<String>,
-    pub line_no: Option<usize>,
-    pub column_no: Option<usize>,
+    reason: Box<TemplateErrorReason>,
+    template_name: Option<String>,
+    line_no: Option<usize>,
+    column_no: Option<usize>,
     segment: Option<String>,
 }
 
@@ -163,7 +162,7 @@ impl TemplateError {
     #[allow(deprecated)]
     pub fn of(e: TemplateErrorReason) -> TemplateError {
         TemplateError {
-            reason: e,
+            reason: Box::new(e),
             template_name: None,
             line_no: None,
             column_no: None,
@@ -184,9 +183,22 @@ impl TemplateError {
     }
 
     /// Get underlying reason for the error
-    #[allow(deprecated)]
     pub fn reason(&self) -> &TemplateErrorReason {
         &self.reason
+    }
+
+    /// Get the line number and column number of this error
+    pub fn pos(&self) -> Option<(usize, usize)> {
+        match (self.line_no, self.column_no) {
+            (Some(line_no), Some(column_no)) => Some((line_no, column_no)),
+            _ => None,
+        }
+    }
+
+    /// Get template name of this error
+    /// Returns `None` when the template has no associated name
+    pub fn name(&self) -> Option<&String> {
+        self.template_name.as_ref()
     }
 }
 
