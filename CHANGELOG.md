@@ -1,5 +1,13 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.4...Unreleased) - ReleaseDate
+
+* [Added] public mutable access to local variables in `BlockContext` [#533]
+* [Changed] Simplified lifetime specifiers for `Helper`, `ScopedJson` and some
+  other related types and functions. [#532]
+* [Changed] Updated `TemplateError` to reduce its size. Direct field access is
+  removed in favor of access methods
+
 ## [4.3.4](https://github.com/sunng87/handlebars-rust/compare/4.3.3...4.3.4) - 2022-09-11
 
 * [Added] New `write_fmt` function for `Output` [#522]
