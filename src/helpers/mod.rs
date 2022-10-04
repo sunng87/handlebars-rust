@@ -1,3 +1,6 @@
+#[cfg(feature = "async_helper")]
+use async_trait::async_trait;
+
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::json::value::ScopedJson;

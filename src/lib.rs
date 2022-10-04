@@ -403,6 +403,8 @@ pub use self::serde_json::Value as JsonValue;
 
 #[macro_use]
 mod macros;
+#[cfg(feature = "async_helper")]
+mod async_render;
 mod block;
 mod context;
 mod decorators;
