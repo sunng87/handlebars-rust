@@ -91,14 +91,21 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
                 .map(|(k, v)| (*k, v.value()))
                 .collect::<HashMap<&str, &Json>>();
 
-            let merged_context = merge_json(
-                local_rc.evaluate2(ctx, &Path::current())?.as_json(),
-                &hash_ctx,
-            );
-
             if let Some(ref mut block_inner) = block {
+                // TODO: refactor to remove unwrap and use better structure
+                let merged_context = merge_json(
+                    local_rc
+                        .evaluate(ctx, d.param(0).and_then(|p| p.relative_path()).unwrap())?
+                        .as_json(),
+                    &hash_ctx,
+                );
                 block_inner.set_base_value(merged_context);
             } else {
+                let merged_context = merge_json(
+                    local_rc.evaluate2(ctx, &Path::current())?.as_json(),
+                    &hash_ctx,
+                );
+
                 let mut block_inner = BlockContext::new();
                 block_inner.set_base_value(merged_context);
                 block = Some(block_inner);
