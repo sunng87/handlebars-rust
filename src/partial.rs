@@ -654,3 +654,22 @@ outer third line"#,
         )
     }
 }
+
+#[test]
+fn test_issue_534() {
+    let t1 = "{{title}}";
+    let t2 = "{{#each modules}}{{> (lookup this \"module\") content name=0}}{{/each}}";
+
+    let data = json!({
+      "modules": [
+        {"module": "t1", "content": {"title": "foo"}},
+        {"module": "t1", "content": {"title": "bar"}},
+      ]
+    });
+
+    let mut hbs = Registry::new();
+    hbs.register_template_string("t1", t1).unwrap();
+    hbs.register_template_string("t2", t2).unwrap();
+
+    assert_eq!("foobar", hbs.render("t2", &data).unwrap());
+}
