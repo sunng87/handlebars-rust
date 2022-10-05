@@ -72,7 +72,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             local_rc.dec_partial_block_depth();
         }
 
-        let mut block = None;
         let mut block_created = false;
 
         // create context if param given
@@ -80,7 +79,15 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             // path given, update base_path
             let mut block_inner = BlockContext::new();
             *block_inner.base_path_mut() = base_path.to_vec();
-            block = Some(block_inner);
+
+            // because block is moved here, we need another bool variable to track
+            // its status for later cleanup
+            block_created = true;
+            // clear blocks to prevent block params from parent
+            // template to be leaked into partials
+            // see `test_partial_context_issue_495` for the case.
+            local_rc.clear_blocks();
+            local_rc.push_block(block_inner);
         }
 
         if !d.hash().is_empty() {
@@ -91,29 +98,32 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
                 .map(|(k, v)| (*k, v.value()))
                 .collect::<HashMap<&str, &Json>>();
 
+            // create block if we didn't (no param provided for partial expression)
+            if !block_created {
+                let block_inner = if let Some(block) = local_rc.block() {
+                    // reuse current block information, including base_path and
+                    // base_value if any
+                    block.clone()
+                } else {
+                    BlockContext::new()
+                };
+
+                local_rc.clear_blocks();
+                local_rc.push_block(block_inner);
+            }
+
+            // evaluate context within current block, this includes block
+            // context provided by partial expression parameter
             let merged_context = merge_json(
                 local_rc.evaluate2(ctx, &Path::current())?.as_json(),
                 &hash_ctx,
             );
 
-            if let Some(ref mut block_inner) = block {
-                block_inner.set_base_value(merged_context);
-            } else {
-                let mut block_inner = BlockContext::new();
-                block_inner.set_base_value(merged_context);
-                block = Some(block_inner);
+            // update the base value, there must be a block for this so it's
+            // also safe to unwrap.
+            if let Some(block) = local_rc.block_mut() {
+                block.set_base_value(merged_context);
             }
-        }
-
-        if let Some(block_inner) = block {
-            // because block is moved here, we need another bool variable to track
-            // its status for later cleanup
-            block_created = true;
-            // clear blocks to prevent block params from parent
-            // template to be leaked into partials
-            // see `test_partial_context_issue_495` for the case.
-            local_rc.clear_blocks();
-            local_rc.push_block(block_inner);
         }
 
         // @partial-block
@@ -653,4 +663,23 @@ outer third line"#,
             hb2.render("t1", &()).unwrap()
         )
     }
+}
+
+#[test]
+fn test_issue_534() {
+    let t1 = "{{title}}";
+    let t2 = "{{#each modules}}{{> (lookup this \"module\") content name=0}}{{/each}}";
+
+    let data = json!({
+      "modules": [
+        {"module": "t1", "content": {"title": "foo"}},
+        {"module": "t1", "content": {"title": "bar"}},
+      ]
+    });
+
+    let mut hbs = Registry::new();
+    hbs.register_template_string("t1", t1).unwrap();
+    hbs.register_template_string("t2", t2).unwrap();
+
+    assert_eq!("foobar", hbs.render("t2", &data).unwrap());
 }
