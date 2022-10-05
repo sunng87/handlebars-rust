@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.4...Unreleased) - ReleaseDate
+## [4.3.5](https://github.com/sunng87/handlebars-rust/compare/4.3.4...4.3.5) - 2022-10-05
 
 * [Fixed] Partial context not affected when using with hash context, within a
   each/with block [#536]

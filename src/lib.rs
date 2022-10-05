@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/handlebars/4.3.4")]
+#![doc(html_root_url = "https://docs.rs/handlebars/4.3.5")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![allow(unknown_lints)]
 #![allow(clippy::result_large_err)]
