@@ -86,4 +86,19 @@ fn test_macro_helper() {
         .unwrap(),
         "2015-02-18"
     );
+
+    assert_eq!(
+        hbs.render_template("{{eq image.link null}}", &json!({"image": {"link": null}}))
+            .unwrap(),
+        "true"
+    );
+
+    assert_eq!(
+        hbs.render_template(
+            "{{eq image.link null}}",
+            &json!({"image": {"link": "https://url"}})
+        )
+        .unwrap(),
+        "false"
+    )
 }
