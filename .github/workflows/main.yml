@@ -41,6 +41,16 @@ jobs:
     - name: Build and run tests
       run: cargo test --all-features
 
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@v1
+      with:
+        github-token: ${{ secrets.github_token }}
+        parallel-finished: true
+
   rustfmt:
     name: Rustfmt
     runs-on: ubuntu-latest
