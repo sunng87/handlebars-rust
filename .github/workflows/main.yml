@@ -36,20 +36,24 @@ jobs:
         toolchain: ${{ matrix.rust }}
         components: clippy
         override: true
+    - name: Install Tarpaulin
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-tarpaulin
+        version: 0.22.0
+        use-tool-cache: true
     - name: Lint
       run: cargo clippy --all-features -- -D warnings
     - name: Build and run tests
       run: cargo test --all-features
-
-  coverage:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@v1
+    - name: Coverage
+      if: matrix.build == 'stable'
+      run: cargo tarpaulin -o Lcov --output-dir ./coverage
+    - name: Coveralls
+      if: matrix.build == 'stable'
+      uses: coverallsapp/github-action@master
       with:
-        github-token: ${{ secrets.github_token }}
-        parallel-finished: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
   rustfmt:
     name: Rustfmt
