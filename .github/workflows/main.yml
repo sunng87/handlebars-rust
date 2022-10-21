@@ -48,7 +48,7 @@ jobs:
       run: cargo test --all-features
     - name: Coverage
       if: matrix.build == 'stable'
-      run: cargo tarpaulin -o Lcov --output-dir ./coverage
+      run: cargo tarpaulin --all-features -o Lcov --output-dir ./coverage
     - name: Coveralls
       if: matrix.build == 'stable'
       uses: coverallsapp/github-action@master
