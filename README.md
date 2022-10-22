@@ -5,6 +5,7 @@ handlebars-rust
 in Rust and for Rust.
 
 [![CI](https://github.com/sunng87/handlebars-rust/actions/workflows/main.yml/badge.svg)](https://github.com/sunng87/handlebars-rust/actions/workflows/main.yml)
+[![Coverage Status](https://coveralls.io/repos/github/sunng87/handlebars-rust/badge.svg?branch=master)](https://coveralls.io/github/sunng87/handlebars-rust?branch=master)
 [![](https://img.shields.io/crates/v/handlebars)](https://crates.io/crates/handlebars)
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
