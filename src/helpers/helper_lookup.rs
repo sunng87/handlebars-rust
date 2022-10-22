@@ -79,6 +79,17 @@ mod test {
 
         let r2 = handlebars.render("t2", &m2);
         assert_eq!(r2.ok().unwrap(), "world".to_string());
+
+        assert!(handlebars.render_template("{{lookup}}", &m).is_err());
+        assert!(handlebars.render_template("{{lookup v1}}", &m).is_err());
+        assert_eq!(
+            handlebars.render_template("{{lookup null 1}}", &m).unwrap(),
+            ""
+        );
+        assert_eq!(
+            handlebars.render_template("{{lookup v1 3}}", &m).unwrap(),
+            ""
+        );
     }
 
     #[test]
