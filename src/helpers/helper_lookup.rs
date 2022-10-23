@@ -26,22 +26,14 @@ impl HelperDef for LookupHelper {
             .ok_or_else(|| RenderError::new("Insufficient params for helper \"lookup\""))?;
 
         let value = match *collection_value.value() {
-            Json::Array(ref v) => index
-                .value()
-                .as_u64()
-                .and_then(|u| v.get(u as usize))
-                .unwrap_or(&Json::Null),
-            Json::Object(ref m) => index
-                .value()
-                .as_str()
-                .and_then(|k| m.get(k))
-                .unwrap_or(&Json::Null),
-            _ => &Json::Null,
+            Json::Array(ref v) => index.value().as_u64().and_then(|u| v.get(u as usize)),
+            Json::Object(ref m) => index.value().as_str().and_then(|k| m.get(k)),
+            _ => None,
         };
-        if r.strict_mode() && value.is_null() {
+        if r.strict_mode() && value.is_none() {
             Err(RenderError::strict_error(None))
         } else {
-            Ok(value.clone().into())
+            Ok(value.unwrap_or(&Json::Null).clone().into())
         }
     }
 }
@@ -101,11 +93,17 @@ mod test {
                 .unwrap(),
             ""
         );
+        assert!(hbs
+            .render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
+            .is_ok());
 
         hbs.set_strict_mode(true);
 
         assert!(hbs
             .render_template("{{lookup kk 1}}", &json!({"kk": []}))
             .is_err());
+        assert!(hbs
+            .render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
+            .is_ok());
     }
 }
