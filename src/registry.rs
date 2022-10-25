@@ -543,7 +543,7 @@ impl<'reg> Registry<'reg> {
                 .map_err(ScriptError::from)
                 .and_then(|s| {
                     let helper = Box::new(ScriptHelper {
-                        script: self.engine.compile(&s)?,
+                        script: self.engine.compile(s)?,
                     }) as Box<dyn HelperDef + Send + Sync>;
                     Ok(Some(helper.into()))
                 })

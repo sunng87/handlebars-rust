@@ -106,7 +106,7 @@ impl RenderError {
             Some(path) => format!("Variable {:?} not found in strict mode.", path),
             None => "Value is missing in strict mode".to_owned(),
         };
-        RenderError::new(&msg)
+        RenderError::new(msg)
     }
 
     pub fn from_error<E>(error_info: &str, cause: E) -> RenderError
