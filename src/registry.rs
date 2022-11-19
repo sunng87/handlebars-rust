@@ -989,9 +989,8 @@ mod test {
         assert_eq!(
             render_error
                 .source()
-                .as_ref()
-                .and_then(|e| Some(&e.downcast_ref::<MissingVariableError>().unwrap().0))
-                .unwrap(),
+                .and_then(|e| e.downcast_ref::<MissingVariableError>())
+                .unwrap().0,
             "the_key_never_exists"
         );
 
@@ -1009,9 +1008,8 @@ mod test {
         assert_eq!(
             render_error2
                 .source()
-                .as_ref()
-                .and_then(|e| Some(&e.downcast_ref::<MissingVariableError>().unwrap().0))
-                .unwrap(),
+                .and_then(|e| e.downcast_ref::<MissingVariableError>())
+                .unwrap().0,
             "this.[3]"
         )
     }
