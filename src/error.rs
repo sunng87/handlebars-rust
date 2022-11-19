@@ -1,5 +1,5 @@
 use std::error::Error as StdError;
-use std::fmt::{self, Write};
+use std::fmt::{self, Display, Write};
 use std::io::Error as IOError;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
@@ -72,6 +72,22 @@ impl From<TemplateError> for RenderError {
     }
 }
 
+#[derive(Debug)]
+pub struct MissingVariableError(pub String);
+
+impl Display for MissingVariableError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Missing variable path: {}", self.0)
+    }
+}
+impl StdError for MissingVariableError {}
+
+impl From<MissingVariableError> for RenderError {
+    fn from(e: MissingVariableError) -> RenderError {
+        RenderError::from_error("Failed to access variable in strict mode.", e)
+    }
+}
+
 #[cfg(feature = "script_helper")]
 impl From<Box<EvalAltResult>> for RenderError {
     fn from(e: Box<EvalAltResult>) -> RenderError {
@@ -102,11 +118,10 @@ impl RenderError {
     }
 
     pub fn strict_error(path: Option<&String>) -> RenderError {
-        let msg = match path {
-            Some(path) => format!("Variable {:?} not found in strict mode.", path),
-            None => "Value is missing in strict mode".to_owned(),
-        };
-        RenderError::new(msg)
+        match path {
+            Some(path) => MissingVariableError(path.to_owned()).into(),
+            None => RenderError::new("Value is missing in strict mode".to_owned()),
+        }
     }
 
     pub fn from_error<E>(error_info: &str, cause: E) -> RenderError
