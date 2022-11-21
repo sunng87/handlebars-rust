@@ -72,6 +72,23 @@ impl From<TemplateError> for RenderError {
     }
 }
 
+/// Template rendering error
+#[derive(Debug, Error)]
+pub enum RenderErrorReason {
+    #[error("missing variable path {0:?}")]
+    MissingVariable(Option<String>),
+}
+
+impl From<RenderErrorReason> for RenderError {
+    fn from(e: RenderErrorReason) -> RenderError {
+        match e {
+            RenderErrorReason::MissingVariable(_) => {
+                RenderError::from_error("Failed to access variable in strict mode.", e)
+            }
+        }
+    }
+}
+
 #[cfg(feature = "script_helper")]
 impl From<Box<EvalAltResult>> for RenderError {
     fn from(e: Box<EvalAltResult>) -> RenderError {
@@ -102,11 +119,7 @@ impl RenderError {
     }
 
     pub fn strict_error(path: Option<&String>) -> RenderError {
-        let msg = match path {
-            Some(path) => format!("Variable {:?} not found in strict mode.", path),
-            None => "Value is missing in strict mode".to_owned(),
-        };
-        RenderError::new(msg)
+        RenderErrorReason::MissingVariable(path.map(|p| p.to_owned())).into()
     }
 
     pub fn from_error<E>(error_info: &str, cause: E) -> RenderError

@@ -722,13 +722,14 @@ impl<'reg> Registry<'reg> {
 #[cfg(test)]
 mod test {
     use crate::context::Context;
-    use crate::error::RenderError;
+    use crate::error::{RenderError, RenderErrorReason};
     use crate::helpers::HelperDef;
     use crate::output::Output;
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
     use crate::template::Template;
+    use std::error::Error;
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
@@ -985,6 +986,16 @@ mod test {
             .render_template("accessing non-exists key {{the_key_never_exists}}", &data)
             .unwrap_err();
         assert_eq!(render_error.column_no.unwrap(), 26);
+        assert_eq!(
+            render_error
+                .source()
+                .and_then(|e| e.downcast_ref::<RenderErrorReason>())
+                .and_then(|e| match e {
+                    RenderErrorReason::MissingVariable(path) => path.to_owned(),
+                })
+                .unwrap(),
+            "the_key_never_exists"
+        );
 
         let data2 = json!([1, 2, 3]);
         assert!(r
@@ -997,6 +1008,16 @@ mod test {
             .render_template("accessing invalid array index {{this.[3]}}", &data2)
             .unwrap_err();
         assert_eq!(render_error2.column_no.unwrap(), 31);
+        assert_eq!(
+            render_error2
+                .source()
+                .and_then(|e| e.downcast_ref::<RenderErrorReason>())
+                .and_then(|e| match e {
+                    RenderErrorReason::MissingVariable(path) => path.to_owned(),
+                })
+                .unwrap(),
+            "this.[3]"
+        )
     }
 
     use crate::json::value::ScopedJson;
