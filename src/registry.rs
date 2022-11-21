@@ -722,7 +722,7 @@ impl<'reg> Registry<'reg> {
 #[cfg(test)]
 mod test {
     use crate::context::Context;
-    use crate::error::{MissingVariableError, RenderError};
+    use crate::error::{RenderError, RenderErrorReason};
     use crate::helpers::HelperDef;
     use crate::output::Output;
     use crate::registry::Registry;
@@ -989,8 +989,11 @@ mod test {
         assert_eq!(
             render_error
                 .source()
-                .and_then(|e| e.downcast_ref::<MissingVariableError>())
-                .unwrap().0,
+                .and_then(|e| e.downcast_ref::<RenderErrorReason>())
+                .and_then(|e| match e {
+                    RenderErrorReason::MissingVariable(path) => Some(path),
+                })
+                .unwrap(),
             "the_key_never_exists"
         );
 
@@ -1008,8 +1011,11 @@ mod test {
         assert_eq!(
             render_error2
                 .source()
-                .and_then(|e| e.downcast_ref::<MissingVariableError>())
-                .unwrap().0,
+                .and_then(|e| e.downcast_ref::<RenderErrorReason>())
+                .and_then(|e| match e {
+                    RenderErrorReason::MissingVariable(path) => Some(path),
+                })
+                .unwrap(),
             "this.[3]"
         )
     }

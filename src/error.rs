@@ -1,5 +1,5 @@
 use std::error::Error as StdError;
-use std::fmt::{self, Display, Write};
+use std::fmt::{self, Write};
 use std::io::Error as IOError;
 use std::num::ParseIntError;
 use std::string::FromUtf8Error;
@@ -72,19 +72,20 @@ impl From<TemplateError> for RenderError {
     }
 }
 
-#[derive(Debug)]
-pub struct MissingVariableError(pub String);
-
-impl Display for MissingVariableError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Missing variable path: {}", self.0)
-    }
+/// Template rendering error
+#[derive(Debug, Error)]
+pub enum RenderErrorReason {
+    #[error("missing variable path {0:?}")]
+    MissingVariable(String),
 }
-impl StdError for MissingVariableError {}
 
-impl From<MissingVariableError> for RenderError {
-    fn from(e: MissingVariableError) -> RenderError {
-        RenderError::from_error("Failed to access variable in strict mode.", e)
+impl From<RenderErrorReason> for RenderError {
+    fn from(e: RenderErrorReason) -> RenderError {
+        match e {
+            RenderErrorReason::MissingVariable(_) => {
+                RenderError::from_error("Failed to access variable in strict mode.", e)
+            }
+        }
     }
 }
 
@@ -119,7 +120,7 @@ impl RenderError {
 
     pub fn strict_error(path: Option<&String>) -> RenderError {
         match path {
-            Some(path) => MissingVariableError(path.to_owned()).into(),
+            Some(path) => RenderErrorReason::MissingVariable(path.to_owned()).into(),
             None => RenderError::new("Value is missing in strict mode".to_owned()),
         }
     }
