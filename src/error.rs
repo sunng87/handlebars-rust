@@ -121,7 +121,7 @@ impl RenderError {
     pub fn strict_error(path: Option<&String>) -> RenderError {
         match path {
             Some(path) => RenderErrorReason::MissingVariable(path.to_owned()).into(),
-            None => RenderError::new("Value is missing in strict mode".to_owned()),
+            None => RenderError::new("Value is missing in strict mode"),
         }
     }
 
