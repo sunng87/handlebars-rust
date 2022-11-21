@@ -991,7 +991,7 @@ mod test {
                 .source()
                 .and_then(|e| e.downcast_ref::<RenderErrorReason>())
                 .and_then(|e| match e {
-                    RenderErrorReason::MissingVariable(path) => Some(path),
+                    RenderErrorReason::MissingVariable(path) => path.to_owned(),
                 })
                 .unwrap(),
             "the_key_never_exists"
@@ -1013,7 +1013,7 @@ mod test {
                 .source()
                 .and_then(|e| e.downcast_ref::<RenderErrorReason>())
                 .and_then(|e| match e {
-                    RenderErrorReason::MissingVariable(path) => Some(path),
+                    RenderErrorReason::MissingVariable(path) => path.to_owned(),
                 })
                 .unwrap(),
             "this.[3]"

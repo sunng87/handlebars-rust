@@ -76,7 +76,7 @@ impl From<TemplateError> for RenderError {
 #[derive(Debug, Error)]
 pub enum RenderErrorReason {
     #[error("missing variable path {0:?}")]
-    MissingVariable(String),
+    MissingVariable(Option<String>),
 }
 
 impl From<RenderErrorReason> for RenderError {
@@ -119,10 +119,7 @@ impl RenderError {
     }
 
     pub fn strict_error(path: Option<&String>) -> RenderError {
-        match path {
-            Some(path) => RenderErrorReason::MissingVariable(path.to_owned()).into(),
-            None => RenderError::new("Value is missing in strict mode"),
-        }
+        RenderErrorReason::MissingVariable(path.map(|p| p.to_owned())).into()
     }
 
     pub fn from_error<E>(error_info: &str, cause: E) -> RenderError
