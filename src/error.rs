@@ -258,7 +258,7 @@ fn template_segment(template_str: &str, line: usize, col: usize) -> String {
 impl fmt::Display for TemplateError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         match (self.line_no, self.column_no, &self.segment) {
-            (Some(line), Some(col), &Some(ref seg)) => writeln!(
+            (Some(line), Some(col), Some(seg)) => writeln!(
                 f,
                 "Template error: {}\n    --> Template error in \"{}\":{}:{}\n     |\n{}     |\n     = reason: {}",
                 self.reason(),

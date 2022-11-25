@@ -32,9 +32,9 @@ enum ResolvedPath<'a> {
     LocalValue(Vec<String>, &'a Json),
 }
 
-fn parse_json_visitor<'a, 'reg>(
+fn parse_json_visitor<'a>(
     relative_path: &[PathSeg],
-    block_contexts: &'a VecDeque<BlockContext<'reg>>,
+    block_contexts: &'a VecDeque<BlockContext<'_>>,
     always_for_absolute_path: bool,
 ) -> ResolvedPath<'a> {
     let mut path_context_depth: i64 = 0;
@@ -116,16 +116,16 @@ fn parse_json_visitor<'a, 'reg>(
 
 fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, RenderError> {
     let result = match d {
-        Some(&Json::Array(ref l)) => p.parse::<usize>().map(|idx_u| l.get(idx_u))?,
-        Some(&Json::Object(ref m)) => m.get(p),
+        Some(Json::Array(l)) => p.parse::<usize>().map(|idx_u| l.get(idx_u))?,
+        Some(Json::Object(m)) => m.get(p),
         Some(_) => None,
         None => None,
     };
     Ok(result)
 }
 
-fn get_in_block_params<'a, 'reg>(
-    block_contexts: &'a VecDeque<BlockContext<'reg>>,
+fn get_in_block_params<'a>(
+    block_contexts: &'a VecDeque<BlockContext<'_>>,
     p: &str,
 ) -> Option<(&'a BlockParamHolder, &'a Vec<String>)> {
     for bc in block_contexts {
@@ -165,10 +165,10 @@ impl Context {
     }
 
     /// Navigate the context with relative path and block scopes
-    pub(crate) fn navigate<'reg, 'rc>(
+    pub(crate) fn navigate<'rc>(
         &'rc self,
         relative_path: &[PathSeg],
-        block_contexts: &VecDeque<BlockContext<'reg>>,
+        block_contexts: &VecDeque<BlockContext<'_>>,
     ) -> Result<ScopedJson<'rc>, RenderError> {
         // always use absolute at the moment until we get base_value lifetime issue fixed
         let resolved_visitor = parse_json_visitor(relative_path, block_contexts, true);

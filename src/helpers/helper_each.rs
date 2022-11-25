@@ -11,8 +11,8 @@ use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
 
-fn update_block_context<'reg>(
-    block: &mut BlockContext<'reg>,
+fn update_block_context(
+    block: &mut BlockContext<'_>,
     base_path: Option<&Vec<String>>,
     relative_path: String,
     is_first: bool,
