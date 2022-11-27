@@ -13,18 +13,28 @@
 
     <div>
       <h2>Template</h2>
-      <textarea id="template">Hello world from {{name}}</textarea>
+      <textarea id="template" rows="8">Hello world from {{name}}</textarea>
 
       <h2>Data</h2>
-      <textarea id="data">{"name": "handlebars-rust"}</textarea>
+      <textarea id="data" rows="8">{"name": "handlebars"}</textarea>
 
-      <button id="render">Render</button>
-
-      <h2>Result</h2>
-      <textarea id="output"></textarea>
+      <div>
+        <h2>Output</h2>
+        <div>
+          <button id="rust-render">Render with <b>handlebars-rust</b></button>
+          <p id="rust-error"></p>
+          <textarea id="rust-output" rows="12"></textarea>
+        </div>
+        <div>
+          <button id="js-render">Render with <b>handlebarsjs</b></button>
+          <p id="js-error"></p>
+          <textarea id="js-output" rows="12"></textarea>
+        </div>
+      </div>
     </div>
 
     <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
     <script src="./bootstrap.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
   </body>
 </html>
