@@ -1,7 +1,8 @@
 mod utils;
 
+use gloo_utils::format::JsValueSerdeExt;
 use handlebars::Handlebars;
-use serde_json::json;
+use serde_json::Value;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -16,11 +17,9 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn render() {
+pub fn render(template_str: &str, data: JsValue) -> Result<String, String> {
     let hbs = Handlebars::new();
 
-    alert(
-        &hbs.render_template("Hello {{name}}", &json!({"name": "World"}))
-            .unwrap(),
-    );
+    hbs.render_template(template_str, &data.into_serde::<Value>().unwrap())
+        .map_err(|e| format!("{}", e))
 }
