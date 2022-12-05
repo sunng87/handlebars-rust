@@ -526,7 +526,7 @@ impl<'reg> Registry<'reg> {
         if let Some(result) = self.get_or_load_template_optional(name) {
             result
         } else {
-            Err(RenderError::new(format!("Template not found: {}", name)))
+            Err(RenderError::new(format!("Template not found: {name}")))
         }
     }
 

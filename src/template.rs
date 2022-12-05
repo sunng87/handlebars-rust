@@ -211,7 +211,7 @@ impl Parameter {
         if let Some(name) = self.as_name() {
             name.to_owned()
         } else {
-            format!("{:?}", self)
+            format!("{self:?}")
         }
     }
 }
