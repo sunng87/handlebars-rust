@@ -298,22 +298,13 @@ impl<'reg> Registry<'reg> {
     {
         let dir_path = dir_path.as_ref();
 
-        // Allowing dots at the beginning as to not break old
-        // applications.
-        let tpl_extension = tpl_extension.strip_prefix('.').unwrap_or(tpl_extension);
-
         let walker = WalkDir::new(dir_path);
         let dir_iter = walker
             .min_depth(1)
             .into_iter()
             .filter_map(|e| e.ok().map(|e| e.into_path()))
             // Checks if extension matches
-            .filter(|tpl_path| {
-                tpl_path
-                    .extension()
-                    .map(|extension| extension == tpl_extension)
-                    .unwrap_or(false)
-            })
+            .filter(|tpl_path| tpl_path.to_string_lossy().ends_with(tpl_extension))
             // Rejects any hidden or temporary files.
             .filter(|tpl_path| {
                 tpl_path
@@ -327,12 +318,16 @@ impl<'reg> Registry<'reg> {
                     .strip_prefix(dir_path)
                     .ok()
                     .map(|tpl_canonical_name| {
-                        tpl_canonical_name
-                            .with_extension("")
+                        let tpl_name = tpl_canonical_name
                             .components()
                             .map(|component| component.as_os_str().to_string_lossy())
                             .collect::<Vec<_>>()
-                            .join("/")
+                            .join("/");
+
+                        tpl_name
+                            .strip_suffix(tpl_extension)
+                            .map(|s| s.to_owned())
+                            .unwrap_or(tpl_name)
                     })
                     .map(|tpl_canonical_name| (tpl_canonical_name, tpl_path))
             });
@@ -905,6 +900,31 @@ mod test {
 
             assert_eq!(r.templates.len(), 8);
             assert_eq!(r.templates.contains_key("t10"), true);
+
+            drop(file1);
+            dir.close().unwrap();
+        }
+
+        {
+            let dir = tempdir().unwrap();
+            let mut r = Registry::new();
+
+            let file1_path = dir.path().join("t11.hbs.html");
+            let mut file1: File = File::create(&file1_path).unwrap();
+            writeln!(file1, "<h1>Bonjour {{world}}!</h1>").unwrap();
+
+            let mut dir_path = dir
+                .path()
+                .to_string_lossy()
+                .replace(std::path::MAIN_SEPARATOR, "/");
+            if !dir_path.ends_with("/") {
+                dir_path.push('/');
+            }
+            r.register_templates_directory(".hbs.html", dir_path)
+                .unwrap();
+
+            assert_eq!(r.templates.len(), 1);
+            assert_eq!(r.templates.contains_key("t11"), true);
 
             drop(file1);
             dir.close().unwrap();
