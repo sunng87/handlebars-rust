@@ -1,5 +1,10 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.5...Unreleased) - ReleaseDate
+
+* [Fixed] Loading template files with multiple extensions, a bug introduced in
+  4.3.0 when refactoring directory source.
+
 ## [4.3.5](https://github.com/sunng87/handlebars-rust/compare/4.3.4...4.3.5) - 2022-10-05
 
 * [Fixed] Partial context not affected when using with hash context, within a
