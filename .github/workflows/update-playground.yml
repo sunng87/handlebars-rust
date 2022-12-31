@@ -31,7 +31,7 @@ jobs:
         node-version: 16
     - name: Build web
       run: |
-        cd www
+        cd playground/www
         npm install
         npm run build
     - name: Publish dist directory
