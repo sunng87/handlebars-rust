@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Handlebars rust playground</title>
+    <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" media="screen" />
+  </head>
+  <body>
+    <h1>Handlebars-rust Playground</h1>
+    <p>Test your handlebars template with provided JSON data,
+    using <a href="https://github.com/sunng87/handlebars-rust">handlebars-rust</a>
+    library.<p>
+
+    <div>
+      <h2>Template</h2>
+      <textarea id="template" rows="8">Hello world from {{name}}</textarea>
+
+      <h2>Data</h2>
+      <textarea id="data" rows="8">{"name": "handlebars"}</textarea>
+
+      <div>
+        <h2>Output</h2>
+        <div>
+          <button id="rust-render">Render with <b>handlebars-rust</b></button>
+          <p id="rust-error"></p>
+          <textarea id="rust-output" rows="12"></textarea>
+        </div>
+        <div>
+          <button id="js-render">Render with <b>handlebarsjs</b></button>
+          <p id="js-error"></p>
+          <textarea id="js-output" rows="12"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <script src="./bootstrap.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+  </body>
+</html>
