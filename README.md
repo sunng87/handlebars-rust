@@ -66,13 +66,19 @@ Examples are provided in source tree to demo usage of various api.
   a web server hosts handlebars in `dev_mode`, you can edit the template and see the change
   without restarting your server.
 
+### Web Playground
+
+We have github action to compile latest `master` branch into WebAssembly and
+serve it on [github pages](https://sunng87.github.io/handlebars-rust/). You can
+test and verify your template with both handlebars-rust and handlebarjs.
+
 ## Minimum Rust Version Policy
 
 Handlebars will track Rust nightly and stable channel. When dropping
 support for previous stable versions, I will bump **patch** version
 and clarify in CHANGELOG.
 
-## Document
+## Docs
 
 [Rust doc](https://docs.rs/crate/handlebars/).
 
