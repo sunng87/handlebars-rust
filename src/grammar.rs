@@ -1,7 +1,5 @@
-// const _GRAMMAR: &'static str = include_str!("grammar.pest");
+pub use crate::generated::Rule;
 
-#[derive(Parser)]
-#[grammar = "grammar.pest"]
 pub struct HandlebarsParser;
 
 #[cfg(test)]

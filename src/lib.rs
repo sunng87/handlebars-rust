@@ -377,8 +377,6 @@
 #[macro_use]
 extern crate log;
 
-#[macro_use]
-extern crate pest_derive;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_derive;
@@ -408,6 +406,7 @@ mod block;
 mod context;
 mod decorators;
 mod error;
+mod generated;
 mod grammar;
 mod helpers;
 mod json;
