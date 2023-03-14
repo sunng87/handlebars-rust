@@ -1,4 +1,4 @@
-use smartstring::alias::CompactString;
+use smartstring::alias::String as LazyCompactString;
 
 #[inline]
 pub(crate) fn copy_on_push_vec<T>(input: &[T], el: T) -> Vec<T>
@@ -12,7 +12,7 @@ where
 }
 
 #[inline]
-pub(crate) fn extend(base: &mut Vec<CompactString>, slice: &[CompactString]) {
+pub(crate) fn extend(base: &mut Vec<LazyCompactString>, slice: &[LazyCompactString]) {
     for i in slice {
         base.push(i.clone());
     }

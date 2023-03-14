@@ -2,14 +2,14 @@ use std::iter::Peekable;
 
 use pest::iterators::Pair;
 use pest::Parser;
-use smartstring::alias::CompactString;
+use smartstring::alias::String as LazyCompactString;
 
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum PathSeg {
-    Named(CompactString),
+    Named(LazyCompactString),
     Ruled(Rule),
 }
 
@@ -19,8 +19,8 @@ pub enum PathSeg {
 /// or a normal relative path like `a/b/c`.
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Path {
-    Relative((Vec<PathSeg>, CompactString)),
-    Local((usize, CompactString, CompactString)),
+    Relative((Vec<PathSeg>, LazyCompactString)),
+    Local((usize, LazyCompactString, LazyCompactString)),
 }
 
 impl Path {
@@ -71,7 +71,7 @@ impl Path {
     }
 }
 
-fn get_local_path_and_level(paths: &[PathSeg]) -> Option<(usize, CompactString)> {
+fn get_local_path_and_level(paths: &[PathSeg]) -> Option<(usize, LazyCompactString)> {
     paths.get(0).and_then(|seg| {
         if seg == &PathSeg::Ruled(Rule::path_local) {
             let mut level = 0;
@@ -125,7 +125,7 @@ where
     path_stack
 }
 
-pub(crate) fn merge_json_path(path_stack: &mut Vec<CompactString>, relative_path: &[PathSeg]) {
+pub(crate) fn merge_json_path(path_stack: &mut Vec<LazyCompactString>, relative_path: &[PathSeg]) {
     for seg in relative_path {
         match seg {
             PathSeg::Named(ref s) => {

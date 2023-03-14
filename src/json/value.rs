@@ -1,6 +1,6 @@
 use serde::Serialize;
 use serde_json::value::{to_value, Value as Json};
-use smartstring::alias::CompactString;
+use smartstring::alias::String as LazyCompactString;
 
 pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 
@@ -15,7 +15,7 @@ pub enum ScopedJson<'rc> {
     Constant(&'rc Json),
     Derived(Json),
     // represents a json reference to context value, its full path
-    Context(&'rc Json, Vec<CompactString>),
+    Context(&'rc Json, Vec<LazyCompactString>),
     Missing,
 }
 
@@ -43,7 +43,7 @@ impl<'rc> ScopedJson<'rc> {
         ScopedJson::Derived(v.clone())
     }
 
-    pub fn context_path(&self) -> Option<&Vec<CompactString>> {
+    pub fn context_path(&self) -> Option<&Vec<LazyCompactString>> {
         match self {
             ScopedJson::Context(_, ref p) => Some(p),
             _ => None,
@@ -80,7 +80,7 @@ impl<'rc> PathAndJson<'rc> {
     }
 
     /// Returns full path to this value if any
-    pub fn context_path(&self) -> Option<&Vec<CompactString>> {
+    pub fn context_path(&self) -> Option<&Vec<LazyCompactString>> {
         self.value.context_path()
     }
 

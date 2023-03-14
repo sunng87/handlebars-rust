@@ -2,7 +2,7 @@ use std::collections::{HashMap, VecDeque};
 
 use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
-use smartstring::alias::CompactString;
+use smartstring::alias::String as LazyCompactString;
 
 use crate::block::{BlockContext, BlockParamHolder};
 use crate::error::RenderError;
@@ -24,13 +24,13 @@ pub struct Context {
 enum ResolvedPath<'a> {
     // FIXME: change to borrowed when possible
     // full path
-    AbsolutePath(Vec<CompactString>),
+    AbsolutePath(Vec<LazyCompactString>),
     // relative path and path root
-    RelativePath(Vec<CompactString>),
+    RelativePath(Vec<LazyCompactString>),
     // relative path against block param value
-    BlockParamValue(Vec<CompactString>, &'a Json),
+    BlockParamValue(Vec<LazyCompactString>, &'a Json),
     // relative path against derived value,
-    LocalValue(Vec<CompactString>, &'a Json),
+    LocalValue(Vec<LazyCompactString>, &'a Json),
 }
 
 fn parse_json_visitor<'a>(
@@ -128,7 +128,7 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
 fn get_in_block_params<'a>(
     block_contexts: &'a VecDeque<BlockContext<'_>>,
     p: &str,
-) -> Option<(&'a BlockParamHolder, &'a Vec<CompactString>)> {
+) -> Option<(&'a BlockParamHolder, &'a Vec<LazyCompactString>)> {
     for bc in block_contexts {
         let v = bc.get_block_param(p);
         if v.is_some() {

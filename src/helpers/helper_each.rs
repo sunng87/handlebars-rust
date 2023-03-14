@@ -1,5 +1,5 @@
 use serde_json::value::Value as Json;
-use smartstring::alias::CompactString;
+use smartstring::alias::String as LazyCompactString;
 
 use super::block_util::create_block;
 use crate::block::{BlockContext, BlockParams};
@@ -14,8 +14,8 @@ use crate::util::copy_on_push_vec;
 
 fn update_block_context(
     block: &mut BlockContext<'_>,
-    base_path: Option<&Vec<CompactString>>,
-    relative_path: CompactString,
+    base_path: Option<&Vec<LazyCompactString>>,
+    relative_path: LazyCompactString,
     is_first: bool,
     value: &Json,
 ) {
@@ -33,7 +33,7 @@ fn update_block_context(
 fn set_block_param<'rc>(
     block: &mut BlockContext<'rc>,
     h: &Helper<'rc>,
-    base_path: Option<&Vec<CompactString>>,
+    base_path: Option<&Vec<LazyCompactString>>,
     k: &Json,
     v: &Json,
 ) -> Result<(), RenderError> {
