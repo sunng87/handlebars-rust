@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde_json::value::Value as Json;
+use smartstring::alias::CompactString;
 
 use crate::error::RenderError;
 use crate::local_vars::LocalVars;
@@ -8,7 +9,7 @@ use crate::local_vars::LocalVars;
 #[derive(Clone, Debug)]
 pub enum BlockParamHolder {
     // a reference to certain context value
-    Path(Vec<String>),
+    Path(Vec<CompactString>),
     // an actual value holder
     Value(Json),
 }
@@ -18,7 +19,7 @@ impl BlockParamHolder {
         BlockParamHolder::Value(v)
     }
 
-    pub fn path(r: Vec<String>) -> BlockParamHolder {
+    pub fn path(r: Vec<CompactString>) -> BlockParamHolder {
         BlockParamHolder::Path(r)
     }
 }
@@ -37,7 +38,7 @@ impl<'reg> BlockParams<'reg> {
 
     /// Add a path reference as the parameter. The `path` is a vector of path
     /// segments the relative to current block's base path.
-    pub fn add_path(&mut self, k: &'reg str, path: Vec<String>) -> Result<(), RenderError> {
+    pub fn add_path(&mut self, k: &'reg str, path: Vec<CompactString>) -> Result<(), RenderError> {
         self.data.insert(k, BlockParamHolder::path(path));
         Ok(())
     }
@@ -58,7 +59,7 @@ impl<'reg> BlockParams<'reg> {
 #[derive(Debug, Clone, Default)]
 pub struct BlockContext<'rc> {
     /// the base_path of current block scope
-    base_path: Vec<String>,
+    base_path: Vec<CompactString>,
     /// the base_value of current block scope, when the block is using a
     /// constant or derived value as block base
     base_value: Option<Json>,
@@ -91,12 +92,12 @@ impl<'rc> BlockContext<'rc> {
 
     /// borrow a reference to current scope's base path
     /// all paths inside this block will be relative to this path
-    pub fn base_path(&self) -> &Vec<String> {
+    pub fn base_path(&self) -> &Vec<CompactString> {
         &self.base_path
     }
 
     /// borrow a mutable reference to the base path
-    pub fn base_path_mut(&mut self) -> &mut Vec<String> {
+    pub fn base_path_mut(&mut self) -> &mut Vec<CompactString> {
         &mut self.base_path
     }
 

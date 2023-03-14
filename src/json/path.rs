@@ -2,13 +2,14 @@ use std::iter::Peekable;
 
 use pest::iterators::Pair;
 use pest::Parser;
+use smartstring::alias::CompactString;
 
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum PathSeg {
-    Named(String),
+    Named(CompactString),
     Ruled(Rule),
 }
 
@@ -18,16 +19,16 @@ pub enum PathSeg {
 /// or a normal relative path like `a/b/c`.
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Path {
-    Relative((Vec<PathSeg>, String)),
-    Local((usize, String, String)),
+    Relative((Vec<PathSeg>, CompactString)),
+    Local((usize, CompactString, CompactString)),
 }
 
 impl Path {
     pub(crate) fn new(raw: &str, segs: Vec<PathSeg>) -> Path {
         if let Some((level, name)) = get_local_path_and_level(&segs) {
-            Path::Local((level, name, raw.to_owned()))
+            Path::Local((level, name, raw.into()))
         } else {
-            Path::Relative((segs, raw.to_owned()))
+            Path::Relative((segs, raw.into()))
         }
     }
 
@@ -49,16 +50,16 @@ impl Path {
     }
 
     pub(crate) fn current() -> Path {
-        Path::Relative((Vec::with_capacity(0), "".to_owned()))
+        Path::Relative((Vec::with_capacity(0), "".into()))
     }
 
     // for test only
     pub(crate) fn with_named_paths(name_segs: &[&str]) -> Path {
         let segs = name_segs
             .iter()
-            .map(|n| PathSeg::Named((*n).to_string()))
+            .map(|n| PathSeg::Named((*n).into()))
             .collect();
-        Path::Relative((segs, name_segs.join("/")))
+        Path::Relative((segs, name_segs.join("/").into()))
     }
 
     // for test only
@@ -70,7 +71,7 @@ impl Path {
     }
 }
 
-fn get_local_path_and_level(paths: &[PathSeg]) -> Option<(usize, String)> {
+fn get_local_path_and_level(paths: &[PathSeg]) -> Option<(usize, CompactString)> {
     paths.get(0).and_then(|seg| {
         if seg == &PathSeg::Ruled(Rule::path_local) {
             let mut level = 0;
@@ -112,7 +113,7 @@ where
             Rule::path_id | Rule::path_raw_id => {
                 let name = n.as_str();
                 if name != "this" {
-                    path_stack.push(PathSeg::Named(name.to_string()));
+                    path_stack.push(PathSeg::Named(name.into()));
                 }
             }
             _ => {}
@@ -124,11 +125,11 @@ where
     path_stack
 }
 
-pub(crate) fn merge_json_path(path_stack: &mut Vec<String>, relative_path: &[PathSeg]) {
+pub(crate) fn merge_json_path(path_stack: &mut Vec<CompactString>, relative_path: &[PathSeg]) {
     for seg in relative_path {
         match seg {
             PathSeg::Named(ref s) => {
-                path_stack.push(s.to_owned());
+                path_stack.push(s.clone());
             }
             PathSeg::Ruled(Rule::path_root) => {}
             PathSeg::Ruled(Rule::path_up) => {}

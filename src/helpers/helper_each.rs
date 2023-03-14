@@ -1,4 +1,5 @@
 use serde_json::value::Value as Json;
+use smartstring::alias::CompactString;
 
 use super::block_util::create_block;
 use crate::block::{BlockContext, BlockParams};
@@ -13,8 +14,8 @@ use crate::util::copy_on_push_vec;
 
 fn update_block_context(
     block: &mut BlockContext<'_>,
-    base_path: Option<&Vec<String>>,
-    relative_path: String,
+    base_path: Option<&Vec<CompactString>>,
+    relative_path: CompactString,
     is_first: bool,
     value: &Json,
 ) {
@@ -32,7 +33,7 @@ fn update_block_context(
 fn set_block_param<'rc>(
     block: &mut BlockContext<'rc>,
     h: &Helper<'rc>,
-    base_path: Option<&Vec<String>>,
+    base_path: Option<&Vec<CompactString>>,
     k: &Json,
     v: &Json,
 ) -> Result<(), RenderError> {
@@ -100,7 +101,13 @@ impl HelperDef for EachHelper {
                             block.set_local_var("last", to_json(is_last));
                             block.set_local_var("index", index.clone());
 
-                            update_block_context(block, array_path, i.to_string(), is_first, v);
+                            update_block_context(
+                                block,
+                                array_path,
+                                i.to_string().into(),
+                                is_first,
+                                v,
+                            );
                             set_block_param(block, h, array_path, &index, v)?;
                         }
 
@@ -130,7 +137,13 @@ impl HelperDef for EachHelper {
                             block.set_local_var("last", to_json(is_last));
                             block.set_local_var("key", key.clone());
 
-                            update_block_context(block, obj_path, k.to_string(), is_first, v);
+                            update_block_context(
+                                block,
+                                obj_path,
+                                k.to_string().into(),
+                                is_first,
+                                v,
+                            );
                             set_block_param(block, h, obj_path, &key, v)?;
                         }
 
