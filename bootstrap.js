@@ -243,21 +243,6 @@ eval("// A dependency graph that contains any wasm must all be imported\n// asyn
 /******/ 		};
 /******/ 	})();
 /******/ 	
-/******/ 	/* webpack/runtime/wasm loading */
-/******/ 	(() => {
-/******/ 		__webpack_require__.v = (exports, wasmModuleId, wasmModuleHash, importsObj) => {
-/******/ 			var req = fetch(__webpack_require__.p + "" + wasmModuleHash + ".module.wasm");
-/******/ 			if (typeof WebAssembly.instantiateStreaming === 'function') {
-/******/ 				return WebAssembly.instantiateStreaming(req, importsObj)
-/******/ 					.then((res) => (Object.assign(exports, res.instance.exports)));
-/******/ 			}
-/******/ 			return req
-/******/ 				.then((x) => (x.arrayBuffer()))
-/******/ 				.then((bytes) => (WebAssembly.instantiate(bytes, importsObj)))
-/******/ 				.then((res) => (Object.assign(exports, res.instance.exports)));
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/publicPath */
 /******/ 	(() => {
 /******/ 		var scriptUrl;
