@@ -1012,6 +1012,7 @@ mod test {
                 .and_then(|e| e.downcast_ref::<RenderErrorReason>())
                 .and_then(|e| match e {
                     RenderErrorReason::MissingVariable(path) => path.to_owned(),
+                    _ => unreachable!(),
                 })
                 .unwrap(),
             "the_key_never_exists"
@@ -1034,6 +1035,7 @@ mod test {
                 .and_then(|e| e.downcast_ref::<RenderErrorReason>())
                 .and_then(|e| match e {
                     RenderErrorReason::MissingVariable(path) => path.to_owned(),
+                    _ => unreachable!(),
                 })
                 .unwrap(),
             "this.[3]"

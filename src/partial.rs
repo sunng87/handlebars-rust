@@ -11,6 +11,7 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
+use crate::RenderErrorReason;
 
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 
@@ -147,7 +148,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
         result
     } else {
-        Ok(())
+        Err(RenderErrorReason::PartialNotFound(tname.to_owned()).into())
     }
 }
 
@@ -663,23 +664,30 @@ outer third line"#,
             hb2.render("t1", &()).unwrap()
         )
     }
-}
 
-#[test]
-fn test_issue_534() {
-    let t1 = "{{title}}";
-    let t2 = "{{#each modules}}{{> (lookup this \"module\") content name=0}}{{/each}}";
+    #[test]
+    fn test_issue_534() {
+        let t1 = "{{title}}";
+        let t2 = "{{#each modules}}{{> (lookup this \"module\") content name=0}}{{/each}}";
 
-    let data = json!({
-      "modules": [
-        {"module": "t1", "content": {"title": "foo"}},
-        {"module": "t1", "content": {"title": "bar"}},
-      ]
-    });
+        let data = json!({
+          "modules": [
+            {"module": "t1", "content": {"title": "foo"}},
+            {"module": "t1", "content": {"title": "bar"}},
+          ]
+        });
 
-    let mut hbs = Registry::new();
-    hbs.register_template_string("t1", t1).unwrap();
-    hbs.register_template_string("t2", t2).unwrap();
+        let mut hbs = Registry::new();
+        hbs.register_template_string("t1", t1).unwrap();
+        hbs.register_template_string("t2", t2).unwrap();
 
-    assert_eq!("foobar", hbs.render("t2", &data).unwrap());
+        assert_eq!("foobar", hbs.render("t2", &data).unwrap());
+    }
+
+    #[test]
+    fn test_partial_not_found() {
+        let t1 = "{{> bar}}";
+        let hbs = Registry::new();
+        assert!(hbs.render_template(&t1, &()).is_err());
+    }
 }
