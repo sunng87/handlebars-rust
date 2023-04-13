@@ -77,6 +77,8 @@ impl From<TemplateError> for RenderError {
 pub enum RenderErrorReason {
     #[error("missing variable path {0:?}")]
     MissingVariable(Option<String>),
+    #[error("partial not found {0}")]
+    PartialNotFound(String),
 }
 
 impl From<RenderErrorReason> for RenderError {
@@ -84,6 +86,9 @@ impl From<RenderErrorReason> for RenderError {
         match e {
             RenderErrorReason::MissingVariable(_) => {
                 RenderError::from_error("Failed to access variable in strict mode.", e)
+            }
+            RenderErrorReason::PartialNotFound(_) => {
+                RenderError::from_error("Partial not found.", e)
             }
         }
     }
