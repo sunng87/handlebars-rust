@@ -448,6 +448,40 @@ foofoofoo"#,
 "#
         );
     }
+
+    #[test]
+    fn test_partial_indent_with_block() {
+        let mut hb = Registry::new();
+
+        hb.register_template_string(
+            "inner",
+            r#"partial first line
+{{#if true}}
+    partial second line
+{{/if}}
+partial third line
+"#,
+        )
+        .unwrap();
+
+        hb.register_template_string(
+            "outer",
+            r#"before partial
+    {{> inner}}
+after partial"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            r#"before partial
+    partial first line
+        partial second line
+    partial third line
+after partial"#,
+            hb.render("outer", &()).unwrap()
+        );
+    }
+
     // Rule::partial_expression should not trim leading indent  by default
 
     #[test]
