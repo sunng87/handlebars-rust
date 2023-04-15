@@ -427,6 +427,15 @@ impl Template {
         }
     }
 
+    fn remove_previous_indent(template_stack: &mut VecDeque<Template>) {
+        let t = template_stack.front_mut().unwrap();
+        if let Some(RawString(ref mut text)) = t.elements.last_mut() {
+            *text = text
+                .trim_end_matches(support::str::whitespace_matcher)
+                .to_owned();
+        }
+    }
+
     // in handlebars, the whitespaces around statement are
     // automatically trimed.
     // this function checks if current span has both leading and
@@ -726,19 +735,19 @@ impl Template {
                                     prevent_indent,
                                 );
 
-                                // indent for partial expression >
-                                let mut indent = None;
+                                let mut decorator = DecoratorTemplate::new(exp.clone());
                                 if rule == Rule::partial_expression
                                     && !options.prevent_indent
                                     && !exp.omit_pre_ws
                                 {
-                                    indent = support::str::find_trailing_whitespace_chars(
-                                        &source[..span.start()],
-                                    );
+                                    // indent for partial expression >
+                                    if let Some(indent) =
+                                        support::str::find_trailing_indent(&source[..span.start()])
+                                    {
+                                        decorator.indent = Some(indent.to_owned());
+                                        Template::remove_previous_indent(&mut template_stack);
+                                    }
                                 }
-
-                                let mut decorator = DecoratorTemplate::new(exp.clone());
-                                decorator.indent = indent.map(|s| s.to_owned());
 
                                 let el = if rule == Rule::decorator_expression {
                                     DecoratorExpression(Box::new(decorator))
