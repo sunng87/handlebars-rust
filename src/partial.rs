@@ -423,7 +423,6 @@ foofoofoo"#,
         hbs.register_template_string("inner", inner).unwrap();
         hbs.register_template_string("outer", outer).unwrap();
 
-        dbg!(hbs.get_template("inner"));
         let result = hbs
             .render(
                 "outer",
@@ -624,7 +623,6 @@ Template:test
 outer third line"#,
         )
         .unwrap();
-
         assert_eq!(
             r#"    inner first line
     inner second line

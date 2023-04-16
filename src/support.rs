@@ -57,13 +57,9 @@ pub mod str {
         output
     }
 
-    /// Add indent for lines but last
-    pub fn with_indent(s: &str, indent: &str, initial_indent: bool) -> String {
-        let mut output = if initial_indent {
-            indent.to_string()
-        } else {
-            String::new()
-        };
+    /// add indent for lines but last
+    pub fn with_indent(s: &str, indent: &str) -> String {
+        let mut output = String::new();
 
         let mut it = s.chars().peekable();
         while let Some(c) = it.next() {
@@ -99,12 +95,12 @@ pub mod str {
         }
     }
 
-    pub(crate) fn find_trailing_indent(s: &str) -> Option<&str> {
+    pub(crate) fn find_trailing_whitespace_chars(s: &str) -> Option<&str> {
         let trimmed = s.trim_end_matches(whitespace_matcher);
-        if trimmed.ends_with(newline_matcher) && trimmed.len() < s.len() {
-            Some(&s[trimmed.len()..])
-        } else {
+        if trimmed.len() == s.len() {
             None
+        } else {
+            Some(&s[trimmed.len()..])
         }
     }
 

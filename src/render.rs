@@ -775,12 +775,11 @@ pub(crate) fn do_escape(r: &Registry<'_>, rc: &RenderContext<'_, '_>, content: S
 #[inline]
 fn indent_aware_write(
     v: &str,
-    initial_indent: bool,
     rc: &mut RenderContext<'_, '_>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     if let Some(indent) = rc.get_indent_string() {
-        out.write(support::str::with_indent(v, indent, initial_indent).as_ref())?;
+        out.write(support::str::with_indent(v, indent).as_ref())?;
     } else {
         out.write(v.as_ref())?;
     }
@@ -796,8 +795,7 @@ impl Renderable for TemplateElement {
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         match self {
-            // FIXME: set initial_indent to true when it starts a newline
-            RawString(ref v) => indent_aware_write(v.as_ref(), true, rc, out),
+            RawString(ref v) => indent_aware_write(v.as_ref(), rc, out),
             Expression(ref ht) | HtmlExpression(ref ht) => {
                 let is_html_expression = matches!(self, HtmlExpression(_));
                 if is_html_expression {
@@ -827,7 +825,7 @@ impl Renderable for TemplateElement {
                         } else {
                             let rendered = context_json.value().render();
                             let output = do_escape(registry, rc, rendered);
-                            indent_aware_write(output.as_ref(), false, rc, out)
+                            indent_aware_write(output.as_ref(), rc, out)
                         }
                     }
                 } else {
