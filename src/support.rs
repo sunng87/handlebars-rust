@@ -58,15 +58,15 @@ pub mod str {
     }
 
     /// add indent for lines but last
-    pub fn with_indent(s: &str, indent: &str) -> String {
+    pub fn with_indent(s: &str, indent: &str, skip_last: bool) -> String {
         let mut output = String::new();
 
         let mut it = s.chars().peekable();
         while let Some(c) = it.next() {
             output.push(c);
-            // check if c is not the last character, we don't append
-            // indent for last line break
-            if c == '\n' && it.peek().is_some() {
+            // check if c is not the last character of last element, we don't
+            // append indent
+            if c == '\n' && (it.peek().is_some() || !skip_last) {
                 output.push_str(indent);
             }
         }

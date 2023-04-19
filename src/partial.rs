@@ -73,23 +73,23 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             local_rc.dec_partial_block_depth();
         }
 
-        let mut block_created = false;
-
+        let mut block = if let Some(parent_block) = local_rc.block() {
+            BlockContext::clone_from_parent(parent_block)
+        } else {
+            BlockContext::new()
+        };
+        block.set_partial(true);
         // create context if param given
         if let Some(base_path) = d.param(0).and_then(|p| p.context_path()) {
             // path given, update base_path
-            let mut block_inner = BlockContext::new();
-            *block_inner.base_path_mut() = base_path.to_vec();
-
-            // because block is moved here, we need another bool variable to track
-            // its status for later cleanup
-            block_created = true;
-            // clear blocks to prevent block params from parent
-            // template to be leaked into partials
-            // see `test_partial_context_issue_495` for the case.
-            local_rc.clear_blocks();
-            local_rc.push_block(block_inner);
+            *block.base_path_mut() = base_path.to_vec();
         }
+
+        // clear blocks to prevent block params from parent
+        // template to be leaked into partials
+        // see `test_partial_context_issue_495` for the case.
+        local_rc.clear_blocks();
+        local_rc.push_block(block);
 
         if !d.hash().is_empty() {
             // hash given, update base_value
@@ -98,20 +98,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
                 .iter()
                 .map(|(k, v)| (*k, v.value()))
                 .collect::<HashMap<&str, &Json>>();
-
-            // create block if we didn't (no param provided for partial expression)
-            if !block_created {
-                let block_inner = if let Some(block) = local_rc.block() {
-                    // reuse current block information, including base_path and
-                    // base_value if any
-                    block.clone()
-                } else {
-                    BlockContext::new()
-                };
-
-                local_rc.clear_blocks();
-                local_rc.push_block(block_inner);
-            }
 
             // evaluate context within current block, this includes block
             // context provided by partial expression parameter
@@ -138,9 +124,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         let result = t.render(r, ctx, &mut local_rc, out);
 
         // cleanup
-        if block_created {
-            local_rc.pop_block();
-        }
+        local_rc.pop_block();
 
         if d.template().is_some() {
             local_rc.pop_partial_block();

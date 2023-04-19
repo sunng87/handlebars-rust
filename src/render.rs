@@ -672,11 +672,13 @@ impl Renderable for Template {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
+        let elements_len = self.elements.len();
         rc.set_current_template_name(self.name.as_ref());
         let iter = self.elements.iter();
 
         for (idx, t) in iter.enumerate() {
-            t.render(registry, ctx, rc, out).map_err(|mut e| {
+            let is_last = idx == elements_len - 1;
+            render_element(t, registry, ctx, rc, out, is_last).map_err(|mut e| {
                 // add line/col number if the template has mapping data
                 if e.line_no.is_none() {
                     if let Some(&TemplateMapping(line, col)) = self.mapping.get(idx) {
@@ -706,7 +708,7 @@ impl Evaluable for Template {
         let iter = self.elements.iter();
 
         for (idx, t) in iter.enumerate() {
-            t.eval(registry, ctx, rc).map_err(|mut e| {
+            eval_element(t, registry, ctx, rc).map_err(|mut e| {
                 if e.line_no.is_none() {
                     if let Some(&TemplateMapping(line, col)) = self.mapping.get(idx) {
                         e.line_no = Some(line);
@@ -777,100 +779,100 @@ fn indent_aware_write(
     v: &str,
     rc: &mut RenderContext<'_, '_>,
     out: &mut dyn Output,
+    is_last: bool,
 ) -> Result<(), RenderError> {
     if let Some(indent) = rc.get_indent_string() {
-        out.write(support::str::with_indent(v, indent).as_ref())?;
+        dbg!(&rc);
+        let is_last_in_partial = is_last && rc.block().map(|b| b.is_partial()).unwrap_or(false);
+        out.write(support::str::with_indent(v, indent, is_last_in_partial).as_ref())?;
     } else {
         out.write(v.as_ref())?;
     }
     Ok(())
 }
 
-impl Renderable for TemplateElement {
-    fn render<'reg: 'rc, 'rc>(
-        &'rc self,
-        registry: &'reg Registry<'reg>,
-        ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
-        out: &mut dyn Output,
-    ) -> Result<(), RenderError> {
-        match self {
-            RawString(ref v) => indent_aware_write(v.as_ref(), rc, out),
-            Expression(ref ht) | HtmlExpression(ref ht) => {
-                let is_html_expression = matches!(self, HtmlExpression(_));
-                if is_html_expression {
-                    rc.set_disable_escape(true);
-                }
+fn render_element<'reg: 'rc, 'rc>(
+    el: &'rc TemplateElement,
+    registry: &'reg Registry<'reg>,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg, 'rc>,
+    out: &mut dyn Output,
+    is_last: bool,
+) -> Result<(), RenderError> {
+    match el {
+        RawString(ref v) => indent_aware_write(v.as_ref(), rc, out, is_last),
+        Expression(ref ht) | HtmlExpression(ref ht) => {
+            let is_html_expression = matches!(el, HtmlExpression(_));
+            if is_html_expression {
+                rc.set_disable_escape(true);
+            }
 
-                // test if the expression is to render some value
-                let result = if ht.is_name_only() {
-                    let helper_name = ht.name.expand_as_name(registry, ctx, rc)?;
-                    if helper_exists(&helper_name, registry, rc) {
-                        render_helper(ht, registry, ctx, rc, out)
-                    } else {
-                        debug!("Rendering value: {:?}", ht.name);
-                        let context_json = ht.name.expand(registry, ctx, rc)?;
-                        if context_json.is_value_missing() {
-                            if registry.strict_mode() {
-                                Err(RenderError::strict_error(context_json.relative_path()))
-                            } else {
-                                // helper missing
-                                if let Some(hook) = registry.get_or_load_helper(HELPER_MISSING)? {
-                                    let h = Helper::try_from_template(ht, registry, ctx, rc)?;
-                                    hook.call(&h, registry, ctx, rc, out)
-                                } else {
-                                    Ok(())
-                                }
-                            }
-                        } else {
-                            let rendered = context_json.value().render();
-                            let output = do_escape(registry, rc, rendered);
-                            indent_aware_write(output.as_ref(), rc, out)
-                        }
-                    }
-                } else {
-                    // this is a helper expression
+            // test if the expression is to render some value
+            let result = if ht.is_name_only() {
+                let helper_name = ht.name.expand_as_name(registry, ctx, rc)?;
+                if helper_exists(&helper_name, registry, rc) {
                     render_helper(ht, registry, ctx, rc, out)
-                };
-
-                if is_html_expression {
-                    rc.set_disable_escape(false);
+                } else {
+                    debug!("Rendering value: {:?}", ht.name);
+                    let context_json = ht.name.expand(registry, ctx, rc)?;
+                    if context_json.is_value_missing() {
+                        if registry.strict_mode() {
+                            Err(RenderError::strict_error(context_json.relative_path()))
+                        } else {
+                            // helper missing
+                            if let Some(hook) = registry.get_or_load_helper(HELPER_MISSING)? {
+                                let h = Helper::try_from_template(ht, registry, ctx, rc)?;
+                                hook.call(&h, registry, ctx, rc, out)
+                            } else {
+                                Ok(())
+                            }
+                        }
+                    } else {
+                        let rendered = context_json.value().render();
+                        let output = do_escape(registry, rc, rendered);
+                        indent_aware_write(output.as_ref(), rc, out, is_last)
+                    }
                 }
+            } else {
+                // this is a helper expression
+                render_helper(ht, registry, ctx, rc, out)
+            };
 
-                result
+            if is_html_expression {
+                rc.set_disable_escape(false);
             }
-            HelperBlock(ref ht) => render_helper(ht, registry, ctx, rc, out),
-            DecoratorExpression(_) | DecoratorBlock(_) => self.eval(registry, ctx, rc),
-            PartialExpression(ref dt) | PartialBlock(ref dt) => {
-                let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
 
-                partial::expand_partial(&di, registry, ctx, rc, out)
-            }
-            _ => Ok(()),
+            result
         }
+        HelperBlock(ref ht) => render_helper(ht, registry, ctx, rc, out),
+        DecoratorExpression(_) | DecoratorBlock(_) => eval_element(el, registry, ctx, rc),
+        PartialExpression(ref dt) | PartialBlock(ref dt) => {
+            let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
+
+            partial::expand_partial(&di, registry, ctx, rc, out)
+        }
+        _ => Ok(()),
     }
 }
 
-impl Evaluable for TemplateElement {
-    fn eval<'reg: 'rc, 'rc>(
-        &'rc self,
-        registry: &'reg Registry<'reg>,
-        ctx: &'rc Context,
-        rc: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<(), RenderError> {
-        match *self {
-            DecoratorExpression(ref dt) | DecoratorBlock(ref dt) => {
-                let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
-                match registry.get_decorator(di.name()) {
-                    Some(d) => d.call(&di, registry, ctx, rc),
-                    None => Err(RenderError::new(format!(
-                        "Decorator not defined: {:?}",
-                        dt.name
-                    ))),
-                }
+fn eval_element<'reg: 'rc, 'rc>(
+    el: &'rc TemplateElement,
+    registry: &'reg Registry<'reg>,
+    ctx: &'rc Context,
+    rc: &mut RenderContext<'reg, 'rc>,
+) -> Result<(), RenderError> {
+    match el {
+        DecoratorExpression(ref dt) | DecoratorBlock(ref dt) => {
+            let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
+            match registry.get_decorator(di.name()) {
+                Some(d) => d.call(&di, registry, ctx, rc),
+                None => Err(RenderError::new(format!(
+                    "Decorator not defined: {:?}",
+                    dt.name
+                ))),
             }
-            _ => Ok(()),
         }
+        _ => Ok(()),
     }
 }
 
@@ -878,7 +880,7 @@ impl Evaluable for TemplateElement {
 mod test {
     use std::collections::BTreeMap;
 
-    use super::{Helper, RenderContext, Renderable};
+    use super::*;
     use crate::block::BlockContext;
     use crate::context::Context;
     use crate::error::RenderError;
@@ -886,7 +888,6 @@ mod test {
     use crate::json::value::JsonRender;
     use crate::output::{Output, StringOutput};
     use crate::registry::Registry;
-    use crate::template::TemplateElement::*;
     use crate::template::{HelperTemplate, Template, TemplateElement};
 
     #[test]
@@ -898,7 +899,9 @@ mod test {
         let ctx = Context::null();
         {
             let mut rc = RenderContext::new(None);
-            raw_string.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+            render_element(&raw_string, &r, &ctx, &mut rc, &mut out, false)
+                .ok()
+                .unwrap();
         }
         assert_eq!(
             out.into_string().unwrap(),
@@ -920,7 +923,9 @@ mod test {
         let ctx = Context::wraps(&m).unwrap();
         {
             let mut rc = RenderContext::new(None);
-            element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+            render_element(&element, &r, &ctx, &mut rc, &mut out, false)
+                .ok()
+                .unwrap();
         }
 
         assert_eq!(
@@ -943,7 +948,9 @@ mod test {
         let ctx = Context::wraps(&m).unwrap();
         {
             let mut rc = RenderContext::new(None);
-            element.render(&r, &ctx, &mut rc, &mut out).ok().unwrap();
+            render_element(&element, &r, &ctx, &mut rc, &mut out, false)
+                .ok()
+                .unwrap();
         }
 
         assert_eq!(out.into_string().unwrap(), value.to_string());
