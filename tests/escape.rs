@@ -27,17 +27,42 @@ fn test_string_no_escape_422() {
     handlebars_helper!(replace: |input: str, from: str, to: str| {
         input.replace(from, to)
     });
+    handlebars_helper!(echo: |input: str| {
+        input
+    });
     hbs.register_helper("replace", Box::new(replace));
+    hbs.register_helper("echo", Box::new(echo));
 
     assert_eq!(
         r#"some\ path"#,
         hbs.render_template(r#"{{replace "some/path" "/" "\\ " }}"#, &())
             .unwrap()
     );
+    assert_eq!(
+        r#"some\ path"#,
+        hbs.render_template(r#"{{replace 'some/path' '/' '\\ ' }}"#, &())
+            .unwrap()
+    );
 
     assert_eq!(
         r#"some\path"#,
         hbs.render_template(r#"{{replace "some/path" "/" "\\" }}"#, &())
+            .unwrap()
+    );
+    assert_eq!(
+        r#"some\path"#,
+        hbs.render_template(r#"{{replace 'some/path' '/' '\\' }}"#, &())
+            .unwrap()
+    );
+
+    assert_eq!(
+        r#"double-quoted \ &#x27;with&#x27; &quot;nesting&quot;"#,
+        hbs.render_template(r#"{{echo "double-quoted \\ 'with' \"nesting\""}}"#, &())
+            .unwrap()
+    );
+    assert_eq!(
+        r#"single-quoted \ &#x27;with&#x27; &quot;nesting&quot;"#,
+        hbs.render_template(r#"{{echo 'single-quoted \\ \'with\' "nesting"'}}"#, &())
             .unwrap()
     );
 }
