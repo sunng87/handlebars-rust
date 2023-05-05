@@ -303,7 +303,7 @@ impl Template {
                             string_inner_single_quote
                                 .as_str()
                                 .replace("\\'", "'")
-                                .replace("\"", "\\\"")
+                                .replace('"', "\\\"")
                         );
                         Parameter::Literal(Json::from_str(&double_quoted).unwrap())
                     }
