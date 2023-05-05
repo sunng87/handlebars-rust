@@ -291,21 +291,23 @@ impl Template {
                 // Parse the parameter as a JSON literal
                 let param_literal = it.next().unwrap();
                 match param_literal.as_rule() {
-                    Rule::string_literal if it.peek().unwrap().as_rule() == Rule::string_inner_single_quote => {
+                    Rule::string_literal
+                        if it.peek().unwrap().as_rule() == Rule::string_inner_single_quote =>
+                    {
                         // ...unless the parameter is a single-quoted string.
                         // In that case, transform it to a double-quoted string
                         // and then parse it as a JSON literal.
                         let string_inner_single_quote = it.next().unwrap();
                         let double_quoted = format!(
                             "\"{}\"",
-                            string_inner_single_quote.as_str()
+                            string_inner_single_quote
+                                .as_str()
                                 .replace("\\'", "'")
-                                .replace("\"", "\\\""));
+                                .replace("\"", "\\\"")
+                        );
                         Parameter::Literal(Json::from_str(&double_quoted).unwrap())
                     }
-                    _ => {
-                        Parameter::Literal(Json::from_str(param_span.as_str()).unwrap())
-                    }
+                    _ => Parameter::Literal(Json::from_str(param_span.as_str()).unwrap()),
                 }
             }
             Rule::subexpression => {

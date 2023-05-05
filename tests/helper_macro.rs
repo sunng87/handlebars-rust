@@ -106,5 +106,4 @@ fn test_macro_helper() {
         hbs.render_template("{{tag 'html'}}", &()).unwrap(),
         "&lt;html&gt;"
     );
-
 }
