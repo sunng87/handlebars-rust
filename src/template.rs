@@ -290,7 +290,7 @@ impl Template {
             Rule::literal => {
                 // Parse the parameter as a JSON literal
                 let param_literal = it.next().unwrap();
-                match param_literal.as_rule() {
+                let json_result = match param_literal.as_rule() {
                     Rule::string_literal
                         if it.peek().unwrap().as_rule() == Rule::string_inner_single_quote =>
                     {
@@ -305,9 +305,16 @@ impl Template {
                                 .replace("\\'", "'")
                                 .replace('"', "\\\"")
                         );
-                        Parameter::Literal(Json::from_str(&double_quoted).unwrap())
+                        Json::from_str(&double_quoted)
                     }
-                    _ => Parameter::Literal(Json::from_str(param_span.as_str()).unwrap()),
+                    _ => Json::from_str(param_span.as_str()),
+                };
+                if let Ok(json) = json_result {
+                    Parameter::Literal(json)
+                } else {
+                    return Err(TemplateError::of(TemplateErrorReason::InvalidParam(
+                        param_span.as_str().to_owned(),
+                    )));
                 }
             }
             Rule::subexpression => {
