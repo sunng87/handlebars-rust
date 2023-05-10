@@ -1,5 +1,10 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.6...Unreleased) - ReleaseDate
+
+* [Fixed] Use full quanlified name of `Result` in `handlebars_helper` macro [#578]
+* [Fixed] Allow single-quote JSON literal [#577]
+
 ## [4.3.6](https://github.com/sunng87/handlebars-rust/compare/4.3.5...4.3.6) - 2022-12-21
 
 * [Fixed] Loading template files with multiple extensions, a bug introduced in
