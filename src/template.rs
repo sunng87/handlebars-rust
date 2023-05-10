@@ -288,11 +288,33 @@ impl Template {
                 Parameter::Path(Path::new(param_span.as_str(), path_segs))
             }
             Rule::literal => {
-                let s = param_span.as_str();
-                if let Ok(json) = Json::from_str(s) {
+                // Parse the parameter as a JSON literal
+                let param_literal = it.next().unwrap();
+                let json_result = match param_literal.as_rule() {
+                    Rule::string_literal
+                        if it.peek().unwrap().as_rule() == Rule::string_inner_single_quote =>
+                    {
+                        // ...unless the parameter is a single-quoted string.
+                        // In that case, transform it to a double-quoted string
+                        // and then parse it as a JSON literal.
+                        let string_inner_single_quote = it.next().unwrap();
+                        let double_quoted = format!(
+                            "\"{}\"",
+                            string_inner_single_quote
+                                .as_str()
+                                .replace("\\'", "'")
+                                .replace('"', "\\\"")
+                        );
+                        Json::from_str(&double_quoted)
+                    }
+                    _ => Json::from_str(param_span.as_str()),
+                };
+                if let Ok(json) = json_result {
                     Parameter::Literal(json)
                 } else {
-                    Parameter::Name(s.to_owned())
+                    return Err(TemplateError::of(TemplateErrorReason::InvalidParam(
+                        param_span.as_str().to_owned(),
+                    )));
                 }
             }
             Rule::subexpression => {
