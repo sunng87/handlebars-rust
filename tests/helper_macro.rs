@@ -100,5 +100,10 @@ fn test_macro_helper() {
         )
         .unwrap(),
         "false"
-    )
+    );
+
+    assert_eq!(
+        hbs.render_template("{{tag 'html'}}", &()).unwrap(),
+        "&lt;html&gt;"
+    );
 }
