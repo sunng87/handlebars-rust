@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.6...Unreleased) - ReleaseDate
+## [4.3.7](https://github.com/sunng87/handlebars-rust/compare/4.3.6...4.3.7) - 2023-05-11
 
 * [Fixed] Use full quanlified name of `Result` in `handlebars_helper` macro [#578]
 * [Fixed] Allow single-quote JSON literal [#577]
