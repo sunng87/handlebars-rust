@@ -57,7 +57,7 @@ mod test {
 
         let ctx = Context::null();
         let mut rc = RenderContext::new(None);
-        t0.elements[0].eval(&hbs, &ctx, &mut rc).unwrap();
+        t0.eval(&hbs, &ctx, &mut rc).unwrap();
 
         assert!(rc.get_partial(&"hello".to_owned()).is_some());
     }

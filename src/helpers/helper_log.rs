@@ -46,7 +46,7 @@ impl HelperDef for LogHelper {
         if let Ok(log_level) = Level::from_str(level) {
             log!(log_level, "{}", param_to_log)
         } else {
-            return Err(RenderError::new(&format!(
+            return Err(RenderError::new(format!(
                 "Unsupported logging level {}",
                 level
             )));

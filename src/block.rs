@@ -66,12 +66,21 @@ pub struct BlockContext<'rc> {
     block_params: BlockParams<'rc>,
     /// local variables in current context
     local_variables: LocalVars,
+    /// the block is a partial include
+    partial: bool,
 }
 
 impl<'rc> BlockContext<'rc> {
     /// create a new `BlockContext` with default data
     pub fn new() -> BlockContext<'rc> {
         BlockContext::default()
+    }
+
+    /// Copy everything from parent except partial
+    pub fn clone_from_parent(parent: &BlockContext<'rc>) -> BlockContext<'rc> {
+        let mut child = parent.clone();
+        child.partial = false;
+        child
     }
 
     /// set a local variable into current scope
@@ -127,5 +136,15 @@ impl<'rc> BlockContext<'rc> {
     /// Set a block parameter into this block.
     pub fn set_block_params(&mut self, block_params: BlockParams<'rc>) {
         self.block_params = block_params;
+    }
+
+    /// Set the block as a partial block
+    pub fn set_partial(&mut self, partial: bool) {
+        self.partial = partial;
+    }
+
+    /// Test if the block is a partial block
+    pub fn is_partial(&self) -> bool {
+        self.partial
     }
 }
