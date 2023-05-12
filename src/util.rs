@@ -1,3 +1,5 @@
+use smartstring::alias::String as LazyCompactString;
+
 #[inline]
 pub(crate) fn copy_on_push_vec<T>(input: &[T], el: T) -> Vec<T>
 where
@@ -10,8 +12,8 @@ where
 }
 
 #[inline]
-pub(crate) fn extend(base: &mut Vec<String>, slice: &[String]) {
+pub(crate) fn extend(base: &mut Vec<LazyCompactString>, slice: &[LazyCompactString]) {
     for i in slice {
-        base.push(i.to_owned());
+        base.push(i.clone());
     }
 }
