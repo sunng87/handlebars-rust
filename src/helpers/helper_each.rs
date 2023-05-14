@@ -10,6 +10,7 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
 use crate::util::copy_on_push_vec;
+use crate::RenderErrorReason;
 
 fn update_block_context(
     block: &mut BlockContext<'_>,
@@ -72,9 +73,7 @@ impl HelperDef for EachHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let value = h
-            .param(0)
-            .ok_or_else(|| RenderError::new("Param not found for helper \"each\""))?;
+        let value = h.param(0).ok_or_else(|| RenderErrorReason::ParamNotFound)?;
 
         let template = h.template();
 

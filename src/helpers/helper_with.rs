@@ -7,6 +7,7 @@ use crate::json::value::JsonTruthy;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
+use crate::RenderErrorReason;
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
@@ -20,9 +21,7 @@ impl HelperDef for WithHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let param = h
-            .param(0)
-            .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
+        let param = h.param(0).ok_or_else(|| RenderErrorReason::ParamNotFound)?;
 
         if param.value().is_truthy(false) {
             let mut block = create_block(param);

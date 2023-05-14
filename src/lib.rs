@@ -287,7 +287,7 @@
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
 //!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output| -> HelperResult {
-//!           let param = h.param(0).ok_or(RenderError::new("param not found"))?;
+//!           let param = h.param(0).ok_or(RenderErrorReason::ParamNotFound)?;
 //!
 //!           out.write("3rd helper: ")?;
 //!           out.write(param.value().render().as_ref())?;

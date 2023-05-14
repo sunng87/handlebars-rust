@@ -1,12 +1,12 @@
 use crate::context::Context;
-#[cfg(not(feature = "no_logging"))]
-use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 #[cfg(not(feature = "no_logging"))]
 use crate::json::value::JsonRender;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
+#[cfg(not(feature = "no_logging"))]
+use crate::RenderErrorReason;
 #[cfg(not(feature = "no_logging"))]
 use log::Level;
 #[cfg(not(feature = "no_logging"))]
@@ -46,10 +46,7 @@ impl HelperDef for LogHelper {
         if let Ok(log_level) = Level::from_str(level) {
             log!(log_level, "{}", param_to_log)
         } else {
-            return Err(RenderError::new(&format!(
-                "Unsupported logging level {}",
-                level
-            )));
+            return Err(RenderErrorReason::InvalidLoggingLevel(level.to_string()).into());
         }
         Ok(())
     }

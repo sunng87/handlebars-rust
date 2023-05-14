@@ -75,22 +75,29 @@ impl From<TemplateError> for RenderError {
 /// Template rendering error
 #[derive(Debug, Error)]
 pub enum RenderErrorReason {
-    #[error("missing variable path {0:?}")]
+    #[error("Failed to access variable in strict mode {0:?}")]
     MissingVariable(Option<String>),
-    #[error("partial not found {0}")]
+    #[error("Partial not found {0}")]
     PartialNotFound(String),
+    #[error("Helper not found {0}")]
+    HelperNotFound(String),
+    #[error("Helper param required but not found")]
+    ParamNotFound,
+    #[error("Decorator not found {0}")]
+    DecoratorNotFound(String),
+    #[error("Can not include current template in partial")]
+    CannotIncludeSelf,
+    #[error("Invalid logging level: {0}")]
+    InvalidLoggingLevel(String),
+    #[error("Invalid param type, {0} expected")]
+    InvalidParamType(&'static str),
+    #[error("Block content required")]
+    BlockContentRequired,
 }
 
 impl From<RenderErrorReason> for RenderError {
     fn from(e: RenderErrorReason) -> RenderError {
-        match e {
-            RenderErrorReason::MissingVariable(_) => {
-                RenderError::from_error("Failed to access variable in strict mode.", e)
-            }
-            RenderErrorReason::PartialNotFound(_) => {
-                RenderError::from_error("Partial not found.", e)
-            }
-        }
+        RenderError::from_error(&e.to_string(), e)
     }
 }
 

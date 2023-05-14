@@ -50,7 +50,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
     let tname = d.name();
     if rc.is_current_template(tname) {
-        return Err(RenderError::new("Cannot include self in >"));
+        return Err(RenderErrorReason::CannotIncludeSelf.into());
     }
 
     let partial = find_partial(rc, r, d, tname)?;
