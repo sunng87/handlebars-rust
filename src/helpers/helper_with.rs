@@ -21,7 +21,7 @@ impl HelperDef for WithHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let param = h.param(0).ok_or_else(|| RenderErrorReason::ParamNotFound)?;
+        let param = h.param(0).ok_or(RenderErrorReason::ParamNotFound)?;
 
         if param.value().is_truthy(false) {
             let mut block = create_block(param);

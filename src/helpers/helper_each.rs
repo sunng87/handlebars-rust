@@ -73,7 +73,7 @@ impl HelperDef for EachHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let value = h.param(0).ok_or_else(|| RenderErrorReason::ParamNotFound)?;
+        let value = h.param(0).ok_or(RenderErrorReason::ParamNotFound)?;
 
         let template = h.template();
 

@@ -19,8 +19,8 @@ impl HelperDef for LookupHelper {
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
     ) -> Result<ScopedJson<'rc>, RenderError> {
-        let collection_value = h.param(0).ok_or_else(|| RenderErrorReason::ParamNotFound)?;
-        let index = h.param(1).ok_or_else(|| RenderErrorReason::ParamNotFound)?;
+        let collection_value = h.param(0).ok_or(RenderErrorReason::ParamNotFound)?;
+        let index = h.param(1).ok_or(RenderErrorReason::ParamNotFound)?;
 
         let value = match *collection_value.value() {
             Json::Array(ref v) => index.value().as_u64().and_then(|u| v.get(u as usize)),

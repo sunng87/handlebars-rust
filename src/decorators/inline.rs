@@ -31,7 +31,7 @@ impl DecoratorDef for InlineDecorator {
 
         let template = d
             .template()
-            .ok_or_else(|| RenderErrorReason::BlockContentRequired)?;
+            .ok_or(RenderErrorReason::BlockContentRequired)?;
 
         rc.set_partial(name, template);
         Ok(())

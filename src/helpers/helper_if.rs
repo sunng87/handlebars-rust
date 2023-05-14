@@ -20,7 +20,7 @@ impl HelperDef for IfHelper {
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        let param = h.param(0).ok_or_else(|| RenderErrorReason::ParamNotFound)?;
+        let param = h.param(0).ok_or(RenderErrorReason::ParamNotFound)?;
         let include_zero = h
             .hash_get("includeZero")
             .and_then(|v| v.value().as_bool())
