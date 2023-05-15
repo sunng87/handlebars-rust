@@ -7,10 +7,9 @@ fn ifcond<'reg, 'rc>(
     render_ctx: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    let cond = h
-        .param(0)
-        .and_then(|ref v| v.value().as_bool())
-        .ok_or(RenderError::new("Ifcond takes a boolean !"))? as bool;
+    let cond = h.param(0).and_then(|ref v| v.value().as_bool()).ok_or(
+        RenderErrorReason::ParamTypeMismatchForName("ifcond", "0".to_owned(), "bool".to_owned()),
+    )? as bool;
     let temp = if cond { h.template() } else { h.inverse() };
     match temp {
         Some(t) => t.render(handle, ctx, render_ctx, out),
