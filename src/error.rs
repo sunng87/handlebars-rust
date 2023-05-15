@@ -128,6 +128,7 @@ impl From<ScriptError> for RenderError {
 }
 
 impl RenderError {
+    #[deprecated(since = "5.0.0", note = "Use RenderErrorReason instead")]
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
         RenderError {
             desc: desc.as_ref().to_owned(),
@@ -150,10 +151,11 @@ impl RenderError {
     where
         E: StdError + Send + Sync + 'static,
     {
-        let mut e = RenderError::new(error_info);
-        e.cause = Some(Box::new(cause));
-
-        e
+        RenderError {
+            desc: error_info.to_owned(),
+            cause: Some(Box::new(cause)),
+            ..Default::default()
+        }
     }
 
     #[inline]
