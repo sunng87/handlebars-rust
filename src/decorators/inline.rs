@@ -10,7 +10,7 @@ pub struct InlineDecorator;
 
 fn get_name<'reg: 'rc, 'rc>(d: &Decorator<'rc>) -> Result<String, RenderError> {
     d.param(0)
-        .ok_or_else(|| RenderErrorReason::ParamNotFound.into())
+        .ok_or_else(|| RenderErrorReason::ParamNotFoundForIndex("inline", 0).into())
         .and_then(|v| {
             v.value()
                 .as_str()

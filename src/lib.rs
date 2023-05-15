@@ -254,7 +254,7 @@
 //! ```
 //! use std::io::Write;
 //! # use std::error::Error;
-//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult, Output, RenderError};
+//! use handlebars::*;
 //!
 //! // implement by a structure impls HelperDef
 //! #[derive(Clone, Copy)]
@@ -287,7 +287,8 @@
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
 //!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output| -> HelperResult {
-//!           let param = h.param(0).ok_or(RenderErrorReason::ParamNotFound)?;
+//!           let param =
+//!           h.param(0).ok_or(RenderErrorReason::ParamNotFoundForIndex("closure-helper", 0))?;
 //!
 //!           out.write("3rd helper: ")?;
 //!           out.write(param.value().render().as_ref())?;

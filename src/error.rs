@@ -75,14 +75,22 @@ impl From<TemplateError> for RenderError {
 /// Template rendering error
 #[derive(Debug, Error)]
 pub enum RenderErrorReason {
+    #[error("Template not found {0}")]
+    TemplateNotFound(String),
     #[error("Failed to access variable in strict mode {0:?}")]
     MissingVariable(Option<String>),
     #[error("Partial not found {0}")]
     PartialNotFound(String),
     #[error("Helper not found {0}")]
     HelperNotFound(String),
-    #[error("Helper param required but not found")]
-    ParamNotFound,
+    #[error("Helper/Decorator {0} param at index {1} required but not found")]
+    ParamNotFoundForIndex(&'static str, usize),
+    #[error("Helper/Decorator {0} param with name {1} required but not found")]
+    ParamNotFoundForName(&'static str, String),
+    #[error("Helper/Decorator {0} param with name {1} type mismatch for {2}")]
+    ParamTypeMismatchForName(&'static str, String, String),
+    #[error("Helper/Decorator {0} hash with name {1} type mismatch for {2}")]
+    HashTypeMismatchForName(&'static str, String, String),
     #[error("Decorator not found {0}")]
     DecoratorNotFound(String),
     #[error("Can not include current template in partial")]
@@ -93,6 +101,10 @@ pub enum RenderErrorReason {
     InvalidParamType(&'static str),
     #[error("Block content required")]
     BlockContentRequired,
+    #[error("Invalid json path {0}")]
+    InvalidJsonPath(String),
+    #[error("{0}")]
+    Other(String),
 }
 
 impl From<RenderErrorReason> for RenderError {

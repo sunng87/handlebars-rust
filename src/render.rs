@@ -367,7 +367,7 @@ impl<'reg: 'rc, 'rc> Helper<'rc> {
     ///
     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
     ///     let v = h.param(0).map(|v| v.value())
-    ///         .ok_or(RenderErrorReason::ParamNotFound);
+    ///         .ok_or(RenderErrorReason::ParamNotFoundForIndex("myhelper", 0));
     ///     // ..
     ///     Ok(())
     /// }
@@ -394,7 +394,7 @@ impl<'reg: 'rc, 'rc> Helper<'rc> {
     ///
     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
     ///     let v = h.hash_get("v").map(|v| v.value())
-    ///         .ok_or(RenderErrorReason::ParamNotFound);
+    ///         .ok_or(RenderErrorReason::ParamNotFoundForIndex("my_helper", 0));
     ///     // ..
     ///     Ok(())
     /// }

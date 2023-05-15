@@ -18,6 +18,7 @@ use crate::render::{RenderContext, Renderable};
 use crate::sources::{FileSource, Source};
 use crate::support::str::{self, StringWriter};
 use crate::template::{Template, TemplateOptions};
+use crate::RenderErrorReason;
 
 #[cfg(feature = "dir_source")]
 use walkdir::WalkDir;
@@ -521,7 +522,7 @@ impl<'reg> Registry<'reg> {
         if let Some(result) = self.get_or_load_template_optional(name) {
             result
         } else {
-            Err(RenderError::new(format!("Template not found: {name}")))
+            Err(RenderErrorReason::TemplateNotFound(name.to_owned()).into())
         }
     }
 
