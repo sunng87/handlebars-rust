@@ -8,7 +8,8 @@ use std::error::Error;
 use serde_json::value::{Map, Value as Json};
 
 use handlebars::{
-    to_json, Context, Decorator, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError,
+    to_json, Context, Decorator, Handlebars, Helper, JsonRender, Output, RenderContext,
+    RenderError, RenderErrorReason,
 };
 
 // default format helper
@@ -22,7 +23,7 @@ fn format_helper(
     // get parameter from helper or throw an error
     let param = h
         .param(0)
-        .ok_or(RenderError::new("Param 0 is required for format helper."))?;
+        .ok_or(RenderErrorReason::ParamNotFoundForIndex("format", 0))?;
     write!(out, "{} pts", param.value().render())?;
     Ok(())
 }
@@ -49,7 +50,7 @@ fn format_decorator(
                 // get parameter from helper or throw an error
                 let param = h
                     .param(0)
-                    .ok_or(RenderError::new("Param 0 is required for format helper."))?;
+                    .ok_or(RenderErrorReason::ParamNotFoundForIndex("format", 0))?;
                 write!(out, "{} {}", param.value().render(), suffix)?;
                 Ok(())
             },
@@ -80,7 +81,7 @@ fn set_decorator(
         rc.set_context(Context::wraps(new_ctx_data)?);
         Ok(())
     } else {
-        Err(RenderError::new("Cannot extend non-object data"))
+        Err(RenderErrorReason::Other("Cannot extend non-object data".to_owned()).into())
     }
 }
 
@@ -92,19 +93,18 @@ fn rank_helper(
     _: &mut RenderContext,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    let rank = h
-        .param(0)
-        .and_then(|v| v.value().as_u64())
-        .ok_or(RenderError::new(
-            "Param 0 with u64 type is required for rank helper.",
-        ))? as usize;
+    let rank = h.param(0).and_then(|v| v.value().as_u64()).ok_or(
+        RenderErrorReason::ParamTypeMismatchForName("rank", "0".to_string(), "u64".to_string()),
+    )? as usize;
     let total = h
         .param(1)
         .as_ref()
         .and_then(|v| v.value().as_array())
         .map(|arr| arr.len())
-        .ok_or(RenderError::new(
-            "Param 1 with array type is required for rank helper",
+        .ok_or(RenderErrorReason::ParamTypeMismatchForName(
+            "rank",
+            "1".to_string(),
+            "array".to_string(),
         ))?;
     if rank == 0 {
         out.write("champion")?;

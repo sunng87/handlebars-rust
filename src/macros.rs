@@ -66,18 +66,10 @@ macro_rules! handlebars_helper {
                                 Some(x.value())
                             }
                         })
-                        .ok_or_else(|| $crate::RenderError::new(&format!(
-                            "`{}` helper: Couldn't read parameter {}",
-                            stringify!($struct_name), stringify!($name),
-                        )))
+                        .ok_or_else(|| $crate::RenderErrorReason::ParamNotFoundForName(stringify!($struct_name), stringify!($name).to_string()))
                         .and_then(|x|
                                   handlebars_helper!(@as_json_value x, $tpe$(<$($gen),+>)?)
-                                  .ok_or_else(|| $crate::RenderError::new(&format!(
-                                      "`{}` helper: Couldn't convert parameter {} to type `{}`. \
-                                       It's {:?} as JSON. Got these params: {:?}",
-                                      stringify!($struct_name), stringify!($name), stringify!($tpe$(<$($gen),+>)?),
-                                      x, h.params(),
-                                  )))
+                                  .ok_or_else(|| $crate::RenderErrorReason::ParamTypeMismatchForName(stringify!($struct_name), stringify!($name).to_string(), stringify!($tpe$(<$($gen),+>)?).to_string()).into())
                         )?;
                     param_idx += 1;
                 )*
@@ -88,12 +80,9 @@ macro_rules! handlebars_helper {
                                 .map(|x| x.value())
                                 .map(|x|
                                      handlebars_helper!(@as_json_value x, $hash_tpe)
-                                     .ok_or_else(|| $crate::RenderError::new(&format!(
-                                         "`{}` helper: Couldn't convert hash {} to type `{}`. \
-                                          It's {:?} as JSON. Got these hash: {:?}",
-                                         stringify!($struct_name), stringify!($hash_name), stringify!($hash_tpe),
-                                         x, h.hash(),
-                                     )))
+                                     .ok_or_else(|| $crate::RenderErrorReason::HashTypeMismatchForName(
+                                         stringify!($struct_name), stringify!($hash_name).to_string(), stringify!($hash_tpe).to_string()
+                                     ))
                                 )
                                 .unwrap_or_else(|| Ok($dft_val))?;
                         )*

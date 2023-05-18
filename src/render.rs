@@ -12,7 +12,6 @@ use crate::helpers::HelperDef;
 use crate::json::path::Path;
 use crate::json::value::{JsonRender, PathAndJson, ScopedJson};
 use crate::output::{Output, StringOutput};
-use crate::partial;
 use crate::registry::Registry;
 use crate::support;
 use crate::template::TemplateElement::*;
@@ -20,6 +19,7 @@ use crate::template::{
     BlockParam, DecoratorTemplate, HelperTemplate, Parameter, Template, TemplateElement,
     TemplateMapping,
 };
+use crate::{partial, RenderErrorReason};
 
 const HELPER_MISSING: &str = "helperMissing";
 const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
@@ -367,7 +367,7 @@ impl<'reg: 'rc, 'rc> Helper<'rc> {
     ///
     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
     ///     let v = h.param(0).map(|v| v.value())
-    ///         .ok_or(RenderError::new("param not found"));
+    ///         .ok_or(RenderErrorReason::ParamNotFoundForIndex("myhelper", 0));
     ///     // ..
     ///     Ok(())
     /// }
@@ -394,7 +394,7 @@ impl<'reg: 'rc, 'rc> Helper<'rc> {
     ///
     /// fn my_helper(h: &Helper, rc: &mut RenderContext) -> Result<(), RenderError> {
     ///     let v = h.hash_get("v").map(|v| v.value())
-    ///         .ok_or(RenderError::new("param not found"));
+    ///         .ok_or(RenderErrorReason::ParamNotFoundForIndex("my_helper", 0));
     ///     // ..
     ///     Ok(())
     /// }
@@ -653,7 +653,7 @@ impl Parameter {
 
                         helper
                             .ok_or_else(|| {
-                                RenderError::new(format!("Helper not defined: {:?}", ht.name))
+                                RenderErrorReason::HelperNotFound(name.to_string()).into()
                             })
                             .and_then(|d| call_helper_for_value(d.as_ref(), &h, registry, ctx, rc))
                     }
@@ -759,7 +759,7 @@ fn render_helper<'reg: 'rc, 'rc>(
         }
 
         helper
-            .ok_or_else(|| RenderError::new(format!("Helper not defined: {:?}", h.name())))
+            .ok_or_else(|| RenderErrorReason::HelperNotFound(h.name().to_owned()).into())
             .and_then(|d| d.call(&h, registry, ctx, rc, out))
     }
 }
@@ -863,10 +863,7 @@ impl Evaluable for TemplateElement {
                 let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
                 match registry.get_decorator(di.name()) {
                     Some(d) => d.call(&di, registry, ctx, rc),
-                    None => Err(RenderError::new(format!(
-                        "Decorator not defined: {:?}",
-                        dt.name
-                    ))),
+                    None => Err(RenderErrorReason::DecoratorNotFound(di.name().to_owned()).into()),
                 }
             }
             _ => Ok(()),

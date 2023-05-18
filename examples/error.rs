@@ -5,7 +5,9 @@ extern crate serde_json;
 
 use std::error::Error as StdError;
 
-use handlebars::{Context, Handlebars, Helper, Output, RenderContext, RenderError};
+use handlebars::{
+    Context, Handlebars, Helper, Output, RenderContext, RenderError, RenderErrorReason,
+};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -26,7 +28,7 @@ pub fn error_helper(
 ) -> Result<(), RenderError> {
     let param = h
         .param(0)
-        .ok_or(RenderError::new("Param 0 is required for error helper."))?;
+        .ok_or(RenderErrorReason::ParamNotFoundForIndex("error", 0))?;
     match param.value().as_str() {
         Some("db") => Err(RenderError::from_error(
             "helper error",

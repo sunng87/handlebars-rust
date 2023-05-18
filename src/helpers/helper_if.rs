@@ -1,10 +1,10 @@
 use crate::context::Context;
-use crate::error::RenderError;
 use crate::helpers::{HelperDef, HelperResult};
 use crate::json::value::JsonTruthy;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
+use crate::RenderErrorReason;
 
 #[derive(Clone, Copy)]
 pub struct IfHelper {
@@ -22,7 +22,7 @@ impl HelperDef for IfHelper {
     ) -> HelperResult {
         let param = h
             .param(0)
-            .ok_or_else(|| RenderError::new("Param not found for helper \"if\""))?;
+            .ok_or(RenderErrorReason::ParamNotFoundForIndex("if", 0))?;
         let include_zero = h
             .hash_get("includeZero")
             .and_then(|v| v.value().as_bool())

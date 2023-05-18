@@ -2,10 +2,14 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
+use std::error::Error;
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::Arc;
 
-use handlebars::{Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, ScopedJson};
+use handlebars::{
+    Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, RenderErrorReason,
+    ScopedJson,
+};
 
 #[test]
 fn test_subexpression() {
@@ -78,10 +82,13 @@ fn invalid_json_path() {
     let hbs = Handlebars::new();
 
     let error = hbs.render_template("{{x[]@this}}", &data).unwrap_err();
+    let cause = error
+        .source()
+        .unwrap()
+        .downcast_ref::<RenderErrorReason>()
+        .unwrap();
 
-    let expected = "Error rendering \"Unnamed template\" line 1, col 1: Helper not defined: \"x\"";
-
-    assert_eq!(format!("{}", error), expected);
+    assert!(matches!(cause, RenderErrorReason::HelperNotFound(_)));
 }
 
 struct MyHelper;
