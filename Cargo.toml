@@ -1,6 +1,6 @@
 [package]
 name = "handlebars"
-version = "5.0.0-beta.1"
+version = "5.0.0-beta.2"
 authors = ["Ning Sun <sunng@pm.me>"]
 description = "Handlebars templating implemented in Rust."
 license = "MIT"
