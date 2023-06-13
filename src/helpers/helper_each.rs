@@ -513,6 +513,16 @@ mod test {
     }
 
     #[test]
+    fn test_render_array_without_trailig_commas() {
+        let reg = Registry::new();
+        let template = "Array: {{array}}";
+        let input = json!({"array": [1, 2, 3]});
+        let rendered = reg.render_template(template, &input);
+
+        assert_eq!("Array: [1, 2, 3]", rendered.unwrap());
+    }
+
+    #[test]
     fn test_recursion() {
         let mut reg = Registry::new();
         assert!(reg
@@ -534,15 +544,15 @@ mod test {
             "string": "hi"
         });
         let expected_output = "(\
-            array: [42, [object], [[], ], ] (\
+            array: [42, [object], [[]]] (\
                 0: 42 (), \
                 1: [object] (wow: cool (), ), \
-                2: [[], ] (0: [] (), ), \
+                2: [[]] (0: [] (), ), \
             ), \
             object: [object] (\
                 a: [object] (\
                     b: c (), \
-                    d: [e, ] (0: e (), ), \
+                    d: [e] (0: e (), ), \
                 ), \
             ), \
             string: hi (), \
