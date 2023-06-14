@@ -117,9 +117,12 @@ impl JsonRender for Json {
             Json::Array(ref a) => {
                 let mut buf = String::new();
                 buf.push('[');
-                for i in a.iter() {
-                    buf.push_str(i.render().as_ref());
-                    buf.push_str(", ");
+                for (i, value) in a.iter().enumerate() {
+                    buf.push_str(value.render().as_ref());
+
+                    if i < a.len() - 1 {
+                        buf.push_str(", ");
+                    }
                 }
                 buf.push(']');
                 buf
