@@ -19,6 +19,7 @@ in Rust and for Rust.
 ```rust
 use handlebars::Handlebars;
 use serde_json::json;
+use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut reg = Handlebars::new();
