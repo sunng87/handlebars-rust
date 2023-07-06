@@ -1,15 +1,23 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>Handlebars rust playground</title>
-    <link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css" media="screen" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/sakura.css/css/sakura.css"
+      media="screen"
+    />
   </head>
   <body>
     <h1>Handlebars-rust Playground</h1>
-    <p>Test your handlebars template with provided JSON data,
-    using <a href="https://github.com/sunng87/handlebars-rust">handlebars-rust</a>
-    library.<p>
+    <p>
+      Test your handlebars template with provided JSON data, using
+      <a href="https://github.com/sunng87/handlebars-rust">handlebars-rust</a>
+      library.
+    </p>
+
+    <p></p>
 
     <div>
       <h2>Template</h2>
@@ -17,6 +25,11 @@
 
       <h2>Data</h2>
       <textarea id="data" rows="8">{"name": "handlebars"}</textarea>
+
+      <div>
+        <button id="share">Get Link for Share</button>
+        <p id="content-error"></p>
+      </div>
 
       <div>
         <h2>Output</h2>
@@ -33,7 +46,10 @@
       </div>
     </div>
 
-    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <noscript
+      >This page contains webassembly and javascript content, please enable
+      javascript in your browser.</noscript
+    >
     <script src="./bootstrap.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
   </body>
