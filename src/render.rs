@@ -775,7 +775,7 @@ pub(crate) fn do_escape(r: &Registry<'_>, rc: &RenderContext<'_, '_>, content: S
 #[inline]
 fn indent_aware_write(
     v: &str,
-    rc: &mut RenderContext<'_, '_>,
+    rc: &RenderContext<'_, '_>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
     if let Some(indent) = rc.get_indent_string() {
