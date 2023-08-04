@@ -30,6 +30,8 @@ use rhai::Engine;
 use crate::helpers::scripting::ScriptHelper;
 
 #[cfg(feature = "rust-embed")]
+use crate::sources::LazySource;
+#[cfg(feature = "rust-embed")]
 use rust_embed::RustEmbed;
 
 /// This type represents an *escape fn*, that is a function whose purpose it is
@@ -342,12 +344,14 @@ impl<'reg> Registry<'reg> {
 
     /// Register templates using a
     /// [RustEmbed](https://github.com/pyros2097/rust-embed) type
+    /// Calls register_embed_templates_with_extension with empty extension.
     ///
     /// File names from embed struct are used as template name.
     ///
     /// ```skip
     /// #[derive(RustEmbed)]
     /// #[folder = "templates"]
+    /// #[include = "*.hbs"]
     /// struct Assets;
     ///
     /// let mut hbs = Handlebars::new();
@@ -360,13 +364,53 @@ impl<'reg> Registry<'reg> {
     where
         E: RustEmbed,
     {
-        for item in E::iter() {
-            let file_name = item.as_ref();
-            if let Some(file) = E::get(file_name) {
-                let data = file.data;
+        self.register_embed_templates_with_extension::<E>("")
+    }
 
-                let tpl_content = String::from_utf8_lossy(data.as_ref());
-                self.register_template_string(file_name, tpl_content)?;
+    /// Register templates using a
+    /// [RustEmbed](https://github.com/pyros2097/rust-embed) type
+    /// * `tpl_extension`: the template file extension
+    ///
+    /// File names from embed struct are used as template name, but extension is stripped.
+    ///
+    /// When dev_mode enabled templates is reloaded
+    /// from embed struct everytime it's visied.
+    ///
+    /// ```skip
+    /// #[derive(RustEmbed)]
+    /// #[folder = "templates"]
+    /// struct Assets;
+    ///
+    /// let mut hbs = Handlebars::new();
+    /// hbs.register_embed_templates_with_extension::<Assets>(".hbs");
+    /// ```
+    ///
+    #[cfg(feature = "rust-embed")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "rust-embed")))]
+    pub fn register_embed_templates_with_extension<E>(
+        &mut self,
+        tpl_extension: &str,
+    ) -> Result<(), TemplateError>
+    where
+        E: RustEmbed,
+    {
+        for file_name in E::iter().filter(|x| x.ends_with(tpl_extension)) {
+            let tpl_name = file_name
+                .strip_suffix(tpl_extension)
+                .unwrap_or(&file_name)
+                .to_owned();
+            let source = LazySource::new(move || {
+                E::get(&file_name)
+                    .map(|file| file.data.to_vec())
+                    .and_then(|data| String::from_utf8(data).ok())
+            });
+            let tpl_content = source
+                .load()
+                .map_err(|e| (e, "Template load error".to_owned()))?;
+            self.register_template_string(&tpl_name, &tpl_content)?;
+
+            if self.dev_mode {
+                self.template_sources.insert(tpl_name, Arc::new(source));
             }
         }
         Ok(())
