@@ -279,9 +279,10 @@ impl<'reg> Registry<'reg> {
     /// * `tpl_extension`: the template file extension
     /// * `dir_path`: the path of directory
     ///
-    /// Hidden files and tempfile (starts with `#`) will be ignored. All registered
-    /// will use their relative name as template name. For example, when `dir_path` is
-    /// `templates/` and `tpl_extension` is `.hbs`, the file
+    /// Hidden files and tempfile (starts with `#`) will be ignored by default.
+    /// Set `hidden` to `true` to avoid ignoring hidden files.
+    /// All registered will use their relative name as template name.
+    /// For example, when `dir_path` is `templates/` and `tpl_extension` is `.hbs`, the file
     /// `templates/some/path/file.hbs` will be registered as `some/path/file`.
     ///
     /// This method is not available by default.
@@ -295,6 +296,7 @@ impl<'reg> Registry<'reg> {
         &mut self,
         tpl_extension: &str,
         dir_path: P,
+        hidden: bool,
     ) -> Result<(), TemplateError>
     where
         P: AsRef<Path>,
@@ -313,7 +315,7 @@ impl<'reg> Registry<'reg> {
                 tpl_path
                     .file_stem()
                     .map(|stem| stem.to_string_lossy())
-                    .map(|stem| !(stem.starts_with('.') || stem.starts_with('#')))
+                    .map(|stem| !((!hidden && stem.starts_with('.')) || stem.starts_with('#')))
                     .unwrap_or(false)
             })
             .filter_map(|tpl_path| {
@@ -848,7 +850,7 @@ mod test {
             let mut file4: File = File::create(&file4_path).unwrap();
             writeln!(file4, "<h1>Hallo {{world}}!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path()).unwrap();
+            r.register_templates_directory(".hbs", dir.path(), false).unwrap();
 
             assert_eq!(r.templates.len(), 3);
             assert_eq!(r.templates.contains_key("t1"), true);
@@ -878,7 +880,7 @@ mod test {
             let mut file3: File = File::create(&file3_path).unwrap();
             writeln!(file3, "<h1>Hello world!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path()).unwrap();
+            r.register_templates_directory(".hbs", dir.path(), false).unwrap();
 
             assert_eq!(r.templates.len(), 4);
             assert_eq!(r.templates.contains_key("t4"), true);
@@ -913,7 +915,7 @@ mod test {
             let mut file3: File = File::create(&file3_path).unwrap();
             writeln!(file3, "<h1>Ciao {{world}}!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path()).unwrap();
+            r.register_templates_directory(".hbs", dir.path(), false).unwrap();
 
             assert_eq!(r.templates.len(), 7);
             assert_eq!(r.templates.contains_key("french/t7"), true);
@@ -941,7 +943,7 @@ mod test {
             if !dir_path.ends_with("/") {
                 dir_path.push('/');
             }
-            r.register_templates_directory(".hbs", dir_path).unwrap();
+            r.register_templates_directory(".hbs", dir_path, false).unwrap();
 
             assert_eq!(r.templates.len(), 8);
             assert_eq!(r.templates.contains_key("t10"), true);
@@ -965,13 +967,33 @@ mod test {
             if !dir_path.ends_with("/") {
                 dir_path.push('/');
             }
-            r.register_templates_directory(".hbs.html", dir_path)
+            r.register_templates_directory(".hbs.html", dir_path, false)
                 .unwrap();
 
             assert_eq!(r.templates.len(), 1);
             assert_eq!(r.templates.contains_key("t11"), true);
 
             drop(file1);
+            dir.close().unwrap();
+        }
+
+        {
+            let dir = tempdir().unwrap();
+            let mut r = Registry::new();
+
+            assert_eq!(r.templates.len(), 0);
+
+            let file1_path = dir.path().join(".t12.hbs");
+            let mut file1: File = File::create(&file1_path).unwrap();
+            writeln!(file1, "<h1>Hello {{world}}!</h1>").unwrap();
+
+            r.register_templates_directory(".hbs", dir.path(), true).unwrap();
+
+            assert_eq!(r.templates.len(), 1);
+            assert_eq!(r.templates.contains_key(".t12"), true);
+
+            drop(file1);
+
             dir.close().unwrap();
         }
     }
