@@ -850,7 +850,8 @@ mod test {
             let mut file4: File = File::create(&file4_path).unwrap();
             writeln!(file4, "<h1>Hallo {{world}}!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path(), false).unwrap();
+            r.register_templates_directory(".hbs", dir.path(), false)
+                .unwrap();
 
             assert_eq!(r.templates.len(), 3);
             assert_eq!(r.templates.contains_key("t1"), true);
@@ -880,7 +881,8 @@ mod test {
             let mut file3: File = File::create(&file3_path).unwrap();
             writeln!(file3, "<h1>Hello world!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path(), false).unwrap();
+            r.register_templates_directory(".hbs", dir.path(), false)
+                .unwrap();
 
             assert_eq!(r.templates.len(), 4);
             assert_eq!(r.templates.contains_key("t4"), true);
@@ -915,7 +917,8 @@ mod test {
             let mut file3: File = File::create(&file3_path).unwrap();
             writeln!(file3, "<h1>Ciao {{world}}!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path(), false).unwrap();
+            r.register_templates_directory(".hbs", dir.path(), false)
+                .unwrap();
 
             assert_eq!(r.templates.len(), 7);
             assert_eq!(r.templates.contains_key("french/t7"), true);
@@ -943,7 +946,8 @@ mod test {
             if !dir_path.ends_with("/") {
                 dir_path.push('/');
             }
-            r.register_templates_directory(".hbs", dir_path, false).unwrap();
+            r.register_templates_directory(".hbs", dir_path, false)
+                .unwrap();
 
             assert_eq!(r.templates.len(), 8);
             assert_eq!(r.templates.contains_key("t10"), true);
@@ -987,7 +991,8 @@ mod test {
             let mut file1: File = File::create(&file1_path).unwrap();
             writeln!(file1, "<h1>Hello {{world}}!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path(), true).unwrap();
+            r.register_templates_directory(".hbs", dir.path(), true)
+                .unwrap();
 
             assert_eq!(r.templates.len(), 1);
             assert_eq!(r.templates.contains_key(".t12"), true);
