@@ -298,16 +298,16 @@ impl<'reg> Registry<'reg> {
     /// * `dir_path`: the path of directory
     ///
     /// Hidden files and tempfile (starts with `#`) will be ignored by default.
-    /// Set `hidden` to `true` to avoid ignoring hidden files.
-    /// All registered will use their relative name as template name.
-    /// For example, when `dir_path` is `templates/` and `tpl_extension` is `.hbs`, the file
+    /// Set `DirectorySourceOptions` to something other than `DirectorySourceOptions::default()` to adjust this.
+    /// All registered templates will use their relative path to determine their template name.
+    /// For example, when `dir_path` is `templates/` and `DirectorySourceOptions.tpl_extension` is `.hbs`, the file
     /// `templates/some/path/file.hbs` will be registered as `some/path/file`.
     ///
     /// This method is not available by default.
     /// You will need to enable the `dir_source` feature to use it.
     ///
-    /// When dev_mode enabled, like `register_template_file`, templates is reloaded
-    /// from file system everytime it's visied.
+    /// When dev_mode is enabled, like with `register_template_file`, templates are reloaded
+    /// from the file system every time they're visited.
     #[cfg(feature = "dir_source")]
     #[cfg_attr(docsrs, doc(cfg(feature = "dir_source")))]
     pub fn register_templates_directory<P>(
