@@ -337,8 +337,7 @@ impl<'reg> Registry<'reg> {
                     .file_stem()
                     .map(|stem| stem.to_string_lossy())
                     .map(|stem| {
-                        !((!options.hidden && stem.starts_with('.'))
-                            || !options.temporary && stem.starts_with('#'))
+                        (!stem.starts_with('#') || options.temporary) && (!stem.starts_with('.') || options.hidden)
                     })
                     .unwrap_or(false)
             })
