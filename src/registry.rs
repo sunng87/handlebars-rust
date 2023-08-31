@@ -100,6 +100,24 @@ fn rhai_engine() -> Engine {
     Engine::new()
 }
 
+#[cfg(feature = "dir_source")]
+pub struct DirectorySourceOptions {
+    tpl_extension: String,
+    hidden: bool,
+    temporary: bool,
+}
+
+#[cfg(feature = "dir_source")]
+impl Default for DirectorySourceOptions {
+    fn default() -> Self {
+        DirectorySourceOptions {
+            tpl_extension: ".hbs".to_owned(),
+            hidden: false,
+            temporary: false,
+        }
+    }
+}
+
 impl<'reg> Registry<'reg> {
     pub fn new() -> Registry<'reg> {
         let r = Registry {
@@ -279,22 +297,23 @@ impl<'reg> Registry<'reg> {
     /// * `tpl_extension`: the template file extension
     /// * `dir_path`: the path of directory
     ///
-    /// Hidden files and tempfile (starts with `#`) will be ignored. All registered
-    /// will use their relative name as template name. For example, when `dir_path` is
-    /// `templates/` and `tpl_extension` is `.hbs`, the file
+    /// Hidden files and tempfile (starts with `#`) will be ignored by default.
+    /// Set `DirectorySourceOptions` to something other than `DirectorySourceOptions::default()` to adjust this.
+    /// All registered templates will use their relative path to determine their template name.
+    /// For example, when `dir_path` is `templates/` and `DirectorySourceOptions.tpl_extension` is `.hbs`, the file
     /// `templates/some/path/file.hbs` will be registered as `some/path/file`.
     ///
     /// This method is not available by default.
     /// You will need to enable the `dir_source` feature to use it.
     ///
-    /// When dev_mode enabled, like `register_template_file`, templates is reloaded
-    /// from file system everytime it's visied.
+    /// When dev_mode is enabled, like with `register_template_file`, templates are reloaded
+    /// from the file system every time they're visited.
     #[cfg(feature = "dir_source")]
     #[cfg_attr(docsrs, doc(cfg(feature = "dir_source")))]
     pub fn register_templates_directory<P>(
         &mut self,
-        tpl_extension: &str,
         dir_path: P,
+        options: DirectorySourceOptions,
     ) -> Result<(), TemplateError>
     where
         P: AsRef<Path>,
@@ -307,13 +326,20 @@ impl<'reg> Registry<'reg> {
             .into_iter()
             .filter_map(|e| e.ok().map(|e| e.into_path()))
             // Checks if extension matches
-            .filter(|tpl_path| tpl_path.to_string_lossy().ends_with(tpl_extension))
+            .filter(|tpl_path| {
+                tpl_path
+                    .to_string_lossy()
+                    .ends_with(options.tpl_extension.as_str())
+            })
             // Rejects any hidden or temporary files.
             .filter(|tpl_path| {
                 tpl_path
                     .file_stem()
                     .map(|stem| stem.to_string_lossy())
-                    .map(|stem| !(stem.starts_with('.') || stem.starts_with('#')))
+                    .map(|stem| {
+                        (!stem.starts_with('#') || options.temporary)
+                            && (!stem.starts_with('.') || options.hidden)
+                    })
                     .unwrap_or(false)
             })
             .filter_map(|tpl_path| {
@@ -328,7 +354,7 @@ impl<'reg> Registry<'reg> {
                             .join("/");
 
                         tpl_name
-                            .strip_suffix(tpl_extension)
+                            .strip_suffix(options.tpl_extension.as_str())
                             .map(|s| s.to_owned())
                             .unwrap_or(tpl_name)
                     })
@@ -826,6 +852,8 @@ mod test {
     fn test_register_templates_directory() {
         use std::fs::DirBuilder;
 
+        use crate::registry::DirectorySourceOptions;
+
         let mut r = Registry::new();
         {
             let dir = tempdir().unwrap();
@@ -848,7 +876,8 @@ mod test {
             let mut file4: File = File::create(&file4_path).unwrap();
             writeln!(file4, "<h1>Hallo {{world}}!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path()).unwrap();
+            r.register_templates_directory(dir.path(), DirectorySourceOptions::default())
+                .unwrap();
 
             assert_eq!(r.templates.len(), 3);
             assert_eq!(r.templates.contains_key("t1"), true);
@@ -878,7 +907,8 @@ mod test {
             let mut file3: File = File::create(&file3_path).unwrap();
             writeln!(file3, "<h1>Hello world!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path()).unwrap();
+            r.register_templates_directory(dir.path(), DirectorySourceOptions::default())
+                .unwrap();
 
             assert_eq!(r.templates.len(), 4);
             assert_eq!(r.templates.contains_key("t4"), true);
@@ -913,7 +943,8 @@ mod test {
             let mut file3: File = File::create(&file3_path).unwrap();
             writeln!(file3, "<h1>Ciao {{world}}!</h1>").unwrap();
 
-            r.register_templates_directory(".hbs", dir.path()).unwrap();
+            r.register_templates_directory(dir.path(), DirectorySourceOptions::default())
+                .unwrap();
 
             assert_eq!(r.templates.len(), 7);
             assert_eq!(r.templates.contains_key("french/t7"), true);
@@ -941,7 +972,8 @@ mod test {
             if !dir_path.ends_with("/") {
                 dir_path.push('/');
             }
-            r.register_templates_directory(".hbs", dir_path).unwrap();
+            r.register_templates_directory(dir_path, DirectorySourceOptions::default())
+                .unwrap();
 
             assert_eq!(r.templates.len(), 8);
             assert_eq!(r.templates.contains_key("t10"), true);
@@ -965,13 +997,46 @@ mod test {
             if !dir_path.ends_with("/") {
                 dir_path.push('/');
             }
-            r.register_templates_directory(".hbs.html", dir_path)
-                .unwrap();
+            r.register_templates_directory(
+                dir_path,
+                DirectorySourceOptions {
+                    tpl_extension: ".hbs.html".to_owned(),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
 
             assert_eq!(r.templates.len(), 1);
             assert_eq!(r.templates.contains_key("t11"), true);
 
             drop(file1);
+            dir.close().unwrap();
+        }
+
+        {
+            let dir = tempdir().unwrap();
+            let mut r = Registry::new();
+
+            assert_eq!(r.templates.len(), 0);
+
+            let file1_path = dir.path().join(".t12.hbs");
+            let mut file1: File = File::create(&file1_path).unwrap();
+            writeln!(file1, "<h1>Hello {{world}}!</h1>").unwrap();
+
+            r.register_templates_directory(
+                dir.path(),
+                DirectorySourceOptions {
+                    hidden: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+            assert_eq!(r.templates.len(), 1);
+            assert_eq!(r.templates.contains_key(".t12"), true);
+
+            drop(file1);
+
             dir.close().unwrap();
         }
     }
