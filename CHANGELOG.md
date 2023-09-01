@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/4.3.7...Unreleased) - ReleaseDate
+
+* [Changed] Updated rust-embed to 8.0.0
+
 ## [4.3.7](https://github.com/sunng87/handlebars-rust/compare/4.3.6...4.3.7) - 2023-05-11
 
 * [Fixed] Use full quanlified name of `Result` in `handlebars_helper` macro [#578]
