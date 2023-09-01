@@ -8,6 +8,9 @@
 * [Changed] Updated `TemplateError` to reduce its size. Direct field access is
   removed in favor of access methods
 * [Changed] Introducing `RenderErrorReason` for typed render error
+* [Changed] Changed `register_template_directory` api for more customizations
+  #[610]
+* [Changed] Updated rust-embed to 8.0
 
 ## [4.3.4](https://github.com/sunng87/handlebars-rust/compare/4.3.3...4.3.4) - 2022-09-11
 
