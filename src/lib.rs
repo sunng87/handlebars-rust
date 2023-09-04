@@ -395,6 +395,8 @@ pub use self::json::path::Path;
 pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
 pub use self::local_vars::LocalVars;
 pub use self::output::{Output, StringOutput};
+#[cfg(feature = "dir_source")]
+pub use self::registry::DirectorySourceOptions;
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
 pub use self::render::{Decorator, Evaluable, Helper, RenderContext, Renderable};
 pub use self::template::Template;
