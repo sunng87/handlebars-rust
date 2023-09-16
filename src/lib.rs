@@ -12,7 +12,7 @@
 //! use std::collections::BTreeMap;
 //! use handlebars::Handlebars;
 //!
-//! fn main() {
+//! # fn main() {
 //!   // create the handlebars registry
 //!   let mut handlebars = Handlebars::new();
 //!
@@ -26,7 +26,7 @@
 //!   let mut data = BTreeMap::new();
 //!   data.insert("world".to_string(), "世界!".to_string());
 //!   assert_eq!(handlebars.render("t1", &data).unwrap(), "hello 世界!");
-//! }
+//! # }
 //! ```
 //!
 //! In this example, we created a template registry and registered a template named `t1`.
