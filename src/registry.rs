@@ -100,11 +100,32 @@ fn rhai_engine() -> Engine {
     Engine::new()
 }
 
+/// Options for importing template files from a directory.
 #[cfg(feature = "dir_source")]
 pub struct DirectorySourceOptions {
-    tpl_extension: String,
-    hidden: bool,
-    temporary: bool,
+    /// The name extension for template files
+    pub tpl_extension: String,
+    /// Whether to include hidden files (file name that starts with `.`)
+    pub hidden: bool,
+    /// Whether to include temporary files (file name that starts with `#`)
+    pub temporary: bool,
+}
+
+#[cfg(feature = "dir_source")]
+impl DirectorySourceOptions {
+    fn ignore_file(&self, name: &str) -> bool {
+        self.ignored_as_hidden_file(name) || self.ignored_as_temporary_file(name)
+    }
+
+    #[inline]
+    fn ignored_as_hidden_file(&self, name: &str) -> bool {
+        !self.hidden && name.starts_with('.')
+    }
+
+    #[inline]
+    fn ignored_as_temporary_file(&self, name: &str) -> bool {
+        !self.temporary && name.starts_with('#')
+    }
 }
 
 #[cfg(feature = "dir_source")]
@@ -335,11 +356,7 @@ impl<'reg> Registry<'reg> {
             .filter(|tpl_path| {
                 tpl_path
                     .file_stem()
-                    .map(|stem| stem.to_string_lossy())
-                    .map(|stem| {
-                        (!stem.starts_with('#') || options.temporary)
-                            && (!stem.starts_with('.') || options.hidden)
-                    })
+                    .map(|stem| !options.ignore_file(&stem.to_string_lossy()))
                     .unwrap_or(false)
             })
             .filter_map(|tpl_path| {
