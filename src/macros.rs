@@ -68,7 +68,7 @@ macro_rules! handlebars_helper {
                         })
                         .ok_or_else(|| $crate::RenderErrorReason::ParamNotFoundForName(stringify!($struct_name), stringify!($name).to_string()))
                         .and_then(|x|
-                                  handlebars_helper!(@as_json_value x, $tpe$(<$($gen),+>)?)
+                                  $crate::handlebars_helper!(@as_json_value x, $tpe$(<$($gen),+>)?)
                                   .ok_or_else(|| $crate::RenderErrorReason::ParamTypeMismatchForName(stringify!($struct_name), stringify!($name).to_string(), stringify!($tpe$(<$($gen),+>)?).to_string()).into())
                         )?;
                     param_idx += 1;
@@ -79,7 +79,7 @@ macro_rules! handlebars_helper {
                             let $hash_name = h.hash_get(stringify!($hash_name))
                                 .map(|x| x.value())
                                 .map(|x|
-                                     handlebars_helper!(@as_json_value x, $hash_tpe)
+                                     $crate::handlebars_helper!(@as_json_value x, $hash_tpe)
                                      .ok_or_else(|| $crate::RenderErrorReason::HashTypeMismatchForName(
                                          stringify!($struct_name), stringify!($hash_name).to_string(), stringify!($hash_tpe).to_string()
                                      ))
