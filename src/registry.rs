@@ -179,6 +179,9 @@ impl<'reg> Registry<'reg> {
         self.register_helper("not", Box::new(helpers::helper_extras::not));
         self.register_helper("len", Box::new(helpers::helper_extras::len));
 
+        #[cfg(feature = "string_helpers")]
+        self.register_string_helpers();
+
         self.register_decorator("inline", Box::new(decorators::INLINE_DECORATOR));
         self
     }
@@ -800,6 +803,24 @@ impl<'reg> Registry<'reg> {
         let ctx = Context::wraps(data)?;
         self.render_template_with_context_to_write(template_string, &ctx, writer)
     }
+
+    #[cfg(feature = "string_helpers")]
+    #[inline]
+    fn register_string_helpers(&mut self) {
+        use helpers::string_helpers::{
+            kebab_case, lower_camel_case, shouty_kebab_case, shouty_snake_case, snake_case,
+            title_case, train_case, upper_camel_case,
+        };
+
+        self.register_helper("lowerCamelCase", Box::new(lower_camel_case));
+        self.register_helper("upperCamelCase", Box::new(upper_camel_case));
+        self.register_helper("snakeCase", Box::new(snake_case));
+        self.register_helper("kebabCase", Box::new(kebab_case));
+        self.register_helper("shoutySnakeCase", Box::new(shouty_snake_case));
+        self.register_helper("shoutyKebabCase", Box::new(shouty_kebab_case));
+        self.register_helper("titleCase", Box::new(title_case));
+        self.register_helper("trainCase", Box::new(train_case));
+    }
 }
 
 #[cfg(test)]
@@ -858,9 +879,13 @@ mod test {
         let num_helpers = 7;
         let num_boolean_helpers = 10; // stuff like gt and lte
         let num_custom_helpers = 1; // dummy from above
+        #[cfg(feature = "string_helpers")]
+        let string_helpers = 8;
+        #[cfg(not(feature = "string_helpers"))]
+        let string_helpers = 0;
         assert_eq!(
             r.helpers.len(),
-            num_helpers + num_boolean_helpers + num_custom_helpers
+            num_helpers + num_boolean_helpers + num_custom_helpers + string_helpers
         );
     }
 

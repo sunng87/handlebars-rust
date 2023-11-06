@@ -366,6 +366,30 @@
 //! Handlebars.js' partial system is fully supported in this implementation.
 //! Check [example](https://github.com/sunng87/handlebars-rust/blob/master/examples/partials.rs#L49) for details.
 //!
+//! ### String (or Case) Helpers
+//!
+//! [Handlebars] supports helpers for converting string cases for example converting a value to
+//! 'camelCase or 'kebab-case' etc. This can be useful during generating code using Handlebars.
+//! This can be enabled by selecting the feature-flag `string_helpers`.  Currently the case
+//! conversions from the [`heck`](https://docs.rs/heck/latest/heck) crate are supported.
+//!
+//! ```
+//! # #[cfg(feature = "string_helpers")] {
+//! # use std::error::Error;
+//! # extern crate handlebars;
+//! use handlebars::Handlebars;
+//!
+//! # fn main() -> Result<(), Box<dyn Error>> {
+//!
+//!   let mut handlebars = Handlebars::new();
+//!
+//!   let data = serde_json::json!({"value": "lower camel case"});
+//!   assert_eq!(handlebars.render_template("This is {{lowerCamelCase value}}", &data)?,
+//!       "This is lowerCamelCase".to_owned());
+//! # Ok(())
+//! # }
+//! # }
+//! ```
 //!
 
 #![allow(dead_code, clippy::upper_case_acronyms)]
