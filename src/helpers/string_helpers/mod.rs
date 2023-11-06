@@ -19,13 +19,15 @@ use heck::{
 macro_rules! define_case_helper {
     ($helper_fn_name: ident, $heck_fn_name:ident) => {
         pub(crate) fn $helper_fn_name(
-            h: &crate::render::Helper<'_>,
+            h: &crate::render::Helper<'_, '_>,
             _: &crate::Handlebars<'_>,
             _: &crate::context::Context,
             _rc: &mut crate::render::RenderContext<'_, '_>,
             out: &mut dyn crate::output::Output,
         ) -> crate::helpers::HelperResult {
-            let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
+            let param = h.param(0).and_then(|v| v.value().as_str()).ok_or_else(|| {
+                crate::error::RenderError::new(format!("{} required string parameter", h.name()))
+            })?;
             out.write(param.$heck_fn_name().as_ref())?;
             Ok(())
         }
@@ -109,4 +111,10 @@ mod tests {
     define_case_helpers_test_cases!("titleCase", test_title_case, ("title case", "Title Case"),);
 
     define_case_helpers_test_cases!("trainCase", test_train_case, ("train case", "Train-Case"),);
+
+    #[test]
+    fn test_invlaid_input() {
+        let hbs = crate::registry::Registry::new();
+        assert!(hbs.render_template("{{snakeCase 1}}", &json!({})).is_err());
+    }
 }
