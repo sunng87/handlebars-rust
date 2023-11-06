@@ -176,6 +176,9 @@ mod helper_with;
 #[cfg(feature = "script_helper")]
 pub(crate) mod scripting;
 
+#[cfg(feature = "string_helpers")]
+pub(crate) mod string_helpers;
+
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
 // pub fn helper_dummy (ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
