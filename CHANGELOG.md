@@ -1,5 +1,10 @@
 # Change Log
 
+## {{Unreleased}}(https://github.com/sunng87/handlebars-rust/compare/4.4.0...Unreleased) - ReleaseDate
+
+* [Added] A set of optional string case helpers from @gabhijit, enabled via
+  feature `string_helpers` [#619]
+
 ## [4.4.0](https://github.com/sunng87/handlebars-rust/compare/4.3.7...4.4.0) - 2023-09-01
 
 * [Changed] Updated rust-embed to 8.0.0
