@@ -1,6 +1,6 @@
 # Change Log
 
-## {{Unreleased}}(https://github.com/sunng87/handlebars-rust/compare/4.4.0...Unreleased) - ReleaseDate
+## {{4.5.0}}(https://github.com/sunng87/handlebars-rust/compare/4.4.0...4.5.0) - 2023-11-09
 
 * [Added] A set of optional string case helpers from @gabhijit, enabled via
   feature `string_helpers` [#619]
