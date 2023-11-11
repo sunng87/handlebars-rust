@@ -25,7 +25,13 @@ macro_rules! define_case_helper {
             _rc: &mut crate::render::RenderContext<'_, '_>,
             out: &mut dyn crate::output::Output,
         ) -> crate::helpers::HelperResult {
-            let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
+            let param = h.param(0).and_then(|v| v.value().as_str()).ok_or_else(|| {
+                crate::error::RenderErrorReason::ParamTypeMismatchForName(
+                    stringify!($helper_fn_name),
+                    "0".to_owned(),
+                    "string".to_owned(),
+                )
+            })?;
             out.write(param.$heck_fn_name().as_ref())?;
             Ok(())
         }
@@ -109,4 +115,22 @@ mod tests {
     define_case_helpers_test_cases!("titleCase", test_title_case, ("title case", "Title Case"),);
 
     define_case_helpers_test_cases!("trainCase", test_train_case, ("train case", "Train-Case"),);
+
+    #[test]
+    fn test_invlaid_input() {
+        use crate::error::RenderErrorReason;
+        use std::error::Error;
+
+        let hbs = crate::registry::Registry::new();
+        let err = hbs
+            .render_template("{{snakeCase 1}}", &json!({}))
+            .unwrap_err();
+        assert!(matches!(
+            err.source()
+                .unwrap()
+                .downcast_ref::<RenderErrorReason>()
+                .unwrap(),
+            RenderErrorReason::ParamTypeMismatchForName(_, _, _)
+        ));
+    }
 }
