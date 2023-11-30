@@ -1,9 +1,8 @@
 extern crate env_logger;
 extern crate handlebars;
-#[macro_use]
-extern crate maplit;
 
 use handlebars::Handlebars;
+use serde_json::json;
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -15,14 +14,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     handlebars.register_template_file("base0", "./examples/partials/base0.hbs")?;
     handlebars.register_template_file("base1", "./examples/partials/base1.hbs")?;
 
-    let data0 = btreemap! {
-        "title".to_string() => "example 0".to_string(),
-        "parent".to_string() => "base0".to_string()
-    };
-    let data1 = btreemap! {
-        "title".to_string() => "example 1".to_string(),
-        "parent".to_string() => "base1".to_string()
-    };
+    let data0 = json!({
+        "title": "example 0",
+        "parent": "base0"
+    });
+    let data1 = json!({
+        "title": "example 1",
+        "parent": "base1"
+    });
 
     println!("Page 0");
     println!("{}", handlebars.render("template", &data0)?);

@@ -59,7 +59,7 @@ pub type DecoratorResult = Result<(), RenderError>;
 pub trait DecoratorDef {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
-        d: &Decorator<'reg, 'rc>,
+        d: &Decorator<'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -69,7 +69,7 @@ pub trait DecoratorDef {
 /// Implement DecoratorDef for bare function so we can use function as decorator
 impl<
         F: for<'reg, 'rc> Fn(
-            &Decorator<'reg, 'rc>,
+            &Decorator<'rc>,
             &'reg Registry<'reg>,
             &'rc Context,
             &mut RenderContext<'reg, 'rc>,
@@ -78,7 +78,7 @@ impl<
 {
     fn call<'reg: 'rc, 'rc>(
         &'reg self,
-        d: &Decorator<'reg, 'rc>,
+        d: &Decorator<'rc>,
         reg: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -105,16 +105,16 @@ mod test {
             .register_template_string("t0", "{{*foo}}".to_string())
             .unwrap();
 
-        let data = btreemap! {
-            "hello".to_string() => "world".to_string()
-        };
+        let data = json!({
+            "hello": "world"
+        });
 
         assert!(handlebars.render("t0", &data).is_err());
 
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |_: &Decorator<'_, '_>,
+                |_: &Decorator<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>|
@@ -132,14 +132,14 @@ mod test {
             .register_template_string("t0", "{{hello}}{{*foo}}{{hello}}".to_string())
             .unwrap();
 
-        let data = btreemap! {
-            "hello".to_string() => "world".to_string()
-        };
+        let data = json!({
+            "hello": "world"
+        });
 
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |_: &Decorator<'_, '_>,
+                |_: &Decorator<'_>,
                  _: &Registry<'_>,
                  ctx: &Context,
                  rc: &mut RenderContext<'_, '_>|
@@ -167,7 +167,7 @@ mod test {
         handlebars.register_decorator(
             "bar",
             Box::new(
-                |d: &Decorator<'_, '_>,
+                |d: &Decorator<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  rc: &mut RenderContext<'_, '_>|
@@ -224,20 +224,20 @@ mod test {
         handlebars.register_helper(
             "distance",
             Box::new(
-                |h: &Helper<'_, '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    let s = format!(
+                    write!(
+                        out,
                         "{}m",
                         h.param(0)
                             .as_ref()
                             .map(|v| v.value())
                             .unwrap_or(&to_json(0))
-                    );
-                    out.write(s.as_ref())?;
+                    )?;
                     Ok(())
                 },
             ),
@@ -245,7 +245,7 @@ mod test {
         handlebars.register_decorator(
             "foo",
             Box::new(
-                |d: &Decorator<'_, '_>,
+                |d: &Decorator<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  rc: &mut RenderContext<'_, '_>|
@@ -256,21 +256,21 @@ mod test {
                         .and_then(|v| as_string(v.value()))
                         .unwrap_or("")
                         .to_owned();
-                    let new_helper = move |h: &Helper<'_, '_>,
+                    let new_helper = move |h: &Helper<'_>,
                                            _: &Registry<'_>,
                                            _: &Context,
                                            _: &mut RenderContext<'_, '_>,
                                            out: &mut dyn Output|
                           -> Result<(), RenderError> {
-                        let s = format!(
+                        write!(
+                            out,
                             "{}{}",
                             h.param(0)
                                 .as_ref()
                                 .map(|v| v.value())
                                 .unwrap_or(&to_json(0)),
                             new_unit
-                        );
-                        out.write(s.as_ref())?;
+                        )?;
                         Ok(())
                     };
 
@@ -282,7 +282,7 @@ mod test {
         handlebars.register_decorator(
             "bar",
             Box::new(
-                |_: &Decorator<'_, '_>,
+                |_: &Decorator<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  rc: &mut RenderContext<'_, '_>|

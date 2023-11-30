@@ -3,24 +3,26 @@ use crate::decorators::{DecoratorDef, DecoratorResult};
 use crate::error::RenderError;
 use crate::registry::Registry;
 use crate::render::{Decorator, RenderContext};
+use crate::RenderErrorReason;
 
 #[derive(Clone, Copy)]
 pub struct InlineDecorator;
 
-fn get_name<'reg: 'rc, 'rc>(d: &'rc Decorator<'reg, 'rc>) -> Result<&'rc str, RenderError> {
+fn get_name<'reg: 'rc, 'rc>(d: &Decorator<'rc>) -> Result<String, RenderError> {
     d.param(0)
-        .ok_or_else(|| RenderError::new("Param required for decorator \"inline\""))
+        .ok_or_else(|| RenderErrorReason::ParamNotFoundForIndex("inline", 0).into())
         .and_then(|v| {
             v.value()
                 .as_str()
-                .ok_or_else(|| RenderError::new("inline name must be string"))
+                .map(|v| v.to_owned())
+                .ok_or_else(|| RenderErrorReason::InvalidParamType("String").into())
         })
 }
 
 impl DecoratorDef for InlineDecorator {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        d: &Decorator<'reg, 'rc>,
+        d: &Decorator<'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -29,9 +31,9 @@ impl DecoratorDef for InlineDecorator {
 
         let template = d
             .template()
-            .ok_or_else(|| RenderError::new("inline should have a block"))?;
+            .ok_or(RenderErrorReason::BlockContentRequired)?;
 
-        rc.set_partial(name.to_owned(), template);
+        rc.set_partial(name, template);
         Ok(())
     }
 }
@@ -47,11 +49,10 @@ mod test {
 
     #[test]
     fn test_inline() {
-        let t0 = Template::compile(
-            "{{#*inline \"hello\"}}the hello world inline partial.{{/inline}}".to_string(),
-        )
-        .ok()
-        .unwrap();
+        let t0 =
+            Template::compile("{{#*inline \"hello\"}}the hello world inline partial.{{/inline}}")
+                .ok()
+                .unwrap();
 
         let hbs = Registry::new();
 

@@ -57,6 +57,64 @@ pub mod str {
         output
     }
 
+    /// add indent for lines but last
+    pub fn with_indent(s: &str, indent: &str) -> String {
+        let mut output = String::new();
+
+        let mut it = s.chars().peekable();
+        while let Some(c) = it.next() {
+            output.push(c);
+            // check if c is not the last character, we don't append
+            // indent for last line break
+            if c == '\n' && it.peek().is_some() {
+                output.push_str(indent);
+            }
+        }
+
+        output
+    }
+
+    #[inline]
+    pub(crate) fn whitespace_matcher(c: char) -> bool {
+        c == ' ' || c == '\t'
+    }
+
+    #[inline]
+    pub(crate) fn newline_matcher(c: char) -> bool {
+        c == '\n' || c == '\r'
+    }
+
+    #[inline]
+    pub(crate) fn strip_first_newline(s: &str) -> &str {
+        if let Some(s) = s.strip_prefix("\r\n") {
+            s
+        } else if let Some(s) = s.strip_prefix('\n') {
+            s
+        } else {
+            s
+        }
+    }
+
+    pub(crate) fn find_trailing_whitespace_chars(s: &str) -> Option<&str> {
+        let trimmed = s.trim_end_matches(whitespace_matcher);
+        if trimmed.len() == s.len() {
+            None
+        } else {
+            Some(&s[trimmed.len()..])
+        }
+    }
+
+    pub(crate) fn ends_with_empty_line(text: &str) -> bool {
+        let s = text.trim_end_matches(whitespace_matcher);
+        // also matches when text is just whitespaces
+        s.ends_with(newline_matcher) || s.is_empty()
+    }
+
+    pub(crate) fn starts_with_empty_line(text: &str) -> bool {
+        text.trim_start_matches(whitespace_matcher)
+            .starts_with(newline_matcher)
+    }
+
     #[cfg(test)]
     mod test {
         use crate::support::str::StringWriter;

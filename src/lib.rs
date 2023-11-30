@@ -1,4 +1,5 @@
-#![doc(html_root_url = "https://docs.rs/handlebars/3.4.0")]
+#![doc(html_root_url = "https://docs.rs/handlebars/4.3.4")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 //! # Handlebars
 //!
 //! [Handlebars](http://handlebarsjs.com/) is a modern and extensible templating solution originally created in the JavaScript world. It's used by many popular frameworks like [Ember.js](http://emberjs.com) and Chaplin. It's also ported to some other platforms such as [Java](https://github.com/jknack/handlebars.java).
@@ -11,7 +12,7 @@
 //! use std::collections::BTreeMap;
 //! use handlebars::Handlebars;
 //!
-//! fn main() {
+//! # fn main() {
 //!   // create the handlebars registry
 //!   let mut handlebars = Handlebars::new();
 //!
@@ -25,7 +26,7 @@
 //!   let mut data = BTreeMap::new();
 //!   data.insert("world".to_string(), "世界!".to_string());
 //!   assert_eq!(handlebars.render("t1", &data).unwrap(), "hello 世界!");
-//! }
+//! # }
 //! ```
 //!
 //! In this example, we created a template registry and registered a template named `t1`.
@@ -53,19 +54,26 @@
 //!
 //! ### Extensible helper system
 //!
-//! You can write your own helper with Rust! It can be a block helper or
-//! inline helper. Put your logic into the helper and don't repeat
-//! yourself.
+//! Helper is the control system of handlebars language. In the original JavaScript
+//! version, you can implement your own helper with JavaScript.
+//!
+//! Handlebars-rust offers similar mechanism that custom helper can be defined with
+//! rust function, or [rhai](https://github.com/jonathandturner/rhai) script.
 //!
 //! The built-in helpers like `if` and `each` were written with these
 //! helper APIs and the APIs are fully available to developers.
+//!
+//! ### Auto-reload in dev mode
+//!
+//! By turning on `dev_mode`, handlebars auto reloads any template and scripts that
+//! loaded from files or directory. This can be handy for template development.
 //!
 //! ### Template inheritance
 //!
 //! Every time I look into a templating system, I will investigate its
 //! support for [template inheritance][t].
 //!
-//! [t]: https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance
+//! [t]: https://docs.djangoproject.com/en/3.2/ref/templates/language/#template-inheritance
 //!
 //! Template include is not sufficient for template reuse. In most cases
 //! you will need a skeleton of page as parent (header, footer, etc.), and
@@ -147,7 +155,7 @@
 //! use handlebars::Handlebars;
 //! use std::collections::BTreeMap;
 //!
-//! # fn main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<dyn Error>> {
 //!   let mut handlebars = Handlebars::new();
 //!   let source = "hello {{world}}";
 //!
@@ -157,6 +165,14 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! #### Additional features for loading template from
+//!
+//! * Feature `dir_source` enables template loading
+//! `register_templates_directory` from given directory.
+//! * Feature `rust-embed` enables template loading
+//! `register_embed_templates` from embedded resources in rust struct
+//! generated with `RustEmbed`.
 //!
 //! ### Rendering Something
 //!
@@ -180,7 +196,7 @@
 //!   age: i16,
 //! }
 //!
-//! # fn main() -> Result<(), Box<Error>> {
+//! # fn main() -> Result<(), Box<dyn Error>> {
 //!   let source = "Hello, {{name}}";
 //!
 //!   let mut handlebars = Handlebars::new();
@@ -229,7 +245,7 @@
 //!
 //! #### Escaping
 //!
-//! As per the handlebars spec, output using `{{expression}}` is escaped by default (to be precise, the characters `&"<>` are replaced by their respective html / xml entities). However, since the use cases of a rust template engine are probably a bit more diverse than those of a JavaScript one, this implementation allows the user to supply a custom escape function to be used instead. For more information see the `EscapeFn` type and `Handlebars::register_escape_fn()` method.
+//! As per the handlebars spec, output using `{{expression}}` is escaped by default (to be precise, the characters `&"<>` are replaced by their respective html / xml entities). However, since the use cases of a rust template engine are probably a bit more diverse than those of a JavaScript one, this implementation allows the user to supply a custom escape function to be used instead. For more information see the `EscapeFn` type and `Handlebars::register_escape_fn()` method. In particular, `no_escape()` can be used as the escape function if no escaping at all should be performed.
 //!
 //! ### Custom Helper
 //!
@@ -238,7 +254,7 @@
 //! ```
 //! use std::io::Write;
 //! # use std::error::Error;
-//! use handlebars::{Handlebars, HelperDef, RenderContext, Helper, Context, JsonRender, HelperResult, Output, RenderError};
+//! use handlebars::*;
 //!
 //! // implement by a structure impls HelperDef
 //! #[derive(Clone, Copy)]
@@ -271,7 +287,8 @@
 //!   // via closure
 //!   handlebars.register_helper("closure-helper",
 //!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output| -> HelperResult {
-//!           let param = h.param(0).ok_or(RenderError::new("param not found"))?;
+//!           let param =
+//!           h.param(0).ok_or(RenderErrorReason::ParamNotFoundForIndex("closure-helper", 0))?;
 //!
 //!           out.write("3rd helper: ")?;
 //!           out.write(param.value().render().as_ref())?;
@@ -321,11 +338,16 @@
 //!
 //! * `{{{{raw}}}} ... {{{{/raw}}}}` escape handlebars expression within the block
 //! * `{{#if ...}} ... {{else}} ... {{/if}}` if-else block
+//!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#if) on how to use this helper.)
 //! * `{{#unless ...}} ... {{else}} .. {{/unless}}` if-not-else block
-//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebars-rust doesn't support mustache iteration syntax so use this instead.
+//!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#unless) on how to use this helper.)
+//! * `{{#each ...}} ... {{/each}}` iterates over an array or object. Handlebars-rust doesn't support mustache iteration syntax so use `each` instead.
+//!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#each) on how to use this helper.)
 //! * `{{#with ...}} ... {{/with}}` change current context. Similar to `{{#each}}`, used for replace corresponding mustache syntax.
+//!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#with) on how to use this helper.)
 //! * `{{lookup ... ...}}` get value from array by `@index` or `@key`
-//! * `{{> ...}}` include template with name
+//!    (See [the handlebarjs documentation](https://handlebarsjs.com/guide/builtin-helpers.html#lookup) on how to use this helper.)
+//! * `{{> ...}}` include template by its name
 //! * `{{log ...}}` log value with rust logger, default level: INFO. Currently you cannot change the level.
 //! * Boolean helpers that can be used in `if` as subexpression, for example `{{#if (gt 2 1)}} ...`:
 //!   * `eq`
@@ -337,15 +359,40 @@
 //!   * `and`
 //!   * `or`
 //!   * `not`
+//! * `{{len ...}}` returns length of array/object/string
 //!
 //! ### Template inheritance
 //!
 //! Handlebars.js' partial system is fully supported in this implementation.
 //! Check [example](https://github.com/sunng87/handlebars-rust/blob/master/examples/partials.rs#L49) for details.
 //!
+//! ### String (or Case) Helpers
+//!
+//! [Handlebars] supports helpers for converting string cases for example converting a value to
+//! 'camelCase or 'kebab-case' etc. This can be useful during generating code using Handlebars.
+//! This can be enabled by selecting the feature-flag `string_helpers`.  Currently the case
+//! conversions from the [`heck`](https://docs.rs/heck/latest/heck) crate are supported.
+//!
+//! ```
+//! # #[cfg(feature = "string_helpers")] {
+//! # use std::error::Error;
+//! # extern crate handlebars;
+//! use handlebars::Handlebars;
+//!
+//! # fn main() -> Result<(), Box<dyn Error>> {
+//!
+//!   let mut handlebars = Handlebars::new();
+//!
+//!   let data = serde_json::json!({"value": "lower camel case"});
+//!   assert_eq!(handlebars.render_template("This is {{lowerCamelCase value}}", &data)?,
+//!       "This is lowerCamelCase".to_owned());
+//! # Ok(())
+//! # }
+//! # }
+//! ```
 //!
 
-#![allow(dead_code)]
+#![allow(dead_code, clippy::upper_case_acronyms)]
 #![warn(rust_2018_idioms)]
 #![recursion_limit = "200"]
 
@@ -353,13 +400,8 @@
 #[macro_use]
 extern crate log;
 
-#[cfg(test)]
-#[macro_use]
-extern crate maplit;
 #[macro_use]
 extern crate pest_derive;
-#[macro_use]
-extern crate quick_error;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_derive;
@@ -371,11 +413,14 @@ extern crate serde_json;
 pub use self::block::{BlockContext, BlockParams};
 pub use self::context::Context;
 pub use self::decorators::DecoratorDef;
-pub use self::error::{RenderError, TemplateError, TemplateFileError, TemplateRenderError};
+pub use self::error::{RenderError, RenderErrorReason, TemplateError, TemplateErrorReason};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::json::path::Path;
-pub use self::json::value::{to_json, JsonRender, PathAndJson, ScopedJson};
-pub use self::output::Output;
+pub use self::json::value::{to_json, JsonRender, JsonTruthy, PathAndJson, ScopedJson};
+pub use self::local_vars::LocalVars;
+pub use self::output::{Output, StringOutput};
+#[cfg(feature = "dir_source")]
+pub use self::registry::DirectorySourceOptions;
 pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
 pub use self::render::{Decorator, Evaluable, Helper, RenderContext, Renderable};
 pub use self::template::Template;
@@ -397,6 +442,7 @@ mod output;
 mod partial;
 mod registry;
 mod render;
+mod sources;
 mod support;
 pub mod template;
 mod util;

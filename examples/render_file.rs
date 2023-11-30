@@ -14,6 +14,7 @@ use std::io::{Read, Write};
 
 use handlebars::{
     to_json, Context, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError,
+    RenderErrorReason,
 };
 
 // define a custom helper
@@ -24,11 +25,11 @@ fn format_helper(
     _: &mut RenderContext,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
+    // get parameter from helper or throw an error
     let param = h
         .param(0)
-        .ok_or(RenderError::new("Param 0 is required for format helper."))?;
-    let rendered = format!("{} pts", param.value().render());
-    out.write(rendered.as_ref())?;
+        .ok_or(RenderErrorReason::ParamNotFoundForIndex("format", 0))?;
+    write!(out, "{} pts", param.value().render())?;
     Ok(())
 }
 
@@ -40,19 +41,18 @@ fn rank_helper(
     _: &mut RenderContext,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    let rank = h
-        .param(0)
-        .and_then(|ref v| v.value().as_u64())
-        .ok_or(RenderError::new(
-            "Param 0 with u64 type is required for rank helper.",
-        ))? as usize;
+    let rank = h.param(0).and_then(|v| v.value().as_u64()).ok_or(
+        RenderErrorReason::ParamTypeMismatchForName("rank", "0".to_string(), "u64".to_string()),
+    )? as usize;
     let total = h
         .param(1)
         .as_ref()
         .and_then(|v| v.value().as_array())
         .map(|arr| arr.len())
-        .ok_or(RenderError::new(
-            "Param 1 with array type is required for rank helper",
+        .ok_or(RenderErrorReason::ParamTypeMismatchForName(
+            "rank",
+            "1".to_string(),
+            "array".to_string(),
         ))?;
     if rank == 0 {
         out.write("champion")?;
@@ -129,9 +129,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let data = make_data();
 
-    let mut source_template = File::open(&"./examples/render_file/template.hbs")?;
+    handlebars
+        .register_template_file("template", "./examples/render_file/template.hbs")
+        .unwrap();
+
     let mut output_file = File::create("target/table.html")?;
-    handlebars.render_template_source_to_write(&mut source_template, &data, &mut output_file)?;
+    handlebars.render_to_write("template", &data, &mut output_file)?;
     println!("target/table.html generated");
     Ok(())
 }

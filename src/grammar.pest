@@ -14,8 +14,20 @@ literal = { string_literal |
 
 null_literal = @{ "null" ~ !symbol_char }
 boolean_literal = @{ ("true"|"false") ~ !symbol_char }
-number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ("E" ~ "-"? ~ ASCII_DIGIT+)? }
-string_literal = @{ ("\"" ~ (!"\"" ~ ("\\\"" | ANY))* ~ "\"") | ("'" ~ (!"'" ~ ("\\'" | ANY))* ~ "'") }
+number_literal = @{ "-"? ~ ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ("E" ~ "-"? ~ ASCII_DIGIT+)? ~ !symbol_char }
+json_char_double_quote = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+json_char_single_quote = {
+    !("'" | "\\") ~ ANY
+    | "\\" ~ ("'" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+string_inner_double_quote = @{ json_char_double_quote* }
+string_inner_single_quote = @{ json_char_single_quote* }
+string_literal = ${ ("\"" ~ string_inner_double_quote ~ "\"") | ("'" ~ string_inner_single_quote ~ "'") }
 array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
@@ -44,20 +56,26 @@ pro_whitespace_omitter = { "~" }
 expression = { !invert_tag ~ "{{" ~ pre_whitespace_omitter? ~
               ((identifier ~ (hash|param)+) | name )
               ~ pro_whitespace_omitter? ~ "}}" }
-html_expression_triple_bracket = _{ "{{{" ~ pre_whitespace_omitter? ~
-                                    ((identifier ~ (hash|param)+) | name ) ~
-                                    pro_whitespace_omitter? ~ "}}}" }
+html_expression_triple_bracket_legacy = _{ "{{{" ~ pre_whitespace_omitter? ~
+                                           ((identifier ~ (hash|param)+) | name ) ~
+                                           pro_whitespace_omitter? ~ "}}}" }
+html_expression_triple_bracket = _{ "{{" ~ pre_whitespace_omitter? ~ "{" ~
+                                              ((identifier ~ (hash|param)+) | name ) ~
+                                              "}" ~ pro_whitespace_omitter? ~ "}}" }
+
 amp_expression = _{ "{{" ~ pre_whitespace_omitter? ~ "&" ~ name ~
                        pro_whitespace_omitter? ~ "}}" }
-html_expression = { html_expression_triple_bracket | amp_expression }
+html_expression = { (html_expression_triple_bracket_legacy | html_expression_triple_bracket)
+                   | amp_expression }
 
 decorator_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
 pro_whitespace_omitter? ~ "}}" }
 partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
                      ~ pro_whitespace_omitter? ~ "}}" }
+
 invert_tag_item = { "else"|"^" }
 invert_tag = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
-             ~ pro_whitespace_omitter? ~ "}}"}
+             ~ pro_whitespace_omitter? ~ "}}" }
 helper_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
                      pro_whitespace_omitter? ~ "}}" }
 helper_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
@@ -84,7 +102,7 @@ raw_block_end = { "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
                   pro_whitespace_omitter? ~ "}}}}" }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-hbs_comment = { "{{!--" ~ (!"--}}" ~ ANY)* ~ "--}}" }
+hbs_comment = { "{{!" ~ "--" ~ (!"--}}" ~ ANY)* ~ "--" ~ "}}" }
 hbs_comment_compact = { "{{!" ~ (!"}}" ~ ANY)* ~ "}}" }
 
 template = { (

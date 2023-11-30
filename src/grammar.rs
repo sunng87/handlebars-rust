@@ -125,8 +125,6 @@ mod test {
         let s = vec![
             "\"json string\"",
             "\"quot: \\\"\"",
-            "'json string'",
-            "'quot: \\''",
             "[]",
             "[\"hello\"]",
             "[1,2,3,4,true]",
@@ -145,7 +143,8 @@ mod test {
         let s = vec!["{{!-- <hello {{ a-b c-d}} {{d-c}} ok --}}",
                  "{{!--
                     <li><a href=\"{{up-dir nest-count}}{{base-url}}index.html\">{{this.title}}</a></li>
-                --}}"];
+                --}}",
+                     "{{!    -- good  --}}"];
         for i in s.iter() {
             assert_rule!(Rule::hbs_comment, i);
         }
@@ -172,6 +171,8 @@ mod test {
             "{{exp 1}}",
             "{{exp \"literal\"}}",
             "{{exp \"literal with space\"}}",
+            "{{exp 'literal with space'}}",
+            r#"{{exp "literal with escape \\\\"}}"#,
             "{{exp ref}}",
             "{{exp (sub)}}",
             "{{exp (sub 123)}}",
@@ -179,6 +180,8 @@ mod test {
             "{{exp {}}}",
             "{{exp key=1}}",
             "{{exp key=ref}}",
+            "{{exp key='literal with space'}}",
+            "{{exp key=\"literal with space\"}}",
             "{{exp key=(sub)}}",
             "{{exp key=(sub 0)}}",
             "{{exp key=(sub 0 key=1)}}",
@@ -205,6 +208,12 @@ mod test {
             "{{&html}}",
             "{{{html 1}}}",
             "{{{html p=true}}}",
+            "{{{~ html}}}",
+            "{{{html ~}}}",
+            "{{{~ html ~}}}",
+            "{{~{ html }~}}",
+            "{{~{ html }}}",
+            "{{{ html }~}}",
         ];
         for i in s.iter() {
             assert_rule!(Rule::html_expression, i);

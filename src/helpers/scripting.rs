@@ -12,17 +12,17 @@ use rhai::{Dynamic, Engine, Scope, AST};
 
 use serde_json::value::Value as Json;
 
-pub struct ScriptHelper {
+pub(crate) struct ScriptHelper {
     pub(crate) script: AST,
 }
 
 #[inline]
 fn call_script_helper<'reg: 'rc, 'rc>(
-    params: &[PathAndJson<'reg, 'rc>],
-    hash: &BTreeMap<&'reg str, PathAndJson<'reg, 'rc>>,
+    params: &[PathAndJson<'rc>],
+    hash: &BTreeMap<&'reg str, PathAndJson<'rc>>,
     engine: &Engine,
     script: &AST,
-) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+) -> Result<ScopedJson<'rc>, RenderError> {
     let params: Dynamic = to_dynamic(params.iter().map(|p| p.value()).collect::<Vec<&Json>>())?;
 
     let hash: Dynamic = to_dynamic(
@@ -41,17 +41,17 @@ fn call_script_helper<'reg: 'rc, 'rc>(
 
     let result_json: Json = from_dynamic(&result)?;
 
-    Ok(Some(ScopedJson::Derived(result_json)))
+    Ok(ScopedJson::Derived(result_json))
 }
 
 impl HelperDef for ScriptHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         reg: &'reg Registry<'reg>,
         _ctx: &'rc Context,
         _rc: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         call_script_helper(h.params(), h.hash(), &reg.engine, &self.script)
     }
 }
@@ -98,13 +98,18 @@ mod test {
         let ast = engine.compile(&script).unwrap();
 
         let params = vec![PathAndJson::new(None, ScopedJson::Derived(json!(true)))];
-        let hash = btreemap! {
-            "me" => PathAndJson::new(None, ScopedJson::Derived(json!("no"))),
-            "you" => PathAndJson::new(None, ScopedJson::Derived(json!("yes"))),
-        };
+
+        let mut hash = BTreeMap::new();
+        hash.insert(
+            "me",
+            PathAndJson::new(None, ScopedJson::Derived(json!("no"))),
+        );
+        hash.insert(
+            "you",
+            PathAndJson::new(None, ScopedJson::Derived(json!("yes"))),
+        );
 
         let result = call_script_helper(&params, &hash, &engine, &ast)
-            .unwrap()
             .unwrap()
             .render();
         assert_eq!("1,true,2,no", &result);

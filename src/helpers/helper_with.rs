@@ -7,6 +7,7 @@ use crate::json::value::JsonTruthy;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext, Renderable};
+use crate::RenderErrorReason;
 
 #[derive(Clone, Copy)]
 pub struct WithHelper;
@@ -14,7 +15,7 @@ pub struct WithHelper;
 impl HelperDef for WithHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -22,10 +23,10 @@ impl HelperDef for WithHelper {
     ) -> HelperResult {
         let param = h
             .param(0)
-            .ok_or_else(|| RenderError::new("Param not found for helper \"with\""))?;
+            .ok_or(RenderErrorReason::ParamNotFoundForIndex("with", 0))?;
 
         if param.value().is_truthy(false) {
-            let mut block = create_block(&param)?;
+            let mut block = create_block(param);
 
             if let Some(block_param) = h.block_param() {
                 let mut params = BlockParams::new();
@@ -60,7 +61,6 @@ pub static WITH_HELPER: WithHelper = WithHelper;
 
 #[cfg(test)]
 mod test {
-    use crate::json::value::to_json;
     use crate::registry::Registry;
 
     #[derive(Serialize)]
@@ -211,12 +211,12 @@ mod test {
         assert!(handlebars
             .register_template_string("t0", "{{#with a}}{{#with b}}{{../../d}}{{/with}}{{/with}}")
             .is_ok());
-        let data = btreemap! {
-            "a".to_string() => to_json(&btreemap! {
-                "b".to_string() => vec![btreemap!{"c".to_string() => vec![1]}]
-            }),
-            "d".to_string() => to_json(1)
-        };
+        let data = json!({
+            "a": {
+                "b": [{"c": [1]}]
+            },
+            "d": 1
+        });
 
         let r0 = handlebars.render("t0", &data);
         assert_eq!(r0.ok().unwrap(), "1".to_string());

@@ -6,6 +6,7 @@ use crate::helpers::HelperDef;
 use crate::json::value::ScopedJson;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
+use crate::RenderErrorReason;
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
@@ -13,35 +14,27 @@ pub struct LookupHelper;
 impl HelperDef for LookupHelper {
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
+    ) -> Result<ScopedJson<'rc>, RenderError> {
         let collection_value = h
             .param(0)
-            .ok_or_else(|| RenderError::new("Param not found for helper \"lookup\""))?;
+            .ok_or(RenderErrorReason::ParamNotFoundForIndex("lookup", 0))?;
         let index = h
             .param(1)
-            .ok_or_else(|| RenderError::new("Insufficient params for helper \"lookup\""))?;
+            .ok_or(RenderErrorReason::ParamNotFoundForIndex("lookup", 1))?;
 
         let value = match *collection_value.value() {
-            Json::Array(ref v) => index
-                .value()
-                .as_u64()
-                .and_then(|u| v.get(u as usize))
-                .map(|i| ScopedJson::Derived(i.clone())),
-            Json::Object(ref m) => index
-                .value()
-                .as_str()
-                .and_then(|k| m.get(k))
-                .map(|i| ScopedJson::Derived(i.clone())),
+            Json::Array(ref v) => index.value().as_u64().and_then(|u| v.get(u as usize)),
+            Json::Object(ref m) => index.value().as_str().and_then(|k| m.get(k)),
             _ => None,
         };
         if r.strict_mode() && value.is_none() {
             Err(RenderError::strict_error(None))
         } else {
-            Ok(value)
+            Ok(value.unwrap_or(&Json::Null).clone().into())
         }
     }
 }
@@ -51,8 +44,6 @@ pub static LOOKUP_HELPER: LookupHelper = LookupHelper;
 #[cfg(test)]
 mod test {
     use crate::registry::Registry;
-
-    use std::collections::BTreeMap;
 
     #[test]
     fn test_lookup() {
@@ -67,13 +58,11 @@ mod test {
             .register_template_string("t2", "{{lookup kk \"a\"}}")
             .is_ok());
 
-        let mut m: BTreeMap<String, Vec<u16>> = BTreeMap::new();
-        m.insert("v1".to_string(), vec![1u16, 2u16, 3u16]);
-        m.insert("v2".to_string(), vec![9u16, 8u16, 7u16]);
+        let m = json!({"v1": [1,2,3], "v2": [9,8,7]});
 
-        let m2 = btreemap! {
-            "kk".to_string() => btreemap!{"a".to_string() => "world".to_string()}
-        };
+        let m2 = json!({
+            "kk": {"a": "world"}
+        });
 
         let r0 = handlebars.render("t0", &m);
         assert_eq!(r0.ok().unwrap(), "987".to_string());
@@ -83,6 +72,17 @@ mod test {
 
         let r2 = handlebars.render("t2", &m2);
         assert_eq!(r2.ok().unwrap(), "world".to_string());
+
+        assert!(handlebars.render_template("{{lookup}}", &m).is_err());
+        assert!(handlebars.render_template("{{lookup v1}}", &m).is_err());
+        assert_eq!(
+            handlebars.render_template("{{lookup null 1}}", &m).unwrap(),
+            ""
+        );
+        assert_eq!(
+            handlebars.render_template("{{lookup v1 3}}", &m).unwrap(),
+            ""
+        );
     }
 
     #[test]
@@ -94,11 +94,17 @@ mod test {
                 .unwrap(),
             ""
         );
+        assert!(hbs
+            .render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
+            .is_ok());
 
         hbs.set_strict_mode(true);
 
         assert!(hbs
             .render_template("{{lookup kk 1}}", &json!({"kk": []}))
             .is_err());
+        assert!(hbs
+            .render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
+            .is_ok());
     }
 }

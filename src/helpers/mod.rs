@@ -32,7 +32,8 @@ pub type HelperResult = Result<(), RenderError>;
 /// ```
 /// use handlebars::*;
 ///
-/// fn upper(h: &Helper<'_, '_>, _: &Handlebars<'_>, _: &Context, rc: &mut RenderContext<'_, '_>, out: &mut Output)
+/// fn upper(h: &Helper< '_>, _: &Handlebars<'_>, _: &Context, rc:
+/// &mut RenderContext<'_, '_>, out: &mut dyn Output)
 ///     -> HelperResult {
 ///    // get parameter from helper or throw an error
 ///    let param = h.param(0).and_then(|v| v.value().as_str()).unwrap_or("");
@@ -49,7 +50,7 @@ pub type HelperResult = Result<(), RenderError>;
 /// use handlebars::*;
 ///
 /// fn dummy_block<'reg, 'rc>(
-///     h: &Helper<'reg, 'rc>,
+///     h: &Helper<'rc>,
 ///     r: &'reg Handlebars<'reg>,
 ///     ctx: &'rc Context,
 ///     rc: &mut RenderContext<'reg, 'rc>,
@@ -74,44 +75,77 @@ pub type HelperResult = Result<(), RenderError>;
 /// hbs.register_helper("plus", Box::new(plus));
 /// ```
 ///
-
 pub trait HelperDef {
+    /// A simplified api to define helper
+    ///
+    /// To implement your own `call_inner`, you will return a new `ScopedJson`
+    /// which has a JSON value computed from current context.
+    ///
+    /// ### Calling from subexpression
+    ///
+    /// When calling the helper as a subexpression, the value and its type can
+    /// be received by upper level helpers.
+    ///
+    /// Note that the value can be `json!(null)` which is treated as `false` in
+    /// helpers like `if` and rendered as empty string.
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
-        _: &Helper<'reg, 'rc>,
+        _: &Helper<'rc>,
         _: &'reg Registry<'reg>,
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
-    ) -> Result<Option<ScopedJson<'reg, 'rc>>, RenderError> {
-        Ok(None)
+    ) -> Result<ScopedJson<'rc>, RenderError> {
+        Err(RenderError::unimplemented())
     }
 
+    /// A complex version of helper interface.
+    ///
+    /// This function offers `Output`, which you can write custom string into
+    /// and render child template. Helpers like `if` and `each` are implemented
+    /// with this. Because the data written into `Output` are typically without
+    /// type information. So helpers defined by this function are not composable.
+    ///
+    /// ### Calling from subexpression
+    ///
+    /// Although helpers defined by this are not composable, when called from
+    /// subexpression, handlebars tries to parse the string output as JSON to
+    /// re-build its type. This can be buggy with numrical and other literal values.
+    /// So it is not recommended to use these helpers in subexpression.
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
         out: &mut dyn Output,
     ) -> HelperResult {
-        if let Some(result) = self.call_inner(h, r, ctx, rc)? {
-            if r.strict_mode() && result.is_missing() {
-                return Err(RenderError::strict_error(None));
-            } else {
-                // auto escape according to settings
-                let output = do_escape(r, rc, result.render());
-                out.write(output.as_ref())?;
+        match self.call_inner(h, r, ctx, rc) {
+            Ok(result) => {
+                if r.strict_mode() && result.is_missing() {
+                    Err(RenderError::strict_error(None))
+                } else {
+                    // auto escape according to settings
+                    let output = do_escape(r, rc, result.render());
+                    out.write(output.as_ref())?;
+                    Ok(())
+                }
+            }
+            Err(e) => {
+                if e.is_unimplemented() {
+                    // default implementation, do nothing
+                    Ok(())
+                } else {
+                    Err(e)
+                }
             }
         }
-
-        Ok(())
     }
 }
 
 /// implement HelperDef for bare function so we can use function as helper
 impl<
         F: for<'reg, 'rc> Fn(
-            &Helper<'reg, 'rc>,
+            &Helper<'rc>,
             &'reg Registry<'reg>,
             &'rc Context,
             &mut RenderContext<'reg, 'rc>,
@@ -121,7 +155,7 @@ impl<
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
-        h: &Helper<'reg, 'rc>,
+        h: &Helper<'rc>,
         r: &'reg Registry<'reg>,
         ctx: &'rc Context,
         rc: &mut RenderContext<'reg, 'rc>,
@@ -132,8 +166,8 @@ impl<
 }
 
 mod block_util;
-pub(crate) mod helper_boolean;
 mod helper_each;
+pub(crate) mod helper_extras;
 mod helper_if;
 mod helper_log;
 mod helper_lookup;
@@ -141,6 +175,9 @@ mod helper_raw;
 mod helper_with;
 #[cfg(feature = "script_helper")]
 pub(crate) mod scripting;
+
+#[cfg(feature = "string_helpers")]
+pub(crate) mod string_helpers;
 
 // pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
 //
@@ -166,7 +203,7 @@ mod test {
     impl HelperDef for MetaHelper {
         fn call<'reg: 'rc, 'rc>(
             &self,
-            h: &Helper<'reg, 'rc>,
+            h: &Helper<'rc>,
             r: &'reg Registry<'reg>,
             ctx: &'rc Context,
             rc: &mut RenderContext<'reg, 'rc>,
@@ -174,15 +211,11 @@ mod test {
         ) -> Result<(), RenderError> {
             let v = h.param(0).unwrap();
 
-            if !h.is_block() {
-                let output = format!("{}:{}", h.name(), v.value().render());
-                out.write(output.as_ref())?;
-            } else {
-                let output = format!("{}:{}", h.name(), v.value().render());
-                out.write(output.as_ref())?;
+            write!(out, "{}:{}", h.name(), v.value().render())?;
+            if h.is_block() {
                 out.write("->")?;
                 h.template().unwrap().render(r, ctx, rc, out)?;
-            };
+            }
             Ok(())
         }
     }
@@ -218,14 +251,13 @@ mod test {
         handlebars.register_helper(
             "helperMissing",
             Box::new(
-                |h: &Helper<'_, '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}{}", h.name(), h.param(0).unwrap().value());
-                    out.write(output.as_ref())?;
+                    write!(out, "{}{}", h.name(), h.param(0).unwrap().value())?;
                     Ok(())
                 },
             ),
@@ -233,14 +265,13 @@ mod test {
         handlebars.register_helper(
             "foo",
             Box::new(
-                |h: &Helper<'_, '_>,
+                |h: &Helper<'_>,
                  _: &Registry<'_>,
                  _: &Context,
                  _: &mut RenderContext<'_, '_>,
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
-                    let output = format!("{}", h.hash_get("value").unwrap().value().render());
-                    out.write(output.as_ref())?;
+                    write!(out, "{}", h.hash_get("value").unwrap().value().render())?;
                     Ok(())
                 },
             ),

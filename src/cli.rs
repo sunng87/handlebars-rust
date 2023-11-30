@@ -41,10 +41,10 @@ fn main() {
         .unwrap();
     match handlebars.render(&filename, &data) {
         Ok(data) => {
-            println!("{}", data);
+            println!("{data}");
         }
         Err(e) => {
-            println!("Error rendering {}: {}", filename, e);
+            println!("Error rendering {filename}: {e}");
             process::exit(2);
         }
     }

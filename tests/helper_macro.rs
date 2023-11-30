@@ -4,6 +4,8 @@ extern crate handlebars;
 extern crate serde_json;
 
 use handlebars::Handlebars;
+use time::format_description::{parse, well_known::Rfc2822};
+use time::OffsetDateTime;
 
 handlebars_helper!(lower: |s: str| s.to_lowercase());
 handlebars_helper!(upper: |s: str| s.to_uppercase());
@@ -14,6 +16,7 @@ handlebars_helper!(nargs: |*args| args.len());
 handlebars_helper!(has_a: |{a:i64 = 99}, **kwargs|
                    format!("{}, {}", a, kwargs.get("a").is_some()));
 handlebars_helper!(tag: |t: str| format!("<{}>", t));
+handlebars_helper!(date: |dt: OffsetDateTime| dt.format(&parse("[year]-[month]-[day]").unwrap()).unwrap());
 
 #[test]
 fn test_macro_helper() {
@@ -26,6 +29,7 @@ fn test_macro_helper() {
     hbs.register_helper("nargs", Box::new(nargs));
     hbs.register_helper("has_a", Box::new(has_a));
     hbs.register_helper("tag", Box::new(tag));
+    hbs.register_helper("date", Box::new(date));
 
     let data = json!("Teixeira");
 
@@ -72,5 +76,34 @@ fn test_macro_helper() {
     assert_eq!(
         hbs.render_template("{{{tag \"html\"}}}", &()).unwrap(),
         "<html>"
+    );
+
+    assert_eq!(
+        hbs.render_template(
+            "{{date this}}",
+            &OffsetDateTime::parse("Wed, 18 Feb 2015 23:16:09 GMT", &Rfc2822).unwrap()
+        )
+        .unwrap(),
+        "2015-02-18"
+    );
+
+    assert_eq!(
+        hbs.render_template("{{eq image.link null}}", &json!({"image": {"link": null}}))
+            .unwrap(),
+        "true"
+    );
+
+    assert_eq!(
+        hbs.render_template(
+            "{{eq image.link null}}",
+            &json!({"image": {"link": "https://url"}})
+        )
+        .unwrap(),
+        "false"
+    );
+
+    assert_eq!(
+        hbs.render_template("{{tag 'html'}}", &()).unwrap(),
+        "&lt;html&gt;"
     );
 }

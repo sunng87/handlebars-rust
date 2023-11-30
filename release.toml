@@ -1,4 +1,5 @@
 sign-commit = true
+sign-tag = true
 pre-release-replacements = [
   {file="CHANGELOG.md", search="Unreleased", replace="{{version}}", prerelease=false},
   {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", prerelease=false},

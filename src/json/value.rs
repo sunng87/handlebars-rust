@@ -9,16 +9,16 @@ pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 /// * Context:  the JSON value referenced in your provided data context
 /// * Derived:  the owned JSON value computed during rendering process
 ///
-#[derive(Debug)]
-pub enum ScopedJson<'reg: 'rc, 'rc> {
-    Constant(&'reg Json),
+#[derive(Debug, Clone)]
+pub enum ScopedJson<'rc> {
+    Constant(&'rc Json),
     Derived(Json),
     // represents a json reference to context value, its full path
     Context(&'rc Json, Vec<String>),
     Missing,
 }
 
-impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
+impl<'rc> ScopedJson<'rc> {
     /// get the JSON reference
     pub fn as_json(&self) -> &Json {
         match self {
@@ -37,7 +37,7 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
         matches!(self, ScopedJson::Missing)
     }
 
-    pub fn into_derived(self) -> ScopedJson<'reg, 'rc> {
+    pub fn into_derived(self) -> ScopedJson<'rc> {
         let v = self.as_json();
         ScopedJson::Derived(v.clone())
     }
@@ -50,25 +50,22 @@ impl<'reg: 'rc, 'rc> ScopedJson<'reg, 'rc> {
     }
 }
 
-impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'reg, 'rc> {
-    fn from(v: Json) -> ScopedJson<'reg, 'rc> {
+impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'rc> {
+    fn from(v: Json) -> ScopedJson<'rc> {
         ScopedJson::Derived(v)
     }
 }
 
 /// Json wrapper that holds the Json value and reference path information
 ///
-#[derive(Debug)]
-pub struct PathAndJson<'reg, 'rc> {
+#[derive(Debug, Clone)]
+pub struct PathAndJson<'rc> {
     relative_path: Option<String>,
-    value: ScopedJson<'reg, 'rc>,
+    value: ScopedJson<'rc>,
 }
 
-impl<'reg: 'rc, 'rc> PathAndJson<'reg, 'rc> {
-    pub fn new(
-        relative_path: Option<String>,
-        value: ScopedJson<'reg, 'rc>,
-    ) -> PathAndJson<'reg, 'rc> {
+impl<'rc> PathAndJson<'rc> {
+    pub fn new(relative_path: Option<String>, value: ScopedJson<'rc>) -> PathAndJson<'rc> {
         PathAndJson {
             relative_path,
             value,
@@ -120,9 +117,12 @@ impl JsonRender for Json {
             Json::Array(ref a) => {
                 let mut buf = String::new();
                 buf.push('[');
-                for i in a.iter() {
-                    buf.push_str(i.render().as_ref());
-                    buf.push_str(", ");
+                for (i, value) in a.iter().enumerate() {
+                    buf.push_str(value.render().as_ref());
+
+                    if i < a.len() - 1 {
+                        buf.push_str(", ");
+                    }
                 }
                 buf.push(']');
                 buf

@@ -4,28 +4,22 @@ handlebars-rust
 [Handlebars templating language](https://handlebarsjs.com) implemented
 in Rust and for Rust.
 
-Handlebars-rust is the template engine that renders the official Rust website
-[rust-lang.org](https://www.rust-lang.org), [its
-book](https://doc.rust-lang.org/book/).
-
-[![Build Status](https://travis-ci.org/sunng87/handlebars-rust.svg?branch=master)](https://travis-ci.org/sunng87/handlebars-rust)
-[![](https://meritbadge.herokuapp.com/handlebars)](https://crates.io/crates/handlebars)
+[![CI](https://github.com/sunng87/handlebars-rust/actions/workflows/main.yml/badge.svg)](https://github.com/sunng87/handlebars-rust/actions/workflows/main.yml)
+[![Coverage Status](https://coveralls.io/repos/github/sunng87/handlebars-rust/badge.svg?branch=master)](https://coveralls.io/github/sunng87/handlebars-rust?branch=master)
+[![](https://img.shields.io/crates/v/handlebars)](https://crates.io/crates/handlebars)
 [![](https://img.shields.io/crates/d/handlebars.svg)](https://crates.io/crates/handlebars)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![Docs](https://docs.rs/handlebars/badge.svg)](https://docs.rs/crate/handlebars/)
 [![Donate](https://img.shields.io/badge/donate-liberapay-yellow.svg)](https://liberapay.com/Sunng/donate)
-[![Donate](https://img.shields.io/badge/donate-buymeacoffee-yellow.svg)](https://www.buymeacoffee.com/Sunng)
 
 ## Getting Started
 
 ### Quick Start
 
 ```rust
-extern crate handlebars;
-#[macro_use]
-extern crate serde_json;
-
 use handlebars::Handlebars;
+use serde_json::json;
+use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut reg = Handlebars::new();
@@ -38,6 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // register template using given name
     reg.register_template_string("tpl_1", "Good afternoon, {{name}}")?;
     println!("{}", reg.render("tpl_1", &json!({"name": "foo"}))?);
+
     Ok(())
 }
 ```
@@ -57,6 +52,8 @@ Examples are provided in source tree to demo usage of various api.
   to use custom helpers.
 * [render_file](https://github.com/sunng87/handlebars-rust/blob/master/examples/render_file.rs)
   similar to render, but render to file instead of string
+* [helper_macro](https://github.com/sunng87/handlebars-rust/blob/master/examples/helper_macro.rs)
+  demos usage of `handlebars_helper!` to simplify helper development
 * [partials](https://github.com/sunng87/handlebars-rust/blob/master/examples/partials.rs)
   template inheritance with handlebars
 * [decorator](https://github.com/sunng87/handlebars-rust/blob/master/examples/decorator.rs)
@@ -66,23 +63,23 @@ Examples are provided in source tree to demo usage of various api.
   just like using javascript for handlebarsjs
 * [error](https://github.com/sunng87/handlebars-rust/blob/master/examples/error.rs)
   simple case for error
+* [dev_mode](https://github.com/sunng87/handlebars-rust/blob/master/examples/dev_mode.rs)
+  a web server hosts handlebars in `dev_mode`, you can edit the template and see the change
+  without restarting your server.
+
+### Web Playground
+
+We have github action to compile latest `master` branch into WebAssembly and
+serve it on [github pages](https://sunng87.github.io/handlebars-rust/). You can
+test and verify your template with both handlebars-rust and handlebarjs.
 
 ## Minimum Rust Version Policy
 
 Handlebars will track Rust nightly and stable channel. When dropping
-support for previous stable versions, I will bump **major** version
+support for previous stable versions, I will bump **patch** version
 and clarify in CHANGELOG.
 
-### Rust compatibility table
-
-| Handlebars version range | Minimum Rust version |
-| --- | --- |
-| ~3.0.0 | 1.32 |
-| ~2.0.0 | 1.32 |
-| ~1.1.0 | 1.30 |
-| ~1.0.0 | 1.23 |
-
-## Document
+## Docs
 
 [Rust doc](https://docs.rs/crate/handlebars/).
 
@@ -141,7 +138,7 @@ And using it in your template:
 {{hex 16}}
 ```
 
-By default, handlebars-rust ships [additional helpers](https://github.com/sunng87/handlebars-rust/blob/master/src/helpers/helper_boolean.rs#L5)
+By default, handlebars-rust ships [additional helpers](https://github.com/sunng87/handlebars-rust/blob/master/src/helpers/helper_extras.rs#L6)
 (compared with original js version)
 that is useful when working with `if`.
 
@@ -154,7 +151,7 @@ moment, and can change in future.
 
 Every time I look into a templating system, I will investigate its
 support for [template
-inheritance](https://docs.djangoproject.com/en/1.9/ref/templates/language/#template-inheritance).
+inheritance](https://docs.djangoproject.com/en/3.2/ref/templates/language/#template-inheritance).
 
 Template include is not sufficient for template reuse. In most cases
 you will need a skeleton of page as parent (header, footer, etc.), and
@@ -163,9 +160,21 @@ embed your page into this parent.
 You can find a real example of template inheritance in
 `examples/partials.rs` and templates used by this file.
 
+#### Auto-reload in dev mode
+
+By turning on `dev_mode`, handlebars auto reloads any template and scripts that
+loaded from files or directory. This can be handy for template development.
+
 #### WebAssembly compatible
 
 Handlebars 3.0 can be used in WebAssembly projects.
+
+#### Fully scriptable
+
+With [rhai](https://github.com/rhaiscript/rhai) script support, you
+can implement your own helper with the scripting language. Together
+with the template lanaguage itself, template development can be fully
+scriptable without changing rust code.
 
 ## Related Projects
 
@@ -177,8 +186,9 @@ Handlebars 3.0 can be used in WebAssembly projects.
   example](https://github.com/seanmonstar/warp/blob/master/examples/handlebars_template.rs)
 * Tower-web: [Built-in](https://github.com/carllerche/tower-web)
 * Actix: [handlebars
-  example](https://github.com/actix/examples/blob/master/template_handlebars/src/main.rs)
+  example](https://github.com/actix/examples/blob/master/templating/handlebars/src/main.rs)
 * Tide: [tide-handlebars](https://github.com/No9/tide-handlebars)
+* Axum: [axum-template](https://github.com/Altair-Bueno/axum-template)
 
 ### Adopters
 

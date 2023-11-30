@@ -1,5 +1,4 @@
 {{#*inline "page"}}
   <p>Rendered in partial, parent is {{parent}}</p>
 {{/inline}}
-{{! remove whitespaces with ~ }}
-{{~> (parent)~}}
+{{> (lookup this "parent")}}
