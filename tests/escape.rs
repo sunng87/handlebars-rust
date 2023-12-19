@@ -106,3 +106,17 @@ fn test_triple_bracket_expression_471() {
             .unwrap()
     );
 }
+
+#[test]
+fn test_trimmed_nonescaped_variable() {
+    let mut handlebars = Handlebars::new();
+    handlebars
+        .register_partial("system", "system: {{~{system}~}}")
+        .unwrap();
+
+    let output = handlebars
+        .render_template("{{>system system=\"hello\" prompt=\" world\"}}", &())
+        .unwrap();
+
+    assert_eq!(output, "system:hello");
+}
