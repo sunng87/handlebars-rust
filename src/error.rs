@@ -18,14 +18,14 @@ pub struct RenderError {
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    cause: Box<RenderErrorReason>,
+    reason: Box<RenderErrorReason>,
     unimplemented: bool,
     // backtrace: Backtrace,
 }
 
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        let desc = self.cause.to_string();
+        let desc = self.reason.to_string();
 
         match (self.line_no, self.column_no) {
             (Some(line), Some(col)) => write!(
@@ -144,7 +144,7 @@ impl From<RenderErrorReason> for RenderError {
             template_name: None,
             line_no: None,
             column_no: None,
-            cause: Box::new(e),
+            reason: Box::new(e),
             unimplemented: false,
         }
     }
@@ -170,12 +170,12 @@ impl RenderError {
 
     #[inline]
     pub(crate) fn is_unimplemented(&self) -> bool {
-        matches!(*self.cause, RenderErrorReason::Unimplemented)
+        matches!(*self.reason, RenderErrorReason::Unimplemented)
     }
 
     /// Get `RenderErrorReason` for this error
     pub fn reason(&self) -> &RenderErrorReason {
-        self.cause.as_ref()
+        self.reason.as_ref()
     }
 }
 
