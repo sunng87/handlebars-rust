@@ -81,7 +81,7 @@ fn invalid_json_path() {
     let hbs = Handlebars::new();
 
     let error = hbs.render_template("{{x[]@this}}", &data).unwrap_err();
-    let cause = error.reason().unwrap();
+    let cause = error.reason();
 
     assert!(matches!(cause, RenderErrorReason::HelperNotFound(_)));
 }

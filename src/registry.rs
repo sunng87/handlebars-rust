@@ -1159,13 +1159,10 @@ mod test {
             .unwrap_err();
         assert_eq!(render_error.column_no.unwrap(), 26);
         assert_eq!(
-            render_error
-                .reason()
-                .and_then(|e| match e {
-                    RenderErrorReason::MissingVariable(path) => path.to_owned(),
-                    _ => unreachable!(),
-                })
-                .unwrap(),
+            match render_error.reason() {
+                RenderErrorReason::MissingVariable(path) => path.as_ref().unwrap(),
+                _ => unreachable!(),
+            },
             "the_key_never_exists"
         );
 
@@ -1181,13 +1178,10 @@ mod test {
             .unwrap_err();
         assert_eq!(render_error2.column_no.unwrap(), 31);
         assert_eq!(
-            render_error2
-                .reason()
-                .and_then(|e| match e {
-                    RenderErrorReason::MissingVariable(path) => path.to_owned(),
-                    _ => unreachable!(),
-                })
-                .unwrap(),
+            match render_error2.reason() {
+                RenderErrorReason::MissingVariable(path) => path.as_ref().unwrap(),
+                _ => unreachable!(),
+            },
             "this.[3]"
         )
     }

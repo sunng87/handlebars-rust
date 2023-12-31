@@ -13,23 +13,20 @@ use walkdir::Error as WalkdirError;
 use rhai::{EvalAltResult, ParseError};
 
 /// Error when rendering data on template.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct RenderError {
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    cause: Option<Box<RenderErrorReason>>,
+    cause: Box<RenderErrorReason>,
     unimplemented: bool,
     // backtrace: Backtrace,
 }
 
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        let desc = self
-            .cause
-            .as_ref()
-            .map(|e| e.to_string())
-            .unwrap_or_else(|| "".to_owned());
+        let desc = self.cause.to_string();
+
         match (self.line_no, self.column_no) {
             (Some(line), Some(col)) => write!(
                 f,
@@ -135,6 +132,8 @@ pub enum RenderErrorReason {
         #[source]
         ScriptError,
     ),
+    #[error("Unimplemented")]
+    Unimplemented,
     #[error("{0}")]
     Other(String),
 }
@@ -142,8 +141,11 @@ pub enum RenderErrorReason {
 impl From<RenderErrorReason> for RenderError {
     fn from(e: RenderErrorReason) -> RenderError {
         RenderError {
-            cause: Some(Box::new(e)),
-            ..Default::default()
+            template_name: None,
+            line_no: None,
+            column_no: None,
+            cause: Box::new(e),
+            unimplemented: false,
         }
     }
 }
@@ -152,13 +154,6 @@ impl RenderError {
     #[deprecated(since = "5.0.0", note = "Use RenderErrorReason instead")]
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
         RenderErrorReason::Other(desc.as_ref().to_string()).into()
-    }
-
-    pub(crate) fn unimplemented() -> RenderError {
-        RenderError {
-            unimplemented: true,
-            ..Default::default()
-        }
     }
 
     pub fn strict_error(path: Option<&String>) -> RenderError {
@@ -170,26 +165,23 @@ impl RenderError {
     where
         E: StdError + Send + Sync + 'static,
     {
-        RenderError {
-            cause: Some(Box::new(RenderErrorReason::NestedError(Box::new(cause)))),
-            ..Default::default()
-        }
+        RenderErrorReason::NestedError(Box::new(cause)).into()
     }
 
     #[inline]
     pub(crate) fn is_unimplemented(&self) -> bool {
-        self.unimplemented
+        matches!(*self.cause, RenderErrorReason::Unimplemented)
     }
 
     /// Get `RenderErrorReason` for this error
-    pub fn reason(&self) -> Option<&RenderErrorReason> {
-        self.cause.as_ref().map(|e| e.as_ref())
+    pub fn reason(&self) -> &RenderErrorReason {
+        self.cause.as_ref()
     }
 }
 
 impl StdError for RenderError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        self.reason().and_then(|e| e.source())
+        Some(self.reason())
     }
 }
 

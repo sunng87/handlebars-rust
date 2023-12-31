@@ -119,14 +119,13 @@ mod tests {
     #[test]
     fn test_invalid_input() {
         use crate::error::RenderErrorReason;
-        use std::error::Error;
 
         let hbs = crate::registry::Registry::new();
         let err = hbs
             .render_template("{{snakeCase 1}}", &json!({}))
             .unwrap_err();
         assert!(matches!(
-            err.reason().unwrap(),
+            err.reason(),
             RenderErrorReason::ParamTypeMismatchForName(_, _, _)
         ));
     }
