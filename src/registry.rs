@@ -834,7 +834,6 @@ mod test {
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
     use crate::template::Template;
-    use std::error::Error;
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
@@ -1161,8 +1160,7 @@ mod test {
         assert_eq!(render_error.column_no.unwrap(), 26);
         assert_eq!(
             render_error
-                .source()
-                .and_then(|e| e.downcast_ref::<RenderErrorReason>())
+                .reason()
                 .and_then(|e| match e {
                     RenderErrorReason::MissingVariable(path) => path.to_owned(),
                     _ => unreachable!(),
@@ -1184,8 +1182,7 @@ mod test {
         assert_eq!(render_error2.column_no.unwrap(), 31);
         assert_eq!(
             render_error2
-                .source()
-                .and_then(|e| e.downcast_ref::<RenderErrorReason>())
+                .reason()
                 .and_then(|e| match e {
                     RenderErrorReason::MissingVariable(path) => path.to_owned(),
                     _ => unreachable!(),
