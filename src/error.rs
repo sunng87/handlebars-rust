@@ -13,13 +13,12 @@ use walkdir::Error as WalkdirError;
 use rhai::{EvalAltResult, ParseError};
 
 /// Error when rendering data on template.
-#[derive(Debug, Default, Error)]
+#[derive(Debug, Default)]
 pub struct RenderError {
     pub desc: String,
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    #[source]
     cause: Option<RenderErrorReason>,
     unimplemented: bool,
     // backtrace: Backtrace,
@@ -59,7 +58,11 @@ pub enum RenderErrorReason {
     #[error("Template not found {0}")]
     TemplateNotFound(String),
     #[error("Failed to parse template {0}")]
-    TemplateError(#[from] TemplateError),
+    TemplateError(
+        #[from]
+        #[source]
+        TemplateError,
+    ),
     #[error("Failed to access variable in strict mode {0:?}")]
     MissingVariable(Option<String>),
     #[error("Partial not found {0}")]
@@ -89,19 +92,39 @@ pub enum RenderErrorReason {
     #[error("Cannot access array/vector with string index, {0}")]
     InvalidJsonIndex(String),
     #[error("Failed to access JSON data: {0}")]
-    SerdeError(#[from] SerdeError),
+    SerdeError(
+        #[from]
+        #[source]
+        SerdeError,
+    ),
     #[error("IO Error: {0}")]
-    IOError(#[from] IOError),
+    IOError(
+        #[from]
+        #[source]
+        IOError,
+    ),
     #[error("FromUtf8Error: {0}")]
-    Utf8Error(#[from] FromUtf8Error),
+    Utf8Error(
+        #[from]
+        #[source]
+        FromUtf8Error,
+    ),
     #[error("Nested error: {0}")]
-    NestedError(Box<dyn StdError + Send + Sync + 'static>),
+    NestedError(#[source] Box<dyn StdError + Send + Sync + 'static>),
     #[cfg(feature = "script_helper")]
     #[error("Cannot convert data to Rhai dynamic: {0}")]
-    ScriptValueError(#[from] Box<EvalAltResult>),
+    ScriptValueError(
+        #[from]
+        #[source]
+        Box<EvalAltResult>,
+    ),
     #[cfg(feature = "script_helper")]
     #[error("Failed to load rhai script: {0}")]
-    ScriptLoadError(#[from] ScriptError),
+    ScriptLoadError(
+        #[from]
+        #[source]
+        ScriptError,
+    ),
     #[error("{0}")]
     Other(String),
 }
@@ -153,8 +176,19 @@ impl RenderError {
         self.unimplemented
     }
 
+    /// Get `RenderErrorReason` for this error
     pub fn reason(&self) -> Option<&RenderErrorReason> {
         self.cause.as_ref()
+    }
+}
+
+impl StdError for RenderError {
+    fn description(&self) -> &str {
+        &self.desc
+    }
+
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        self.reason().and_then(|e| e.source())
     }
 }
 
