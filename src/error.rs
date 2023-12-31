@@ -15,17 +15,21 @@ use rhai::{EvalAltResult, ParseError};
 /// Error when rendering data on template.
 #[derive(Debug, Default)]
 pub struct RenderError {
-    pub desc: String,
     pub template_name: Option<String>,
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
-    cause: Option<RenderErrorReason>,
+    cause: Option<Box<RenderErrorReason>>,
     unimplemented: bool,
     // backtrace: Backtrace,
 }
 
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        let desc = self
+            .cause
+            .as_ref()
+            .map(|e| e.to_string())
+            .unwrap_or_else(|| "".to_owned());
         match (self.line_no, self.column_no) {
             (Some(line), Some(col)) => write!(
                 f,
@@ -33,9 +37,9 @@ impl fmt::Display for RenderError {
                 self.template_name.as_deref().unwrap_or("Unnamed template"),
                 line,
                 col,
-                self.desc
+                desc
             ),
-            _ => write!(f, "{}", self.desc),
+            _ => write!(f, "{}", desc),
         }
     }
 }
@@ -49,6 +53,12 @@ impl From<IOError> for RenderError {
 impl From<FromUtf8Error> for RenderError {
     fn from(e: FromUtf8Error) -> Self {
         RenderErrorReason::Utf8Error(e).into()
+    }
+}
+
+impl From<TemplateError> for RenderError {
+    fn from(e: TemplateError) -> Self {
+        RenderErrorReason::TemplateError(e).into()
     }
 }
 
@@ -132,8 +142,7 @@ pub enum RenderErrorReason {
 impl From<RenderErrorReason> for RenderError {
     fn from(e: RenderErrorReason) -> RenderError {
         RenderError {
-            desc: e.to_string(),
-            cause: Some(e),
+            cause: Some(Box::new(e)),
             ..Default::default()
         }
     }
@@ -142,10 +151,7 @@ impl From<RenderErrorReason> for RenderError {
 impl RenderError {
     #[deprecated(since = "5.0.0", note = "Use RenderErrorReason instead")]
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
-        RenderError {
-            desc: desc.as_ref().to_owned(),
-            ..Default::default()
-        }
+        RenderErrorReason::Other(desc.as_ref().to_string()).into()
     }
 
     pub(crate) fn unimplemented() -> RenderError {
@@ -160,13 +166,12 @@ impl RenderError {
     }
 
     #[deprecated(since = "5.0.0", note = "Use RenderErrorReason::NestedError instead")]
-    pub fn from_error<E>(error_info: &str, cause: E) -> RenderError
+    pub fn from_error<E>(_error_info: &str, cause: E) -> RenderError
     where
         E: StdError + Send + Sync + 'static,
     {
         RenderError {
-            desc: error_info.to_owned(),
-            cause: Some(RenderErrorReason::NestedError(Box::new(cause))),
+            cause: Some(Box::new(RenderErrorReason::NestedError(Box::new(cause)))),
             ..Default::default()
         }
     }
@@ -178,15 +183,11 @@ impl RenderError {
 
     /// Get `RenderErrorReason` for this error
     pub fn reason(&self) -> Option<&RenderErrorReason> {
-        self.cause.as_ref()
+        self.cause.as_ref().map(|e| e.as_ref())
     }
 }
 
 impl StdError for RenderError {
-    fn description(&self) -> &str {
-        &self.desc
-    }
-
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         self.reason().and_then(|e| e.source())
     }

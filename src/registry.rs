@@ -596,7 +596,7 @@ impl<'reg> Registry<'reg> {
                     )
                 })
                 .map(Cow::Owned)
-                .map_err(|e| RenderErrorReason::from(e).into());
+                .map_err(RenderError::from);
             Some(r)
         } else {
             self.templates.get(name).map(|t| Ok(Cow::Borrowed(t)))
@@ -755,7 +755,7 @@ impl<'reg> Registry<'reg> {
                 ..Default::default()
             },
         )
-        .map_err(RenderErrorReason::from)?;
+        .map_err(RenderError::from)?;
 
         let mut out = StringOutput::new();
         {
@@ -784,7 +784,7 @@ impl<'reg> Registry<'reg> {
                 ..Default::default()
             },
         )
-        .map_err(RenderErrorReason::from)?;
+        .map_err(RenderError::from)?;
         let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
         tpl.render(self, ctx, &mut render_context, &mut out)
