@@ -1,5 +1,5 @@
 use crate::context::Context;
-use crate::error::RenderError;
+use crate::error::{RenderError, RenderErrorReason};
 use crate::json::value::ScopedJson;
 use crate::output::Output;
 use crate::registry::Registry;
@@ -95,7 +95,7 @@ pub trait HelperDef {
         _: &'rc Context,
         _: &mut RenderContext<'reg, 'rc>,
     ) -> Result<ScopedJson<'rc>, RenderError> {
-        Err(RenderError::unimplemented())
+        Err(RenderErrorReason::Unimplemented.into())
     }
 
     /// A complex version of helper interface.

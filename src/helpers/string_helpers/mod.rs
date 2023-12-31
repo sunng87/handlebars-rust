@@ -117,19 +117,15 @@ mod tests {
     define_case_helpers_test_cases!("trainCase", test_train_case, ("train case", "Train-Case"),);
 
     #[test]
-    fn test_invlaid_input() {
+    fn test_invalid_input() {
         use crate::error::RenderErrorReason;
-        use std::error::Error;
 
         let hbs = crate::registry::Registry::new();
         let err = hbs
             .render_template("{{snakeCase 1}}", &json!({}))
             .unwrap_err();
         assert!(matches!(
-            err.source()
-                .unwrap()
-                .downcast_ref::<RenderErrorReason>()
-                .unwrap(),
+            err.reason(),
             RenderErrorReason::ParamTypeMismatchForName(_, _, _)
         ));
     }

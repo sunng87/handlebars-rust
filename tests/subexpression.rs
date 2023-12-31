@@ -2,7 +2,6 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use std::error::Error;
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::Arc;
 
@@ -82,11 +81,7 @@ fn invalid_json_path() {
     let hbs = Handlebars::new();
 
     let error = hbs.render_template("{{x[]@this}}", &data).unwrap_err();
-    let cause = error
-        .source()
-        .unwrap()
-        .downcast_ref::<RenderErrorReason>()
-        .unwrap();
+    let cause = error.reason();
 
     assert!(matches!(cause, RenderErrorReason::HelperNotFound(_)));
 }

@@ -11,14 +11,13 @@ use crate::context::Context;
 use crate::decorators::{self, DecoratorDef};
 #[cfg(feature = "script_helper")]
 use crate::error::ScriptError;
-use crate::error::{RenderError, TemplateError};
+use crate::error::{RenderError, RenderErrorReason, TemplateError};
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
 use crate::sources::{FileSource, Source};
 use crate::support::str::{self, StringWriter};
 use crate::template::{Template, TemplateOptions};
-use crate::RenderErrorReason;
 
 #[cfg(feature = "dir_source")]
 use walkdir::WalkDir;
@@ -633,7 +632,7 @@ impl<'reg> Registry<'reg> {
                     }) as Box<dyn HelperDef + Send + Sync>;
                     Ok(Some(helper.into()))
                 })
-                .map_err(RenderError::from);
+                .map_err(|e| RenderError::from(RenderErrorReason::from(e)));
         }
 
         Ok(self.helpers.get(name).cloned())
@@ -755,7 +754,8 @@ impl<'reg> Registry<'reg> {
                 prevent_indent: self.prevent_indent,
                 ..Default::default()
             },
-        )?;
+        )
+        .map_err(RenderError::from)?;
 
         let mut out = StringOutput::new();
         {
@@ -783,7 +783,8 @@ impl<'reg> Registry<'reg> {
                 prevent_indent: self.prevent_indent,
                 ..Default::default()
             },
-        )?;
+        )
+        .map_err(RenderError::from)?;
         let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
         tpl.render(self, ctx, &mut render_context, &mut out)
@@ -833,7 +834,6 @@ mod test {
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
     use crate::template::Template;
-    use std::error::Error;
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
@@ -1159,14 +1159,10 @@ mod test {
             .unwrap_err();
         assert_eq!(render_error.column_no.unwrap(), 26);
         assert_eq!(
-            render_error
-                .source()
-                .and_then(|e| e.downcast_ref::<RenderErrorReason>())
-                .and_then(|e| match e {
-                    RenderErrorReason::MissingVariable(path) => path.to_owned(),
-                    _ => unreachable!(),
-                })
-                .unwrap(),
+            match render_error.reason() {
+                RenderErrorReason::MissingVariable(path) => path.as_ref().unwrap(),
+                _ => unreachable!(),
+            },
             "the_key_never_exists"
         );
 
@@ -1182,14 +1178,10 @@ mod test {
             .unwrap_err();
         assert_eq!(render_error2.column_no.unwrap(), 31);
         assert_eq!(
-            render_error2
-                .source()
-                .and_then(|e| e.downcast_ref::<RenderErrorReason>())
-                .and_then(|e| match e {
-                    RenderErrorReason::MissingVariable(path) => path.to_owned(),
-                    _ => unreachable!(),
-                })
-                .unwrap(),
+            match render_error2.reason() {
+                RenderErrorReason::MissingVariable(path) => path.as_ref().unwrap(),
+                _ => unreachable!(),
+            },
             "this.[3]"
         )
     }
