@@ -4,7 +4,7 @@ use serde::Serialize;
 use serde_json::value::{to_value, Map, Value as Json};
 
 use crate::block::{BlockContext, BlockParamHolder};
-use crate::error::RenderError;
+use crate::error::{RenderError, RenderErrorReason};
 use crate::grammar::Rule;
 use crate::json::path::*;
 use crate::json::value::ScopedJson;
@@ -116,7 +116,10 @@ fn parse_json_visitor<'a>(
 
 fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, RenderError> {
     let result = match d {
-        Some(Json::Array(l)) => p.parse::<usize>().map(|idx_u| l.get(idx_u))?,
+        Some(Json::Array(l)) => p
+            .parse::<usize>()
+            .map(|idx_u| l.get(idx_u))
+            .map_err(|_| RenderErrorReason::InvalidJsonIndex(p.to_owned()))?,
         Some(Json::Object(m)) => m.get(p),
         Some(_) => None,
         None => None,
@@ -160,7 +163,7 @@ impl Context {
     /// Create a context with given data
     pub fn wraps<T: Serialize>(e: T) -> Result<Context, RenderError> {
         to_value(e)
-            .map_err(RenderError::from)
+            .map_err(|e| RenderErrorReason::SerdeError(e).into())
             .map(|d| Context { data: d })
     }
 

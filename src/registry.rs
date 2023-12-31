@@ -11,14 +11,13 @@ use crate::context::Context;
 use crate::decorators::{self, DecoratorDef};
 #[cfg(feature = "script_helper")]
 use crate::error::ScriptError;
-use crate::error::{RenderError, TemplateError};
+use crate::error::{RenderError, RenderErrorReason, TemplateError};
 use crate::helpers::{self, HelperDef};
 use crate::output::{Output, StringOutput, WriteOutput};
 use crate::render::{RenderContext, Renderable};
 use crate::sources::{FileSource, Source};
 use crate::support::str::{self, StringWriter};
 use crate::template::{Template, TemplateOptions};
-use crate::RenderErrorReason;
 
 #[cfg(feature = "dir_source")]
 use walkdir::WalkDir;
@@ -597,7 +596,7 @@ impl<'reg> Registry<'reg> {
                     )
                 })
                 .map(Cow::Owned)
-                .map_err(RenderError::from);
+                .map_err(|e| RenderErrorReason::from(e).into());
             Some(r)
         } else {
             self.templates.get(name).map(|t| Ok(Cow::Borrowed(t)))
@@ -633,7 +632,7 @@ impl<'reg> Registry<'reg> {
                     }) as Box<dyn HelperDef + Send + Sync>;
                     Ok(Some(helper.into()))
                 })
-                .map_err(RenderError::from);
+                .map_err(|e| RenderError::from(RenderErrorReason::from(e)));
         }
 
         Ok(self.helpers.get(name).cloned())
@@ -755,7 +754,8 @@ impl<'reg> Registry<'reg> {
                 prevent_indent: self.prevent_indent,
                 ..Default::default()
             },
-        )?;
+        )
+        .map_err(RenderErrorReason::from)?;
 
         let mut out = StringOutput::new();
         {
@@ -783,7 +783,8 @@ impl<'reg> Registry<'reg> {
                 prevent_indent: self.prevent_indent,
                 ..Default::default()
             },
-        )?;
+        )
+        .map_err(RenderErrorReason::from)?;
         let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
         tpl.render(self, ctx, &mut render_context, &mut out)

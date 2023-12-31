@@ -30,14 +30,8 @@ pub fn error_helper(
         .param(0)
         .ok_or(RenderErrorReason::ParamNotFoundForIndex("error", 0))?;
     match param.value().as_str() {
-        Some("db") => Err(RenderError::from_error(
-            "helper error",
-            HelperError::DbError,
-        )),
-        Some("api") => Err(RenderError::from_error(
-            "helper error",
-            HelperError::ApiError,
-        )),
+        Some("db") => Err(RenderErrorReason::NestedError(Box::new(HelperError::DbError)).into()),
+        Some("api") => Err(RenderErrorReason::NestedError(Box::new(HelperError::ApiError)).into()),
         _ => Ok(()),
     }
 }
@@ -76,10 +70,12 @@ fn main() -> Result<(), Box<dyn StdError>> {
     let e2 = handlebars
         .render_template("{{err \"db\"}}", &json!({}))
         .unwrap_err();
-    // down-casting the error to user defined type
-    match e2.source().and_then(|e| e.downcast_ref::<HelperError>()) {
-        Some(HelperError::DbError) => {
-            println!("Detected error from helper: db error",)
+    // get nested error to from `RenderError`
+    match e2.reason() {
+        Some(RenderErrorReason::NestedError(e)) => {
+            if let Some(HelperError::DbError) = e.downcast_ref::<HelperError>() {
+                println!("Detected error from helper: db error",)
+            }
         }
         _ => {}
     }

@@ -1,7 +1,6 @@
 use std::error::Error as StdError;
 use std::fmt::{self, Write};
 use std::io::Error as IOError;
-use std::num::ParseIntError;
 use std::string::FromUtf8Error;
 
 use serde_json::error::Error as SerdeError;
@@ -21,7 +20,7 @@ pub struct RenderError {
     pub line_no: Option<usize>,
     pub column_no: Option<usize>,
     #[source]
-    cause: Option<Box<dyn StdError + Send + Sync + 'static>>,
+    cause: Option<RenderErrorReason>,
     unimplemented: bool,
     // backtrace: Backtrace,
 }
@@ -44,31 +43,13 @@ impl fmt::Display for RenderError {
 
 impl From<IOError> for RenderError {
     fn from(e: IOError) -> RenderError {
-        RenderError::from_error("Cannot generate output.", e)
-    }
-}
-
-impl From<SerdeError> for RenderError {
-    fn from(e: SerdeError) -> RenderError {
-        RenderError::from_error("Failed to access JSON data.", e)
+        RenderErrorReason::IOError(e).into()
     }
 }
 
 impl From<FromUtf8Error> for RenderError {
-    fn from(e: FromUtf8Error) -> RenderError {
-        RenderError::from_error("Failed to generate bytes.", e)
-    }
-}
-
-impl From<ParseIntError> for RenderError {
-    fn from(e: ParseIntError) -> RenderError {
-        RenderError::from_error("Cannot access array/vector with string index.", e)
-    }
-}
-
-impl From<TemplateError> for RenderError {
-    fn from(e: TemplateError) -> RenderError {
-        RenderError::from_error("Failed to parse template.", e)
+    fn from(e: FromUtf8Error) -> Self {
+        RenderErrorReason::Utf8Error(e).into()
     }
 }
 
@@ -77,6 +58,8 @@ impl From<TemplateError> for RenderError {
 pub enum RenderErrorReason {
     #[error("Template not found {0}")]
     TemplateNotFound(String),
+    #[error("Failed to parse template {0}")]
+    TemplateError(#[from] TemplateError),
     #[error("Failed to access variable in strict mode {0:?}")]
     MissingVariable(Option<String>),
     #[error("Partial not found {0}")]
@@ -103,27 +86,33 @@ pub enum RenderErrorReason {
     BlockContentRequired,
     #[error("Invalid json path {0}")]
     InvalidJsonPath(String),
+    #[error("Cannot access array/vector with string index, {0}")]
+    InvalidJsonIndex(String),
+    #[error("Failed to access JSON data: {0}")]
+    SerdeError(#[from] SerdeError),
+    #[error("IO Error: {0}")]
+    IOError(#[from] IOError),
+    #[error("FromUtf8Error: {0}")]
+    Utf8Error(#[from] FromUtf8Error),
+    #[error("Nested error: {0}")]
+    NestedError(Box<dyn StdError + Send + Sync + 'static>),
+    #[cfg(feature = "script_helper")]
+    #[error("Cannot convert data to Rhai dynamic: {0}")]
+    ScriptValueError(#[from] Box<EvalAltResult>),
+    #[cfg(feature = "script_helper")]
+    #[error("Failed to load rhai script: {0}")]
+    ScriptLoadError(#[from] ScriptError),
     #[error("{0}")]
     Other(String),
 }
 
 impl From<RenderErrorReason> for RenderError {
     fn from(e: RenderErrorReason) -> RenderError {
-        RenderError::from_error(&e.to_string(), e)
-    }
-}
-
-#[cfg(feature = "script_helper")]
-impl From<Box<EvalAltResult>> for RenderError {
-    fn from(e: Box<EvalAltResult>) -> RenderError {
-        RenderError::from_error("Cannot convert data to Rhai dynamic", e)
-    }
-}
-
-#[cfg(feature = "script_helper")]
-impl From<ScriptError> for RenderError {
-    fn from(e: ScriptError) -> RenderError {
-        RenderError::from_error("Failed to load rhai script", e)
+        RenderError {
+            desc: e.to_string(),
+            cause: Some(e),
+            ..Default::default()
+        }
     }
 }
 
@@ -147,13 +136,14 @@ impl RenderError {
         RenderErrorReason::MissingVariable(path.map(|p| p.to_owned())).into()
     }
 
+    #[deprecated(since = "5.0.0", note = "Use RenderErrorReason::NestedError instead")]
     pub fn from_error<E>(error_info: &str, cause: E) -> RenderError
     where
         E: StdError + Send + Sync + 'static,
     {
         RenderError {
             desc: error_info.to_owned(),
-            cause: Some(Box::new(cause)),
+            cause: Some(RenderErrorReason::NestedError(Box::new(cause))),
             ..Default::default()
         }
     }
@@ -161,6 +151,10 @@ impl RenderError {
     #[inline]
     pub(crate) fn is_unimplemented(&self) -> bool {
         self.unimplemented
+    }
+
+    pub fn reason(&self) -> Option<&RenderErrorReason> {
+        self.cause.as_ref()
     }
 }
 

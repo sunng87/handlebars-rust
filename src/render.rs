@@ -542,7 +542,8 @@ pub trait Renderable {
     ) -> Result<String, RenderError> {
         let mut so = StringOutput::new();
         self.render(registry, ctx, rc, &mut so)?;
-        so.into_string().map_err(RenderError::from)
+        so.into_string()
+            .map_err(|e| RenderErrorReason::from(e).into())
     }
 }
 
