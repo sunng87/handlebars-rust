@@ -139,6 +139,21 @@ mod test {
     }
 
     #[test]
+    fn test_if_else_chain4() {
+        let handlebars = Registry::new();
+
+        assert_eq!(
+            "1".to_owned(),
+            handlebars
+                .render_template(
+                    "{{#if a}}1{{else if b}}2{{else if c}}3{{else if d}}4{{/if}}",
+                    &json!({"a":1})
+                )
+                .unwrap()
+        );
+    }
+
+    #[test]
     fn test_if_include_zero() {
         use std::f64;
         let handlebars = Registry::new();

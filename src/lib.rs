@@ -108,10 +108,6 @@
 //! First of all, mustache blocks are not supported. I suggest you to use `#if` and `#each` for
 //! the same functionality.
 //!
-//! There are some other minor features missing:
-//!
-//! * Chained else [#12](https://github.com/sunng87/handlebars-rust/issues/12)
-//!
 //! Feel free to file an issue on [github](https://github.com/sunng87/handlebars-rust/issues) if
 //! you find missing features.
 //!
