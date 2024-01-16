@@ -149,7 +149,7 @@ impl HelperTemplate {
             block,
             template: None,
             inverse: None,
-            chain: false
+            chain: false,
         }
     }
 
@@ -162,7 +162,7 @@ impl HelperTemplate {
             block,
             template: None,
             inverse: None,
-            chain: true
+            chain: true,
         }
     }
 
@@ -176,7 +176,7 @@ impl HelperTemplate {
             template: None,
             inverse: None,
             block: false,
-            chain: false
+            chain: false,
         }
     }
 
@@ -184,8 +184,7 @@ impl HelperTemplate {
         !self.block && self.params.is_empty() && self.hash.is_empty()
     }
 
-    fn insert_inverse_node(&mut self, mut node: Box<HelperTemplate>)
-    {
+    fn insert_inverse_node(&mut self, mut node: Box<HelperTemplate>) {
         // Create a list in "inverse" member to hold the else-chain.
         // Here we create the new template to save the else-chain node.
         // The template render could render it successfully without any code add.
@@ -193,12 +192,9 @@ impl HelperTemplate {
         node.inverse = self.inverse.take();
         new_chain_template.elements.push(HelperBlock(node));
         self.inverse = Some(new_chain_template);
-
     }
-    
 
-    fn ref_chain_head_mut(&mut self) -> Option<&mut Box<HelperTemplate>>
-    {
+    fn ref_chain_head_mut(&mut self) -> Option<&mut Box<HelperTemplate>> {
         if self.chain {
             if let Some(inverse_tmpl) = &mut self.inverse {
                 assert_eq!(inverse_tmpl.elements.len(), 1);
@@ -210,30 +206,24 @@ impl HelperTemplate {
         None
     }
 
-    fn set_chain_template(&mut self, tmpl: Option<Template>)
-    {
+    fn set_chain_template(&mut self, tmpl: Option<Template>) {
         if let Some(hepler) = self.ref_chain_head_mut() {
             hepler.template = tmpl;
-        }else{
+        } else {
             self.template = tmpl;
         }
-
     }
 
-    fn revert_chain_and_set(&mut self, inverse: Option<Template>)
-    {
-        if self.chain{
-
+    fn revert_chain_and_set(&mut self, inverse: Option<Template>) {
+        if self.chain {
             let mut prev = None;
 
             if let Some(head) = self.ref_chain_head_mut() {
                 if head.template.is_some() {
-
                     // Here the prev will hold the head inverse template.
                     // It will be set when reverse the chain.
                     prev = inverse;
-                }else{
-
+                } else {
                     // If the head already has template. set the inverse template.
                     head.template = inverse;
                 }
@@ -250,29 +240,24 @@ impl HelperTemplate {
             }
 
             self.inverse = prev;
-
-        }else{
-
+        } else {
             // If the helper has no else chain.
             // set the template to self.
             if self.template.is_some() {
                 self.inverse = inverse;
-            }else{
+            } else {
                 self.template = inverse;
             }
         }
     }
 
-    fn set_chained(&mut self) 
-    {
+    fn set_chained(&mut self) {
         self.chain = true;
     }
 
-    pub fn is_chained(&self) -> bool
-    {
+    pub fn is_chained(&self) -> bool {
         self.chain
     }
-
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -806,7 +791,7 @@ impl Template {
 
                         let t = template_stack.pop_front().unwrap();
                         let h = helper_stack.front_mut().unwrap();
-                        
+
                         if rule == Rule::invert_chain_tag {
                             h.set_chained();
                         }
@@ -815,7 +800,6 @@ impl Template {
                         if rule == Rule::invert_chain_tag {
                             h.insert_inverse_node(Box::new(HelperTemplate::new_chain(exp, true)));
                         }
-
                     }
 
                     Rule::raw_block_text => {
@@ -904,7 +888,6 @@ impl Template {
                                 let mut h = helper_stack.pop_front().unwrap();
                                 let close_tag_name = exp.name.as_name();
                                 if h.name.as_name() == close_tag_name {
-
                                     let prev_t = template_stack.pop_front().unwrap();
                                     h.revert_chain_and_set(Some(prev_t));
 

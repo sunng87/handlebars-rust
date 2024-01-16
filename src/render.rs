@@ -666,7 +666,13 @@ impl Parameter {
 }
 
 impl Renderable for HelperTemplate {
-    fn render<'reg: 'rc, 'rc>(&'rc self, registry: &'reg Registry<'reg>, ctx: &'rc Context, rc: &mut RenderContext<'reg, 'rc>, out: &mut dyn Output) -> Result<(), RenderError> {
+    fn render<'reg: 'rc, 'rc>(
+        &'rc self,
+        registry: &'reg Registry<'reg>,
+        ctx: &'rc Context,
+        rc: &mut RenderContext<'reg, 'rc>,
+        out: &mut dyn Output,
+    ) -> Result<(), RenderError> {
         render_helper(self, registry, ctx, rc, out)
     }
 }
