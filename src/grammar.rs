@@ -261,6 +261,7 @@ mod test {
             "{{#if}}hello{{else~}}world{{/if}}",
             "{{#if}}hello{{~^~}}world{{/if}}",
             "{{#if}}{{/if}}",
+            "{{#if}}hello{{else if}}world{{else}}test{{/if}}",
         ];
         for i in s.iter() {
             assert_rule!(Rule::helper_block, i);

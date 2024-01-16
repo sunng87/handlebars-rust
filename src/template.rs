@@ -62,6 +62,7 @@ impl Subexpression {
                 inverse: None,
                 block_param: None,
                 block: false,
+                chain: false,
             }))),
         }
     }
@@ -135,6 +136,7 @@ pub struct HelperTemplate {
     pub template: Option<Template>,
     pub inverse: Option<Template>,
     pub block: bool,
+    pub chain: bool,
 }
 
 impl HelperTemplate {
@@ -147,6 +149,20 @@ impl HelperTemplate {
             block,
             template: None,
             inverse: None,
+            chain: false,
+        }
+    }
+
+    pub fn new_chain(exp: ExpressionSpec, block: bool) -> HelperTemplate {
+        HelperTemplate {
+            name: exp.name,
+            params: exp.params,
+            hash: exp.hash,
+            block_param: exp.block_param,
+            block,
+            template: None,
+            inverse: None,
+            chain: true,
         }
     }
 
@@ -160,11 +176,87 @@ impl HelperTemplate {
             template: None,
             inverse: None,
             block: false,
+            chain: false,
         }
     }
 
     pub(crate) fn is_name_only(&self) -> bool {
         !self.block && self.params.is_empty() && self.hash.is_empty()
+    }
+
+    fn insert_inverse_node(&mut self, mut node: Box<HelperTemplate>) {
+        // Create a list in "inverse" member to hold the else-chain.
+        // Here we create the new template to save the else-chain node.
+        // The template render could render it successfully without any code add.
+        let mut new_chain_template = Template::new();
+        node.inverse = self.inverse.take();
+        new_chain_template.elements.push(HelperBlock(node));
+        self.inverse = Some(new_chain_template);
+    }
+
+    fn ref_chain_head_mut(&mut self) -> Option<&mut Box<HelperTemplate>> {
+        if self.chain {
+            if let Some(inverse_tmpl) = &mut self.inverse {
+                assert_eq!(inverse_tmpl.elements.len(), 1);
+                if let HelperBlock(helper) = &mut inverse_tmpl.elements[0] {
+                    return Some(helper);
+                }
+            }
+        }
+        None
+    }
+
+    fn set_chain_template(&mut self, tmpl: Option<Template>) {
+        if let Some(hepler) = self.ref_chain_head_mut() {
+            hepler.template = tmpl;
+        } else {
+            self.template = tmpl;
+        }
+    }
+
+    fn revert_chain_and_set(&mut self, inverse: Option<Template>) {
+        if self.chain {
+            let mut prev = None;
+
+            if let Some(head) = self.ref_chain_head_mut() {
+                if head.template.is_some() {
+                    // Here the prev will hold the head inverse template.
+                    // It will be set when reverse the chain.
+                    prev = inverse;
+                } else {
+                    // If the head already has template. set the inverse template.
+                    head.template = inverse;
+                }
+            }
+
+            // Reverse the else chain, to the normal list order.
+            while let Some(mut node) = self.inverse.take() {
+                assert_eq!(node.elements.len(), 1);
+                if let HelperBlock(c) = &mut node.elements[0] {
+                    self.inverse = c.inverse.take();
+                    c.inverse = prev;
+                    prev = Some(node);
+                }
+            }
+
+            self.inverse = prev;
+        } else {
+            // If the helper has no else chain.
+            // set the template to self.
+            if self.template.is_some() {
+                self.inverse = inverse;
+            } else {
+                self.template = inverse;
+            }
+        }
+    }
+
+    fn set_chained(&mut self) {
+        self.chain = true;
+    }
+
+    pub fn is_chained(&self) -> bool {
+        self.chain
     }
 }
 
@@ -674,9 +766,13 @@ impl Template {
                         let t = template_stack.front_mut().unwrap();
                         t.mapping.push(TemplateMapping(line_no, col_no));
                     }
-                    Rule::invert_tag => {
+                    Rule::invert_tag | Rule::invert_chain_tag => {
                         // hack: invert_tag structure is similar to ExpressionSpec, so I
                         // use it here to represent the data
+
+                        if rule == Rule::invert_chain_tag {
+                            let _ = Template::parse_name(source, &mut it, span.end())?;
+                        }
                         let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
 
                         if exp.omit_pre_ws {
@@ -695,8 +791,17 @@ impl Template {
 
                         let t = template_stack.pop_front().unwrap();
                         let h = helper_stack.front_mut().unwrap();
-                        h.template = Some(t);
+
+                        if rule == Rule::invert_chain_tag {
+                            h.set_chained();
+                        }
+
+                        h.set_chain_template(Some(t));
+                        if rule == Rule::invert_chain_tag {
+                            h.insert_inverse_node(Box::new(HelperTemplate::new_chain(exp, true)));
+                        }
                     }
+
                     Rule::raw_block_text => {
                         let mut t = Template::new();
                         t.push_element(
@@ -784,11 +889,8 @@ impl Template {
                                 let close_tag_name = exp.name.as_name();
                                 if h.name.as_name() == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
-                                    if h.template.is_some() {
-                                        h.inverse = Some(prev_t);
-                                    } else {
-                                        h.template = Some(prev_t);
-                                    }
+                                    h.revert_chain_and_set(Some(prev_t));
+
                                     let t = template_stack.front_mut().unwrap();
                                     t.elements.push(HelperBlock(Box::new(h)));
                                 } else {
@@ -1331,6 +1433,6 @@ mod test {
         let s = "{{#>(X)}}{{/X}}";
         let result = Template::compile(s);
         assert!(result.is_err());
-        assert_eq!("decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false }) })\" was opened, but \"X\" is closing", format!("{}", result.unwrap_err().reason()));
+        assert_eq!("decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false, chain: false }) })\" was opened, but \"X\" is closing", format!("{}", result.unwrap_err().reason()));
     }
 }
