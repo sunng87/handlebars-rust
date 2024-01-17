@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/5.0.0...Unreleased) - ReleaseDate
+## [5.1.0](https://github.com/sunng87/handlebars-rust/compare/5.0.0...5.1.0) - 2024-01-17
 
 * [Added] Chained `else if` block support [#629]
 
