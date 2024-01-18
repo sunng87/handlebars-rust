@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/5.1.0...Unreleased) - ReleaseDate
+
+* [Changed] Turned off pub access of `chain` in `HelperTemplate`
+
 ## [5.1.0](https://github.com/sunng87/handlebars-rust/compare/5.0.0...5.1.0) - 2024-01-17
 
 * [Added] Chained `else if` block support [#629]
