@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/5.1.0...Unreleased) - ReleaseDate
+## [5.1.1](https://github.com/sunng87/handlebars-rust/compare/5.1.0...5.1.1) - 2024-01-18
 
 * [Changed] Turned off pub access of `chain` in `HelperTemplate`
 
