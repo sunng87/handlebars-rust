@@ -136,7 +136,7 @@ pub struct HelperTemplate {
     pub template: Option<Template>,
     pub inverse: Option<Template>,
     pub block: bool,
-    chain: bool,
+    pub chain: bool,
 }
 
 impl HelperTemplate {
