@@ -1,5 +1,4 @@
 use std::collections::{HashMap, VecDeque};
-use std::convert::From;
 use std::iter::Peekable;
 use std::str::FromStr;
 
