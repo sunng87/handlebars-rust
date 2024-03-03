@@ -1,3 +1,4 @@
+//! Pest grammar for handlebars templating
 WHITESPACE = _{ " "|"\t"|"\n"|"\r" }
 keywords = { "as" | "else" }
 
@@ -76,7 +77,7 @@ partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
 invert_tag_item = { "else"|"^" }
 invert_tag = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
              ~ pro_whitespace_omitter? ~ "}}" }
-invert_chain_tag = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item 
+invert_chain_tag = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
                      ~ exp_line ~ pro_whitespace_omitter? ~ "}}" }
 helper_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
                      pro_whitespace_omitter? ~ "}}" }
@@ -123,9 +124,8 @@ template = { (
 parameter = _{ param ~ EOI }
 handlebars = _{ template ~ EOI }
 
-// json path visitor
-// Disallowed chars: Whitespace ! " # % & ' ( ) * + , . / ; < = > @ [ \ ] ^ ` { | } ~
-
+/// json path visitor
+/// Disallowed chars: Whitespace ! " # % & ' ( ) * + , . / ; < = > @ [ \ ] ^ ` { | } ~
 path_id = @{ symbol_char+ }
 
 path_raw_id = { (!"]" ~ ANY)* }
