@@ -687,7 +687,7 @@ impl Renderable for Template {
                 }
 
                 if e.template_name.is_none() {
-                    e.template_name = self.name.clone();
+                    e.template_name.clone_from(&self.name);
                 }
 
                 e
@@ -715,7 +715,7 @@ impl Evaluable for Template {
                     }
                 }
 
-                e.template_name = self.name.clone();
+                e.template_name.clone_from(&self.name);
                 e
             })?;
         }

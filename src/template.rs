@@ -536,7 +536,7 @@ impl Template {
     fn remove_previous_whitespace(template_stack: &mut VecDeque<Template>) {
         let t = template_stack.front_mut().unwrap();
         if let Some(RawString(ref mut text)) = t.elements.last_mut() {
-            *text = text.trim_end().to_owned();
+            text.trim_end().to_owned().clone_into(text);
         }
     }
 
@@ -566,9 +566,9 @@ impl Template {
                 // check the last element before current
                 if let Some(RawString(ref mut text)) = t.elements.last_mut() {
                     // trim leading space for standalone statement
-                    *text = text
-                        .trim_end_matches(support::str::whitespace_matcher)
-                        .to_owned();
+                    text.trim_end_matches(support::str::whitespace_matcher)
+                        .to_owned()
+                        .clone_into(text);
                 }
             }
 
