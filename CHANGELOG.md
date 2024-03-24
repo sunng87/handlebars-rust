@@ -1,6 +1,11 @@
 # Change Log
 
-## [5.1.1](https://github.com/sunng87/handlebars-rust/compare/5.1.0...5.1.1) - 2024-01-18
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/5.1.1...Unreleased) - ReleaseDate
+
+* [Changed] Improved error message and syntax rule naming [#638]
+* [Changed] Updated `heck` to 0.5 [#635]
+
+## ~~[5.1.1](https://github.com/sunng87/handlebars-rust/compare/5.1.0...5.1.1) - 2024-01-18~~ Yanked
 
 * [Changed] Turned off pub access of `chain` in `HelperTemplate`
 
