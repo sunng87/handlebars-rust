@@ -103,7 +103,7 @@ mod test {
     fn test_param() {
         let s = vec!["hello", "\"json literal\"", "nullable", "truestory"];
         for i in s.iter() {
-            assert_rule!(Rule::param, i);
+            assert_rule!(Rule::helper_parameter, i);
         }
     }
 
