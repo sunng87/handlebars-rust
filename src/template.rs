@@ -368,7 +368,7 @@ impl Template {
         I: Iterator<Item = Pair<'a, Rule>>,
     {
         let mut param = it.next().unwrap();
-        if param.as_rule() == Rule::param {
+        if param.as_rule() == Rule::helper_parameter {
             param = it.next().unwrap();
         }
         let param_rule = param.as_rule();
@@ -482,7 +482,7 @@ impl Template {
         let mut omit_pro_ws = false;
         let mut block_param = None;
 
-        if it.peek().unwrap().as_rule() == Rule::pre_whitespace_omitter {
+        if it.peek().unwrap().as_rule() == Rule::leading_tilde_to_omit_whitespace {
             omit_pre_ws = true;
             it.next();
         }
@@ -507,7 +507,7 @@ impl Template {
             it.next();
 
             match rule {
-                Rule::param => {
+                Rule::helper_parameter => {
                     params.push(Template::parse_param(source, it.by_ref(), end)?);
                 }
                 Rule::hash => {
@@ -517,7 +517,7 @@ impl Template {
                 Rule::block_param => {
                     block_param = Some(Template::parse_block_param(source, it.by_ref(), end));
                 }
-                Rule::pro_whitespace_omitter => {
+                Rule::trailing_tilde_to_omit_whitespace => {
                     omit_pro_ws = true;
                 }
                 _ => {}
@@ -640,7 +640,7 @@ impl Template {
                 LineColLocation::Pos(line_col) => line_col,
                 LineColLocation::Span(line_col, _) => line_col,
             };
-            TemplateError::of(TemplateErrorReason::InvalidSyntax)
+            TemplateError::of(TemplateErrorReason::InvalidSyntax(e.variant.message().to_string()))
                 .at(source, line_no, col_no)
                 .in_template(options.name())
         })?;
@@ -1133,7 +1133,7 @@ mod test {
 
         let terr = Template::compile(source).unwrap_err();
 
-        assert!(matches!(terr.reason(), TemplateErrorReason::InvalidSyntax));
+        assert!(matches!(terr.reason(), TemplateErrorReason::InvalidSyntax(_)));
         assert_eq!(terr.pos(), Some((4, 5)));
     }
 
@@ -1248,10 +1248,12 @@ mod test {
         let sources = ["{{invalid", "{{{invalid", "{{invalid}", "{{!hello"];
         for s in sources.iter() {
             let result = Template::compile(s.to_owned());
-            assert!(matches!(
-                *result.unwrap_err().reason(),
-                TemplateErrorReason::InvalidSyntax
-            ));
+            let err = result.expect_err("expected a syntax error");
+            let syntax_error_msg = match err.reason() {
+                TemplateErrorReason::InvalidSyntax(s) => s,
+                _ => panic!("InvalidSyntax expected"),
+            };
+            assert!(syntax_error_msg.contains("expected identifier"), "{}", syntax_error_msg);
         }
     }
 

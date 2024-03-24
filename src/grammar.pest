@@ -43,66 +43,66 @@ reference = ${ path_inline }
 
 name = _{ subexpression | reference }
 
-param = { !(keywords ~ !symbol_char) ~ (literal | reference | subexpression) }
-hash = { identifier ~ "=" ~ param }
+helper_parameter = { !(keywords ~ !symbol_char) ~ (literal | reference | subexpression) }
+hash = { identifier ~ "=" ~ helper_parameter }
 block_param = { "as" ~ "|" ~ identifier ~ identifier? ~ "|"}
-exp_line = _{ identifier ~ (hash|param)* ~ block_param?}
-partial_exp_line = _{ ((partial_identifier|name) ~ (hash|param)*) }
+exp_line = _{ identifier ~ (hash|helper_parameter)* ~ block_param?}
+partial_exp_line = _{ ((partial_identifier|name) ~ (hash|helper_parameter)*) }
 
-subexpression = { "(" ~ ((identifier ~ (hash|param)+) | reference)  ~ ")" }
+subexpression = { "(" ~ ((identifier ~ (hash|helper_parameter)+) | reference)  ~ ")" }
 
-pre_whitespace_omitter = { "~" }
-pro_whitespace_omitter = { "~" }
+leading_tilde_to_omit_whitespace = { "~" }
+trailing_tilde_to_omit_whitespace = { "~" }
 
-expression = { !(invert_tag|invert_chain_tag) ~ "{{" ~ pre_whitespace_omitter? ~
-              ((identifier ~ (hash|param)+) | name )
-              ~ pro_whitespace_omitter? ~ "}}" }
-html_expression_triple_bracket_legacy = _{ "{{{" ~ pre_whitespace_omitter? ~
-                                           ((identifier ~ (hash|param)+) | name ) ~
-                                           pro_whitespace_omitter? ~ "}}}" }
-html_expression_triple_bracket = _{ "{{" ~ pre_whitespace_omitter? ~ "{" ~
-                                              ((identifier ~ (hash|param)+) | name ) ~
-                                              "}" ~ pro_whitespace_omitter? ~ "}}" }
+expression = { !(invert_tag|invert_chain_tag) ~ "{{" ~ leading_tilde_to_omit_whitespace? ~
+              ((identifier ~ (hash|helper_parameter)+) | name )
+              ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
+html_expression_triple_bracket_legacy = _{ "{{{" ~ leading_tilde_to_omit_whitespace? ~
+                                           ((identifier ~ (hash|helper_parameter)+) | name ) ~
+                                           trailing_tilde_to_omit_whitespace? ~ "}}}" }
+html_expression_triple_bracket = _{ "{{" ~ leading_tilde_to_omit_whitespace? ~ "{" ~
+                                              ((identifier ~ (hash|helper_parameter)+) | name ) ~
+                                              "}" ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
 
-amp_expression = _{ "{{" ~ pre_whitespace_omitter? ~ "&" ~ name ~
-                       pro_whitespace_omitter? ~ "}}" }
+amp_expression = _{ "{{" ~ leading_tilde_to_omit_whitespace? ~ "&" ~ name ~
+                       trailing_tilde_to_omit_whitespace? ~ "}}" }
 html_expression = { (html_expression_triple_bracket_legacy | html_expression_triple_bracket)
                    | amp_expression }
 
-decorator_expression = { "{{" ~ pre_whitespace_omitter? ~ "*" ~ exp_line ~
-pro_whitespace_omitter? ~ "}}" }
-partial_expression = { "{{" ~ pre_whitespace_omitter? ~ ">" ~ partial_exp_line
-                     ~ pro_whitespace_omitter? ~ "}}" }
+decorator_expression = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "*" ~ exp_line ~
+trailing_tilde_to_omit_whitespace? ~ "}}" }
+partial_expression = { "{{" ~ leading_tilde_to_omit_whitespace? ~ ">" ~ partial_exp_line
+                     ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
 
 invert_tag_item = { "else"|"^" }
-invert_tag = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
-             ~ pro_whitespace_omitter? ~ "}}" }
-invert_chain_tag = { !escape ~ "{{" ~ pre_whitespace_omitter? ~ invert_tag_item
-                     ~ exp_line ~ pro_whitespace_omitter? ~ "}}" }
-helper_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ exp_line ~
-                     pro_whitespace_omitter? ~ "}}" }
-helper_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                   pro_whitespace_omitter? ~ "}}" }
+invert_tag = { !escape ~ "{{" ~ leading_tilde_to_omit_whitespace? ~ invert_tag_item
+             ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
+invert_chain_tag = { !escape ~ "{{" ~ leading_tilde_to_omit_whitespace? ~ invert_tag_item
+                     ~ exp_line ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
+helper_block_start = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "#" ~ exp_line ~
+                     trailing_tilde_to_omit_whitespace? ~ "}}" }
+helper_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ identifier ~
+                   trailing_tilde_to_omit_whitespace? ~ "}}" }
 helper_block = _{ helper_block_start ~ template ~
                   (invert_chain_tag ~ template)* ~ (invert_tag ~ template)? ~ helper_block_end }
 
-decorator_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ "*"
-                        ~ exp_line ~ pro_whitespace_omitter? ~ "}}" }
-decorator_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                        pro_whitespace_omitter? ~ "}}" }
+decorator_block_start = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "#" ~ "*"
+                        ~ exp_line ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
+decorator_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ identifier ~
+                        trailing_tilde_to_omit_whitespace? ~ "}}" }
 decorator_block = _{ decorator_block_start ~ template ~
                      decorator_block_end }
 
-partial_block_start = { "{{" ~ pre_whitespace_omitter? ~ "#" ~ ">"
-                        ~ partial_exp_line ~ pro_whitespace_omitter? ~ "}}" }
-partial_block_end = { "{{" ~ pre_whitespace_omitter? ~ "/" ~ partial_identifier ~
-                      pro_whitespace_omitter? ~ "}}" }
+partial_block_start = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "#" ~ ">"
+                        ~ partial_exp_line ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
+partial_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ partial_identifier ~
+                      trailing_tilde_to_omit_whitespace? ~ "}}" }
 partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
-raw_block_start = { "{{{{" ~ pre_whitespace_omitter? ~ exp_line ~
-                    pro_whitespace_omitter? ~ "}}}}" }
-raw_block_end = { "{{{{" ~ pre_whitespace_omitter? ~ "/" ~ identifier ~
-                  pro_whitespace_omitter? ~ "}}}}" }
+raw_block_start = { "{{{{" ~ leading_tilde_to_omit_whitespace? ~ exp_line ~
+                    trailing_tilde_to_omit_whitespace? ~ "}}}}" }
+raw_block_end = { "{{{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ identifier ~
+                  trailing_tilde_to_omit_whitespace? ~ "}}}}" }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
 hbs_comment = { "{{!" ~ "--" ~ (!"--}}" ~ ANY)* ~ "--" ~ "}}" }
@@ -121,7 +121,7 @@ template = { (
             partial_expression |
             partial_block )* }
 
-parameter = _{ param ~ EOI }
+parameter = _{ helper_parameter ~ EOI }
 handlebars = _{ template ~ EOI }
 
 /// json path visitor

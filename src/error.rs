@@ -192,8 +192,8 @@ pub enum TemplateErrorReason {
     MismatchingClosedHelper(String, String),
     #[error("decorator {0:?} was opened, but {1:?} is closing")]
     MismatchingClosedDecorator(String, String),
-    #[error("invalid handlebars syntax.")]
-    InvalidSyntax,
+    #[error("invalid handlebars syntax: {0}")]
+    InvalidSyntax(String),
     #[error("invalid parameter {0:?}")]
     InvalidParam(String),
     #[error("nested subexpression is not supported")]
