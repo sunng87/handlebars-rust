@@ -640,9 +640,11 @@ impl Template {
                 LineColLocation::Pos(line_col) => line_col,
                 LineColLocation::Span(line_col, _) => line_col,
             };
-            TemplateError::of(TemplateErrorReason::InvalidSyntax(e.variant.message().to_string()))
-                .at(source, line_no, col_no)
-                .in_template(options.name())
+            TemplateError::of(TemplateErrorReason::InvalidSyntax(
+                e.variant.message().to_string(),
+            ))
+            .at(source, line_no, col_no)
+            .in_template(options.name())
         })?;
 
         // dbg!(parser_queue.clone().flatten());
@@ -1133,7 +1135,10 @@ mod test {
 
         let terr = Template::compile(source).unwrap_err();
 
-        assert!(matches!(terr.reason(), TemplateErrorReason::InvalidSyntax(_)));
+        assert!(matches!(
+            terr.reason(),
+            TemplateErrorReason::InvalidSyntax(_)
+        ));
         assert_eq!(terr.pos(), Some((4, 5)));
     }
 
@@ -1253,7 +1258,11 @@ mod test {
                 TemplateErrorReason::InvalidSyntax(s) => s,
                 _ => panic!("InvalidSyntax expected"),
             };
-            assert!(syntax_error_msg.contains("expected identifier"), "{}", syntax_error_msg);
+            assert!(
+                syntax_error_msg.contains("expected identifier"),
+                "{}",
+                syntax_error_msg
+            );
         }
     }
 
