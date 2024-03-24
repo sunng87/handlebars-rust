@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/5.1.1...Unreleased) - ReleaseDate
+## [5.1.2](https://github.com/sunng87/handlebars-rust/compare/5.1.1...5.1.2) - 2024-03-24
 
 * [Changed] Improved error message and syntax rule naming [#638]
 * [Changed] Updated `heck` to 0.5 [#635]
