@@ -4,9 +4,9 @@
 /// There are several types of arguments available to closure:
 ///
 /// * Parameters are mapped to closure arguments one by one. Any declared
-/// parameters are required
+///   parameters are required
 /// * Hash are mapped as named arguments and declared in a bracket block.
-/// All named arguments are optional so default value is required.
+///   All named arguments are optional so default value is required.
 /// * An optional `*args` provides a vector of all helper parameters.
 /// * An optional `**kwargs` provides a map of all helper hash.
 ///

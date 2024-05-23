@@ -165,10 +165,10 @@
 //! #### Additional features for loading template from
 //!
 //! * Feature `dir_source` enables template loading
-//! `register_templates_directory` from given directory.
+//!   `register_templates_directory` from given directory.
 //! * Feature `rust-embed` enables template loading
-//! `register_embed_templates` from embedded resources in rust struct
-//! generated with `RustEmbed`.
+//!   `register_embed_templates` from embedded resources in rust struct
+//!   generated with `RustEmbed`.
 //!
 //! ### Rendering Something
 //!
