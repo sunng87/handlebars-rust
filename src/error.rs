@@ -150,6 +150,12 @@ impl From<RenderErrorReason> for RenderError {
     }
 }
 
+impl From<RenderError> for RenderErrorReason {
+    fn from(e: RenderError) -> Self {
+        *e.reason
+    }
+}
+
 impl RenderError {
     #[deprecated(since = "5.0.0", note = "Use RenderErrorReason instead")]
     pub fn new<T: AsRef<str>>(desc: T) -> RenderError {
