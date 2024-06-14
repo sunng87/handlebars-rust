@@ -183,11 +183,11 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.inner_mut().partials.insert(name, partial);
     }
 
-    pub(crate) fn push_partial_block(&mut self, partial: &'reg Template) {
+    pub fn push_partial_block(&mut self, partial: &'reg Template) {
         self.inner_mut().partial_block_stack.push_front(partial);
     }
 
-    pub(crate) fn pop_partial_block(&mut self) {
+    pub fn pop_partial_block(&mut self) {
         self.inner_mut().partial_block_stack.pop_front();
     }
 
