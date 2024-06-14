@@ -20,11 +20,7 @@ pub mod str {
         }
 
         pub fn into_string(self) -> String {
-            if let Ok(s) = String::from_utf8(self.buf) {
-                s
-            } else {
-                String::new()
-            }
+            String::from_utf8(self.buf).unwrap_or_default()
         }
     }
 
