@@ -133,11 +133,12 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         }
 
         // indent
-        local_rc.set_indent_string(d.indent());
+        local_rc.set_indent_string(d.indent().cloned());
 
         let result = t.render(r, ctx, &mut local_rc, out);
 
         // cleanup
+
         if block_created {
             local_rc.pop_block();
         }

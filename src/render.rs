@@ -48,7 +48,7 @@ pub struct RenderContextInner<'reg: 'rc, 'rc> {
     /// root template name
     root_template: Option<&'reg String>,
     disable_escape: bool,
-    indent_string: Option<&'reg String>,
+    indent_string: Option<Cow<'reg, str>>,
 }
 
 impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
@@ -202,13 +202,13 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         }
     }
 
-    pub(crate) fn set_indent_string(&mut self, indent: Option<&'reg String>) {
+    pub(crate) fn set_indent_string(&mut self, indent: Option<Cow<'reg, str>>) {
         self.inner_mut().indent_string = indent;
     }
 
     #[inline]
-    pub(crate) fn get_indent_string(&self) -> Option<&'reg String> {
-        self.inner.indent_string
+    pub(crate) fn get_indent_string(&self) -> Option<&Cow<'reg, str>> {
+        self.inner.indent_string.as_ref()
     }
 
     /// Remove a registered partial
@@ -454,7 +454,7 @@ pub struct Decorator<'rc> {
     params: Vec<PathAndJson<'rc>>,
     hash: BTreeMap<&'rc str, PathAndJson<'rc>>,
     template: Option<&'rc Template>,
-    indent: Option<&'rc String>,
+    indent: Option<Cow<'rc, str>>,
 }
 
 impl<'reg: 'rc, 'rc> Decorator<'rc> {
@@ -478,12 +478,23 @@ impl<'reg: 'rc, 'rc> Decorator<'rc> {
             hm.insert(k.as_ref(), r);
         }
 
+        let indent = match (render_context.get_indent_string(), dt.indent.as_ref()) {
+            (None, None) => None,
+            (Some(s), None) => Some(s.clone()),
+            (None, Some(s)) => Some(Cow::Borrowed(&**s)),
+            (Some(s1), Some(s2)) => {
+                let mut res = s1.to_string();
+                res.push_str(s2);
+                Some(Cow::from(res))
+            }
+        };
+
         Ok(Decorator {
             name,
             params: pv,
             hash: hm,
             template: dt.template.as_ref(),
-            indent: dt.indent.as_ref(),
+            indent,
         })
     }
 
@@ -517,8 +528,8 @@ impl<'reg: 'rc, 'rc> Decorator<'rc> {
         self.template
     }
 
-    pub fn indent(&self) -> Option<&'rc String> {
-        self.indent
+    pub fn indent(&self) -> Option<&Cow<'rc, str>> {
+        self.indent.as_ref()
     }
 }
 
