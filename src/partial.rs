@@ -667,6 +667,48 @@ outer third line"#,
     }
 
     #[test]
+    fn test_indent_level_on_nested_partials() {
+        let nested_partial = "
+<div>
+    content
+</div>
+";
+        let partial = "
+<div>
+    {{>nested_partial}}
+</div>
+";
+
+        let partial_indented = "
+<div>
+    {{>partial}}
+</div>
+";
+
+        let result = "
+<div>
+    <div>
+        <div>
+            content
+        </div>
+    </div>
+</div>
+";
+
+        let mut hb = Registry::new();
+        hb.register_template_string("nested_partial", nested_partial.trim_start())
+            .unwrap();
+        hb.register_template_string("partial", partial.trim_start())
+            .unwrap();
+        hb.register_template_string("partial_indented", partial_indented.trim_start())
+            .unwrap();
+
+        let s = hb.render("partial_indented", &()).unwrap();
+
+        assert_eq!(&s, result.trim_start());
+    }
+
+    #[test]
     fn test_issue_534() {
         let t1 = "{{title}}";
         let t2 = "{{#each modules}}{{> (lookup this \"module\") content name=0}}{{/each}}";
