@@ -634,6 +634,7 @@ impl Template {
         // this option is marked as true when standalone statement is detected
         // then the leading whitespaces and newline of next rawstring will be trimed
         let mut trim_line_required = false;
+        let mut prev_rule = None;
 
         let parser_queue = HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| {
             let (line_no, col_no) = match e.line_col {
@@ -718,6 +719,14 @@ impl Template {
                         };
 
                         let t = template_stack.front_mut().unwrap();
+
+                        // If this text element is following a standalone partial, then
+                        // we trim the whitespace between. But we still want the following text
+                        // to be indented correctly, so we insert the special `Indent` element.
+                        if trim_line_required && prev_rule == Some(Rule::partial_expression) {
+                            t.push_element(TemplateElement::Indent, line_no, col_no);
+                        }
+
                         t.push_element(
                             Template::raw_string(
                                 &source[start..span.end()],
@@ -976,6 +985,7 @@ impl Template {
                 if rule != Rule::template {
                     end_pos = Some(span.end_pos());
                 }
+                prev_rule = Some(rule);
             } else {
                 let prev_end = end_pos.as_ref().map(|e| e.pos()).unwrap_or(0);
                 if prev_end < source.len() {
@@ -1016,6 +1026,7 @@ impl Template {
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TemplateElement {
+    Indent,
     RawString(String),
     HtmlExpression(Box<HelperTemplate>),
     Expression(Box<HelperTemplate>),
