@@ -714,6 +714,13 @@ impl Template {
                 match rule {
                     Rule::template => {
                         template_stack.push_front(Template::new());
+                        if indent_template_begin {
+                            template_stack.front_mut().unwrap().push_element(
+                                TemplateElement::Indent,
+                                line_no,
+                                col_no,
+                            );
+                        }
                     }
                     Rule::raw_text => {
                         // leading space fix
@@ -737,10 +744,6 @@ impl Template {
                             // so we need to indent here too
                             emit_indent |= prev_rule == Some(Rule::helper_block_end);
                         }
-
-                        // if a helper template stars with an inline string, it will
-                        // need to be indented accordingly
-                        emit_indent |= prev_rule == Some(Rule::template) && indent_template_begin;
 
                         if emit_indent {
                             t.push_element(TemplateElement::Indent, line_no, col_no);
