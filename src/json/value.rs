@@ -60,8 +60,8 @@ impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'rc> {
 ///
 #[derive(Debug, Clone)]
 pub struct PathAndJson<'rc> {
-    relative_path: Option<String>,
-    value: ScopedJson<'rc>,
+    pub relative_path: Option<String>,
+    pub value: ScopedJson<'rc>,
 }
 
 impl<'rc> PathAndJson<'rc> {
