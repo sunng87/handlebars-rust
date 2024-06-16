@@ -124,8 +124,13 @@ impl<'rc> BlockContext<'rc> {
         self.block_params.get(block_param_name)
     }
 
-    /// Set a block parameter into this block.
+    /// Reassign the block parameters for this block.
     pub fn set_block_params(&mut self, block_params: BlockParams<'rc>) {
         self.block_params = block_params;
+    }
+
+    /// Set a block parameter into this block.
+    pub fn set_block_param(&mut self, key: &'rc str, value: BlockParamHolder) {
+        self.block_params.data.insert(key, value);
     }
 }
