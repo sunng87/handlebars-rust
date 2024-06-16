@@ -634,6 +634,11 @@ impl Template {
         // this option is marked as true when standalone statement is detected
         // then the leading whitespaces and newline of next rawstring will be trimed
         let mut trim_line_required = false;
+
+        // for standalone helper block templates, we want the first
+        // raw string to be indented.
+        let mut indent_template_begin = false;
+
         let mut prev_rule = None;
 
         let parser_queue = HandlebarsParser::parse(Rule::handlebars, source).map_err(|e| {
@@ -720,10 +725,24 @@ impl Template {
 
                         let t = template_stack.front_mut().unwrap();
 
-                        // If this text element is following a standalone partial, then
-                        // we trim the whitespace between. But we still want the following text
-                        // to be indented correctly, so we insert the special `Indent` element.
-                        if trim_line_required && prev_rule == Some(Rule::partial_expression) {
+                        let mut emit_indent = false;
+
+                        if trim_line_required {
+                            // If this text element is following a standalone partial, then
+                            // we trim the whitespace between. But we still want the following text
+                            // to be indented correctly, so we insert the special `Indent` element.
+                            emit_indent |= prev_rule == Some(Rule::partial_expression);
+
+                            // if the previous line was the end of a helper block, we ate the whitespace
+                            // so we need to indent here too
+                            emit_indent |= prev_rule == Some(Rule::helper_block_end);
+                        }
+
+                        // if a helper template stars with an inline string, it will
+                        // need to be indented accordingly
+                        emit_indent |= prev_rule == Some(Rule::template) && indent_template_begin;
+
+                        if emit_indent {
                             t.push_element(TemplateElement::Indent, line_no, col_no);
                         }
 
@@ -775,6 +794,8 @@ impl Template {
 
                         let t = template_stack.front_mut().unwrap();
                         t.mapping.push(TemplateMapping(line_no, col_no));
+                        indent_template_begin =
+                            rule == Rule::helper_block_start && trim_line_required;
                     }
                     Rule::invert_tag | Rule::invert_chain_tag => {
                         // hack: invert_tag structure is similar to ExpressionSpec, so I
