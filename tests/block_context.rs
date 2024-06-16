@@ -104,3 +104,26 @@ fn test_referencing_block_param_from_upper_scope() {
         "false|1;false|2;true|3;true|4;"
     );
 }
+
+#[test]
+fn nested_path_lookup() {
+    let input = r#"
+{{#each bar as |x|}}
+{{#each ../foo as |y|}}
+{{../../foo.0}}: {{../x}}
+{{/each}}
+{{/each}}
+"#;
+    let output = "
+42: 1
+42: 2
+42: 3
+";
+    let hbs = Handlebars::new();
+
+    assert_eq!(
+        hbs.render_template(input, &json!({"foo": [42], "bar": [1,2,3]}))
+            .unwrap(),
+        output
+    );
+}
