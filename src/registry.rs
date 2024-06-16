@@ -100,6 +100,7 @@ fn rhai_engine() -> Engine {
 }
 
 /// Options for importing template files from a directory.
+#[non_exhaustive]
 #[cfg(feature = "dir_source")]
 pub struct DirectorySourceOptions {
     /// The name extension for template files
