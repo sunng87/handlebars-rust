@@ -14,10 +14,12 @@ use crate::support;
 
 use self::TemplateElement::*;
 
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct TemplateMapping(pub usize, pub usize);
 
 /// A handlebars template
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug, Default)]
 pub struct Template {
     pub name: Option<String>,
@@ -40,6 +42,7 @@ impl TemplateOptions {
     }
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Subexpression {
     // we use box here avoid resursive struct definition
@@ -100,12 +103,14 @@ impl Subexpression {
     }
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum BlockParam {
     Single(Parameter),
     Pair((Parameter, Parameter)),
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ExpressionSpec {
     pub name: Parameter,
@@ -116,6 +121,7 @@ pub struct ExpressionSpec {
     pub omit_pro_ws: bool,
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Parameter {
     // for helper name only
@@ -126,6 +132,7 @@ pub enum Parameter {
     Subexpression(Subexpression),
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct HelperTemplate {
     pub name: Parameter,
@@ -259,6 +266,7 @@ impl HelperTemplate {
     }
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct DecoratorTemplate {
     pub name: Parameter,
@@ -1024,6 +1032,7 @@ impl Template {
     }
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TemplateElement {
     Indent,

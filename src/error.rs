@@ -13,6 +13,7 @@ use walkdir::Error as WalkdirError;
 use rhai::{EvalAltResult, ParseError};
 
 /// Error when rendering data on template.
+#[non_exhaustive]
 #[derive(Debug)]
 pub struct RenderError {
     pub template_name: Option<String>,
@@ -60,6 +61,7 @@ impl From<TemplateError> for RenderError {
 }
 
 /// Template rendering error
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum RenderErrorReason {
     #[error("Template not found {0}")]
@@ -192,6 +194,7 @@ impl StdError for RenderError {
 }
 
 /// Template parsing error
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum TemplateErrorReason {
     #[error("helper {0:?} was opened, but {1:?} is closing")]
@@ -329,6 +332,7 @@ impl fmt::Display for TemplateError {
 }
 
 #[cfg(feature = "script_helper")]
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum ScriptError {
     #[error(transparent)]

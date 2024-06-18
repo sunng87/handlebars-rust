@@ -179,12 +179,6 @@ pub(crate) mod scripting;
 #[cfg(feature = "string_helpers")]
 pub(crate) mod string_helpers;
 
-// pub type HelperDef = for <'a, 'b, 'c> Fn<(&'a Context, &'b Helper, &'b Registry, &'c mut RenderContext), Result<String, RenderError>>;
-//
-// pub fn helper_dummy (ctx: &Context, h: &Helper, r: &Registry, rc: &mut RenderContext) -> Result<String, RenderError> {
-// h.template().unwrap().render(ctx, r, rc).unwrap()
-// }
-//
 #[cfg(test)]
 mod test {
     use std::collections::BTreeMap;
