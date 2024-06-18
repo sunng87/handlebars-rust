@@ -37,7 +37,7 @@ fn parse_json_visitor<'a>(
     block_contexts: &'a VecDeque<BlockContext<'_>>,
     always_for_absolute_path: bool,
 ) -> ResolvedPath<'a> {
-    let mut path_context_depth: i64 = 0;
+    let mut path_context_depth: usize = 0;
     let mut with_block_param = None;
     let mut from_root = false;
 
@@ -64,7 +64,7 @@ fn parse_json_visitor<'a>(
     let mut path_stack = Vec::with_capacity(relative_path.len() + 5);
     match with_block_param {
         Some((BlockParamHolder::Value(ref value), _)) => {
-            merge_json_path(&mut path_stack, &relative_path[1..]);
+            merge_json_path(&mut path_stack, &relative_path[(path_context_depth + 1)..]);
             ResolvedPath::BlockParamValue(path_stack, value)
         }
         Some((BlockParamHolder::Path(ref paths), base_path)) => {
@@ -72,14 +72,14 @@ fn parse_json_visitor<'a>(
             if !paths.is_empty() {
                 extend(&mut path_stack, paths);
             }
-            merge_json_path(&mut path_stack, &relative_path[1..]);
+            merge_json_path(&mut path_stack, &relative_path[(path_context_depth + 1)..]);
 
             ResolvedPath::AbsolutePath(path_stack)
         }
         None => {
             if path_context_depth > 0 {
                 let blk = block_contexts
-                    .get(path_context_depth as usize)
+                    .get(path_context_depth)
                     .or_else(|| block_contexts.front());
 
                 if let Some(base_value) = blk.and_then(|blk| blk.base_value()) {
