@@ -807,12 +807,6 @@ impl Renderable for TemplateElement {
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         match self {
-            Indent => {
-                if let Some(indent) = rc.get_indent_string() {
-                    out.write(indent)?;
-                }
-                Ok(())
-            }
             RawString(ref v) => indent_aware_write(v.as_ref(), rc, out),
             Expression(ref ht) | HtmlExpression(ref ht) => {
                 let is_html_expression = matches!(self, HtmlExpression(_));
