@@ -60,8 +60,8 @@ impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'rc> {
 ///
 #[derive(Debug, Clone)]
 pub struct PathAndJson<'rc> {
-    pub relative_path: Option<String>,
-    pub value: ScopedJson<'rc>,
+    relative_path: Option<String>,
+    value: ScopedJson<'rc>,
 }
 
 impl<'rc> PathAndJson<'rc> {
@@ -86,6 +86,15 @@ impl<'rc> PathAndJson<'rc> {
     /// Returns the value
     pub fn value(&self) -> &Json {
         self.value.as_json()
+    }
+
+    /// Returns the value, if it is a constant. Otherwise returns None.
+    pub fn try_get_constant_value(&self) -> Option<&'rc Json> {
+        match &self.value {
+            ScopedJson::Constant(value) => Some(*value),
+            ScopedJson::Context(value, _) => Some(*value),
+            ScopedJson::Derived(_) | ScopedJson::Missing => None,
+        }
     }
 
     /// Test if value is missing

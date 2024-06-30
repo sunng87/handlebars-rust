@@ -16,7 +16,7 @@ pub fn helper_let<'reg, 'rc>(
         .param(0)
         .ok_or_else(|| RenderErrorReason::ParamNotFoundForIndex("let", 0))?;
 
-    let handlebars::ScopedJson::Constant(Value::String(name_constant)) = name_param.value else {
+    let Some(Value::String(name_constant)) = name_param.try_get_constant_value() else {
         return Err(RenderErrorReason::ParamTypeMismatchForName(
             "let",
             "0".to_string(),
