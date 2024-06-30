@@ -144,7 +144,7 @@ pub struct HelperTemplate {
     pub inverse: Option<Template>,
     pub block: bool,
     pub chain: bool,
-    pub indent_before_write: bool,
+    pub(crate) indent_before_write: bool,
 }
 
 impl HelperTemplate {
@@ -284,7 +284,7 @@ pub struct DecoratorTemplate {
     pub template: Option<Template>,
     // for partial indent
     pub indent: Option<String>,
-    pub indent_before_write: bool,
+    pub(crate) indent_before_write: bool,
 }
 
 impl DecoratorTemplate {
