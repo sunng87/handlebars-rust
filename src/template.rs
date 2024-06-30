@@ -65,6 +65,7 @@ impl Subexpression {
                 block_param: None,
                 block: false,
                 chain: false,
+                indent_before_write: false,
             }))),
         }
     }
@@ -143,10 +144,11 @@ pub struct HelperTemplate {
     pub inverse: Option<Template>,
     pub block: bool,
     pub chain: bool,
+    pub indent_before_write: bool,
 }
 
 impl HelperTemplate {
-    pub fn new(exp: ExpressionSpec, block: bool) -> HelperTemplate {
+    pub fn new(exp: ExpressionSpec, block: bool, indent_before_write: bool) -> HelperTemplate {
         HelperTemplate {
             name: exp.name,
             params: exp.params,
@@ -156,10 +158,15 @@ impl HelperTemplate {
             template: None,
             inverse: None,
             chain: false,
+            indent_before_write,
         }
     }
 
-    pub fn new_chain(exp: ExpressionSpec, block: bool) -> HelperTemplate {
+    pub fn new_chain(
+        exp: ExpressionSpec,
+        block: bool,
+        indent_before_write: bool,
+    ) -> HelperTemplate {
         HelperTemplate {
             name: exp.name,
             params: exp.params,
@@ -169,6 +176,7 @@ impl HelperTemplate {
             template: None,
             inverse: None,
             chain: true,
+            indent_before_write,
         }
     }
 
@@ -183,6 +191,7 @@ impl HelperTemplate {
             inverse: None,
             block: false,
             chain: false,
+            indent_before_write: false,
         }
     }
 
@@ -275,16 +284,18 @@ pub struct DecoratorTemplate {
     pub template: Option<Template>,
     // for partial indent
     pub indent: Option<String>,
+    pub indent_before_write: bool,
 }
 
 impl DecoratorTemplate {
-    pub fn new(exp: ExpressionSpec) -> DecoratorTemplate {
+    pub fn new(exp: ExpressionSpec, indent_before_write: bool) -> DecoratorTemplate {
         DecoratorTemplate {
             name: exp.name,
             params: exp.params,
             hash: exp.hash,
             template: None,
             indent: None,
+            indent_before_write,
         }
     }
 }
@@ -747,18 +758,6 @@ impl Template {
                     | Rule::partial_block_start => {
                         let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
 
-                        match rule {
-                            Rule::helper_block_start | Rule::raw_block_start => {
-                                let helper_template = HelperTemplate::new(exp.clone(), true);
-                                helper_stack.push_front(helper_template);
-                            }
-                            Rule::decorator_block_start | Rule::partial_block_start => {
-                                let decorator = DecoratorTemplate::new(exp.clone());
-                                decorator_stack.push_front(decorator);
-                            }
-                            _ => unreachable!(),
-                        }
-
                         if exp.omit_pre_ws {
                             Template::remove_previous_whitespace(&mut template_stack);
                         }
@@ -772,6 +771,22 @@ impl Template {
                             &span,
                             true,
                         );
+
+                        let indent_before_write = trim_line_required && !exp.omit_pre_ws;
+
+                        match rule {
+                            Rule::helper_block_start | Rule::raw_block_start => {
+                                let helper_template =
+                                    HelperTemplate::new(exp.clone(), true, indent_before_write);
+                                helper_stack.push_front(helper_template);
+                            }
+                            Rule::decorator_block_start | Rule::partial_block_start => {
+                                let decorator =
+                                    DecoratorTemplate::new(exp.clone(), indent_before_write);
+                                decorator_stack.push_front(decorator);
+                            }
+                            _ => unreachable!(),
+                        }
 
                         let t = template_stack.front_mut().unwrap();
                         t.mapping.push(TemplateMapping(line_no, col_no));
@@ -799,6 +814,8 @@ impl Template {
                             true,
                         );
 
+                        let indent_before_write = trim_line_required && !exp.omit_pre_ws;
+
                         let t = template_stack.pop_front().unwrap();
                         let h = helper_stack.front_mut().unwrap();
 
@@ -808,7 +825,11 @@ impl Template {
 
                         h.set_chain_template(Some(t));
                         if rule == Rule::invert_chain_tag {
-                            h.insert_inverse_node(Box::new(HelperTemplate::new_chain(exp, true)));
+                            h.insert_inverse_node(Box::new(HelperTemplate::new_chain(
+                                exp,
+                                true,
+                                indent_before_write,
+                            )));
                         }
                     }
 
@@ -843,7 +864,8 @@ impl Template {
 
                         match rule {
                             Rule::expression | Rule::html_expression => {
-                                let helper_template = HelperTemplate::new(exp.clone(), false);
+                                let helper_template =
+                                    HelperTemplate::new(exp.clone(), false, false);
                                 let el = if rule == Rule::expression {
                                     Expression(Box::new(helper_template))
                                 } else {
@@ -855,7 +877,8 @@ impl Template {
                             Rule::decorator_expression | Rule::partial_expression => {
                                 // do not auto trim ident spaces for
                                 // partial_expression(>)
-                                let prevent_indent = rule != Rule::partial_expression;
+                                let prevent_indent =
+                                    !(rule == Rule::partial_expression && options.prevent_indent);
                                 trim_line_required = Template::process_standalone_statement(
                                     &mut template_stack,
                                     source,
@@ -874,7 +897,10 @@ impl Template {
                                     );
                                 }
 
-                                let mut decorator = DecoratorTemplate::new(exp.clone());
+                                let mut decorator = DecoratorTemplate::new(
+                                    exp.clone(),
+                                    trim_line_required && !exp.omit_pre_ws,
+                                );
                                 decorator.indent = indent.map(|s| s.to_owned());
 
                                 let el = if rule == Rule::decorator_expression {
@@ -1453,6 +1479,6 @@ mod test {
         let s = "{{#>(X)}}{{/X}}";
         let result = Template::compile(s);
         assert!(result.is_err());
-        assert_eq!("decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false, chain: false }) })\" was opened, but \"X\" is closing", format!("{}", result.unwrap_err().reason()));
+        assert_eq!("decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false, chain: false, indent_before_write: false }) })\" was opened, but \"X\" is closing", format!("{}", result.unwrap_err().reason()));
     }
 }
