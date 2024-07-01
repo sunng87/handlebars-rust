@@ -270,3 +270,33 @@ foo
         output
     );
 }
+
+#[test]
+fn test_empty_inline_partials_and_helpers_retain_indent_directive() {
+    let input = r#"
+{{~#*inline "empty_partial"}}{{/inline}}
+
+{{~#*inline "indented_partial"}}
+{{>empty_partial}}{{#if true}}{{>empty_partial}}{{/if}}foo
+{{/inline}}
+    {{>indented_partial}}
+"#;
+    let output = "    foo\n";
+    let hbs = Handlebars::new();
+
+    assert_eq!(hbs.render_template(input, &()).unwrap(), output);
+}
+
+#[test]
+fn test_indent_directive_propagated_but_not_restored_if_content_was_written() {
+    let input = r#"
+{{~#*inline "indented_partial"}}
+{{#if true}}{{/if}}{{#if true}}foo{{/if}}foo
+{{/inline}}
+    {{>indented_partial}}
+"#;
+    let output = "    foofoo\n";
+    let hbs = Handlebars::new();
+
+    assert_eq!(hbs.render_template(input, &()).unwrap(), output);
+}
