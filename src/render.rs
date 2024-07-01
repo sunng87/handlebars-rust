@@ -314,13 +314,6 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub fn get_indent_before_write(&self) -> bool {
         self.inner().indent_before_write
     }
-
-    #[inline]
-    pub fn take_indent_before_write(&mut self) -> bool {
-        let res = self.get_indent_before_write();
-        self.set_indent_before_write(false);
-        res
-    }
 }
 
 impl<'reg, 'rc> fmt::Debug for RenderContextInner<'reg, 'rc> {
@@ -835,17 +828,23 @@ pub fn indent_aware_write(
     if v.is_empty() {
         return Ok(());
     }
-    if !v.starts_with(newline_matcher) && rc.take_indent_before_write() {
+
+    if !v.starts_with(newline_matcher) && rc.get_indent_before_write() {
         if let Some(indent) = rc.get_indent_string() {
             out.write(indent)?;
         }
     }
+
     if let Some(indent) = rc.get_indent_string() {
         out.write(support::str::with_indent(v, indent).as_ref())?;
     } else {
         out.write(v.as_ref())?;
     }
-    rc.set_trailing_newline(v.ends_with(newline_matcher));
+
+    let trailing_newline = v.ends_with(newline_matcher);
+    rc.set_trailing_newline(trailing_newline);
+    rc.set_indent_before_write(trailing_newline);
+
     Ok(())
 }
 
