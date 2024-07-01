@@ -787,7 +787,7 @@ fn render_helper<'reg: 'rc, 'rc>(
         h.hash()
     );
     let mut call_indent_aware = |helper_def: &dyn HelperDef, rc: &mut RenderContext<'reg, 'rc>| {
-        rc.set_indent_before_write(ht.indent_before_write);
+        rc.set_indent_before_write(ht.indent_before_write && rc.get_trailine_newline());
         helper_def.call(&h, registry, ctx, rc, out)?;
         rc.set_indent_before_write(rc.get_trailine_newline());
         Ok(())
