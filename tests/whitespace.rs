@@ -216,20 +216,50 @@ fn test_indent_on_consecutive_dynamic_contents() {
 #[test]
 fn test_missing_newline_before_block_helper() {
     let input = r#"
-{{#*inline "dynamic_partial"}}{{content}}{{/inline}}
-{{#*inline "helper_in_partial"}}
+{{~#*inline "dynamic_partial"}}{{content}}{{/inline}}
+
+{{~#*inline "helper_in_partial"}}
 {{#if true}}
 foo
 {{/if}}
 {{/inline}}
-{{#*inline "wrapper_partial"}}
+
+{{~#*inline "wrapper_partial"}}
 {{>dynamic_partial}}
 {{>helper_in_partial}}
 {{/inline}}
+
     {{>wrapper_partial}}
 "#;
     let output = "
+    foofoo
+";
+    let hbs = Handlebars::new();
 
+    assert_eq!(
+        hbs.render_template(input, &json!({"content": "foo"}))
+            .unwrap(),
+        output
+    );
+}
+
+#[test]
+fn test_missing_newline_before_nested_partial() {
+    let input = r#"
+{{~#*inline "dynamic_partial"}}{{content}}{{/inline}}
+
+{{~#*inline "nested_partial"}}
+foo
+{{/inline}}
+
+{{~#*inline "wrapper_partial"}}
+{{>dynamic_partial}}
+{{>nested_partial}}
+{{/inline}}
+
+    {{>wrapper_partial}}
+"#;
+    let output = "
     foofoo
 ";
     let hbs = Handlebars::new();
