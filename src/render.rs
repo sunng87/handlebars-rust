@@ -905,7 +905,9 @@ impl Renderable for TemplateElement {
             DecoratorExpression(_) | DecoratorBlock(_) => self.eval(registry, ctx, rc),
             PartialExpression(ref dt) | PartialBlock(ref dt) => {
                 let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
-                rc.set_indent_before_write(dt.indent_before_write);
+                rc.set_indent_before_write(
+                    dt.indent_before_write && (rc.get_trailine_newline() || dt.indent.is_some()),
+                );
                 partial::expand_partial(&di, registry, ctx, rc, out)?;
                 rc.set_indent_before_write(rc.get_trailine_newline());
                 Ok(())
