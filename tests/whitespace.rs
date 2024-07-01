@@ -188,3 +188,27 @@ fn test_partial_pasting_dynamic_content_with_newlines() {
         output
     );
 }
+
+#[test]
+fn test_indent_on_consecutive_dynamic_contents() {
+    let input = r#"
+{{#*inline "dynamic_partial"}}{{a}}{{b}}{{c}}{{/inline}}
+<div>
+    {{> dynamic_partial}}
+</div>
+"#;
+    let output = "
+
+<div>
+    foo
+    barbaz
+</div>
+";
+    let hbs = Handlebars::new();
+
+    assert_eq!(
+        hbs.render_template(input, &json!({"a": "foo\n", "b": "bar", "c": "baz\n"}))
+            .unwrap(),
+        output
+    );
+}
