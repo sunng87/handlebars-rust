@@ -49,10 +49,16 @@ pub struct RenderContextInner<'reg: 'rc, 'rc> {
     /// root template name
     root_template: Option<&'reg String>,
     disable_escape: bool,
-    // whether the previous text that we rendered ended on a newline
-    // necessary to make indenting decisions after the end of partials
+
+    // Indicates whether the previous text that we rendered ended on a newline.
+    // This is necessary to make indenting decisions after the end of partials.
     trailing_newline: bool,
-    // whether the previous text that we render should indent itself
+
+    // This should be set to true whenever any output is written.
+    // We need this to detect empty partials/helpers for indenting decisions.
+    content_produced: bool,
+
+    // The next text that we render should indent itself.
     indent_before_write: bool,
     indent_string: Option<Cow<'reg, str>>,
 }
@@ -69,6 +75,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             root_template,
             disable_escape: false,
             trailing_newline: false,
+            content_produced: false,
             indent_before_write: false,
             indent_string: None,
         });
@@ -303,6 +310,16 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     #[inline]
     pub fn get_trailine_newline(&self) -> bool {
         self.inner().trailing_newline
+    }
+
+    #[inline]
+    pub fn set_content_produced(&mut self, content_produced: bool) {
+        self.inner_mut().content_produced = content_produced;
+    }
+
+    #[inline]
+    pub fn get_content_produced(&self) -> bool {
+        self.inner().content_produced
     }
 
     #[inline]
@@ -787,9 +804,21 @@ fn render_helper<'reg: 'rc, 'rc>(
         h.hash()
     );
     let mut call_indent_aware = |helper_def: &dyn HelperDef, rc: &mut RenderContext<'reg, 'rc>| {
-        rc.set_indent_before_write(ht.indent_before_write && rc.get_trailine_newline());
+        let indent_directive_before = rc.get_indent_before_write();
+        let content_produced_before = rc.get_content_produced();
+        rc.set_content_produced(false);
+        rc.set_indent_before_write(
+            indent_directive_before || (ht.indent_before_write && rc.get_trailine_newline()),
+        );
+
         helper_def.call(&h, registry, ctx, rc, out)?;
-        rc.set_indent_before_write(rc.get_trailine_newline());
+
+        if rc.get_content_produced() {
+            rc.set_indent_before_write(rc.get_trailine_newline());
+        } else {
+            rc.set_content_produced(content_produced_before);
+            rc.set_indent_before_write(indent_directive_before);
+        }
         Ok(())
     };
     if let Some(ref d) = rc.get_local_helper(h.name()) {
@@ -828,6 +857,7 @@ pub fn indent_aware_write(
     if v.is_empty() {
         return Ok(());
     }
+    rc.set_content_produced(true);
 
     if !v.starts_with(newline_matcher) && rc.get_indent_before_write() {
         if let Some(indent) = rc.get_indent_string() {
@@ -905,11 +935,23 @@ impl Renderable for TemplateElement {
             DecoratorExpression(_) | DecoratorBlock(_) => self.eval(registry, ctx, rc),
             PartialExpression(ref dt) | PartialBlock(ref dt) => {
                 let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
+
+                let indent_directive_before = rc.get_indent_before_write();
+                let content_produced_before = rc.get_content_produced();
+
                 rc.set_indent_before_write(
                     dt.indent_before_write && (rc.get_trailine_newline() || dt.indent.is_some()),
                 );
+                rc.set_content_produced(false);
+
                 partial::expand_partial(&di, registry, ctx, rc, out)?;
-                rc.set_indent_before_write(rc.get_trailine_newline());
+
+                if rc.get_content_produced() {
+                    rc.set_indent_before_write(rc.get_trailine_newline());
+                } else {
+                    rc.set_content_produced(content_produced_before);
+                    rc.set_indent_before_write(indent_directive_before);
+                }
                 Ok(())
             }
             _ => Ok(()),
