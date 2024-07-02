@@ -14,6 +14,7 @@ use crate::json::value::{JsonRender, PathAndJson, ScopedJson};
 use crate::output::{Output, StringOutput};
 use crate::registry::Registry;
 use crate::support;
+use crate::support::str::newline_matcher;
 use crate::template::TemplateElement::*;
 use crate::template::{
     BlockParam, DecoratorTemplate, HelperTemplate, Parameter, Template, TemplateElement,
@@ -48,6 +49,11 @@ pub struct RenderContextInner<'reg: 'rc, 'rc> {
     /// root template name
     root_template: Option<&'reg String>,
     disable_escape: bool,
+    // whether the previous text that we rendered ended on a newline
+    // necessary to make indenting decisions after the end of partials
+    trailing_newline: bool,
+    // whether the previous text that we render should indent itself
+    indent_before_write: bool,
     indent_string: Option<Cow<'reg, str>>,
 }
 
@@ -62,6 +68,8 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             current_template: None,
             root_template,
             disable_escape: false,
+            trailing_newline: false,
+            indent_before_write: false,
             indent_string: None,
         });
 
@@ -285,6 +293,26 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// When toggle is on, escape_fn will be called when rendering.
     pub fn set_disable_escape(&mut self, disable: bool) {
         self.inner_mut().disable_escape = disable
+    }
+
+    #[inline]
+    pub fn set_trailing_newline(&mut self, trailing_newline: bool) {
+        self.inner_mut().trailing_newline = trailing_newline;
+    }
+
+    #[inline]
+    pub fn get_trailine_newline(&self) -> bool {
+        self.inner().trailing_newline
+    }
+
+    #[inline]
+    pub fn set_indent_before_write(&mut self, indent_before_write: bool) {
+        self.inner_mut().indent_before_write = indent_before_write;
+    }
+
+    #[inline]
+    pub fn get_indent_before_write(&self) -> bool {
+        self.inner().indent_before_write
     }
 }
 
@@ -704,6 +732,7 @@ impl Renderable for Template {
                 e
             })?;
         }
+
         Ok(())
     }
 }
@@ -757,8 +786,14 @@ fn render_helper<'reg: 'rc, 'rc>(
         h.params(),
         h.hash()
     );
+    let mut call_indent_aware = |helper_def: &dyn HelperDef, rc: &mut RenderContext<'reg, 'rc>| {
+        rc.set_indent_before_write(ht.indent_before_write && rc.get_trailine_newline());
+        helper_def.call(&h, registry, ctx, rc, out)?;
+        rc.set_indent_before_write(rc.get_trailine_newline());
+        Ok(())
+    };
     if let Some(ref d) = rc.get_local_helper(h.name()) {
-        d.call(&h, registry, ctx, rc, out)
+        call_indent_aware(&**d, rc)
     } else {
         let mut helper = registry.get_or_load_helper(h.name())?;
 
@@ -772,7 +807,7 @@ fn render_helper<'reg: 'rc, 'rc>(
 
         helper
             .ok_or_else(|| RenderErrorReason::HelperNotFound(h.name().to_owned()).into())
-            .and_then(|d| d.call(&h, registry, ctx, rc, out))
+            .and_then(|d| call_indent_aware(&*d, rc))
     }
 }
 
@@ -785,16 +820,31 @@ pub(crate) fn do_escape(r: &Registry<'_>, rc: &RenderContext<'_, '_>, content: S
 }
 
 #[inline]
-fn indent_aware_write(
+pub fn indent_aware_write(
     v: &str,
-    rc: &RenderContext<'_, '_>,
+    rc: &mut RenderContext<'_, '_>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
+    if v.is_empty() {
+        return Ok(());
+    }
+
+    if !v.starts_with(newline_matcher) && rc.get_indent_before_write() {
+        if let Some(indent) = rc.get_indent_string() {
+            out.write(indent)?;
+        }
+    }
+
     if let Some(indent) = rc.get_indent_string() {
         out.write(support::str::with_indent(v, indent).as_ref())?;
     } else {
         out.write(v.as_ref())?;
     }
+
+    let trailing_newline = v.ends_with(newline_matcher);
+    rc.set_trailing_newline(trailing_newline);
+    rc.set_indent_before_write(trailing_newline);
+
     Ok(())
 }
 
@@ -807,12 +857,6 @@ impl Renderable for TemplateElement {
         out: &mut dyn Output,
     ) -> Result<(), RenderError> {
         match self {
-            Indent => {
-                if let Some(indent) = rc.get_indent_string() {
-                    out.write(indent)?;
-                }
-                Ok(())
-            }
             RawString(ref v) => indent_aware_write(v.as_ref(), rc, out),
             Expression(ref ht) | HtmlExpression(ref ht) => {
                 let is_html_expression = matches!(self, HtmlExpression(_));
@@ -861,8 +905,12 @@ impl Renderable for TemplateElement {
             DecoratorExpression(_) | DecoratorBlock(_) => self.eval(registry, ctx, rc),
             PartialExpression(ref dt) | PartialBlock(ref dt) => {
                 let di = Decorator::try_from_template(dt, registry, ctx, rc)?;
-
-                partial::expand_partial(&di, registry, ctx, rc, out)
+                rc.set_indent_before_write(
+                    dt.indent_before_write && (rc.get_trailine_newline() || dt.indent.is_some()),
+                );
+                partial::expand_partial(&di, registry, ctx, rc, out)?;
+                rc.set_indent_before_write(rc.get_trailine_newline());
+                Ok(())
             }
             _ => Ok(()),
         }

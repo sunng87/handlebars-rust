@@ -3,7 +3,7 @@ use crate::error::{RenderError, RenderErrorReason};
 use crate::json::value::ScopedJson;
 use crate::output::Output;
 use crate::registry::Registry;
-use crate::render::{do_escape, Helper, RenderContext};
+use crate::render::{do_escape, indent_aware_write, Helper, RenderContext};
 
 pub use self::helper_each::EACH_HELPER;
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
@@ -126,7 +126,9 @@ pub trait HelperDef {
                 } else {
                     // auto escape according to settings
                     let output = do_escape(r, rc, result.render());
-                    out.write(output.as_ref())?;
+
+                    indent_aware_write(&output, rc, out)?;
+
                     Ok(())
                 }
             }
