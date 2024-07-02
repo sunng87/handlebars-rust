@@ -92,8 +92,7 @@ impl<'rc> PathAndJson<'rc> {
     pub fn try_get_constant_value(&self) -> Option<&'rc Json> {
         match &self.value {
             ScopedJson::Constant(value) => Some(*value),
-            ScopedJson::Context(value, _) => Some(*value),
-            ScopedJson::Derived(_) | ScopedJson::Missing => None,
+            ScopedJson::Context(_, _) | ScopedJson::Derived(_) | ScopedJson::Missing => None,
         }
     }
 
