@@ -88,6 +88,14 @@ impl<'rc> PathAndJson<'rc> {
         self.value.as_json()
     }
 
+    /// Returns the value, if it is a constant. Otherwise returns None.
+    pub fn try_get_constant_value(&self) -> Option<&'rc Json> {
+        match &self.value {
+            ScopedJson::Constant(value) => Some(*value),
+            ScopedJson::Context(_, _) | ScopedJson::Derived(_) | ScopedJson::Missing => None,
+        }
+    }
+
     /// Test if value is missing
     pub fn is_value_missing(&self) -> bool {
         self.value.is_missing()

@@ -406,7 +406,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 
-pub use self::block::{BlockContext, BlockParams};
+pub use self::block::{BlockContext, BlockParamHolder, BlockParams};
 pub use self::context::Context;
 pub use self::decorators::DecoratorDef;
 pub use self::error::{RenderError, RenderErrorReason, TemplateError, TemplateErrorReason};
