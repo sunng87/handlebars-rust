@@ -34,34 +34,34 @@ fn test_string_no_escape_422() {
     hbs.register_helper("echo", Box::new(echo));
 
     assert_eq!(
-        r#"some\ path"#,
+        r"some\ path",
         hbs.render_template(r#"{{replace "some/path" "/" "\\ " }}"#, &())
             .unwrap()
     );
     assert_eq!(
-        r#"some\ path"#,
-        hbs.render_template(r#"{{replace 'some/path' '/' '\\ ' }}"#, &())
+        r"some\ path",
+        hbs.render_template(r"{{replace 'some/path' '/' '\\ ' }}", &())
             .unwrap()
     );
 
     assert_eq!(
-        r#"some\path"#,
+        r"some\path",
         hbs.render_template(r#"{{replace "some/path" "/" "\\" }}"#, &())
             .unwrap()
     );
     assert_eq!(
-        r#"some\path"#,
-        hbs.render_template(r#"{{replace 'some/path' '/' '\\' }}"#, &())
+        r"some\path",
+        hbs.render_template(r"{{replace 'some/path' '/' '\\' }}", &())
             .unwrap()
     );
 
     assert_eq!(
-        r#"double-quoted \ &#x27;with&#x27; &quot;nesting&quot;"#,
+        r"double-quoted \ &#x27;with&#x27; &quot;nesting&quot;",
         hbs.render_template(r#"{{echo "double-quoted \\ 'with' \"nesting\""}}"#, &())
             .unwrap()
     );
     assert_eq!(
-        r#"single-quoted \ &#x27;with&#x27; &quot;nesting&quot;"#,
+        r"single-quoted \ &#x27;with&#x27; &quot;nesting&quot;",
         hbs.render_template(r#"{{echo 'single-quoted \\ \'with\' "nesting"'}}"#, &())
             .unwrap()
     );
@@ -69,10 +69,10 @@ fn test_string_no_escape_422() {
 
 #[test]
 fn test_string_whitespace_467() {
-    const TEMPLATE_UNQUOTED: &str = r#"{{#each synonyms}}
+    const TEMPLATE_UNQUOTED: &str = r"{{#each synonyms}}
     {{this.name}} => '{{this.sym}}',
     {{/each}}
-"#;
+";
 
     let mut hbs = Handlebars::new();
     hbs.register_escape_fn(no_escape);
@@ -90,7 +90,7 @@ fn test_triple_bracket_expression_471() {
     let mut hbs = Handlebars::new();
 
     handlebars_helper!(replace: |input: str| {
-        input.replace("\n", "<br/>")
+        input.replace('\n', "<br/>")
     });
     hbs.register_helper("replace", Box::new(replace));
 

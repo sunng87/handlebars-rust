@@ -70,7 +70,7 @@ fn test_strict_mode() {
         .is_ok());
     assert!(hbs
         .render_template("{{#if (eq z 1)}}Success{{else}}Failed{{/if}}", &data)
-        .is_err())
+        .is_err());
 }
 
 #[test]
@@ -131,7 +131,7 @@ impl HelperDef for CallCounterHelper {
         // inc counter
         self.c.fetch_add(1, Ordering::SeqCst);
 
-        if let Some(_) = h.param(0) {
+        if h.param(0).is_some() {
             Ok(json!({
                 "a": 1,
             })

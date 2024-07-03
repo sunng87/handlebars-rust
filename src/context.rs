@@ -6,7 +6,7 @@ use serde_json::value::{to_value, Map, Value as Json};
 use crate::block::{BlockContext, BlockParamHolder};
 use crate::error::{RenderError, RenderErrorReason};
 use crate::grammar::Rule;
-use crate::json::path::*;
+use crate::json::path::{merge_json_path, PathSeg};
 use crate::json::value::ScopedJson;
 use crate::util::extend;
 
@@ -86,7 +86,7 @@ fn parse_json_visitor<'a>(
                     merge_json_path(&mut path_stack, relative_path);
                     ResolvedPath::LocalValue(path_stack, base_value)
                 } else {
-                    if let Some(base_path) = blk.map(|blk| blk.base_path()) {
+                    if let Some(base_path) = blk.map(BlockContext::base_path) {
                         extend(&mut path_stack, base_path);
                     }
                     merge_json_path(&mut path_stack, relative_path);
@@ -100,7 +100,7 @@ fn parse_json_visitor<'a>(
                     merge_json_path(&mut path_stack, relative_path);
                     ResolvedPath::LocalValue(path_stack, base_value)
                 } else {
-                    if let Some(base_path) = block_contexts.front().map(|blk| blk.base_path()) {
+                    if let Some(base_path) = block_contexts.front().map(BlockContext::base_path) {
                         extend(&mut path_stack, base_path);
                     }
                     merge_json_path(&mut path_stack, relative_path);
@@ -147,8 +147,8 @@ pub(crate) fn merge_json(base: &Json, addition: &HashMap<&str, &Json>) -> Json {
         _ => Map::new(),
     };
 
-    for (k, v) in addition.iter() {
-        base_map.insert(k.to_string(), (*v).clone());
+    for (k, v) in addition {
+        base_map.insert((*k).to_string(), (*v).clone());
     }
 
     Json::Object(base_map)
@@ -179,13 +179,11 @@ impl Context {
         match resolved_visitor {
             ResolvedPath::AbsolutePath(paths) => {
                 let mut ptr = Some(self.data());
-                for p in paths.iter() {
+                for p in &paths {
                     ptr = get_data(ptr, p)?;
                 }
 
-                Ok(ptr
-                    .map(|v| ScopedJson::Context(v, paths))
-                    .unwrap_or_else(|| ScopedJson::Missing))
+                Ok(ptr.map_or_else(|| ScopedJson::Missing, |v| ScopedJson::Context(v, paths)))
             }
             ResolvedPath::RelativePath(_paths) => {
                 // relative path is disabled for now
@@ -202,12 +200,10 @@ impl Context {
             ResolvedPath::BlockParamValue(paths, value)
             | ResolvedPath::LocalValue(paths, value) => {
                 let mut ptr = Some(value);
-                for p in paths.iter() {
+                for p in &paths {
                     ptr = get_data(ptr, p)?;
                 }
-                Ok(ptr
-                    .map(|v| ScopedJson::Derived(v.clone()))
-                    .unwrap_or_else(|| ScopedJson::Missing))
+                Ok(ptr.map_or_else(|| ScopedJson::Missing, |v| ScopedJson::Derived(v.clone())))
             }
         }
     }
@@ -239,7 +235,7 @@ mod test {
     use serde_json::value::Map;
     use std::collections::{HashMap, VecDeque};
 
-    fn navigate_from_root<'reg, 'rc>(
+    fn navigate_from_root<'rc>(
         ctx: &'rc Context,
         path: &str,
     ) -> Result<ScopedJson<'rc>, RenderError> {
@@ -264,7 +260,7 @@ mod test {
     #[test]
     fn test_render() {
         let v = "hello";
-        let ctx = Context::wraps(&v.to_string()).unwrap();
+        let ctx = Context::wraps(v.to_string()).unwrap();
         assert_eq!(
             navigate_from_root(&ctx, "this").unwrap().render(),
             v.to_string()
@@ -285,7 +281,7 @@ mod test {
             titles: vec!["programmer".to_string(), "cartographer".to_string()],
         };
 
-        let ctx = Context::wraps(&person).unwrap();
+        let ctx = Context::wraps(person).unwrap();
         assert_eq!(
             navigate_from_root(&ctx, "./addr/country").unwrap().render(),
             "China".to_string()
@@ -296,7 +292,7 @@ mod test {
         );
 
         let v = true;
-        let ctx2 = Context::wraps(&v).unwrap();
+        let ctx2 = Context::wraps(v).unwrap();
         assert_eq!(
             navigate_from_root(&ctx2, "this").unwrap().render(),
             "true".to_string()
@@ -342,7 +338,7 @@ mod test {
         let v = value::to_json("h1");
         hash.insert("tag", &v);
 
-        let ctx_a1 = Context::wraps(&context::merge_json(&map, &hash)).unwrap();
+        let ctx_a1 = Context::wraps(context::merge_json(&map, &hash)).unwrap();
         assert_eq!(
             navigate_from_root(&ctx_a1, "age").unwrap().render(),
             "4".to_owned()
@@ -352,7 +348,7 @@ mod test {
             "h1".to_owned()
         );
 
-        let ctx_a2 = Context::wraps(&context::merge_json(&value::to_json(s), &hash)).unwrap();
+        let ctx_a2 = Context::wraps(context::merge_json(&value::to_json(s), &hash)).unwrap();
         assert_eq!(
             navigate_from_root(&ctx_a2, "this").unwrap().render(),
             "[object]".to_owned()
@@ -368,7 +364,7 @@ mod test {
         let m = json!({
             "this_name": "the_value"
         });
-        let ctx = Context::wraps(&m).unwrap();
+        let ctx = Context::wraps(m).unwrap();
         assert_eq!(
             navigate_from_root(&ctx, "this_name").unwrap().render(),
             "the_value".to_string()
@@ -392,7 +388,7 @@ mod test {
     #[test]
     fn test_serialize_error() {
         let d = UnserializableType {};
-        assert!(Context::wraps(&d).is_err());
+        assert!(Context::wraps(d).is_err());
     }
 
     #[test]
@@ -407,7 +403,7 @@ mod test {
             },
             "b": 2
         });
-        let ctx = Context::wraps(&m).unwrap();
+        let ctx = Context::wraps(m).unwrap();
         let mut block = BlockContext::new();
         *block.base_path_mut() = ["a".to_owned(), "b".to_owned()].to_vec();
 
@@ -415,7 +411,7 @@ mod test {
         blocks.push_front(block);
 
         assert_eq!(
-            ctx.navigate(&Path::parse("@root/b").unwrap().segs().unwrap(), &blocks)
+            ctx.navigate(Path::parse("@root/b").unwrap().segs().unwrap(), &blocks)
                 .unwrap()
                 .render(),
             "2".to_string()
@@ -430,7 +426,7 @@ mod test {
             "b": [2, 3]
         }]);
 
-        let ctx = Context::wraps(&m).unwrap();
+        let ctx = Context::wraps(m).unwrap();
         let mut block_params = BlockParams::new();
         block_params
             .add_path("z", ["0".to_owned(), "a".to_owned()].to_vec())
@@ -444,13 +440,13 @@ mod test {
         blocks.push_front(block);
 
         assert_eq!(
-            ctx.navigate(&Path::parse("z.[1]").unwrap().segs().unwrap(), &blocks)
+            ctx.navigate(Path::parse("z.[1]").unwrap().segs().unwrap(), &blocks)
                 .unwrap()
                 .render(),
             "2".to_string()
         );
         assert_eq!(
-            ctx.navigate(&Path::parse("t").unwrap().segs().unwrap(), &blocks)
+            ctx.navigate(Path::parse("t").unwrap().segs().unwrap(), &blocks)
                 .unwrap()
                 .render(),
             "good".to_string()

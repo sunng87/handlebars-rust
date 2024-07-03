@@ -53,8 +53,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "{}",
         handlebars.render_template(
-            r#"{{isdefined a}} {{isdefined b}}
-{{#if (isdefined a)}}a{{/if}} {{#if (isdefined b)}}b{{/if}}"#,
+            r"{{isdefined a}} {{isdefined b}}
+{{#if (isdefined a)}}a{{/if}} {{#if (isdefined b)}}b{{/if}}",
             &json!({"a": 1})
         )?
     );

@@ -14,7 +14,7 @@ handlebars_helper!(money: |v: i64, {cur: str="$"}| format!("{}{}.00", cur, v));
 handlebars_helper!(all_hash: |{cur: str="$"}| cur);
 handlebars_helper!(nargs: |*args| args.len());
 handlebars_helper!(has_a: |{a:i64 = 99}, **kwargs|
-                   format!("{}, {}", a, kwargs.get("a").is_some()));
+                   format!("{}, {}", a, kwargs.contains_key("a")));
 handlebars_helper!(tag: |t: str| format!("<{}>", t));
 handlebars_helper!(date: |dt: OffsetDateTime| dt.format(&parse("[year]-[month]-[day]").unwrap()).unwrap());
 

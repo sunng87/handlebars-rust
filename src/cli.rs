@@ -27,9 +27,8 @@ fn parse_json(text: &str) -> Json {
 fn main() {
     let mut args = env::args();
     args.next(); // skip own filename
-    let (filename, json) = match (args.next(), args.next()) {
-        (Some(filename), Some(json)) => (filename, json),
-        _ => usage(),
+    let (Some(filename), Some(json)) = (args.next(), args.next()) else {
+        usage()
     };
     let data = parse_json(&json);
 

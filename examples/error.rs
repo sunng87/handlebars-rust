@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn StdError>> {
         .render_template("{{#if}}", &json!({}))
         .unwrap_err();
     let be1 = Box::new(e1);
-    println!("{}", be1);
+    println!("{be1}");
     println!("{}", be1.source().unwrap());
     println!("{:?}", be1.source().unwrap().source());
 
@@ -71,11 +71,8 @@ fn main() -> Result<(), Box<dyn StdError>> {
         .render_template("{{err \"db\"}}", &json!({}))
         .unwrap_err();
     // get nested error to from `RenderError`
-    match e2.source().and_then(|e| e.downcast_ref::<HelperError>()) {
-        Some(HelperError::DbError) => {
-            println!("Detected error from helper: db error",)
-        }
-        _ => {}
+    if let Some(HelperError::DbError) = e2.source().and_then(|e| e.downcast_ref::<HelperError>()) {
+        println!("Detected error from helper: db error",);
     }
 
     Ok(())

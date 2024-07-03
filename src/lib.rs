@@ -300,7 +300,7 @@
 //! ```
 //!
 //! Data available to helper can be found in [Helper](struct.Helper.html). And there are more
-//! examples in [HelperDef](trait.HelperDef.html) page.
+//! examples in [`HelperDef`](trait.HelperDef.html) page.
 //!
 //! You can learn more about helpers by looking into source code of built-in helpers.
 //!

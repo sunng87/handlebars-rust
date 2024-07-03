@@ -299,7 +299,7 @@ mod test {
             .unwrap();
 
         let mut r0_sp: Vec<_> = r0.split('\n').collect();
-        r0_sp.sort();
+        r0_sp.sort_unstable();
 
         assert_eq!(r0_sp, vec!["", "-baz", "foo-bar"]);
     }
@@ -593,17 +593,17 @@ mod test {
     fn newline_stripping_for_each() {
         let reg = Registry::new();
 
-        let tpl = r#"<ul>
+        let tpl = r"<ul>
   {{#each a}}
     {{!-- comment --}}
     <li>{{this}}</li>
   {{/each}}
-</ul>"#;
+</ul>";
         assert_eq!(
-            r#"<ul>
+            r"<ul>
     <li>0</li>
     <li>1</li>
-</ul>"#,
+</ul>",
             reg.render_template(tpl, &json!({"a": [0, 1]})).unwrap()
         );
     }

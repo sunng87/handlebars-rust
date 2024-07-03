@@ -66,7 +66,7 @@ pub trait DecoratorDef {
     ) -> DecoratorResult;
 }
 
-/// Implement DecoratorDef for bare function so we can use function as decorator
+/// Implement `DecoratorDef` for bare function so we can use function as decorator
 impl<
         F: for<'reg, 'rc> Fn(
             &Decorator<'rc>,
@@ -102,7 +102,7 @@ mod test {
     fn test_register_decorator() {
         let mut handlebars = Registry::new();
         handlebars
-            .register_template_string("t0", "{{*foo}}".to_string())
+            .register_template_string("t0", "{{*foo}}")
             .unwrap();
 
         let data = json!({
@@ -121,7 +121,7 @@ mod test {
                  -> Result<(), RenderError> { Ok(()) },
             ),
         );
-        assert_eq!(handlebars.render("t0", &data).ok().unwrap(), "".to_string());
+        assert_eq!(handlebars.render("t0", &data).ok().unwrap(), String::new());
     }
 
     // updating context data disabled for now
@@ -129,7 +129,7 @@ mod test {
     fn test_update_data_with_decorator() {
         let mut handlebars = Registry::new();
         handlebars
-            .register_template_string("t0", "{{hello}}{{*foo}}{{hello}}".to_string())
+            .register_template_string("t0", "{{hello}}{{*foo}}{{hello}}")
             .unwrap();
 
         let data = json!({
@@ -183,7 +183,7 @@ mod test {
             ),
         );
         handlebars
-            .register_template_string("t1", "{{this}}{{*bar 1}}{{this}}".to_string())
+            .register_template_string("t1", "{{this}}{{*bar 1}}{{this}}")
             .unwrap();
         assert_eq!(
             handlebars.render("t1", &data2).ok().unwrap(),
@@ -191,10 +191,7 @@ mod test {
         );
 
         handlebars
-            .register_template_string(
-                "t2",
-                "{{this}}{{*bar \"string_literal\"}}{{this}}".to_string(),
-            )
+            .register_template_string("t2", "{{this}}{{*bar \"string_literal\"}}{{this}}")
             .unwrap();
         assert_eq!(
             handlebars.render("t2", &data2).ok().unwrap(),
@@ -202,7 +199,7 @@ mod test {
         );
 
         handlebars
-            .register_template_string("t3", "{{this}}{{*bar}}{{this}}".to_string())
+            .register_template_string("t3", "{{this}}{{*bar}}{{this}}")
             .unwrap();
         assert_eq!(
             handlebars.render("t3", &data2).ok().unwrap(),
@@ -216,8 +213,7 @@ mod test {
         handlebars
             .register_template_string(
                 "t0",
-                "{{distance 4.5}},{{*foo \"miles\"}}{{distance 10.1}},{{*bar}}{{distance 3.4}}"
-                    .to_string(),
+                "{{distance 4.5}},{{*foo \"miles\"}}{{distance 10.1}},{{*bar}}{{distance 3.4}}",
             )
             .unwrap();
 
@@ -233,10 +229,7 @@ mod test {
                     write!(
                         out,
                         "{}m",
-                        h.param(0)
-                            .as_ref()
-                            .map(|v| v.value())
-                            .unwrap_or(&to_json(0))
+                        h.param(0).as_ref().map_or(&to_json(0), |v| v.value())
                     )?;
                     Ok(())
                 },
@@ -265,10 +258,7 @@ mod test {
                         write!(
                             out,
                             "{}{}",
-                            h.param(0)
-                                .as_ref()
-                                .map(|v| v.value())
-                                .unwrap_or(&to_json(0)),
+                            h.param(0).as_ref().map_or(&to_json(0), |v| v.value()),
                             new_unit
                         )?;
                         Ok(())

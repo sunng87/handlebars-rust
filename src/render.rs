@@ -15,7 +15,10 @@ use crate::output::{Output, StringOutput};
 use crate::registry::Registry;
 use crate::support;
 use crate::support::str::newline_matcher;
-use crate::template::TemplateElement::*;
+use crate::template::TemplateElement::{
+    DecoratorBlock, DecoratorExpression, Expression, HelperBlock, HtmlExpression, PartialBlock,
+    PartialExpression, RawString,
+};
 use crate::template::{
     BlockParam, DecoratorTemplate, HelperTemplate, Parameter, Template, TemplateElement,
     TemplateMapping,
@@ -143,7 +146,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// This is typically called in decorators where user can modify
     /// the data they were rendering.
     pub fn set_context(&mut self, ctx: Context) {
-        self.modified_context = Some(Rc::new(ctx))
+        self.modified_context = Some(Rc::new(ctx));
     }
 
     /// Evaluate a Json path in current scope.
@@ -168,8 +171,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         match path {
             Path::Local((level, name, _)) => Ok(self
                 .get_local_var(*level, name)
-                .map(|v| ScopedJson::Derived(v.clone()))
-                .unwrap_or_else(|| ScopedJson::Missing)),
+                .map_or_else(|| ScopedJson::Missing, |v| ScopedJson::Derived(v.clone()))),
             Path::Relative((segs, _)) => context.navigate(segs, &self.blocks),
         }
     }
@@ -232,10 +234,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     /// Test if given template name is current template.
     pub fn is_current_template(&self, p: &str) -> bool {
-        self.inner()
-            .current_template
-            .map(|s| s == p)
-            .unwrap_or(false)
+        self.inner().current_template.is_some_and(|s| s == p)
     }
 
     /// Register a helper in this render context.
@@ -290,9 +289,9 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Set the escape toggle.
-    /// When toggle is on, escape_fn will be called when rendering.
+    /// When toggle is on, `escape_fn` will be called when rendering.
     pub fn set_disable_escape(&mut self, disable: bool) {
-        self.inner_mut().disable_escape = disable
+        self.inner_mut().disable_escape = disable;
     }
 
     #[inline]
@@ -563,7 +562,7 @@ impl<'reg: 'rc, 'rc> Decorator<'rc> {
 
 /// Render trait
 pub trait Renderable {
-    /// render into RenderContext's `writer`
+    /// render into `RenderContext`'s `writer`
     fn render<'reg: 'rc, 'rc>(
         &'rc self,
         registry: &'reg Registry<'reg>,
@@ -1027,7 +1026,7 @@ mod test {
                 &["hello"],
             )))),
             RawString("</h1>".to_string()),
-            Comment("".to_string()),
+            Comment(String::new()),
         ];
 
         let template = Template {
@@ -1082,7 +1081,6 @@ mod test {
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     out.write(&h.param(0).unwrap().value().render())
-                        .map(|_| ())
                         .map_err(RenderError::from)
                 },
             ),
@@ -1222,7 +1220,7 @@ mod test {
                  out: &mut dyn Output|
                  -> Result<(), RenderError> {
                     let name = h.name();
-                    write!(out, "{} not resolved", name)?;
+                    write!(out, "{name} not resolved")?;
                     Ok(())
                 },
             ),

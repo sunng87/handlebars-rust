@@ -25,7 +25,8 @@ pub type HelperResult = Result<(), RenderError>;
 /// * `&mut RenderContext`: you can access data or modify variables (starts with @)/partials in render context, for example, @index of #each. See its document for detail.
 /// * `&mut dyn Output`: where you write output to
 ///
-/// By default, you can use a bare function as a helper definition because we have supported unboxed_closure. If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
+/// By default, you can use a bare function as a helper definition because we have supported `unboxed_closure`.
+/// If you have stateful or configurable helper, you can create a struct to implement `HelperDef`.
 ///
 /// ## Define an inline helper
 ///
@@ -144,7 +145,7 @@ pub trait HelperDef {
     }
 }
 
-/// implement HelperDef for bare function so we can use function as helper
+/// implement `HelperDef` for bare function so we can use function as helper
 impl<
         F: for<'reg, 'rc> Fn(
             &Helper<'rc>,

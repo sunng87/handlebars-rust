@@ -1,10 +1,8 @@
-#[macro_use]
-extern crate serde_json;
-
 #[test]
 #[cfg(feature = "rust-embed")]
 fn test_embed() {
     use rust_embed::RustEmbed;
+    use serde_json::json;
 
     #[derive(RustEmbed)]
     #[folder = "tests/templates/"]
@@ -30,6 +28,7 @@ fn test_embed() {
 #[cfg(feature = "rust-embed")]
 fn test_embed_with_extension() {
     use rust_embed::RustEmbed;
+    use serde_json::json;
 
     #[derive(RustEmbed)]
     #[folder = "tests/templates/"]
@@ -52,6 +51,7 @@ fn test_embed_with_extension() {
 #[cfg(feature = "rust-embed")]
 fn test_embed_with_extension_and_tests_struct_root() {
     use rust_embed::RustEmbed;
+    use serde_json::json;
 
     #[derive(RustEmbed)]
     #[folder = "tests/"]

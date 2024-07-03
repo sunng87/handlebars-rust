@@ -48,7 +48,7 @@ fn rank_helper(
         .param(1)
         .as_ref()
         .and_then(|v| v.value().as_array())
-        .map(|arr| arr.len())
+        .map(Vec::len)
         .ok_or(RenderErrorReason::ParamTypeMismatchForName(
             "rank",
             "1".to_string(),
@@ -64,7 +64,7 @@ fn rank_helper(
     Ok(())
 }
 
-static TYPES: &'static str = "serde_json";
+static TYPES: &str = "serde_json";
 
 // define some data
 #[derive(Serialize)]
@@ -114,7 +114,7 @@ pub fn make_data() -> Map<String, Json> {
         },
     ];
 
-    data.insert("teams".to_string(), to_json(&teams));
+    data.insert("teams".to_string(), to_json(teams));
     data.insert("engine".to_string(), to_json(TYPES));
     data
 }

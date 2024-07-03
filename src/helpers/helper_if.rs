@@ -69,7 +69,7 @@ mod test {
         assert_eq!(r1.ok().unwrap(), "world".to_string());
 
         let r2 = handlebars.render("t0", &false);
-        assert_eq!(r2.ok().unwrap(), "".to_string());
+        assert_eq!(r2.ok().unwrap(), String::new());
     }
 
     #[test]
@@ -212,32 +212,32 @@ mod test {
         );
 
         assert_eq!(
-            r#"yes
+            r"yes
   foo
   bar
-  baz"#,
+  baz",
             hbs.render_template(
-                r#"yes
+                r"yes
   {{#if true}}
   foo
   bar
   {{/if}}
-  baz"#,
+  baz",
                 &json!({})
             )
             .unwrap()
         );
 
         assert_eq!(
-            r#"  foo
+            r"  foo
   bar
-  baz"#,
+  baz",
             hbs.render_template(
-                r#"  {{#if true}}
+                r"  {{#if true}}
   foo
   bar
   {{/if}}
-  baz"#,
+  baz",
                 &json!({})
             )
             .unwrap()
