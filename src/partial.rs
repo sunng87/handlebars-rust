@@ -139,6 +139,8 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
         // cleanup
 
+        let trailing_newline = local_rc.get_trailine_newline();
+
         if block_created {
             local_rc.pop_block();
         }
@@ -146,6 +148,10 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         if d.template().is_some() {
             local_rc.pop_partial_block();
         }
+
+        drop(local_rc);
+
+        rc.set_trailing_newline(trailing_newline);
 
         result
     } else {
