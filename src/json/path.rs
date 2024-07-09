@@ -8,6 +8,7 @@ use crate::grammar::{HandlebarsParser, Rule};
 use crate::RenderErrorReason;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
+#[non_exhaustive]
 pub enum PathSeg {
     Named(String),
     Ruled(Rule),
