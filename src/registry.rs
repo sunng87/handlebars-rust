@@ -272,6 +272,7 @@ impl<'reg> Registry<'reg> {
             tpl_str.as_ref(),
             TemplateOptions {
                 name: Some(name.to_owned()),
+                is_partial: false,
                 prevent_indent: self.prevent_indent,
             },
         )?;
@@ -593,6 +594,7 @@ impl<'reg> Registry<'reg> {
                         TemplateOptions {
                             name: Some(name.to_owned()),
                             prevent_indent: self.prevent_indent,
+                            is_partial: false,
                         },
                     )
                 })
