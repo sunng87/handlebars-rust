@@ -292,3 +292,27 @@ fn tag_before_eof_becomes_standalone_in_full_template() {
         output
     );
 }
+
+#[test]
+fn tag_before_eof_does_not_become_standalone_in_partial() {
+    let input = r#"{{#*inline "partial"}}
+<ul>
+  {{#each a}}
+    <li>{{this}}</li>
+  {{/each}}{{/inline}}
+{{> partial}}"#;
+
+    let output = r#"
+<ul>
+    <li>1</li>
+      <li>2</li>
+      <li>3</li>
+  "#;
+    let hbs = Handlebars::new();
+
+    assert_eq!(
+        hbs.render_template(input, &json!({"a": [1, 2, 3]}))
+            .unwrap(),
+        output
+    );
+}
