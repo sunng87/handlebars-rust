@@ -66,10 +66,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         return Err(RenderErrorReason::PartialNotFound(tname.to_owned()).into());
     };
 
-    // clone to avoid lifetime issue
-    // FIXME refactor this to avoid
-
-    // if tname == PARTIAL_BLOCK
     let is_partial_block = tname == PARTIAL_BLOCK;
 
     // add partial block depth there are consecutive partial
@@ -90,12 +86,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         let mut block_inner = BlockContext::new();
         *block_inner.base_path_mut() = base_path.to_vec();
 
-        // because block is moved here, we need another bool variable to track
-        // its status for later cleanup
         block_created = true;
-        // clear blocks to prevent block params from parent
-        // template to be leaked into partials
-        // see `test_partial_context_issue_495` for the case.
         rc.push_block(block_inner);
     }
 
@@ -143,7 +134,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     let result = partial.render(r, ctx, rc, out);
 
     // cleanup
-
     let trailing_newline = rc.get_trailine_newline();
 
     if d.template().is_some() {
