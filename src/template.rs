@@ -30,6 +30,7 @@ pub struct Template {
 #[derive(Default)]
 pub(crate) struct TemplateOptions {
     pub(crate) prevent_indent: bool,
+    pub(crate) is_partial: bool,
     pub(crate) name: Option<String>,
 }
 
@@ -570,9 +571,15 @@ impl Template {
         source: &str,
         current_span: &Span<'_>,
         prevent_indent: bool,
+        is_partial: bool,
     ) -> bool {
-        let with_trailing_newline =
-            support::str::starts_with_empty_line(&source[current_span.end()..]);
+        let continuation = &source[current_span.end()..];
+
+        let mut with_trailing_newline = support::str::starts_with_empty_line(continuation);
+
+        // For full templates, we behave as if there was a trailing newline if we encounter
+        // the end of input. See #611.
+        with_trailing_newline |= !is_partial && continuation.is_empty();
 
         if with_trailing_newline {
             let with_leading_newline =
@@ -770,6 +777,7 @@ impl Template {
                             source,
                             &span,
                             true,
+                            options.is_partial,
                         );
 
                         let indent_before_write = trim_line_required && !exp.omit_pre_ws;
@@ -812,6 +820,7 @@ impl Template {
                             source,
                             &span,
                             true,
+                            options.is_partial,
                         );
 
                         let indent_before_write = trim_line_required && !exp.omit_pre_ws;
@@ -884,6 +893,7 @@ impl Template {
                                     source,
                                     &span,
                                     prevent_indent,
+                                    options.is_partial,
                                 );
 
                                 // indent for partial expression >
@@ -919,6 +929,7 @@ impl Template {
                                     source,
                                     &span,
                                     true,
+                                    options.is_partial,
                                 );
 
                                 let mut h = helper_stack.pop_front().unwrap();
@@ -948,6 +959,7 @@ impl Template {
                                     source,
                                     &span,
                                     true,
+                                    options.is_partial,
                                 );
 
                                 let mut d = decorator_stack.pop_front().unwrap();
@@ -981,6 +993,7 @@ impl Template {
                             source,
                             &span,
                             true,
+                            options.is_partial,
                         );
 
                         let text = span
@@ -996,6 +1009,7 @@ impl Template {
                             source,
                             &span,
                             true,
+                            options.is_partial,
                         );
 
                         let text = span
