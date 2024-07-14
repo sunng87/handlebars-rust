@@ -57,9 +57,9 @@ impl<'reg> BlockParams<'reg> {
 /// A data structure holds contextual data for current block scope.
 #[derive(Debug, Clone, Default)]
 pub struct BlockContext<'rc> {
-    /// the base_path of current block scope
+    /// the `base_path` of current block scope
     base_path: Vec<String>,
-    /// the base_value of current block scope, when the block is using a
+    /// the `base_value` of current block scope, when the block is using a
     /// constant or derived value as block base
     base_value: Option<Json>,
     /// current block context variables

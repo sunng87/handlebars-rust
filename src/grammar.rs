@@ -46,18 +46,18 @@ mod test {
 
     #[test]
     fn test_raw_text() {
-        let s = vec![
+        let s = [
             "<h1> helloworld </h1>    ",
             r"hello\{{world}}",
             r"hello\{{#if world}}nice\{{/if}}",
             r"hello \{{{{raw}}}}hello\{{{{/raw}}}}",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::raw_text, i);
         }
 
-        let s_not_escape = vec![r"\\{{hello}}"];
-        for i in s_not_escape.iter() {
+        let s_not_escape = [r"\\{{hello}}"];
+        for i in &s_not_escape {
             assert_not_rule!(Rule::raw_text, i);
         }
     }
@@ -86,43 +86,43 @@ mod test {
             "$id",
             "this.[null]",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::reference, i);
         }
     }
 
     #[test]
     fn test_name() {
-        let s = vec!["if", "(abc)"];
-        for i in s.iter() {
+        let s = ["if", "(abc)"];
+        for i in &s {
             assert_rule!(Rule::name, i);
         }
     }
 
     #[test]
     fn test_param() {
-        let s = vec!["hello", "\"json literal\"", "nullable", "truestory"];
-        for i in s.iter() {
+        let s = ["hello", "\"json literal\"", "nullable", "truestory"];
+        for i in &s {
             assert_rule!(Rule::helper_parameter, i);
         }
     }
 
     #[test]
     fn test_hash() {
-        let s = vec![
+        let s = [
             "hello=world",
             "hello=\"world\"",
             "hello=(world)",
             "hello=(world 0)",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::hash, i);
         }
     }
 
     #[test]
     fn test_json_literal() {
-        let s = vec![
+        let s = [
             "\"json string\"",
             "\"quot: \\\"\"",
             "[]",
@@ -133,31 +133,31 @@ mod test {
             "{\"a\":1, \"b\":2 }",
             "\"nullable\"",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::literal, i);
         }
     }
 
     #[test]
     fn test_comment() {
-        let s = vec!["{{!-- <hello {{ a-b c-d}} {{d-c}} ok --}}",
+        let s = ["{{!-- <hello {{ a-b c-d}} {{d-c}} ok --}}",
                  "{{!--
                     <li><a href=\"{{up-dir nest-count}}{{base-url}}index.html\">{{this.title}}</a></li>
                 --}}",
                      "{{!    -- good  --}}"];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::hbs_comment, i);
         }
-        let s2 = vec!["{{! hello }}", "{{! test me }}"];
-        for i in s2.iter() {
+        let s2 = ["{{! hello }}", "{{! test me }}"];
+        for i in &s2 {
             assert_rule!(Rule::hbs_comment_compact, i);
         }
     }
 
     #[test]
     fn test_subexpression() {
-        let s = vec!["(sub)", "(sub 0)", "(sub a=1)"];
-        for i in s.iter() {
+        let s = ["(sub)", "(sub 0)", "(sub a=1)"];
+        for i in &s {
             assert_rule!(Rule::subexpression, i);
         }
     }
@@ -186,22 +186,22 @@ mod test {
             "{{exp key=(sub 0)}}",
             "{{exp key=(sub 0 key=1)}}",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::expression, i);
         }
     }
 
     #[test]
     fn test_identifier_with_dash() {
-        let s = vec!["{{exp-foo}}"];
-        for i in s.iter() {
+        let s = ["{{exp-foo}}"];
+        for i in &s {
             assert_rule!(Rule::expression, i);
         }
     }
 
     #[test]
     fn test_html_expression() {
-        let s = vec![
+        let s = [
             "{{{html}}}",
             "{{{(html)}}}",
             "{{{(html)}}}",
@@ -215,14 +215,14 @@ mod test {
             "{{~{ html }}}",
             "{{{ html }~}}",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::html_expression, i);
         }
     }
 
     #[test]
     fn test_helper_start() {
-        let s = vec![
+        let s = [
             "{{#if hello}}",
             "{{#if (hello)}}",
             "{{#if hello=world}}",
@@ -235,22 +235,22 @@ mod test {
             "{{#each-obj obj as |val key|}}",
             "{{#each assets}}",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::helper_block_start, i);
         }
     }
 
     #[test]
     fn test_helper_end() {
-        let s = vec!["{{/if}}", "{{~/if}}", "{{~/if ~}}", "{{/if   ~}}"];
-        for i in s.iter() {
+        let s = ["{{/if}}", "{{~/if}}", "{{~/if ~}}", "{{/if   ~}}"];
+        for i in &s {
             assert_rule!(Rule::helper_block_end, i);
         }
     }
 
     #[test]
     fn test_helper_block() {
-        let s = vec![
+        let s = [
             "{{#if hello}}hello{{/if}}",
             "{{#if true}}hello{{/if}}",
             "{{#if nice ok=1}}hello{{/if}}",
@@ -263,26 +263,26 @@ mod test {
             "{{#if}}{{/if}}",
             "{{#if}}hello{{else if}}world{{else}}test{{/if}}",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::helper_block, i);
         }
     }
 
     #[test]
     fn test_raw_block() {
-        let s = vec![
+        let s = [
             "{{{{if hello}}}}good {{hello}}{{{{/if}}}}",
             "{{{{if hello}}}}{{#if nice}}{{/if}}{{{{/if}}}}",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::raw_block, i);
         }
     }
 
     #[test]
     fn test_block_param() {
-        let s = vec!["as |person|", "as |val key|"];
-        for i in s.iter() {
+        let s = ["as |person|", "as |val key|"];
+        for i in &s {
             assert_rule!(Rule::block_param, i);
         }
     }
@@ -310,34 +310,34 @@ mod test {
             "@root/a/b",
             "nullable",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule_match!(Rule::path, i);
         }
     }
 
     #[test]
     fn test_decorator_expression() {
-        let s = vec!["{{* ssh}}", "{{~* ssh}}"];
-        for i in s.iter() {
+        let s = ["{{* ssh}}", "{{~* ssh}}"];
+        for i in &s {
             assert_rule!(Rule::decorator_expression, i);
         }
     }
 
     #[test]
     fn test_decorator_block() {
-        let s = vec![
+        let s = [
             "{{#* inline}}something{{/inline}}",
             "{{~#* inline}}hello{{/inline}}",
             "{{#* inline \"partialname\"}}something{{/inline}}",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::decorator_block, i);
         }
     }
 
     #[test]
     fn test_partial_expression() {
-        let s = vec![
+        let s = [
             "{{> hello}}",
             "{{> (hello)}}",
             "{{~> hello a}}",
@@ -347,15 +347,15 @@ mod test {
             "{{> [a83?f4+.3]}}",
             "{{> 'anif?.bar'}}",
         ];
-        for i in s.iter() {
+        for i in &s {
             assert_rule!(Rule::partial_expression, i);
         }
     }
 
     #[test]
     fn test_partial_block() {
-        let s = vec!["{{#> hello}}nice{{/hello}}"];
-        for i in s.iter() {
+        let s = ["{{#> hello}}nice{{/hello}}"];
+        for i in &s {
             assert_rule!(Rule::partial_block, i);
         }
     }

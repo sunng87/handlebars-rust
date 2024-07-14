@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::convert::AsRef;
 use std::fmt::{self, Debug, Formatter};
 use std::io::{Error as IoError, Write};
 use std::path::Path;
@@ -652,7 +653,7 @@ impl<'reg> Registry<'reg> {
         &self,
         name: &str,
     ) -> Option<&(dyn DecoratorDef + Send + Sync + 'reg)> {
-        self.decorators.get(name).map(|v| v.as_ref())
+        self.decorators.get(name).map(AsRef::as_ref)
     }
 
     /// Return all templates registered
@@ -1186,7 +1187,7 @@ mod test {
                 _ => unreachable!(),
             },
             "this.[3]"
-        )
+        );
     }
 
     use crate::json::value::ScopedJson;

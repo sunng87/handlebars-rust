@@ -79,7 +79,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         if let Some(base_path) = d.param(0).and_then(|p| p.context_path()) {
             // path given, update base_path
             let mut block_inner = BlockContext::new();
-            *block_inner.base_path_mut() = base_path.to_vec();
+            base_path.clone_into(block_inner.base_path_mut());
 
             // because block is moved here, we need another bool variable to track
             // its status for later cleanup
@@ -356,13 +356,13 @@ mod test {
         let template3 = "{{#> t2 }}Hello{{/ t2 }}";
 
         handlebars
-            .register_template_string("t1", &template1)
+            .register_template_string("t1", template1)
             .unwrap();
         handlebars
-            .register_template_string("t2", &template2)
+            .register_template_string("t2", template2)
             .unwrap();
 
-        let page = handlebars.render_template(&template3, &json!({})).unwrap();
+        let page = handlebars.render_template(template3, &json!({})).unwrap();
         assert_eq!("<outer><inner>Hello</inner></outer>", page);
     }
 
@@ -397,22 +397,22 @@ mod test {
 
         let hbs = Registry::new();
         assert_eq!(
-            r#"foo
+            r"foo
 foo
 foo
-"#,
+",
             hbs.render_template(tpl0, &json!({})).unwrap()
         );
         assert_eq!(
-            r#"
-foofoofoo"#,
+            r"
+foofoofoo",
             hbs.render_template(tpl1, &json!({})).unwrap()
         );
     }
 
     #[test]
     fn test_partial_indent() {
-        let outer = r#"                {{> inner inner_solo}}
+        let outer = r"                {{> inner inner_solo}}
 
 {{#each inners}}
                 {{> inner}}
@@ -421,9 +421,9 @@ foofoofoo"#,
         {{#each inners}}
         {{> inner}}
         {{/each}}
-"#;
-        let inner = r#"name: {{name}}
-"#;
+";
+        let inner = r"name: {{name}}
+";
 
         let mut hbs = Registry::new();
 
@@ -445,21 +445,21 @@ foofoofoo"#,
 
         assert_eq!(
             result,
-            r#"                name: inner_solo
+            r"                name: inner_solo
 
                 name: hello
                 name: there
 
         name: hello
         name: there
-"#
+"
         );
     }
     // Rule::partial_expression should not trim leading indent  by default
 
     #[test]
     fn test_partial_prevent_indent() {
-        let outer = r#"                {{> inner inner_solo}}
+        let outer = r"                {{> inner inner_solo}}
 
 {{#each inners}}
                 {{> inner}}
@@ -468,9 +468,9 @@ foofoofoo"#,
         {{#each inners}}
         {{> inner}}
         {{/each}}
-"#;
-        let inner = r#"name: {{name}}
-"#;
+";
+        let inner = r"name: {{name}}
+";
 
         let mut hbs = Registry::new();
         hbs.set_prevent_indent(true);
@@ -493,14 +493,14 @@ foofoofoo"#,
 
         assert_eq!(
             result,
-            r#"                name: inner_solo
+            r"                name: inner_solo
 
                 name: hello
                 name: there
 
         name: hello
         name: there
-"#
+"
         );
     }
 
@@ -511,18 +511,18 @@ foofoofoo"#,
             .unwrap();
         hb.register_template_string(
             "index",
-            r#"{{#>partial}}
+            r"{{#>partial}}
     Yo
     {{#>partial}}
     Yo 2
     {{/partial}}
-{{/partial}}"#,
+{{/partial}}",
         )
         .unwrap();
         assert_eq!(
-            r#"    Yo
+            r"    Yo
     Yo 2
-"#,
+",
             hb.render("index", &()).unwrap()
         );
 
@@ -530,11 +530,11 @@ foofoofoo"#,
             .unwrap();
         let r2 = hb
             .render_template(
-                r#"{{#> partial}}
+                r"{{#> partial}}
 {{#> partial2}}
 :(
 {{/partial2}}
-{{/partial}}"#,
+{{/partial}}",
                 &(),
             )
             .unwrap();
@@ -573,11 +573,11 @@ Name:{{name}}
         });
 
         assert_eq!(
-            r#"Name:hudel
+            r"Name:hudel
 Template:hudel
 Name:test
 Template:test
-"#,
+",
             hb.render("t1", &data).unwrap()
         );
     }
@@ -597,9 +597,9 @@ outer third line"#,
         )
         .unwrap();
         assert_eq!(
-            r#"    inner first line
+            r"    inner first line
     inner second line
-outer third line"#,
+outer third line",
             hb.render("t1", &()).unwrap()
         );
 
@@ -613,9 +613,9 @@ outer third line"#,
         )
         .unwrap();
         assert_eq!(
-            r#"  inner first line
+            r"  inner first line
   inner second line
-outer third line"#,
+outer third line",
             hb.render("t2", &()).unwrap()
         );
 
@@ -627,9 +627,9 @@ outer third line"#,
         )
         .unwrap();
         assert_eq!(
-            r#"
+            r"
   inner first line
-  inner second lineouter third line"#,
+  inner second lineouter third line",
             hb.render("t3", &json!({"a": "inner first line\ninner second line"}))
                 .unwrap()
         );
@@ -645,9 +645,9 @@ outer third line"#,
         )
         .unwrap();
         assert_eq!(
-            r#"  inner first line
+            r"  inner first line
   inner second line
-outer third line"#,
+outer third line",
             hb.render("t4", &()).unwrap()
         );
 
@@ -665,11 +665,11 @@ outer third line"#,
         )
         .unwrap();
         assert_eq!(
-            r#"    inner first line
+            r"    inner first line
   inner second line
-outer third line"#,
+outer third line",
             hb2.render("t1", &()).unwrap()
-        )
+        );
     }
 
     #[test]
@@ -737,6 +737,6 @@ outer third line"#,
     fn test_partial_not_found() {
         let t1 = "{{> bar}}";
         let hbs = Registry::new();
-        assert!(hbs.render_template(&t1, &()).is_err());
+        assert!(hbs.render_template(t1, &()).is_err());
     }
 }

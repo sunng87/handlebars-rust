@@ -28,10 +28,7 @@ mod test_conditions {
 
         let result = handlebars
             .render_template(
-                &format!(
-                    "{{{{#if {condition}}}}}lorem{{{{else}}}}ipsum{{{{/if}}}}",
-                    condition = condition
-                ),
+                &format!("{{{{#if {condition}}}}}lorem{{{{else}}}}ipsum{{{{/if}}}}"),
                 &json!({}),
             )
             .unwrap();
@@ -53,10 +50,10 @@ mod test_conditions {
         test_condition("(eq 5 6)", false);
         test_condition(r#"(eq "foo" "foo")"#, true);
         test_condition(r#"(eq "foo" "Foo")"#, false);
-        test_condition(r#"(eq [5] [5])"#, true);
-        test_condition(r#"(eq [5] [4])"#, false);
+        test_condition(r"(eq [5] [5])", true);
+        test_condition(r"(eq [5] [4])", false);
         test_condition(r#"(eq 5 "5")"#, false);
-        test_condition(r#"(eq 5 [5])"#, false);
+        test_condition(r"(eq 5 [5])", false);
     }
 
     #[test]

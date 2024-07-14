@@ -1,3 +1,4 @@
+use std::borrow::ToOwned;
 use std::error::Error as StdError;
 use std::fmt::{self, Write};
 use std::io::Error as IOError;
@@ -37,7 +38,7 @@ impl fmt::Display for RenderError {
                 col,
                 desc
             ),
-            _ => write!(f, "{}", desc),
+            _ => write!(f, "{desc}"),
         }
     }
 }
@@ -165,7 +166,7 @@ impl RenderError {
     }
 
     pub fn strict_error(path: Option<&String>) -> RenderError {
-        RenderErrorReason::MissingVariable(path.map(|p| p.to_owned())).into()
+        RenderErrorReason::MissingVariable(path.map(ToOwned::to_owned)).into()
     }
 
     #[deprecated(since = "5.0.0", note = "Use RenderErrorReason::NestedError instead")]

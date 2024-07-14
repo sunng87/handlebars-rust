@@ -29,8 +29,8 @@ impl HelperDef for LogHelper {
             .params()
             .iter()
             .map(|p| {
-                if let Some(ref relative_path) = p.relative_path() {
-                    format!("{}: {}", relative_path, p.value().render())
+                if let Some(relative_path) = p.relative_path() {
+                    format!("{}: {}", &relative_path, p.value().render())
                 } else {
                     p.value().render()
                 }
@@ -44,7 +44,7 @@ impl HelperDef for LogHelper {
             .unwrap_or("info");
 
         if let Ok(log_level) = Level::from_str(level) {
-            log!(log_level, "{}", param_to_log)
+            log!(log_level, "{}", param_to_log);
         } else {
             return Err(RenderErrorReason::InvalidLoggingLevel(level.to_string()).into());
         }

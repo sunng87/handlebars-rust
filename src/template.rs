@@ -12,7 +12,10 @@ use crate::grammar::{HandlebarsParser, Rule};
 use crate::json::path::{parse_json_path_from_iter, Path};
 use crate::support;
 
-use self::TemplateElement::*;
+use self::TemplateElement::{
+    Comment, DecoratorBlock, DecoratorExpression, Expression, HelperBlock, HtmlExpression,
+    PartialBlock, PartialExpression, RawString,
+};
 
 #[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -36,10 +39,7 @@ pub(crate) struct TemplateOptions {
 
 impl TemplateOptions {
     fn name(&self) -> String {
-        self.name
-            .as_ref()
-            .cloned()
-            .unwrap_or_else(|| "Unnamed".to_owned())
+        self.name.clone().unwrap_or_else(|| "Unnamed".to_owned())
     }
 }
 
@@ -686,7 +686,7 @@ impl Template {
         let mut end_pos: Option<Position<'_>> = None;
         loop {
             if let Some(pair) = it.next() {
-                let prev_end = end_pos.as_ref().map(|p| p.pos()).unwrap_or(0);
+                let prev_end = end_pos.as_ref().map_or(0, pest::Position::pos);
                 let rule = pair.as_rule();
                 let span = pair.as_span();
 
@@ -911,7 +911,7 @@ impl Template {
                                     exp.clone(),
                                     trim_line_required && !exp.omit_pre_ws,
                                 );
-                                decorator.indent = indent.map(|s| s.to_owned());
+                                decorator.indent = indent.map(std::borrow::ToOwned::to_owned);
 
                                 let el = if rule == Rule::decorator_expression {
                                     DecoratorExpression(Box::new(decorator))
@@ -1026,7 +1026,7 @@ impl Template {
                     end_pos = Some(span.end_pos());
                 }
             } else {
-                let prev_end = end_pos.as_ref().map(|e| e.pos()).unwrap_or(0);
+                let prev_end = end_pos.as_ref().map_or(0, pest::Position::pos);
                 if prev_end < source.len() {
                     let text = &source[prev_end..source.len()];
                     // is some called in if check
@@ -1088,7 +1088,7 @@ mod test {
         let t = Template::compile(source).ok().unwrap();
         assert_eq!(t.elements.len(), 1);
         assert_eq!(
-            *t.elements.get(0).unwrap(),
+            *t.elements.first().unwrap(),
             RawString("foo {{bar}}".to_string())
         );
     }
@@ -1098,7 +1098,7 @@ mod test {
         let source = r"\\\\";
         let t = Template::compile(source).ok().unwrap();
         assert_eq!(t.elements.len(), 1);
-        assert_eq!(*t.elements.get(0).unwrap(), RawString(source.to_string()));
+        assert_eq!(*t.elements.first().unwrap(), RawString(source.to_string()));
     }
 
     #[test]
@@ -1107,7 +1107,7 @@ mod test {
         let t = Template::compile(source).ok().unwrap();
         assert_eq!(t.elements.len(), 1);
         assert_eq!(
-            *t.elements.get(0).unwrap(),
+            *t.elements.first().unwrap(),
             RawString("{{{{foo}}}} bar".to_string())
         );
     }
@@ -1121,7 +1121,7 @@ mod test {
 
         assert_eq!(t.elements.len(), 10);
 
-        assert_eq!(*t.elements.get(0).unwrap(), RawString("<h1>".to_string()));
+        assert_eq!(*t.elements.first().unwrap(), RawString("<h1>".to_string()));
         assert_eq!(
             *t.elements.get(1).unwrap(),
             Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
@@ -1152,9 +1152,9 @@ mod test {
                 assert_eq!(h.name.as_name().unwrap(), "foo".to_string());
                 assert_eq!(h.params.len(), 1);
                 assert_eq!(
-                    *(h.params.get(0).unwrap()),
+                    *(h.params.first().unwrap()),
                     Parameter::Path(Path::with_named_paths(&["bar"]))
-                )
+                );
             }
             _ => {
                 panic!("Helper expression here");
@@ -1199,11 +1199,11 @@ mod test {
         let t = Template::compile(source).ok().unwrap();
 
         assert_eq!(t.elements.len(), 4);
-        match *t.elements.get(0).unwrap() {
+        match *t.elements.first().unwrap() {
             Expression(ref h) => {
                 assert_eq!(h.name.as_name().unwrap(), "foo".to_owned());
                 assert_eq!(h.params.len(), 1);
-                if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
+                if let Parameter::Subexpression(t) = h.params.first().unwrap() {
                     assert_eq!(t.name(), "bar".to_owned());
                 } else {
                     panic!("Subexpression expected");
@@ -1218,9 +1218,9 @@ mod test {
             Expression(ref h) => {
                 assert_eq!(h.name.as_name().unwrap(), "foo".to_string());
                 assert_eq!(h.params.len(), 1);
-                if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
+                if let Parameter::Subexpression(t) = h.params.first().unwrap() {
                     assert_eq!(t.name(), "bar".to_owned());
-                    if let Some(Parameter::Path(p)) = t.params().unwrap().get(0) {
+                    if let Some(Parameter::Path(p)) = t.params().unwrap().first() {
                         assert_eq!(p, &Path::with_named_paths(&["baz"]));
                     } else {
                         panic!("non-empty param expected ");
@@ -1240,9 +1240,9 @@ mod test {
                 assert_eq!(h.params.len(), 1);
                 assert_eq!(h.hash.len(), 1);
 
-                if let &Parameter::Subexpression(ref t) = h.params.get(0).unwrap() {
+                if let Parameter::Subexpression(t) = h.params.first().unwrap() {
                     assert_eq!(t.name(), "baz".to_owned());
-                    if let Some(Parameter::Path(p)) = t.params().unwrap().get(0) {
+                    if let Some(Parameter::Path(p)) = t.params().unwrap().first() {
                         assert_eq!(p, &Path::with_named_paths(&["bar"]));
                     } else {
                         panic!("non-empty param expected ");
@@ -1251,7 +1251,7 @@ mod test {
                     panic!("Subexpression expected (baz bar)");
                 }
 
-                if let &Parameter::Subexpression(ref t) = h.hash.get("then").unwrap() {
+                if let Parameter::Subexpression(t) = h.hash.get("then").unwrap() {
                     assert_eq!(t.name(), "bar".to_owned());
                 } else {
                     panic!("Subexpression expected (bar)");
@@ -1301,7 +1301,7 @@ mod test {
     #[test]
     fn test_unclosed_expression() {
         let sources = ["{{invalid", "{{{invalid", "{{invalid}", "{{!hello"];
-        for s in sources.iter() {
+        for s in &sources {
             let result = Template::compile(s.to_owned());
             let err = result.expect_err("expected a syntax error");
             let syntax_error_msg = match err.reason() {
@@ -1330,7 +1330,7 @@ mod test {
                         if let Some(ref ht) = h.template {
                             assert_eq!(ht.elements.len(), 1);
                             assert_eq!(
-                                *ht.elements.get(0).unwrap(),
+                                *ht.elements.first().unwrap(),
                                 RawString("good{{night}}".to_owned())
                             );
                         } else {

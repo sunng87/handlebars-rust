@@ -14,7 +14,7 @@ fn get_name<'reg: 'rc, 'rc>(d: &Decorator<'rc>) -> Result<String, RenderError> {
         .and_then(|v| {
             v.value()
                 .as_str()
-                .map(|v| v.to_owned())
+                .map(std::borrow::ToOwned::to_owned)
                 .ok_or_else(|| RenderErrorReason::InvalidParamType("String").into())
         })
 }
@@ -60,6 +60,6 @@ mod test {
         let mut rc = RenderContext::new(None);
         t0.elements[0].eval(&hbs, &ctx, &mut rc).unwrap();
 
-        assert!(rc.get_partial(&"hello".to_owned()).is_some());
+        assert!(rc.get_partial("hello").is_some());
     }
 }

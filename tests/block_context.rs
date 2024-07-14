@@ -107,13 +107,13 @@ fn test_referencing_block_param_from_upper_scope() {
 
 #[test]
 fn nested_path_lookup() {
-    let input = r#"
+    let input = r"
 {{#each bar as |x|}}
 {{#each ../foo as |y|}}
 {{../../foo.0}}: {{../x}}
 {{/each}}
 {{/each}}
-"#;
+";
     let output = "
 42: 1
 42: 2
