@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::convert::AsRef;
 use std::fmt::{self, Debug, Formatter};
 use std::io::{Error as IoError, Write};
@@ -671,6 +671,52 @@ impl<'reg> Registry<'reg> {
         self.template_sources.clear();
     }
 
+    fn gather_dev_mode_templates(
+        &'reg self,
+        prebound: Option<(&str, Cow<'reg, Template>)>,
+    ) -> Result<BTreeMap<String, Cow<'reg, Template>>, RenderError> {
+        let prebound_name = prebound.as_ref().map(|(name, _)| *name);
+        let mut res = BTreeMap::new();
+        for name in self.template_sources.keys() {
+            if Some(&**name) == prebound_name {
+                continue;
+            }
+            res.insert(name.clone(), self.get_or_load_template(name)?);
+        }
+        if let Some((name, prebound)) = prebound {
+            res.insert(name.to_owned(), prebound);
+        }
+        Ok(res)
+    }
+
+    fn render_resolved_template_to_output(
+        &self,
+        name: Option<&str>,
+        template: Cow<'_, Template>,
+        ctx: &Context,
+        output: &mut impl Output,
+    ) -> Result<(), RenderError> {
+        if !self.dev_mode {
+            let mut render_context = RenderContext::new(template.name.as_ref());
+            return template.render(self, ctx, &mut render_context, output);
+        }
+
+        let dev_mode_templates;
+        let template = if let Some(name) = name {
+            dev_mode_templates = self.gather_dev_mode_templates(Some((name, template)))?;
+            &dev_mode_templates[name]
+        } else {
+            dev_mode_templates = self.gather_dev_mode_templates(None)?;
+            &template
+        };
+
+        let mut render_context = RenderContext::new(template.name.as_ref());
+
+        render_context.set_dev_mode_templates(Some(&dev_mode_templates));
+
+        template.render(self, ctx, &mut render_context, output)
+    }
+
     #[inline]
     fn render_to_output<O>(
         &self,
@@ -681,10 +727,12 @@ impl<'reg> Registry<'reg> {
     where
         O: Output,
     {
-        self.get_or_load_template(name).and_then(|t| {
-            let mut render_context = RenderContext::new(t.name.as_ref());
-            t.render(self, ctx, &mut render_context, output)
-        })
+        self.render_resolved_template_to_output(
+            Some(name),
+            self.get_or_load_template(name)?,
+            ctx,
+            output,
+        )
     }
 
     /// Render a registered template with some data into a string
@@ -762,10 +810,7 @@ impl<'reg> Registry<'reg> {
         .map_err(RenderError::from)?;
 
         let mut out = StringOutput::new();
-        {
-            let mut render_context = RenderContext::new(None);
-            tpl.render(self, ctx, &mut render_context, &mut out)?;
-        }
+        self.render_resolved_template_to_output(None, Cow::Owned(tpl), ctx, &mut out)?;
 
         out.into_string().map_err(RenderError::from)
     }
@@ -789,9 +834,9 @@ impl<'reg> Registry<'reg> {
             },
         )
         .map_err(RenderError::from)?;
-        let mut render_context = RenderContext::new(None);
         let mut out = WriteOutput::new(writer);
-        tpl.render(self, ctx, &mut render_context, &mut out)
+
+        self.render_resolved_template_to_output(None, Cow::Owned(tpl), ctx, &mut out)
     }
 
     /// Render a template string using current registry without registering it

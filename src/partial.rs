@@ -24,6 +24,10 @@ fn find_partial<'reg: 'rc, 'rc>(
         return Ok(Some(partial));
     }
 
+    if let Some(t) = rc.get_dev_mode_template(name) {
+        return Ok(Some(t));
+    }
+
     if let Some(t) = r.get_template(name) {
         return Ok(Some(t));
     }

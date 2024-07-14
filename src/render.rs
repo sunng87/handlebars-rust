@@ -36,6 +36,9 @@ const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
 #[derive(Clone, Debug)]
 pub struct RenderContext<'reg, 'rc> {
     inner: Rc<RenderContextInner<'reg, 'rc>>,
+
+    dev_mode_templates: Option<&'rc BTreeMap<String, Cow<'rc, Template>>>,
+
     blocks: VecDeque<BlockContext<'rc>>,
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
@@ -91,6 +94,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             inner,
             blocks,
             modified_context,
+            dev_mode_templates: None,
         }
     }
 
@@ -106,6 +110,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             inner,
             blocks,
             modified_context,
+            dev_mode_templates: self.dev_mode_templates,
         }
     }
 
@@ -226,6 +231,18 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     #[inline]
     pub(crate) fn get_indent_string(&self) -> Option<&Cow<'rc, str>> {
         self.inner.indent_string.as_ref()
+    }
+
+    pub(crate) fn get_dev_mode_template(&self, name: &str) -> Option<&'rc Template> {
+        self.dev_mode_templates
+            .and_then(|dmt| dmt.get(name).map(|t| &**t))
+    }
+
+    pub(crate) fn set_dev_mode_templates(
+        &mut self,
+        t: Option<&'rc BTreeMap<String, Cow<'rc, Template>>>,
+    ) {
+        self.dev_mode_templates = t;
     }
 
     /// Remove a registered partial
