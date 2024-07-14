@@ -37,7 +37,7 @@ jobs:
         components: clippy
         override: true
     - name: Lint
-      run: cargo clippy --all-features -- -D warnings
+      run: cargo clippy --all-features --all-targets -- -D warnings
     - name: Build and run tests
       run: cargo test --all-features
     - name: Install Tarpaulin
