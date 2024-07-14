@@ -291,6 +291,24 @@ fn tag_before_eof_becomes_standalone_in_full_template() {
             .unwrap(),
         output
     );
+
+    let input = r#"<ul>
+  {{#each a}}
+    {{!-- comment --}}
+    <li>{{this}}</li>
+  {{/each}}abc"#;
+    let output = r#"<ul>
+    <li>1</li>
+      <li>2</li>
+      <li>3</li>
+  abc"#;
+    let hbs = Handlebars::new();
+
+    assert_eq!(
+        hbs.render_template(input, &json!({"a": [1, 2, 3]}))
+            .unwrap(),
+        output
+    );
 }
 
 #[test]
