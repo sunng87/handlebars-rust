@@ -70,7 +70,7 @@ mod test {
             [{"name": "tomcat"}, {"name": "jetty"}]
         };
 
-        let d0 = to_dynamic(&j0).unwrap();
+        let d0 = to_dynamic(j0).unwrap();
         assert_eq!("array", d0.type_name());
 
         let j1 = json!({
@@ -78,7 +78,7 @@ mod test {
             "value": 4000,
         });
 
-        let d1 = to_dynamic(&j1).unwrap();
+        let d1 = to_dynamic(j1).unwrap();
         assert_eq!("map", d1.type_name());
     }
 
@@ -97,7 +97,7 @@ mod test {
         let engine = Engine::new();
 
         let script = "let plen = len(params); let p0 = params[0]; let hlen = len(hash); let hme = hash[\"me\"]; plen + \",\" + p0 + \",\" + hlen + \",\" + hme";
-        let ast = engine.compile(&script).unwrap();
+        let ast = engine.compile(script).unwrap();
 
         let params = vec![PathAndJson::new(None, ScopedJson::Derived(json!(true)))];
 
