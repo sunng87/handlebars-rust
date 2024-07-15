@@ -907,29 +907,29 @@ mod test {
             assert_eq!(r.templates.len(), 0);
 
             let file1_path = dir.path().join("t1.hbs");
-            let mut file1: File = File::create(&file1_path).unwrap();
+            let mut file1: File = File::create(file1_path).unwrap();
             writeln!(file1, "<h1>Hello {{world}}!</h1>").unwrap();
 
             let file2_path = dir.path().join("t2.hbs");
-            let mut file2: File = File::create(&file2_path).unwrap();
+            let mut file2: File = File::create(file2_path).unwrap();
             writeln!(file2, "<h1>Hola {{world}}!</h1>").unwrap();
 
             let file3_path = dir.path().join("t3.hbs");
-            let mut file3: File = File::create(&file3_path).unwrap();
+            let mut file3: File = File::create(file3_path).unwrap();
             writeln!(file3, "<h1>Hallo {{world}}!</h1>").unwrap();
 
             let file4_path = dir.path().join(".t4.hbs");
-            let mut file4: File = File::create(&file4_path).unwrap();
+            let mut file4: File = File::create(file4_path).unwrap();
             writeln!(file4, "<h1>Hallo {{world}}!</h1>").unwrap();
 
             r.register_templates_directory(dir.path(), DirectorySourceOptions::default())
                 .unwrap();
 
             assert_eq!(r.templates.len(), 3);
-            assert_eq!(r.templates.contains_key("t1"), true);
-            assert_eq!(r.templates.contains_key("t2"), true);
-            assert_eq!(r.templates.contains_key("t3"), true);
-            assert_eq!(r.templates.contains_key("t4"), false);
+            assert!(r.templates.contains_key("t1"));
+            assert!(r.templates.contains_key("t2"));
+            assert!(r.templates.contains_key("t3"));
+            assert!(!r.templates.contains_key("t4"));
 
             drop(file1);
             drop(file2);
@@ -942,22 +942,22 @@ mod test {
             let dir = tempdir().unwrap();
 
             let file1_path = dir.path().join("t4.hbs");
-            let mut file1: File = File::create(&file1_path).unwrap();
+            let mut file1: File = File::create(file1_path).unwrap();
             writeln!(file1, "<h1>Hello {{world}}!</h1>").unwrap();
 
             let file2_path = dir.path().join("t5.erb");
-            let mut file2: File = File::create(&file2_path).unwrap();
+            let mut file2: File = File::create(file2_path).unwrap();
             writeln!(file2, "<h1>Hello {{% world %}}!</h1>").unwrap();
 
             let file3_path = dir.path().join("t6.html");
-            let mut file3: File = File::create(&file3_path).unwrap();
+            let mut file3: File = File::create(file3_path).unwrap();
             writeln!(file3, "<h1>Hello world!</h1>").unwrap();
 
             r.register_templates_directory(dir.path(), DirectorySourceOptions::default())
                 .unwrap();
 
             assert_eq!(r.templates.len(), 4);
-            assert_eq!(r.templates.contains_key("t4"), true);
+            assert!(r.templates.contains_key("t4"));
 
             drop(file1);
             drop(file2);
@@ -969,33 +969,33 @@ mod test {
         {
             let dir = tempdir().unwrap();
 
-            let _ = DirBuilder::new().create(dir.path().join("french")).unwrap();
-            let _ = DirBuilder::new()
+            DirBuilder::new().create(dir.path().join("french")).unwrap();
+            DirBuilder::new()
                 .create(dir.path().join("portugese"))
                 .unwrap();
-            let _ = DirBuilder::new()
+            DirBuilder::new()
                 .create(dir.path().join("italian"))
                 .unwrap();
 
             let file1_path = dir.path().join("french/t7.hbs");
-            let mut file1: File = File::create(&file1_path).unwrap();
+            let mut file1: File = File::create(file1_path).unwrap();
             writeln!(file1, "<h1>Bonjour {{world}}!</h1>").unwrap();
 
             let file2_path = dir.path().join("portugese/t8.hbs");
-            let mut file2: File = File::create(&file2_path).unwrap();
+            let mut file2: File = File::create(file2_path).unwrap();
             writeln!(file2, "<h1>Ola {{world}}!</h1>").unwrap();
 
             let file3_path = dir.path().join("italian/t9.hbs");
-            let mut file3: File = File::create(&file3_path).unwrap();
+            let mut file3: File = File::create(file3_path).unwrap();
             writeln!(file3, "<h1>Ciao {{world}}!</h1>").unwrap();
 
             r.register_templates_directory(dir.path(), DirectorySourceOptions::default())
                 .unwrap();
 
             assert_eq!(r.templates.len(), 7);
-            assert_eq!(r.templates.contains_key("french/t7"), true);
-            assert_eq!(r.templates.contains_key("portugese/t8"), true);
-            assert_eq!(r.templates.contains_key("italian/t9"), true);
+            assert!(r.templates.contains_key("french/t7"));
+            assert!(r.templates.contains_key("portugese/t8"));
+            assert!(r.templates.contains_key("italian/t9"));
 
             drop(file1);
             drop(file2);
@@ -1008,21 +1008,21 @@ mod test {
             let dir = tempdir().unwrap();
 
             let file1_path = dir.path().join("t10.hbs");
-            let mut file1: File = File::create(&file1_path).unwrap();
+            let mut file1: File = File::create(file1_path).unwrap();
             writeln!(file1, "<h1>Bonjour {{world}}!</h1>").unwrap();
 
             let mut dir_path = dir
                 .path()
                 .to_string_lossy()
                 .replace(std::path::MAIN_SEPARATOR, "/");
-            if !dir_path.ends_with("/") {
+            if !dir_path.ends_with('/') {
                 dir_path.push('/');
             }
             r.register_templates_directory(dir_path, DirectorySourceOptions::default())
                 .unwrap();
 
             assert_eq!(r.templates.len(), 8);
-            assert_eq!(r.templates.contains_key("t10"), true);
+            assert!(r.templates.contains_key("t10"));
 
             drop(file1);
             dir.close().unwrap();
@@ -1033,14 +1033,14 @@ mod test {
             let mut r = Registry::new();
 
             let file1_path = dir.path().join("t11.hbs.html");
-            let mut file1: File = File::create(&file1_path).unwrap();
+            let mut file1: File = File::create(file1_path).unwrap();
             writeln!(file1, "<h1>Bonjour {{world}}!</h1>").unwrap();
 
             let mut dir_path = dir
                 .path()
                 .to_string_lossy()
                 .replace(std::path::MAIN_SEPARATOR, "/");
-            if !dir_path.ends_with("/") {
+            if !dir_path.ends_with('/') {
                 dir_path.push('/');
             }
             r.register_templates_directory(
@@ -1053,7 +1053,7 @@ mod test {
             .unwrap();
 
             assert_eq!(r.templates.len(), 1);
-            assert_eq!(r.templates.contains_key("t11"), true);
+            assert!(r.templates.contains_key("t11"));
 
             drop(file1);
             dir.close().unwrap();
@@ -1066,7 +1066,7 @@ mod test {
             assert_eq!(r.templates.len(), 0);
 
             let file1_path = dir.path().join(".t12.hbs");
-            let mut file1: File = File::create(&file1_path).unwrap();
+            let mut file1: File = File::create(file1_path).unwrap();
             writeln!(file1, "<h1>Hello {{world}}!</h1>").unwrap();
 
             r.register_templates_directory(
@@ -1079,7 +1079,7 @@ mod test {
             .unwrap();
 
             assert_eq!(r.templates.len(), 1);
-            assert_eq!(r.templates.contains_key(".t12"), true);
+            assert!(r.templates.contains_key(".t12"));
 
             drop(file1);
 
