@@ -36,6 +36,9 @@ const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
 #[derive(Clone, Debug)]
 pub struct RenderContext<'reg, 'rc> {
     inner: Rc<RenderContextInner<'reg, 'rc>>,
+
+    dev_mode_templates: Option<&'rc BTreeMap<String, Cow<'rc, Template>>>,
+
     blocks: VecDeque<BlockContext<'rc>>,
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
@@ -44,7 +47,7 @@ pub struct RenderContext<'reg, 'rc> {
 #[derive(Clone)]
 pub struct RenderContextInner<'reg: 'rc, 'rc> {
     partials: BTreeMap<String, &'rc Template>,
-    partial_block_stack: VecDeque<&'reg Template>,
+    partial_block_stack: VecDeque<&'rc Template>,
     partial_block_depth: isize,
     local_helpers: BTreeMap<String, Rc<dyn HelperDef + Send + Sync + 'rc>>,
     /// current template name
@@ -63,7 +66,7 @@ pub struct RenderContextInner<'reg: 'rc, 'rc> {
 
     // The next text that we render should indent itself.
     indent_before_write: bool,
-    indent_string: Option<Cow<'reg, str>>,
+    indent_string: Option<Cow<'rc, str>>,
 }
 
 impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
@@ -91,6 +94,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             inner,
             blocks,
             modified_context,
+            dev_mode_templates: None,
         }
     }
 
@@ -106,6 +110,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             inner,
             blocks,
             modified_context,
+            dev_mode_templates: self.dev_mode_templates,
         }
     }
 
@@ -184,7 +189,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 
     /// Get registered partial in this render context
-    pub fn get_partial(&self, name: &str) -> Option<&Template> {
+    pub fn get_partial(&self, name: &str) -> Option<&'rc Template> {
         if name == partial::PARTIAL_BLOCK {
             return self
                 .inner()
@@ -200,7 +205,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.inner_mut().partials.insert(name, partial);
     }
 
-    pub(crate) fn push_partial_block(&mut self, partial: &'reg Template) {
+    pub(crate) fn push_partial_block(&mut self, partial: &'rc Template) {
         self.inner_mut().partial_block_stack.push_front(partial);
     }
 
@@ -219,13 +224,25 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         }
     }
 
-    pub(crate) fn set_indent_string(&mut self, indent: Option<Cow<'reg, str>>) {
+    pub(crate) fn set_indent_string(&mut self, indent: Option<Cow<'rc, str>>) {
         self.inner_mut().indent_string = indent;
     }
 
     #[inline]
-    pub(crate) fn get_indent_string(&self) -> Option<&Cow<'reg, str>> {
+    pub(crate) fn get_indent_string(&self) -> Option<&Cow<'rc, str>> {
         self.inner.indent_string.as_ref()
+    }
+
+    pub(crate) fn get_dev_mode_template(&self, name: &str) -> Option<&'rc Template> {
+        self.dev_mode_templates
+            .and_then(|dmt| dmt.get(name).map(|t| &**t))
+    }
+
+    pub(crate) fn set_dev_mode_templates(
+        &mut self,
+        t: Option<&'rc BTreeMap<String, Cow<'rc, Template>>>,
+    ) {
+        self.dev_mode_templates = t;
     }
 
     /// Remove a registered partial
