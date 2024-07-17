@@ -5,6 +5,7 @@ extern crate serde_derive;
 
 use criterion::Criterion;
 use handlebars::{to_json, Context, Handlebars, Template};
+use serde_json::json;
 use serde_json::value::Value as Json;
 use std::collections::BTreeMap;
 
@@ -211,12 +212,65 @@ fn large_nested_loop(c: &mut Criterion) {
     });
 }
 
+fn deeply_nested_partial(c: &mut Criterion) {
+    use std::iter::repeat;
+    let mut handlebars = Handlebars::new();
+
+    handlebars
+        .register_partial(
+            "nested_partial",
+            r#"{{#each baz}}
+<div class="nested">
+    {{this}}{{#if (not @last)}}++{{/if}}
+</div>
+{{/each}}"#,
+        )
+        .expect("Invalid template format");
+
+    handlebars
+        .register_partial(
+            "partial",
+            r#"
+<div class="partial">
+{{#each bar}}
+    {{>nested_partial}}
+{{/each}}
+</div>"#,
+        )
+        .expect("Invalid template format");
+
+    handlebars
+        .register_template_string(
+            "test",
+            r#"
+<div class="test">
+{{#each foo}}
+    {{>partial}}
+{{/each}}
+</div>"#,
+        )
+        .expect("Invalid template format");
+
+    let data = json!({
+        "foo": repeat(json!({
+            "bar": repeat(json!({
+                "baz": repeat("xyz").take(7).collect::<Vec<_>>()
+            })).take(7).collect::<Vec<_>>()
+        })).take(7).collect::<Vec<_>>()
+    });
+
+    let ctx = Context::wraps(data).unwrap();
+    c.bench_function("deeply_nested_partial", move |b| {
+        b.iter(|| handlebars.render_with_context("test", &ctx).ok().unwrap());
+    });
+}
+
 #[cfg(unix)]
 criterion_group!(
     name = benches;
     config = profiled();
     targets = parse_template, render_template, large_loop_helper, large_loop_helper_with_context_creation,
-    large_nested_loop
+    large_nested_loop, deeply_nested_partial
 );
 
 #[cfg(not(unix))]
@@ -226,7 +280,8 @@ criterion_group!(
     render_template,
     large_loop_helper,
     large_loop_helper_with_context_creation,
-    large_nested_loop
+    large_nested_loop,
+    deeply_nested_partial
 );
 
 criterion_main!(benches);
