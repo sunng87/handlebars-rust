@@ -1,6 +1,8 @@
 pub mod str {
     use std::io::{Result, Write};
 
+    use crate::Output;
+
     #[derive(Debug)]
     pub struct StringWriter {
         buf: Vec<u8>,
@@ -68,6 +70,24 @@ pub mod str {
         }
 
         output
+    }
+
+    /// like `with_indent`, but writing straight into the output
+    pub fn write_indented(s: &str, indent: &str, w: &mut dyn Output) -> std::io::Result<()> {
+        let mut i = 0;
+        let len = s.len();
+        loop {
+            let Some(next_newline) = s[i..].find('\n') else {
+                w.write(&s[i..])?;
+                return Ok(());
+            };
+            w.write(&s[i..i + next_newline + 1])?;
+            i += next_newline + 1;
+            if i == len {
+                return Ok(());
+            }
+            w.write(indent)?;
+        }
     }
 
     #[inline]

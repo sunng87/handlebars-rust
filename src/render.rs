@@ -882,7 +882,7 @@ pub fn indent_aware_write(
     }
 
     if let Some(indent) = rc.get_indent_string() {
-        out.write(support::str::with_indent(v, indent).as_ref())?;
+        support::str::write_indented(v, indent, out)?;
     } else {
         out.write(v.as_ref())?;
     }
