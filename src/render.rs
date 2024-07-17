@@ -33,19 +33,15 @@ const BLOCK_HELPER_MISSING: &str = "blockHelperMissing";
 /// This context stores information of a render and a writer where generated
 /// content is written to.
 ///
-#[derive(Clone, Debug)]
-pub struct RenderContext<'reg, 'rc> {
-    inner: Rc<RenderContextInner<'reg, 'rc>>,
-
+#[derive(Clone)]
+pub struct RenderContext<'reg: 'rc, 'rc> {
     dev_mode_templates: Option<&'rc BTreeMap<String, Cow<'rc, Template>>>,
 
     blocks: VecDeque<BlockContext<'rc>>,
+
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
-}
 
-#[derive(Clone)]
-pub struct RenderContextInner<'reg: 'rc, 'rc> {
     partials: BTreeMap<String, &'rc Template>,
     partial_block_stack: VecDeque<&'rc Template>,
     partial_block_depth: isize,
@@ -72,7 +68,11 @@ pub struct RenderContextInner<'reg: 'rc, 'rc> {
 impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// Create a render context
     pub fn new(root_template: Option<&'reg String>) -> RenderContext<'reg, 'rc> {
-        let inner = Rc::new(RenderContextInner {
+        let mut blocks = VecDeque::with_capacity(5);
+        blocks.push_front(BlockContext::new());
+
+        let modified_context = None;
+        RenderContext {
             partials: BTreeMap::new(),
             partial_block_stack: VecDeque::new(),
             partial_block_depth: 0,
@@ -84,33 +84,9 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             content_produced: false,
             indent_before_write: false,
             indent_string: None,
-        });
-
-        let mut blocks = VecDeque::with_capacity(5);
-        blocks.push_front(BlockContext::new());
-
-        let modified_context = None;
-        RenderContext {
-            inner,
             blocks,
             modified_context,
             dev_mode_templates: None,
-        }
-    }
-
-    pub(crate) fn new_for_block(&self) -> RenderContext<'reg, 'rc> {
-        let inner = self.inner.clone();
-
-        let mut blocks = VecDeque::with_capacity(2);
-        blocks.push_front(BlockContext::new());
-
-        let modified_context = self.modified_context.clone();
-
-        RenderContext {
-            inner,
-            blocks,
-            modified_context,
-            dev_mode_templates: self.dev_mode_templates,
         }
     }
 
@@ -139,14 +115,6 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// modify some data.
     pub fn block_mut(&mut self) -> Option<&mut BlockContext<'rc>> {
         self.blocks.front_mut()
-    }
-
-    fn inner(&self) -> &RenderContextInner<'reg, 'rc> {
-        self.inner.borrow()
-    }
-
-    fn inner_mut(&mut self) -> &mut RenderContextInner<'reg, 'rc> {
-        Rc::make_mut(&mut self.inner)
     }
 
     /// Get the modified context data if any
@@ -192,45 +160,44 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     pub fn get_partial(&self, name: &str) -> Option<&'rc Template> {
         if name == partial::PARTIAL_BLOCK {
             return self
-                .inner()
                 .partial_block_stack
-                .get(self.inner().partial_block_depth as usize)
+                .get(self.partial_block_depth as usize)
                 .copied();
         }
-        self.inner().partials.get(name).copied()
+        self.partials.get(name).copied()
     }
 
     /// Register a partial for this context
     pub fn set_partial(&mut self, name: String, partial: &'rc Template) {
-        self.inner_mut().partials.insert(name, partial);
+        self.partials.insert(name, partial);
     }
 
     pub(crate) fn push_partial_block(&mut self, partial: &'rc Template) {
-        self.inner_mut().partial_block_stack.push_front(partial);
+        self.partial_block_stack.push_front(partial);
     }
 
     pub(crate) fn pop_partial_block(&mut self) {
-        self.inner_mut().partial_block_stack.pop_front();
+        self.partial_block_stack.pop_front();
     }
 
     pub(crate) fn inc_partial_block_depth(&mut self) {
-        self.inner_mut().partial_block_depth += 1;
+        self.partial_block_depth += 1;
     }
 
     pub(crate) fn dec_partial_block_depth(&mut self) {
-        let depth = &mut self.inner_mut().partial_block_depth;
+        let depth = &mut self.partial_block_depth;
         if *depth > 0 {
             *depth -= 1;
         }
     }
 
     pub(crate) fn set_indent_string(&mut self, indent: Option<Cow<'rc, str>>) {
-        self.inner_mut().indent_string = indent;
+        self.indent_string = indent;
     }
 
     #[inline]
     pub(crate) fn get_indent_string(&self) -> Option<&Cow<'rc, str>> {
-        self.inner.indent_string.as_ref()
+        self.indent_string.as_ref()
     }
 
     pub(crate) fn get_dev_mode_template(&self, name: &str) -> Option<&'rc Template> {
@@ -247,7 +214,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     /// Remove a registered partial
     pub fn remove_partial(&mut self, name: &str) {
-        self.inner_mut().partials.remove(name);
+        self.partials.remove(name);
     }
 
     fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
@@ -258,7 +225,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     /// Test if given template name is current template.
     pub fn is_current_template(&self, p: &str) -> bool {
-        self.inner().current_template.is_some_and(|s| s == p)
+        self.current_template.is_some_and(|s| s == p)
     }
 
     /// Register a helper in this render context.
@@ -269,89 +236,90 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         name: &str,
         def: Box<dyn HelperDef + Send + Sync + 'rc>,
     ) {
-        self.inner_mut()
-            .local_helpers
-            .insert(name.to_string(), def.into());
+        self.local_helpers.insert(name.to_string(), def.into());
     }
 
     /// Remove a helper from render context
     pub fn unregister_local_helper(&mut self, name: &str) {
-        self.inner_mut().local_helpers.remove(name);
+        self.local_helpers.remove(name);
     }
 
     /// Attempt to get a helper from current render context.
     pub fn get_local_helper(&self, name: &str) -> Option<Rc<dyn HelperDef + Send + Sync + 'rc>> {
-        self.inner().local_helpers.get(name).cloned()
+        self.local_helpers.get(name).cloned()
     }
 
     #[inline]
     fn has_local_helper(&self, name: &str) -> bool {
-        self.inner.local_helpers.contains_key(name)
+        self.local_helpers.contains_key(name)
     }
 
     /// Returns the current template name.
     /// Note that the name can be vary from root template when you are rendering
     /// from partials.
     pub fn get_current_template_name(&self) -> Option<&'rc String> {
-        self.inner().current_template
+        self.current_template
     }
 
     /// Set the current template name.
     pub fn set_current_template_name(&mut self, name: Option<&'rc String>) {
-        self.inner_mut().current_template = name;
+        self.current_template = name;
     }
 
     /// Get root template name if any.
     /// This is the template name that you call `render` from `Handlebars`.
     pub fn get_root_template_name(&self) -> Option<&'reg String> {
-        self.inner().root_template
+        self.root_template
     }
 
     /// Get the escape toggle
     pub fn is_disable_escape(&self) -> bool {
-        self.inner().disable_escape
+        self.disable_escape
     }
 
     /// Set the escape toggle.
     /// When toggle is on, `escape_fn` will be called when rendering.
     pub fn set_disable_escape(&mut self, disable: bool) {
-        self.inner_mut().disable_escape = disable;
+        self.disable_escape = disable;
     }
 
     #[inline]
     pub fn set_trailing_newline(&mut self, trailing_newline: bool) {
-        self.inner_mut().trailing_newline = trailing_newline;
+        self.trailing_newline = trailing_newline;
     }
 
     #[inline]
     pub fn get_trailine_newline(&self) -> bool {
-        self.inner().trailing_newline
+        self.trailing_newline
     }
 
     #[inline]
     pub fn set_content_produced(&mut self, content_produced: bool) {
-        self.inner_mut().content_produced = content_produced;
+        self.content_produced = content_produced;
     }
 
     #[inline]
     pub fn get_content_produced(&self) -> bool {
-        self.inner().content_produced
+        self.content_produced
     }
 
     #[inline]
     pub fn set_indent_before_write(&mut self, indent_before_write: bool) {
-        self.inner_mut().indent_before_write = indent_before_write;
+        self.indent_before_write = indent_before_write;
     }
 
     #[inline]
     pub fn get_indent_before_write(&self) -> bool {
-        self.inner().indent_before_write
+        self.indent_before_write
     }
 }
 
-impl<'reg, 'rc> fmt::Debug for RenderContextInner<'reg, 'rc> {
+impl<'reg, 'rc> fmt::Debug for RenderContext<'reg, 'rc> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("RenderContextInner")
+            .field("dev_mode_templates", &self.dev_mode_templates)
+            .field("blocks", &self.blocks)
+            .field("modified_context", &self.modified_context)
             .field("partials", &self.partials)
             .field("partial_block_stack", &self.partial_block_stack)
             .field("partial_block_depth", &self.partial_block_depth)
