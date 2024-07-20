@@ -1,5 +1,18 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/5.1.2...Unreleased) - ReleaseDate
+
+* [Fixed] Various indent issue with partials, empty lines and helpers [#646]
+  [#654] [#658]
+* [Fixed] Bug when accessing nested path [#651]
+* [Added] New public access to `PathSeg` [#656]
+* [Added] New API to set single block params in `BlockContext` [#655]
+* [Added] `From<RenderError>` for `RenderErrorReason` [#644]
+* [Changed] Add `non_exhaustive` attribute to all public memebers [#647]
+* [Changed] `RenderContext` API and improved performance for partial rendering
+  [#661] [#662]
+* [Changed] Improved error messsage for template parsing [#638]
+
 ## [5.1.2](https://github.com/sunng87/handlebars-rust/compare/5.1.1...5.1.2) - 2024-03-24
 
 * [Changed] Improved error message and syntax rule naming [#638]
