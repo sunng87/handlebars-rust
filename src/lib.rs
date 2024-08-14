@@ -229,7 +229,7 @@
 //!
 //! #### Escaping
 //!
-//! As per the handlebars spec, output using `{{expression}}` is escaped by default (to be precise, the characters `&"<>'`=_` are replaced by their respective html / xml entities). However, since the use cases of a rust template engine are probably a bit more diverse than those of a JavaScript one, this implementation allows the user to supply a custom escape function to be used instead. For more information see the `EscapeFn` type and `Handlebars::register_escape_fn()` method. In particular, `no_escape()` can be used as the escape function if no escaping at all should be performed.
+//! As per the handlebars spec, output using `{{expression}}` is escaped by default (to be precise, the characters ``&"<>'`=_`` are replaced by their respective html / xml entities). However, since the use cases of a rust template engine are probably a bit more diverse than those of a JavaScript one, this implementation allows the user to supply a custom escape function to be used instead. For more information see the `EscapeFn` type and `Handlebars::register_escape_fn()` method. In particular, `no_escape()` can be used as the escape function if no escaping at all should be performed.
 //!
 //! ### Custom Helper
 //!
