@@ -13,27 +13,24 @@
 /// # Examples
 ///
 /// ```rust
-/// #[macro_use] extern crate handlebars;
-/// #[macro_use] extern crate serde_json;
-///
+/// # use handlebars::{handlebars_helper, Handlebars};
+/// # use serde_json::json;
 /// handlebars_helper!(is_above_10: |x: u64| x > 10);
 /// handlebars_helper!(is_above: |x: u64, { compare: u64 = 10 }| x > compare);
 ///
-/// # fn main() {
-/// #
-/// let mut handlebars = handlebars::Handlebars::new();
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let mut handlebars = Handlebars::new();
 /// handlebars.register_helper("is-above-10", Box::new(is_above_10));
 /// handlebars.register_helper("is-above", Box::new(is_above));
 ///
 /// let result = handlebars
-///     .render_template("{{#if (is-above-10 12)}}great!{{else}}okay{{/if}}", &json!({}))
-///     .unwrap();
+///     .render_template("{{#if (is-above-10 12)}}great!{{else}}okay{{/if}}", &json!({}))?;
 ///  assert_eq!(&result, "great!");
+///
 /// let result2 = handlebars
-///     .render_template("{{#if (is-above 12 compare=10)}}great!{{else}}okay{{/if}}", &json!({}))
-///     .unwrap();
+///     .render_template("{{#if (is-above 12 compare=10)}}great!{{else}}okay{{/if}}", &json!({}))?;
 ///  assert_eq!(&result2, "great!");
-/// # }
+/// # Ok(()) }
 /// ```
 
 #[macro_export]

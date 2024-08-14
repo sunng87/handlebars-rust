@@ -13,19 +13,19 @@
 //! use handlebars::Handlebars;
 //!
 //! # fn main() {
-//!   // create the handlebars registry
-//!   let mut handlebars = Handlebars::new();
+//! // create the handlebars registry
+//! let mut handlebars = Handlebars::new();
 //!
-//!   // register the template. The template string will be verified and compiled.
-//!   let source = "hello {{world}}";
-//!   assert!(handlebars.register_template_string("t1", source).is_ok());
+//! // register the template. The template string will be verified and compiled.
+//! let source = "hello {{world}}";
+//! assert!(handlebars.register_template_string("t1", source).is_ok());
 //!
-//!   // Prepare some data.
-//!   //
-//!   // The data type should implements `serde::Serialize`
-//!   let mut data = BTreeMap::new();
-//!   data.insert("world".to_string(), "世界!".to_string());
-//!   assert_eq!(handlebars.render("t1", &data).unwrap(), "hello 世界!");
+//! // Prepare some data.
+//! //
+//! // The data type should implements `serde::Serialize`
+//! let mut data = BTreeMap::new();
+//! data.insert("world".to_string(), "世界!".to_string());
+//! assert_eq!(handlebars.render("t1", &data).unwrap(), "hello 世界!");
 //! # }
 //! ```
 //!
@@ -126,15 +126,13 @@
 //! Templates are created from `String`s and registered to `Handlebars` with a name.
 //!
 //! ```
-//! # extern crate handlebars;
-//!
 //! use handlebars::Handlebars;
 //!
 //! # fn main() {
-//!   let mut handlebars = Handlebars::new();
-//!   let source = "hello {{world}}";
+//! let mut handlebars = Handlebars::new();
+//! let source = "hello {{world}}";
 //!
-//!   assert!(handlebars.register_template_string("t1", source).is_ok())
+//! assert!(handlebars.register_template_string("t1", source).is_ok())
 //! # }
 //! ```
 //!
@@ -147,17 +145,16 @@
 //! without registration.
 //!
 //! ```
-//! # use std::error::Error;
 //! use handlebars::Handlebars;
 //! use std::collections::BTreeMap;
 //!
-//! # fn main() -> Result<(), Box<dyn Error>> {
-//!   let mut handlebars = Handlebars::new();
-//!   let source = "hello {{world}}";
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut handlebars = Handlebars::new();
+//! let source = "hello {{world}}";
 //!
-//!   let mut data = BTreeMap::new();
-//!   data.insert("world".to_string(), "世界!".to_string());
-//!   assert_eq!(handlebars.render_template(source, &data)?, "hello 世界!".to_owned());
+//! let mut data = BTreeMap::new();
+//! data.insert("world".to_string(), "世界!".to_string());
+//! assert_eq!(handlebars.render_template(source, &data)?, "hello 世界!".to_owned());
 //! # Ok(())
 //! # }
 //! ```
@@ -179,62 +176,53 @@
 //! You can use default `render` function to render a template into `String`. From 0.9, there's `render_to_write` to render text into anything of `std::io::Write`.
 //!
 //! ```
-//! # use std::error::Error;
-//! # #[macro_use]
-//! # extern crate serde_derive;
-//! # extern crate handlebars;
-//!
 //! use handlebars::Handlebars;
 //!
-//! #[derive(Serialize)]
+//! #[derive(serde::Serialize)]
 //! struct Person {
 //!   name: String,
 //!   age: i16,
 //! }
 //!
-//! # fn main() -> Result<(), Box<dyn Error>> {
-//!   let source = "Hello, {{name}}";
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let source = "Hello, {{name}}";
 //!
-//!   let mut handlebars = Handlebars::new();
-//!   assert!(handlebars.register_template_string("hello", source).is_ok());
+//! let mut handlebars = Handlebars::new();
+//! assert!(handlebars.register_template_string("hello", source).is_ok());
 //!
-//!
-//!   let data = Person {
-//!       name: "Ning Sun".to_string(),
-//!       age: 27
-//!   };
-//!   assert_eq!(handlebars.render("hello", &data)?, "Hello, Ning Sun".to_owned());
+//! let data = Person {
+//!     name: "Ning Sun".to_string(),
+//!     age: 27
+//! };
+//! assert_eq!(handlebars.render("hello", &data)?, "Hello, Ning Sun".to_owned());
 //! # Ok(())
 //! # }
-//! #
 //! ```
 //!
 //! Or if you don't need the template to be cached or referenced by other ones, you can
 //! simply render it without registering.
 //!
 //! ```
-//! # use std::error::Error;
-//! # #[macro_use]
-//! # extern crate serde_derive;
-//! # extern crate handlebars;
 //! use handlebars::Handlebars;
-//! # #[derive(Serialize)]
+//! # #[derive(serde::Serialize)]
 //! # struct Person {
 //! #  name: String,
 //! #  age: i16,
 //! # }
 //!
-//! # fn main() -> Result<(), Box<dyn Error>> {
-//!   let source = "Hello, {{name}}";
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let source = "Hello, {{name}}";
 //!
-//!   let mut handlebars = Handlebars::new();
+//! let mut handlebars = Handlebars::new();
 //!
-//!   let data = Person {
-//!       name: "Ning Sun".to_string(),
-//!       age: 27
-//!   };
-//!   assert_eq!(handlebars.render_template("Hello, {{name}}", &data)?,
-//!       "Hello, Ning Sun".to_owned());
+//! let data = Person {
+//!     name: "Ning Sun".to_string(),
+//!     age: 27
+//! };
+//! assert_eq!(
+//!   handlebars.render_template("Hello, {{name}}", &data)?,
+//!   "Hello, Ning Sun".to_owned()
+//! );
 //! # Ok(())
 //! # }
 //! ```
@@ -249,7 +237,6 @@
 //!
 //! ```
 //! use std::io::Write;
-//! # use std::error::Error;
 //! use handlebars::*;
 //!
 //! // implement by a structure impls HelperDef
@@ -276,27 +263,28 @@
 //! }
 //!
 //!
-//! # fn main() -> Result<(), Box<dyn Error>> {
-//!   let mut handlebars = Handlebars::new();
-//!   handlebars.register_helper("simple-helper", Box::new(SimpleHelper));
-//!   handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
-//!   // via closure
-//!   handlebars.register_helper("closure-helper",
-//!       Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output| -> HelperResult {
-//!           let param =
-//!           h.param(0).ok_or(RenderErrorReason::ParamNotFoundForIndex("closure-helper", 0))?;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut handlebars = Handlebars::new();
+//! handlebars.register_helper("simple-helper", Box::new(SimpleHelper));
+//! handlebars.register_helper("another-simple-helper", Box::new(another_simple_helper));
+//! // via closure
+//! handlebars.register_helper("closure-helper",
+//!     Box::new(|h: &Helper, r: &Handlebars, _: &Context, rc: &mut RenderContext, out: &mut dyn Output| -> HelperResult {
+//!         let param =
+//!         h.param(0).ok_or(RenderErrorReason::ParamNotFoundForIndex("closure-helper", 0))?;
 //!
-//!           out.write("3rd helper: ")?;
-//!           out.write(param.value().render().as_ref())?;
-//!           Ok(())
-//!       }));
+//!         out.write("3rd helper: ")?;
+//!         out.write(param.value().render().as_ref())?;
+//!         Ok(())
+//!     }));
 //!
-//!   let tpl = "{{simple-helper 1}}\n{{another-simple-helper 2}}\n{{closure-helper 3}}";
-//!   assert_eq!(handlebars.render_template(tpl, &())?,
-//!       "1st helper: 1\n2nd helper: 2\n3rd helper: 3".to_owned());
+//! let tpl = "{{simple-helper 1}}\n{{another-simple-helper 2}}\n{{closure-helper 3}}";
+//! assert_eq!(
+//!   handlebars.render_template(tpl, &())?,
+//!   "1st helper: 1\n2nd helper: 2\n3rd helper: 3".to_owned()
+//! );
 //! # Ok(())
 //! # }
-//!
 //! ```
 //!
 //! Data available to helper can be found in [Helper](struct.Helper.html). And there are more
@@ -371,17 +359,16 @@
 //!
 //! ```
 //! # #[cfg(feature = "string_helpers")] {
-//! # use std::error::Error;
-//! # extern crate handlebars;
 //! use handlebars::Handlebars;
 //!
-//! # fn main() -> Result<(), Box<dyn Error>> {
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut handlebars = Handlebars::new();
 //!
-//!   let mut handlebars = Handlebars::new();
-//!
-//!   let data = serde_json::json!({"value": "lower camel case"});
-//!   assert_eq!(handlebars.render_template("This is {{lowerCamelCase value}}", &data)?,
-//!       "This is lowerCamelCase".to_owned());
+//! let data = serde_json::json!({"value": "lower camel case"});
+//! assert_eq!(
+//!   handlebars.render_template("This is {{lowerCamelCase value}}", &data)?,
+//!   "This is lowerCamelCase".to_owned()
+//! );
 //! # Ok(())
 //! # }
 //! # }
