@@ -6,10 +6,10 @@ use std::cmp::Ordering;
 
 handlebars_helper!(eq: |x: Json, y: Json| x == y);
 handlebars_helper!(ne: |x: Json, y: Json| x != y);
-handlebars_helper!(gt: |x: Json, y: Json| compare_json(&x, &y).map_or(false, |ord| ord == Ordering::Greater));
-handlebars_helper!(gte: |x: Json, y: Json| compare_json(&x, &y).map_or(false, |ord| ord != Ordering::Less));
-handlebars_helper!(lt: |x: Json, y: Json| compare_json(&x, &y).map_or(false, |ord| ord == Ordering::Less));
-handlebars_helper!(lte: |x: Json, y: Json| compare_json(&x, &y).map_or(false, |ord| ord != Ordering::Greater));
+handlebars_helper!(gt: |x: Json, y: Json| compare_json(x, y).map_or(false, |ord| ord == Ordering::Greater));
+handlebars_helper!(gte: |x: Json, y: Json| compare_json(x, y).map_or(false, |ord| ord != Ordering::Less));
+handlebars_helper!(lt: |x: Json, y: Json| compare_json(x, y).map_or(false, |ord| ord == Ordering::Less));
+handlebars_helper!(lte: |x: Json, y: Json| compare_json(x, y).map_or(false, |ord| ord != Ordering::Greater));
 handlebars_helper!(and: |x: Json, y: Json| x.is_truthy(false) && y.is_truthy(false));
 handlebars_helper!(or: |x: Json, y: Json| x.is_truthy(false) || y.is_truthy(false));
 handlebars_helper!(not: |x: Json| !x.is_truthy(false));
