@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.0.0...Unreleased) - ReleaseDate
+## [6.1.0](https://github.com/sunng87/handlebars-rust/compare/6.0.0...6.1.0) - 2024-09-06
 
 * [Added] More data type support in comparison helpers [#673]
 
