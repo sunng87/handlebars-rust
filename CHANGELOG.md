@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.0.0...Unreleased) - ReleaseDate
+
+* [Added] More data type support in comparison helpers [#673]
+
 ## [6.0.0](https://github.com/sunng87/handlebars-rust/compare/5.1.2...6.0.0) - 2024-07-20
 
 * [Fixed] Various indent issue with partials, empty lines and helpers [#646]
