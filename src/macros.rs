@@ -32,7 +32,6 @@
 ///  assert_eq!(&result2, "great!");
 /// # Ok(()) }
 /// ```
-
 #[macro_export]
 macro_rules! handlebars_helper {
     ($struct_name:ident: |$($name:ident: $tpe:tt$(<$($gen:ty),+>)?),*

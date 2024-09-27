@@ -288,7 +288,7 @@ impl From<WalkdirError> for TemplateError {
 
 fn template_segment(template_str: &str, line: usize, col: usize) -> String {
     let range = 3;
-    let line_start = if line >= range { line - range } else { 0 };
+    let line_start = line.saturating_sub(range);
     let line_end = line + range;
 
     let mut buf = String::new();
