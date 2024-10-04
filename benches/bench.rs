@@ -30,7 +30,7 @@ struct CpuProfiler<'a> {
 }
 
 #[cfg(unix)]
-impl<'a> Profiler for CpuProfiler<'a> {
+impl Profiler for CpuProfiler<'_> {
     fn start_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
         create_dir_all(benchmark_dir).unwrap();
 

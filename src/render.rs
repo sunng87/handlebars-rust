@@ -314,7 +314,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     }
 }
 
-impl<'reg, 'rc> fmt::Debug for RenderContext<'reg, 'rc> {
+impl fmt::Debug for RenderContext<'_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("RenderContextInner")
             .field("dev_mode_templates", &self.dev_mode_templates)

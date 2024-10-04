@@ -50,7 +50,7 @@ impl<'rc> ScopedJson<'rc> {
     }
 }
 
-impl<'reg: 'rc, 'rc> From<Json> for ScopedJson<'rc> {
+impl<'rc> From<Json> for ScopedJson<'rc> {
     fn from(v: Json) -> ScopedJson<'rc> {
         ScopedJson::Derived(v)
     }

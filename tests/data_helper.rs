@@ -3,7 +3,7 @@ use serde_json::json;
 
 struct HelperWithBorrowedData<'a>(&'a String);
 
-impl<'a> HelperDef for HelperWithBorrowedData<'a> {
+impl HelperDef for HelperWithBorrowedData<'_> {
     fn call<'_reg: '_rc, '_rc>(
         &self,
         _: &Helper<'_rc>,

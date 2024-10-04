@@ -77,7 +77,7 @@ pub struct Registry<'reg> {
         HashMap<String, Arc<dyn Source<Item = String, Error = IoError> + Send + Sync + 'reg>>,
 }
 
-impl<'reg> Debug for Registry<'reg> {
+impl Debug for Registry<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         f.debug_struct("Handlebars")
             .field("templates", &self.templates)
@@ -89,7 +89,7 @@ impl<'reg> Debug for Registry<'reg> {
     }
 }
 
-impl<'reg> Default for Registry<'reg> {
+impl Default for Registry<'_> {
     fn default() -> Self {
         Self::new()
     }
