@@ -1,8 +1,12 @@
 //! Helpers for boolean operations
+
+use std::cmp::Ordering;
+use std::str::FromStr;
+
+use num_order::NumOrd;
 use serde_json::Value as Json;
 
 use crate::json::value::JsonTruthy;
-use std::cmp::Ordering;
 
 handlebars_helper!(eq: |x: Json, y: Json| x == y);
 handlebars_helper!(ne: |x: Json, y: Json| x != y);
@@ -24,13 +28,48 @@ handlebars_helper!(len: |x: Json| {
 
 fn compare_json(x: &Json, y: &Json) -> Option<Ordering> {
     fn cmp_num_str(a_num: &serde_json::Number, b_str: &str) -> Option<Ordering> {
-        let a_f64 = a_num.as_f64()?;
-        let b_f64 = b_str.parse::<f64>().ok()?;
-        a_f64.partial_cmp(&b_f64)
+        let b_num = serde_json::Number::from_str(b_str).ok()?;
+        cmp_nums(a_num, &b_num)
+    }
+
+    // this function relies on serde_json::Numbers coerce logic
+    // for number value between [0, u64::MAX], is_u64() returns true
+    // for number value between [i64::MIN, i64::MAX], is_i64() returns true
+    // for others, is_f64() returns true, note that this behaviour is not
+    //  guaranteed according to serde_json docs
+    fn cmp_nums(a_num: &serde_json::Number, b_num: &serde_json::Number) -> Option<Ordering> {
+        if a_num.is_u64() {
+            let a = a_num.as_u64()?;
+            if b_num.is_u64() {
+                NumOrd::num_partial_cmp(&a, &b_num.as_u64()?)
+            } else if b_num.is_i64() {
+                NumOrd::num_partial_cmp(&a, &b_num.as_i64()?)
+            } else {
+                NumOrd::num_partial_cmp(&a, &b_num.as_f64()?)
+            }
+        } else if a_num.is_i64() {
+            let a = a_num.as_i64()?;
+            if b_num.is_u64() {
+                NumOrd::num_partial_cmp(&a, &b_num.as_u64()?)
+            } else if b_num.is_i64() {
+                NumOrd::num_partial_cmp(&a, &b_num.as_i64()?)
+            } else {
+                NumOrd::num_partial_cmp(&a, &b_num.as_f64()?)
+            }
+        } else {
+            let a = a_num.as_f64()?;
+            if b_num.is_u64() {
+                NumOrd::num_partial_cmp(&a, &b_num.as_u64()?)
+            } else if b_num.is_i64() {
+                NumOrd::num_partial_cmp(&a, &b_num.as_i64()?)
+            } else {
+                NumOrd::num_partial_cmp(&a, &b_num.as_f64()?)
+            }
+        }
     }
 
     match (x, y) {
-        (Json::Number(a), Json::Number(b)) => a.as_f64().partial_cmp(&b.as_f64()),
+        (Json::Number(a), Json::Number(b)) => cmp_nums(a, b),
         (Json::String(a), Json::String(b)) => Some(a.cmp(b)),
         (Json::Bool(a), Json::Bool(b)) => Some(a.cmp(b)),
         (Json::Number(a), Json::String(b)) => cmp_num_str(a, b),
@@ -133,6 +172,7 @@ mod test_conditions {
         test_condition("(gte 5 5)", true);
         test_condition("(lt 3 5)", true);
         test_condition("(lte 5 5)", true);
+        test_condition("(lt 9007199254740992 9007199254740993)", true);
 
         // Float comparisons
         test_condition("(gt 5.5 3.3)", true);
@@ -151,6 +191,16 @@ mod test_conditions {
         test_condition(r#"(lt 53 "35")"#, false);
         test_condition(r#"(lt "35" 53)"#, true);
         test_condition(r#"(gte "53" 53)"#, true);
+        test_condition(r#"(lt -1 0)"#, true);
+        test_condition(r#"(lt "-1" 0)"#, true);
+        test_condition(r#"(lt "-1.00" 0)"#, true);
+        test_condition(r#"(gt "1.00" 0)"#, true);
+        test_condition(r#"(gt 0 -1)"#, true);
+        test_condition(r#"(gt 0 "-1")"#, true);
+        test_condition(r#"(gt 0 "-1.00")"#, true);
+        test_condition(r#"(lt 0 "1.00")"#, true);
+        // u64::MAX
+        test_condition(r#"(gt 18446744073709551615 -1)"#, true);
 
         // Boolean comparisons
         test_condition("(gt true false)", true);
