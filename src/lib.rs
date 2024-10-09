@@ -290,6 +290,33 @@
 //! Data available to helper can be found in [Helper](struct.Helper.html). And there are more
 //! examples in [`HelperDef`](trait.HelperDef.html) page.
 //!
+//! For complex helper implementations, the type of a parameter is more
+//! convenient than its equivalent JSON representation. This requires those
+//! types to implement `serde::Deserialize` in addition to `serde::Serialize`.
+//! Be aware that the deserialization takes place on every call of the helper
+//! and may be expensive!
+//!
+//! ```
+//!# extern crate handlebars;
+//!# #[macro_use]
+//!# extern crate serde_derive;
+//!# extern crate serde_json;
+//!# use handlebars::{Handlebars, RenderContext, Helper, HelperResult, RenderError};
+//!# fn main() {}
+//!
+//! #[derive(Deserialize)]
+//! struct Foo;
+//!
+//! fn deserializing_helper(h: &Helper, _: &Handlebars, _: &mut RenderContext) -> HelperResult {
+//!     let a: Foo = h.param(0)
+//!         .ok_or(RenderError::new(format!("Parameter 0 is missing in {:?}", h)))
+//!         .map(|p| p.value().clone())
+//!         .and_then(|v| serde_json::from_value(v).map_err(|e| e.into()))?;
+//!     // do something with "a" of type Foo
+//!     Ok(())
+//! }
+//! ```
+//!
 //! You can learn more about helpers by looking into source code of built-in helpers.
 //!
 //!
