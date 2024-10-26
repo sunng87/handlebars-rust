@@ -130,6 +130,7 @@ impl HelperDef for EachHelper {
                             block.set_local_var("first", to_json(is_first));
                             block.set_local_var("last", to_json(is_last));
                             block.set_local_var("key", key.clone());
+                            block.set_local_var("index", to_json(i));
 
                             update_block_context(block, obj_path, k.to_string(), is_first, v);
                             set_block_param(block, h, obj_path, &key, v)?;
@@ -190,7 +191,7 @@ mod test {
         assert!(handlebars
             .register_template_string(
                 "t1",
-                "{{#each this}}{{@first}}|{{@last}}|{{@key}}:{{this}}|{{/each}}",
+                "{{#each this}}{{@first}}|{{@last}}|{{@key}}:{{this}}|{{@index}}|{{/each}}",
             )
             .is_ok());
 
@@ -207,7 +208,7 @@ mod test {
         let r1 = handlebars.render("t1", &m);
         assert_eq!(
             r1.ok().unwrap(),
-            "true|false|ftp:21|false|false|gopher:70|false|true|http:80|".to_string()
+            "true|false|ftp:21|0|false|false|gopher:70|1|false|true|http:80|2|".to_string()
         );
     }
 
