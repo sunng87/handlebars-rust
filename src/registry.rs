@@ -112,6 +112,37 @@ pub struct DirectorySourceOptions {
     pub temporary: bool,
 }
 
+#[derive(Default)]
+#[cfg(feature = "dir_source")]
+pub struct DirectorySourceOptionsBuilder {
+    pub tpl_extension: String,
+    pub hidden: bool,
+    pub temporary: bool,
+}
+
+#[cfg(feature = "dir_source")]
+impl DirectorySourceOptionsBuilder {
+    pub fn tpl_extension(mut self, tpl_extension: impl Into<String>) -> Self {
+        self.tpl_extension = tpl_extension.into();
+        self
+    }
+    pub fn hidden(mut self, hidden: bool) -> Self {
+        self.hidden = hidden;
+        self
+    }
+    pub fn temporary(mut self, temporary: bool) -> Self {
+        self.temporary = temporary;
+        self
+    }
+    pub fn build(self) -> DirectorySourceOptions {
+        DirectorySourceOptions {
+            tpl_extension: self.tpl_extension,
+            hidden: self.hidden,
+            temporary: self.temporary,
+        }
+    }
+}
+
 #[cfg(feature = "dir_source")]
 impl DirectorySourceOptions {
     fn ignore_file(&self, name: &str) -> bool {
@@ -126,6 +157,10 @@ impl DirectorySourceOptions {
     #[inline]
     fn ignored_as_temporary_file(&self, name: &str) -> bool {
         !self.temporary && name.starts_with('#')
+    }
+
+    pub fn builder() -> DirectorySourceOptionsBuilder {
+        DirectorySourceOptionsBuilder::default()
     }
 }
 
