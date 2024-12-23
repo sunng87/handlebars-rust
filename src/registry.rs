@@ -23,6 +23,9 @@ use crate::template::{Template, TemplateOptions};
 #[cfg(feature = "dir_source")]
 use walkdir::WalkDir;
 
+#[cfg(feature = "dir_source")]
+use derive_builder::Builder;
+
 #[cfg(feature = "script_helper")]
 use rhai::Engine;
 
@@ -102,45 +105,16 @@ fn rhai_engine() -> Engine {
 
 /// Options for importing template files from a directory.
 #[non_exhaustive]
+#[derive(Builder)]
 #[cfg(feature = "dir_source")]
 pub struct DirectorySourceOptions {
     /// The name extension for template files
+    #[builder(setter(into))]
     pub tpl_extension: String,
     /// Whether to include hidden files (file name that starts with `.`)
     pub hidden: bool,
     /// Whether to include temporary files (file name that starts with `#`)
     pub temporary: bool,
-}
-
-#[derive(Default)]
-#[cfg(feature = "dir_source")]
-pub struct DirectorySourceOptionsBuilder {
-    pub tpl_extension: String,
-    pub hidden: bool,
-    pub temporary: bool,
-}
-
-#[cfg(feature = "dir_source")]
-impl DirectorySourceOptionsBuilder {
-    pub fn tpl_extension(mut self, tpl_extension: impl Into<String>) -> Self {
-        self.tpl_extension = tpl_extension.into();
-        self
-    }
-    pub fn hidden(mut self, hidden: bool) -> Self {
-        self.hidden = hidden;
-        self
-    }
-    pub fn temporary(mut self, temporary: bool) -> Self {
-        self.temporary = temporary;
-        self
-    }
-    pub fn build(self) -> DirectorySourceOptions {
-        DirectorySourceOptions {
-            tpl_extension: self.tpl_extension,
-            hidden: self.hidden,
-            temporary: self.temporary,
-        }
-    }
 }
 
 #[cfg(feature = "dir_source")]
@@ -157,10 +131,6 @@ impl DirectorySourceOptions {
     #[inline]
     fn ignored_as_temporary_file(&self, name: &str) -> bool {
         !self.temporary && name.starts_with('#')
-    }
-
-    pub fn builder() -> DirectorySourceOptionsBuilder {
-        DirectorySourceOptionsBuilder::default()
     }
 }
 
