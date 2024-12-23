@@ -14,8 +14,6 @@ handlebars_helper!(gt: |x: Json, y: Json| compare_json(x, y) == Some(Ordering::G
 handlebars_helper!(gte: |x: Json, y: Json| compare_json(x, y).is_some_and(|ord| ord != Ordering::Less));
 handlebars_helper!(lt: |x: Json, y: Json| compare_json(x, y) == Some(Ordering::Less));
 handlebars_helper!(lte: |x: Json, y: Json| compare_json(x, y).is_some_and(|ord| ord != Ordering::Greater));
-handlebars_helper!(and: |x: Json, y: Json| x.is_truthy(false) && y.is_truthy(false));
-handlebars_helper!(or: |x: Json, y: Json| x.is_truthy(false) || y.is_truthy(false));
 handlebars_helper!(not: |x: Json| !x.is_truthy(false));
 handlebars_helper!(len: |x: Json| {
     match x {
@@ -78,6 +76,38 @@ fn compare_json(x: &Json, y: &Json) -> Option<Ordering> {
     }
 }
 
+#[allow(non_camel_case_types)]
+pub struct and;
+
+impl crate::HelperDef for and {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &crate::Helper<'rc>,
+        _r: &'reg crate::Handlebars<'reg>,
+        _: &'rc crate::Context,
+        _: &mut crate::RenderContext<'reg, 'rc>,
+    ) -> std::result::Result<crate::ScopedJson<'rc>, crate::RenderError> {
+        let all_true = h.params().iter().all(|p| p.value().is_truthy(false));
+        Ok(crate::ScopedJson::Derived(crate::JsonValue::from(all_true)))
+    }
+}
+
+#[allow(non_camel_case_types)]
+pub struct or;
+
+impl crate::HelperDef for or {
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &crate::Helper<'rc>,
+        _r: &'reg crate::Handlebars<'reg>,
+        _: &'rc crate::Context,
+        _: &mut crate::RenderContext<'reg, 'rc>,
+    ) -> std::result::Result<crate::ScopedJson<'rc>, crate::RenderError> {
+        let any_true = h.params().iter().any(|p| p.value().is_truthy(false));
+        Ok(crate::ScopedJson::Derived(crate::JsonValue::from(any_true)))
+    }
+}
+
 #[cfg(test)]
 mod test_conditions {
     fn test_condition(condition: &str, expected: bool) {
@@ -93,12 +123,30 @@ mod test_conditions {
     }
 
     #[test]
-    fn foo() {
+    fn test_and_or() {
+        test_condition("(or (gt 3 5) (gt 5 3))", true);
+        test_condition("(and null 4)", false);
+        test_condition("(or null 4)", true);
+        test_condition("(and null 4 5 6)", false);
+        test_condition("(or null 4 5 6)", true);
+        test_condition("(and 1 2 3 4)", true);
+        test_condition("(or 1 2 3 4)", true);
+        test_condition("(and 1 2 3 4 0)", false);
+        test_condition("(or 1 2 3 4 0)", true);
+        test_condition("(or null 2 3 4 0)", true);
+        test_condition("(or [] [])", false);
+        test_condition("(or [1] [])", true);
+        test_condition("(or [1] [2])", true);
+        test_condition("(or [1] [2] [3])", true);
+        test_condition("(or [1] [2] [3] [4])", true);
+        test_condition("(or [1] [2] [3] [4] [])", true);
+    }
+
+    #[test]
+    fn test_cmp() {
         test_condition("(gt 5 3)", true);
         test_condition("(gt 3 5)", false);
-        test_condition("(or (gt 3 5) (gt 5 3))", true);
         test_condition("(not [])", true);
-        test_condition("(and null 4)", false);
     }
 
     #[test]
