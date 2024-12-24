@@ -23,6 +23,9 @@ use crate::template::{Template, TemplateOptions};
 #[cfg(feature = "dir_source")]
 use walkdir::WalkDir;
 
+#[cfg(feature = "dir_source")]
+use derive_builder::Builder;
+
 #[cfg(feature = "script_helper")]
 use rhai::Engine;
 
@@ -102,9 +105,11 @@ fn rhai_engine() -> Engine {
 
 /// Options for importing template files from a directory.
 #[non_exhaustive]
+#[derive(Builder)]
 #[cfg(feature = "dir_source")]
 pub struct DirectorySourceOptions {
     /// The name extension for template files
+    #[builder(setter(into))]
     pub tpl_extension: String,
     /// Whether to include hidden files (file name that starts with `.`)
     pub hidden: bool,
