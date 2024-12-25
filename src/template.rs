@@ -12,6 +12,8 @@ use crate::grammar::{HandlebarsParser, Rule};
 use crate::json::path::{parse_json_path_from_iter, Path};
 use crate::support;
 
+use derive_builder::Builder;
+
 use self::TemplateElement::{
     Comment, DecoratorBlock, DecoratorExpression, Expression, HelperBlock, HtmlExpression,
     PartialBlock, PartialExpression, RawString,
@@ -23,8 +25,9 @@ pub struct TemplateMapping(pub usize, pub usize);
 
 /// A handlebars template
 #[non_exhaustive]
-#[derive(PartialEq, Eq, Clone, Debug, Default)]
+#[derive(Builder, PartialEq, Eq, Clone, Debug, Default)]
 pub struct Template {
+    #[builder(setter(into, strip_option), default)]
     pub name: Option<String>,
     pub elements: Vec<TemplateElement>,
     pub mapping: Vec<TemplateMapping>,
@@ -44,7 +47,7 @@ impl TemplateOptions {
 }
 
 #[non_exhaustive]
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(Builder, PartialEq, Eq, Clone, Debug)]
 pub struct Subexpression {
     // we use box here avoid resursive struct definition
     pub element: Box<TemplateElement>,
@@ -113,11 +116,12 @@ pub enum BlockParam {
 }
 
 #[non_exhaustive]
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(Builder, PartialEq, Eq, Clone, Debug)]
 pub struct ExpressionSpec {
     pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: HashMap<String, Parameter>,
+    #[builder(setter(strip_option), default)]
     pub block_param: Option<BlockParam>,
     pub omit_pre_ws: bool,
     pub omit_pro_ws: bool,
@@ -135,13 +139,16 @@ pub enum Parameter {
 }
 
 #[non_exhaustive]
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(Builder, PartialEq, Eq, Clone, Debug)]
 pub struct HelperTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: HashMap<String, Parameter>,
+    #[builder(setter(strip_option), default)]
     pub block_param: Option<BlockParam>,
+    #[builder(setter(strip_option), default)]
     pub template: Option<Template>,
+    #[builder(setter(strip_option), default)]
     pub inverse: Option<Template>,
     pub block: bool,
     pub chain: bool,
@@ -277,13 +284,15 @@ impl HelperTemplate {
 }
 
 #[non_exhaustive]
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(Builder, PartialEq, Eq, Clone, Debug)]
 pub struct DecoratorTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
     pub hash: HashMap<String, Parameter>,
+    #[builder(setter(strip_option), default)]
     pub template: Option<Template>,
     // for partial indent
+    #[builder(setter(into, strip_option), default)]
     pub indent: Option<String>,
     pub(crate) indent_before_write: bool,
 }
