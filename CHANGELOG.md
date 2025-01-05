@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.2.0...Unreleased) - ReleaseDate
+## [6.3.0](https://github.com/sunng87/handlebars-rust/compare/6.2.0...6.3.0) - 2025-01-05
 
 * [Added] Builders for some non-exhaustive structs [#688]
 * [Changed] `and` and `or` helper now accepts multiple parameters [#687]
