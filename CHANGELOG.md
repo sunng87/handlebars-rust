@@ -1,5 +1,11 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.2.0...Unreleased) - ReleaseDate
+
+* [Added] Builders for some non-exhaustive structs [#688]
+* [Changed] `and` and `or` helper now accepts multiple parameters [#687]
+* [Changed] MSRV is now 1.73
+
 ## [6.2.0](https://github.com/sunng87/handlebars-rust/compare/6.1.0...6.2.0) - 2024-10-26
 
 * [Added] `@index` variable for object iteration [#682]
