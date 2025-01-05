@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn StdError>> {
             .unwrap_err()
     );
 
-    // an invalid templat
+    // an invalid template
     println!(
         "{}",
         handlebars
