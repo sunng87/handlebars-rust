@@ -549,7 +549,7 @@ Name:{{name}}
         .unwrap();
 
         hb.register_template_string(
-            "t1",
+            "t2",
             r#"{{~#*inline "displayName"~}}
 Template:{{this}}
 {{/inline}}
@@ -566,11 +566,19 @@ Name:{{name}}
 
         assert_eq!(
             r"Name:hudel
+Template:aaaa
+Name:test
+Template:aaaa
+",
+            hb.render("t1", &data).unwrap()
+        );
+        assert_eq!(
+            r"Name:hudel
 Template:hudel
 Name:test
 Template:test
 ",
-            hb.render("t1", &data).unwrap()
+            hb.render("t2", &data).unwrap()
         );
     }
 
