@@ -1,16 +1,11 @@
-use std::collections::HashMap;
-
-use serde_json::value::Value as Json;
-
 use crate::block::BlockContext;
-use crate::context::{merge_json, Context};
+use crate::context::Context;
 use crate::error::RenderError;
-use crate::json::path::Path;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
-use crate::RenderErrorReason;
+use crate::{BlockParamHolder, RenderErrorReason};
 
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 
@@ -91,13 +86,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     }
 
     if !d.hash().is_empty() {
-        // hash given, update base_value
-        let hash_ctx = d
-            .hash()
-            .iter()
-            .map(|(k, v)| (*k, v.value()))
-            .collect::<HashMap<&str, &Json>>();
-
         // create block if we didn't (no param provided for partial expression)
         if !block_created {
             let block_inner = if let Some(block) = rc.block() {
@@ -112,14 +100,13 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             rc.push_block(block_inner);
         }
 
-        // evaluate context within current block, this includes block
-        // context provided by partial expression parameter
-        let merged_context = merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx);
-
         // update the base value, there must be a block for this so it's
         // also safe to unwrap.
         if let Some(block) = rc.block_mut() {
-            block.set_base_value(merged_context);
+            // treat hash value as block params
+            for (k, v) in d.hash() {
+                block.set_block_param(k, BlockParamHolder::Value(v.value().clone()));
+            }
         }
     }
 
@@ -549,7 +536,7 @@ Name:{{name}}
         .unwrap();
 
         hb.register_template_string(
-            "t1",
+            "t2",
             r#"{{~#*inline "displayName"~}}
 Template:{{this}}
 {{/inline}}
@@ -566,11 +553,19 @@ Name:{{name}}
 
         assert_eq!(
             r"Name:hudel
+Template:aaaa
+Name:test
+Template:aaaa
+",
+            hb.render("t1", &data).unwrap()
+        );
+        assert_eq!(
+            r"Name:hudel
 Template:hudel
 Name:test
 Template:test
 ",
-            hb.render("t1", &data).unwrap()
+            hb.render("t2", &data).unwrap()
         );
     }
 

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
 use serde::Serialize;
-use serde_json::value::{to_value, Map, Value as Json};
+use serde_json::value::{to_value, Value as Json};
 
 use crate::block::{BlockContext, BlockParamHolder};
 use crate::error::{RenderError, RenderErrorReason};
@@ -141,19 +141,6 @@ fn get_in_block_params<'a>(
     None
 }
 
-pub(crate) fn merge_json(base: &Json, addition: &HashMap<&str, &Json>) -> Json {
-    let mut base_map = match base {
-        Json::Object(ref m) => m.clone(),
-        _ => Map::new(),
-    };
-
-    for (k, v) in addition {
-        base_map.insert((*k).to_string(), (*v).clone());
-    }
-
-    Json::Object(base_map)
-}
-
 impl Context {
     /// Create a context with null data
     pub fn null() -> Context {
@@ -228,12 +215,12 @@ impl From<Json> for Context {
 #[cfg(test)]
 mod test {
     use crate::block::{BlockContext, BlockParams};
-    use crate::context::{self, Context};
+    use crate::context::Context;
     use crate::error::RenderError;
     use crate::json::path::Path;
     use crate::json::value::{self, ScopedJson};
     use serde_json::value::Map;
-    use std::collections::{HashMap, VecDeque};
+    use std::collections::VecDeque;
 
     fn navigate_from_root<'rc>(
         ctx: &'rc Context,
@@ -327,35 +314,6 @@ mod test {
         assert_eq!(
             navigate_from_root(&ctx2, "age").unwrap().render(),
             "4".to_owned()
-        );
-    }
-
-    #[test]
-    fn test_merge_json() {
-        let map = json!({ "age": 4 });
-        let s = "hello".to_owned();
-        let mut hash = HashMap::new();
-        let v = value::to_json("h1");
-        hash.insert("tag", &v);
-
-        let ctx_a1 = Context::wraps(context::merge_json(&map, &hash)).unwrap();
-        assert_eq!(
-            navigate_from_root(&ctx_a1, "age").unwrap().render(),
-            "4".to_owned()
-        );
-        assert_eq!(
-            navigate_from_root(&ctx_a1, "tag").unwrap().render(),
-            "h1".to_owned()
-        );
-
-        let ctx_a2 = Context::wraps(context::merge_json(&value::to_json(s), &hash)).unwrap();
-        assert_eq!(
-            navigate_from_root(&ctx_a2, "this").unwrap().render(),
-            "[object]".to_owned()
-        );
-        assert_eq!(
-            navigate_from_root(&ctx_a2, "tag").unwrap().render(),
-            "h1".to_owned()
         );
     }
 
