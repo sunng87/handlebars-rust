@@ -76,6 +76,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     let mut block_created = false;
 
     // create context if param given
+    // TODO: add support for constants
     if let Some(base_path) = d.param(0).and_then(|p| p.context_path()) {
         // path given, update base_path
         let mut block_inner = BlockContext::new();
@@ -725,5 +726,17 @@ outer third line",
         let t1 = "{{> bar}}";
         let hbs = Registry::new();
         assert!(hbs.render_template(t1, &()).is_err());
+    }
+
+    #[test]
+    fn test_issue_643_this_context() {
+        let t1 = "{{this}}";
+        let t2 = "{{> t1 \"hello world\"}}";
+
+        let mut hbs = Registry::new();
+        hbs.register_template_string("t1", t1).unwrap();
+        hbs.register_template_string("t2", t2).unwrap();
+
+        assert_eq!("hello world", hbs.render("t2", &()).unwrap());
     }
 }
