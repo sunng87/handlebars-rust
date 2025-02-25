@@ -76,13 +76,21 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     let mut block_created = false;
 
     // create context if param given
-    if let Some(base_path) = d.param(0).and_then(|p| p.context_path()) {
-        // path given, update base_path
-        let mut block_inner = BlockContext::new();
-        *block_inner.base_path_mut() = base_path.to_vec();
+    if let Some(p) = d.param(0) {
+        if let Some(base_path) = p.context_path() {
+            // path given, update base_path
+            let mut block_inner = BlockContext::new();
+            *block_inner.base_path_mut() = base_path.to_vec();
 
-        block_created = true;
-        rc.push_block(block_inner);
+            block_created = true;
+            rc.push_block(block_inner);
+        } else {
+            let mut block_inner = BlockContext::new();
+            block_inner.set_base_value(p.value().clone());
+
+            block_created = true;
+            rc.push_block(block_inner);
+        }
     }
 
     if !d.hash().is_empty() {
@@ -725,5 +733,26 @@ outer third line",
         let t1 = "{{> bar}}";
         let hbs = Registry::new();
         assert!(hbs.render_template(t1, &()).is_err());
+    }
+
+    #[test]
+    fn test_issue_643_this_context() {
+        let t1 = "{{this}}";
+        let t2 = "{{> t1 \"hello world\"}}";
+
+        let mut hbs = Registry::new();
+        hbs.register_template_string("t1", t1).unwrap();
+        hbs.register_template_string("t2", t2).unwrap();
+
+        assert_eq!("hello world", hbs.render("t2", &()).unwrap());
+
+        let t1 = "{{a}}";
+        let t2 = "{{> t1 \"hello world\" a=1}}";
+
+        let mut hbs = Registry::new();
+        hbs.register_template_string("t1", t1).unwrap();
+        hbs.register_template_string("t2", t2).unwrap();
+
+        assert_eq!("1", hbs.render("t2", &()).unwrap());
     }
 }
