@@ -745,5 +745,14 @@ outer third line",
         hbs.register_template_string("t2", t2).unwrap();
 
         assert_eq!("hello world", hbs.render("t2", &()).unwrap());
+
+        let t1 = "{{a}}";
+        let t2 = "{{> t1 \"hello world\" a=1}}";
+
+        let mut hbs = Registry::new();
+        hbs.register_template_string("t1", t1).unwrap();
+        hbs.register_template_string("t2", t2).unwrap();
+
+        assert_eq!("1", hbs.render("t2", &()).unwrap());
     }
 }
