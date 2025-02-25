@@ -76,14 +76,21 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     let mut block_created = false;
 
     // create context if param given
-    // TODO: add support for constants
-    if let Some(base_path) = d.param(0).and_then(|p| p.context_path()) {
-        // path given, update base_path
-        let mut block_inner = BlockContext::new();
-        *block_inner.base_path_mut() = base_path.to_vec();
+    if let Some(p) = d.param(0) {
+        if let Some(base_path) = p.context_path() {
+            // path given, update base_path
+            let mut block_inner = BlockContext::new();
+            *block_inner.base_path_mut() = base_path.to_vec();
 
-        block_created = true;
-        rc.push_block(block_inner);
+            block_created = true;
+            rc.push_block(block_inner);
+        } else {
+            let mut block_inner = BlockContext::new();
+            block_inner.set_base_value(p.value().clone());
+
+            block_created = true;
+            rc.push_block(block_inner);
+        }
     }
 
     if !d.hash().is_empty() {
