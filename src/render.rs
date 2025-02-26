@@ -172,11 +172,11 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.partials.insert(name, partial);
     }
 
-    pub(crate) fn push_partial_block(&mut self, partial: &'rc Template) {
+    pub fn push_partial_block(&mut self, partial: &'rc Template) {
         self.partial_block_stack.push_front(partial);
     }
 
-    pub(crate) fn pop_partial_block(&mut self) {
+    pub fn pop_partial_block(&mut self) {
         self.partial_block_stack.pop_front();
     }
 
