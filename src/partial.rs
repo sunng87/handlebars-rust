@@ -1,11 +1,15 @@
+use std::collections::{HashMap, VecDeque};
+
+use serde_json::Value as Json;
+
 use crate::block::BlockContext;
-use crate::context::Context;
+use crate::context::{merge_json, Context};
 use crate::error::RenderError;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
-use crate::{BlockParamHolder, RenderErrorReason};
+use crate::{Path, RenderErrorReason};
 
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 
@@ -73,50 +77,32 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         rc.dec_partial_block_depth();
     }
 
-    let mut block_created = false;
+    // hash
+    let hash_ctx = d
+        .hash()
+        .iter()
+        .map(|(k, v)| (*k, v.value()))
+        .collect::<HashMap<&str, &Json>>();
 
-    // create context if param given
-    if let Some(p) = d.param(0) {
-        if let Some(base_path) = p.context_path() {
-            // path given, update base_path
-            let mut block_inner = BlockContext::new();
-            *block_inner.base_path_mut() = base_path.to_vec();
-
-            block_created = true;
-            rc.push_block(block_inner);
+    let mut partial_include_block = BlockContext::new();
+    // evaluate context for partial
+    let merged_context = if let Some(p) = d.param(0) {
+        if let Some(relative_path) = p.relative_path() {
+            // path as parameter provided
+            merge_json(rc.evaluate(ctx, relative_path)?.as_json(), &hash_ctx)
         } else {
-            let mut block_inner = BlockContext::new();
-            block_inner.set_base_value(p.value().clone());
-
-            block_created = true;
-            rc.push_block(block_inner);
+            // literal provided
+            merge_json(p.value(), &hash_ctx)
         }
-    }
+    } else {
+        // use current path
+        merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx)
+    };
+    partial_include_block.set_base_value(merged_context);
 
-    if !d.hash().is_empty() {
-        // create block if we didn't (no param provided for partial expression)
-        if !block_created {
-            let block_inner = if let Some(block) = rc.block() {
-                // reuse current block information, including base_path and
-                // base_value if any
-                block.clone()
-            } else {
-                BlockContext::new()
-            };
-
-            block_created = true;
-            rc.push_block(block_inner);
-        }
-
-        // update the base value, there must be a block for this so it's
-        // also safe to unwrap.
-        if let Some(block) = rc.block_mut() {
-            // treat hash value as block params
-            for (k, v) in d.hash() {
-                block.set_block_param(k, BlockParamHolder::Value(v.value().clone()));
-            }
-        }
-    }
+    // replace and hold blocks from current render context
+    let current_blocks = rc.replace_blocks(VecDeque::with_capacity(1));
+    rc.push_block(partial_include_block);
 
     // @partial-block
     if let Some(pb) = d.template() {
@@ -135,10 +121,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         rc.pop_partial_block();
     }
 
-    if block_created {
-        rc.pop_block();
-    }
-
+    let _ = rc.replace_blocks(current_blocks);
     rc.set_trailing_newline(trailing_newline);
     rc.set_current_template_name(current_template_before);
     rc.set_indent_string(indent_before);
@@ -754,5 +737,14 @@ outer third line",
         hbs.register_template_string("t2", t2).unwrap();
 
         assert_eq!("1", hbs.render("t2", &()).unwrap());
+
+        let t1 = "{{#each this}}{{@key}}:{{this}},{{/each}}";
+        let t2 = "{{> t1 a=1}}";
+
+        let mut hbs = Registry::new();
+        hbs.register_template_string("t1", t1).unwrap();
+        hbs.register_template_string("t2", t2).unwrap();
+
+        assert_eq!("a:1,", hbs.render("t2", &()).unwrap());
     }
 }

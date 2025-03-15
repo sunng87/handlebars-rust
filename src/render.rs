@@ -102,6 +102,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         self.blocks.pop_front();
     }
 
+    /// Remove all blocks
     pub(crate) fn clear_blocks(&mut self) {
         self.blocks.clear();
     }
@@ -115,6 +116,14 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     /// modify some data.
     pub fn block_mut(&mut self) -> Option<&mut BlockContext<'rc>> {
         self.blocks.front_mut()
+    }
+
+    /// Replace blocks hold by render context and return the replaced blocks
+    pub fn replace_blocks(
+        &mut self,
+        blocks: VecDeque<BlockContext<'rc>>,
+    ) -> VecDeque<BlockContext<'rc>> {
+        std::mem::replace(&mut self.blocks, blocks)
     }
 
     /// Get the modified context data if any
