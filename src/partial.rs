@@ -729,14 +729,14 @@ outer third line",
 
         assert_eq!("hello world", hbs.render("t2", &()).unwrap());
 
-        let t1 = "{{a}}";
+        let t1 = "{{a}} {{[0]}} {{[1]}}";
         let t2 = "{{> t1 \"hello world\" a=1}}";
 
         let mut hbs = Registry::new();
         hbs.register_template_string("t1", t1).unwrap();
         hbs.register_template_string("t2", t2).unwrap();
 
-        assert_eq!("1", hbs.render("t2", &()).unwrap());
+        assert_eq!("1 h e", hbs.render("t2", &()).unwrap());
 
         let t1 = "{{#each this}}{{@key}}:{{this}},{{/each}}";
         let t2 = "{{> t1 a=1}}";
@@ -746,5 +746,23 @@ outer third line",
         hbs.register_template_string("t2", t2).unwrap();
 
         assert_eq!("a:1,", hbs.render("t2", &()).unwrap());
+
+        let t1 = "{{#each this}}{{@key}}:{{this}},{{/each}}";
+        let t2 = "{{> t1 a=1}}";
+
+        let mut hbs = Registry::new();
+        hbs.register_template_string("t1", t1).unwrap();
+        hbs.register_template_string("t2", t2).unwrap();
+
+        assert_eq!("a:1,b:2,", hbs.render("t2", &json!({"b": 2})).unwrap());
+
+        let t1 = "{{#each this}}{{@key}}:{{this}},{{/each}}";
+        let t2 = "{{> t1 b a=1}}";
+
+        let mut hbs = Registry::new();
+        hbs.register_template_string("t1", t1).unwrap();
+        hbs.register_template_string("t2", t2).unwrap();
+
+        assert_eq!("a:1,", hbs.render("t2", &json!({"b": 2})).unwrap());
     }
 }
