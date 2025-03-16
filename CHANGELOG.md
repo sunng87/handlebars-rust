@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.3.1...Unreleased) - ReleaseDate
+## [6.3.2](https://github.com/sunng87/handlebars-rust/compare/6.3.1...6.3.2) - 2025-03-16
 
 * [Fixed] Reimplementation of partial context [#699]
 
