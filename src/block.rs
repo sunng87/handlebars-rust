@@ -4,6 +4,7 @@ use serde_json::value::Value as Json;
 
 use crate::error::RenderError;
 use crate::local_vars::LocalVars;
+use crate::Template;
 
 #[derive(Clone, Debug)]
 pub enum BlockParamHolder {
@@ -66,6 +67,8 @@ pub struct BlockContext<'rc> {
     block_params: BlockParams<'rc>,
     /// local variables in current context
     local_variables: LocalVars,
+    /// partial block inner template, access with `{{> @partial-block}}`
+    partial_block: Option<&'rc Template>,
 }
 
 impl<'rc> BlockContext<'rc> {
@@ -132,5 +135,15 @@ impl<'rc> BlockContext<'rc> {
     /// Set a block parameter into this block.
     pub fn set_block_param(&mut self, key: &'rc str, value: BlockParamHolder) {
         self.block_params.data.insert(key, value);
+    }
+
+    /// Set partial block
+    pub fn set_partial_block(&mut self, partial_block: Option<&'rc Template>) {
+        self.partial_block = partial_block;
+    }
+
+    /// Get partial block template stored for current context
+    pub fn get_partial_block(&self) -> Option<&'rc Template> {
+        self.partial_block
     }
 }
