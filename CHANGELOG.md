@@ -1,5 +1,9 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.3.1...Unreleased) - ReleaseDate
+
+* [Fixed] Reimplementation of partial context [#699]
+
 ## [6.3.1](https://github.com/sunng87/handlebars-rust/compare/6.3.0...6.3.1) - 2025-02-09
 
 * [Fixed] Regression of partial context [#694]
