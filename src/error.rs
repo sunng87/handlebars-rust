@@ -121,6 +121,8 @@ pub enum RenderErrorReason {
     ),
     #[error("Nested error: {0}")]
     NestedError(#[source] Box<dyn StdError + Send + Sync + 'static>),
+    #[error("Partial block could not be found")]
+    PartialBlockNotFound,
     #[cfg(feature = "script_helper")]
     #[error("Cannot convert data to Rhai dynamic: {0}")]
     ScriptValueError(

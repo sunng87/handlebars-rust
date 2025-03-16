@@ -43,8 +43,6 @@ pub struct RenderContext<'reg: 'rc, 'rc> {
     modified_context: Option<Rc<Context>>,
 
     partials: BTreeMap<String, &'rc Template>,
-    partial_block_stack: VecDeque<&'rc Template>,
-    partial_block_depth: isize,
     local_helpers: BTreeMap<String, Rc<dyn HelperDef + Send + Sync + 'rc>>,
     /// current template name
     current_template: Option<&'rc String>,
@@ -74,8 +72,6 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         let modified_context = None;
         RenderContext {
             partials: BTreeMap::new(),
-            partial_block_stack: VecDeque::new(),
-            partial_block_depth: 0,
             local_helpers: BTreeMap::new(),
             current_template: None,
             root_template,
@@ -167,37 +163,12 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     /// Get registered partial in this render context
     pub fn get_partial(&self, name: &str) -> Option<&'rc Template> {
-        if name == partial::PARTIAL_BLOCK {
-            return self
-                .partial_block_stack
-                .get(self.partial_block_depth as usize)
-                .copied();
-        }
         self.partials.get(name).copied()
     }
 
     /// Register a partial for this context
     pub fn set_partial(&mut self, name: String, partial: &'rc Template) {
         self.partials.insert(name, partial);
-    }
-
-    pub(crate) fn push_partial_block(&mut self, partial: &'rc Template) {
-        self.partial_block_stack.push_front(partial);
-    }
-
-    pub(crate) fn pop_partial_block(&mut self) {
-        self.partial_block_stack.pop_front();
-    }
-
-    pub(crate) fn inc_partial_block_depth(&mut self) {
-        self.partial_block_depth += 1;
-    }
-
-    pub(crate) fn dec_partial_block_depth(&mut self) {
-        let depth = &mut self.partial_block_depth;
-        if *depth > 0 {
-            *depth -= 1;
-        }
     }
 
     pub(crate) fn set_indent_string(&mut self, indent: Option<Cow<'rc, str>>) {
@@ -330,8 +301,6 @@ impl fmt::Debug for RenderContext<'_, '_> {
             .field("blocks", &self.blocks)
             .field("modified_context", &self.modified_context)
             .field("partials", &self.partials)
-            .field("partial_block_stack", &self.partial_block_stack)
-            .field("partial_block_depth", &self.partial_block_depth)
             .field("root_template", &self.root_template)
             .field("current_template", &self.current_template)
             .field("disable_escape", &self.disable_escape)

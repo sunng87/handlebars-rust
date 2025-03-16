@@ -67,16 +67,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
 
     let is_partial_block = tname == PARTIAL_BLOCK;
 
-    // add partial block depth there are consecutive partial
-    // blocks in the stack.
-    if is_partial_block {
-        rc.inc_partial_block_depth();
-    } else {
-        // depth cannot be lower than 0, which is guaranted in the
-        // `dec_partial_block_depth` method
-        rc.dec_partial_block_depth();
-    }
-
     // hash
     let hash_ctx = d
         .hash()
@@ -104,11 +94,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     let current_blocks = rc.replace_blocks(VecDeque::with_capacity(1));
     rc.push_block(partial_include_block);
 
-    // @partial-block
-    if let Some(pb) = d.template() {
-        rc.push_partial_block(pb);
-    }
-
     // indent
     rc.set_indent_string(d.indent().cloned());
 
@@ -117,11 +102,8 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     // cleanup
     let trailing_newline = rc.get_trailine_newline();
 
-    if d.template().is_some() {
-        rc.pop_partial_block();
-    }
-
     let _ = rc.replace_blocks(current_blocks);
+
     rc.set_trailing_newline(trailing_newline);
     rc.set_current_template_name(current_template_before);
     rc.set_indent_string(indent_before);
@@ -334,6 +316,16 @@ mod test {
 
         let page = handlebars.render_template(template3, &json!({})).unwrap();
         assert_eq!("<outer><inner>Hello</inner></outer>", page);
+
+        let mut hs = Registry::new();
+
+        hs.register_template_string("primary", "{{> @partial-block }}")
+            .unwrap();
+        hs.register_template_string("secondary", "{{#*inline \"inl\"}}Bug{{/inline}}{{#>primary}}{{>inl}}{{> @partial-block }}{{/primary}}").unwrap();
+        hs.register_template_string("current", "{{>secondary}}")
+            .unwrap();
+
+        assert!(hs.render("current", &()).is_err());
     }
 
     #[test]
