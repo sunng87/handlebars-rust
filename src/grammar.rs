@@ -185,6 +185,7 @@ mod test {
             "{{exp key=(sub)}}",
             "{{exp key=(sub 0)}}",
             "{{exp key=(sub 0 key=1)}}",
+            "{{exp ns:key=0}}",
         ];
         for i in &s {
             assert_rule!(Rule::expression, i);
