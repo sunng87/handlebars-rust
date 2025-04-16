@@ -4,6 +4,7 @@ use serde_json::value::Value as Json;
 
 use crate::error::RenderError;
 use crate::local_vars::LocalVars;
+use crate::Template;
 
 #[derive(Clone, Debug)]
 pub enum BlockParamHolder {
@@ -64,6 +65,8 @@ pub struct BlockContext<'rc> {
     base_value: Option<Json>,
     /// current block context variables
     block_params: BlockParams<'rc>,
+    /// the partials available in this block
+    block_partials: BTreeMap<String, &'rc Template>,
     /// local variables in current context
     local_variables: LocalVars,
 }
@@ -108,6 +111,14 @@ impl<'rc> BlockContext<'rc> {
     /// set the base value
     pub fn set_base_value(&mut self, value: Json) {
         self.base_value = Some(value);
+    }
+
+    pub fn get_local_partial(&self, name: &str) -> Option<&'rc Template> {
+        self.block_partials.get(name).map(|v| &**v)
+    }
+
+    pub fn set_local_partial(&mut self, name: String, template: &'rc Template) {
+        self.block_partials.insert(name, template);
     }
 
     /// Get a block parameter from this block.

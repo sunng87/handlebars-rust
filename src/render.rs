@@ -173,6 +173,13 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
                 .get(self.partial_block_depth as usize)
                 .copied();
         }
+
+        for block in &self.blocks {
+            if let Some(partial) = block.get_local_partial(name) {
+                return Some(partial);
+            }
+        }
+
         self.partials.get(name).copied()
     }
 
