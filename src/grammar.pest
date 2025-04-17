@@ -33,7 +33,7 @@ array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
 
-symbol_char = _{ASCII_ALPHANUMERIC|"-"|"_"|"$"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
+symbol_char = _{ASCII_ALPHANUMERIC|"-"|"_"|"$"|":"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'}
 partial_symbol_char = _{ASCII_ALPHANUMERIC|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'..'\u{ffff}'|'\u{10000}'..'\u{10ffff}'|"/"|"."}
 path_char = _{ "/" }
 
