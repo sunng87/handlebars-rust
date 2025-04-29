@@ -325,9 +325,6 @@ impl<'reg> Registry<'reg> {
 
     /// Register templates from a directory
     ///
-    /// * `tpl_extension`: the template file extension
-    /// * `dir_path`: the path of directory
-    ///
     /// Hidden files and tempfile (starts with `#`) will be ignored by default.
     /// Set `DirectorySourceOptions` to something other than `DirectorySourceOptions::default()` to adjust this.
     /// All registered templates will use their relative path to determine their template name.
