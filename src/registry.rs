@@ -336,6 +336,19 @@ impl<'reg> Registry<'reg> {
     ///
     /// When dev_mode is enabled, like with `register_template_file`, templates are reloaded
     /// from the file system every time they're visited.
+    ///
+    /// ```rust
+    /// use handlebars::{Handlebars, DirectorySourceOptionsBuilder}
+    ///
+    /// let mut hbs = Handlebars::new();
+    /// hbs.register_templates_directory(
+    ///     "/path/to/templates",
+    ///     DirectorySourceOptionsBuilder::default()
+    ///         .tpl_extension("hbs")
+    ///         .build()
+    ///         .unwrap(),
+    /// ).unwrap();
+    /// ```
     #[cfg(feature = "dir_source")]
     #[cfg_attr(docsrs, doc(cfg(feature = "dir_source")))]
     pub fn register_templates_directory<P>(
