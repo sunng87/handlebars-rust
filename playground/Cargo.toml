@@ -30,3 +30,6 @@ wasm-bindgen-test = "0.3.13"
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
 strip = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
