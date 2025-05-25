@@ -88,14 +88,14 @@ helper_block = _{ helper_block_start ~ template ~
 
 decorator_block_start = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "#" ~ "*"
                         ~ exp_line ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
-decorator_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ identifier ~
+decorator_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ identifier? ~
                         trailing_tilde_to_omit_whitespace? ~ "}}" }
 decorator_block = _{ decorator_block_start ~ template ~
                      decorator_block_end }
 
 partial_block_start = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "#" ~ ">"
                         ~ partial_exp_line ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
-partial_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ partial_identifier ~
+partial_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ partial_identifier? ~
                       trailing_tilde_to_omit_whitespace? ~ "}}" }
 partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
