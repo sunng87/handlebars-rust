@@ -355,7 +355,11 @@ mod test {
 
     #[test]
     fn test_partial_block() {
-        let s = ["{{#> hello}}nice{{/hello}}"];
+        let s = [
+            "{{#> hello}}nice{{/hello}}",
+            "{{#> hello}}nice{{/}}",
+            "{{#> (hello)}}nice{{/}}",
+        ];
         for i in &s {
             assert_rule!(Rule::partial_block, i);
         }

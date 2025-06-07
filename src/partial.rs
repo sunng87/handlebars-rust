@@ -337,6 +337,52 @@ mod test {
     }
 
     #[test]
+    fn test_subexpression_partial_block() {
+        let mut handlebars = Registry::new();
+        let template1 = "<outer>{{> @partial-block }}</outer>";
+        let template2 = "{{#> (x 'foo') }}<inner>{{> @partial-block }}</inner>{{/}}";
+        let template3 = "{{#> (y this) }}Hello{{/}}";
+
+        handlebars.register_helper(
+            "x",
+            Box::new(
+                |_: &Helper<'_>,
+                 _: &Registry<'_>,
+                 _: &Context,
+                 _: &mut RenderContext<'_, '_>,
+                 out: &mut dyn Output|
+                 -> Result<(), RenderError> {
+                    out.write("t1")?;
+                    Ok(())
+                },
+            ),
+        );
+        handlebars.register_helper(
+            "y",
+            Box::new(
+                |_: &Helper<'_>,
+                 _: &Registry<'_>,
+                 _: &Context,
+                 _: &mut RenderContext<'_, '_>,
+                 out: &mut dyn Output|
+                 -> Result<(), RenderError> {
+                    out.write("t2")?;
+                    Ok(())
+                },
+            ),
+        );
+        handlebars
+            .register_template_string("t1", template1)
+            .unwrap();
+        handlebars
+            .register_template_string("t2", template2)
+            .unwrap();
+
+        let page = handlebars.render_template(template3, &json!({})).unwrap();
+        assert_eq!("<outer><inner>Hello</inner></outer>", page);
+    }
+
+    #[test]
     fn test_up_to_partial_level() {
         let outer = r#"{{>inner name="fruit:" vegetables=fruits}}"#;
         let inner = "{{#each vegetables}}{{../name}} {{this}},{{/each}}";
