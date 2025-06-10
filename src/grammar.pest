@@ -38,7 +38,9 @@ partial_symbol_char = _{ASCII_ALPHANUMERIC|"-"|"_"|'\u{80}'..'\u{7ff}'|'\u{800}'
 path_char = _{ "/" }
 
 identifier = @{ symbol_char+ }
+opt_identifier = { identifier? }
 partial_identifier = @{ partial_symbol_char+ | ("[" ~ ANY+ ~ "]") | ("'" ~ (!"'" ~ ("\\'" | ANY))+ ~ "'") }
+opt_partial_identifier = { partial_identifier? }
 reference = ${ path_inline }
 
 name = _{ subexpression | reference }
@@ -81,27 +83,27 @@ invert_chain_tag = { !escape ~ "{{" ~ leading_tilde_to_omit_whitespace? ~ invert
                      ~ exp_line ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
 helper_block_start = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "#" ~ exp_line ~
                      trailing_tilde_to_omit_whitespace? ~ "}}" }
-helper_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ identifier ~
+helper_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ opt_identifier ~
                    trailing_tilde_to_omit_whitespace? ~ "}}" }
 helper_block = _{ helper_block_start ~ template ~
                   (invert_chain_tag ~ template)* ~ (invert_tag ~ template)? ~ helper_block_end }
 
 decorator_block_start = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "#" ~ "*"
                         ~ exp_line ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
-decorator_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ identifier? ~
+decorator_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ opt_identifier? ~
                         trailing_tilde_to_omit_whitespace? ~ "}}" }
 decorator_block = _{ decorator_block_start ~ template ~
                      decorator_block_end }
 
 partial_block_start = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "#" ~ ">"
                         ~ partial_exp_line ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
-partial_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ partial_identifier? ~
+partial_block_end = { "{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ opt_partial_identifier ~
                       trailing_tilde_to_omit_whitespace? ~ "}}" }
 partial_block = _{ partial_block_start ~ template ~ partial_block_end }
 
 raw_block_start = { "{{{{" ~ leading_tilde_to_omit_whitespace? ~ exp_line ~
                     trailing_tilde_to_omit_whitespace? ~ "}}}}" }
-raw_block_end = { "{{{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ identifier ~
+raw_block_end = { "{{{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ opt_identifier ~
                   trailing_tilde_to_omit_whitespace? ~ "}}}}" }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 

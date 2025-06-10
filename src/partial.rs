@@ -341,7 +341,7 @@ mod test {
         let mut handlebars = Registry::new();
         let template1 = "<outer>{{> @partial-block }}</outer>";
         let template2 = "{{#> (x 'foo') }}<inner>{{> @partial-block }}</inner>{{/}}";
-        let template3 = "{{#> (y this) }}Hello{{/}}";
+        let template3 = "{{#> (y this) }}Hello{{/}} World";
 
         handlebars.register_helper(
             "x",
@@ -379,7 +379,7 @@ mod test {
             .unwrap();
 
         let page = handlebars.render_template(template3, &json!({})).unwrap();
-        assert_eq!("<outer><inner>Hello</inner></outer>", page);
+        assert_eq!("<outer><inner>Hello</inner></outer> World", page);
     }
 
     #[test]
