@@ -374,9 +374,11 @@ impl Template {
         let rule = name_node.as_rule();
         let name_span = name_node.as_span();
         match rule {
-            Rule::identifier | Rule::partial_identifier | Rule::invert_tag_item => {
-                Ok(Parameter::Name(name_span.as_str().to_owned()))
-            }
+            Rule::identifier
+            | Rule::partial_identifier
+            | Rule::opt_identifier
+            | Rule::opt_partial_identifier
+            | Rule::invert_tag_item => Ok(Parameter::Name(name_span.as_str().to_owned())),
             Rule::reference => {
                 let paths = parse_json_path_from_iter(it, name_span.end());
                 Ok(Parameter::Path(Path::new(name_span.as_str(), paths)))
@@ -384,7 +386,7 @@ impl Template {
             Rule::subexpression => {
                 Template::parse_subexpression(source, it.by_ref(), name_span.end())
             }
-            _ => unreachable!(),
+            other => unreachable!("{other:?}"),
         }
     }
 
@@ -973,7 +975,10 @@ impl Template {
 
                                 let mut d = decorator_stack.pop_front().unwrap();
                                 let close_tag_name = exp.name.as_name();
-                                if d.name.as_name() == close_tag_name {
+                                let empty_close_tag = close_tag_name
+                                    .map(|name| name.is_empty())
+                                    .unwrap_or_default();
+                                if empty_close_tag || d.name.as_name() == close_tag_name {
                                     let prev_t = template_stack.pop_front().unwrap();
                                     d.template = Some(prev_t);
                                     let t = template_stack.front_mut().unwrap();
@@ -1186,6 +1191,18 @@ mod test {
     fn test_parse_block_partial_path_identifier() {
         let source = "{{#> foo/bar}}{{/foo/bar}}";
         assert!(Template::compile(source).is_ok());
+    }
+
+    #[test]
+    fn test_parse_block_empty_end() {
+        let source = "{{#> foo/bar}}{{/}}";
+        Template::compile(source).unwrap();
+    }
+
+    #[test]
+    fn test_parse_dynamic_block() {
+        let source = "{{#> (foo)}}{{/}}";
+        Template::compile(source).unwrap();
     }
 
     #[test]
