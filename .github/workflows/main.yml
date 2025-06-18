@@ -75,7 +75,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: "1.73"
+        toolchain: "1.80"
         override: true
     - run: cargo build --all-features
 
