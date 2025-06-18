@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufReader, Error as IOError, ErrorKind, Read};
+use std::io::{BufReader, Error as IOError, Read};
 use std::path::PathBuf;
 
 pub(crate) trait Source {
@@ -48,6 +48,6 @@ impl<F: Fn() -> Option<String>> Source for LazySource<F> {
     type Error = IOError;
 
     fn load(&self) -> Result<Self::Item, Self::Error> {
-        (self.loader)().ok_or(IOError::new(ErrorKind::Other, "Source load error"))
+        (self.loader)().ok_or(IOError::other("Source load error"))
     }
 }
