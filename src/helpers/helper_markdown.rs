@@ -25,10 +25,8 @@ pub fn helper_markdown(
     for param in h.params().iter() {
         let markdown = param.value().render();
         out.write(
-            &markdown::to_html_with_options(&markdown, &options).map_err(|e| {
-                eprintln!("------> {markdown} error {}", e);
-                RenderErrorReason::MarkdownError(markdown, e)
-            })?,
+            &markdown::to_html_with_options(&markdown, &options)
+                .map_err(|e| RenderErrorReason::MarkdownError(markdown, e))?,
         )?;
     }
 
