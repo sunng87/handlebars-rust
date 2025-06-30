@@ -186,6 +186,12 @@ impl<'reg> Registry<'reg> {
         self.register_helper("not", Box::new(helpers::helper_extras::not));
         self.register_helper("len", Box::new(helpers::helper_extras::len));
 
+        #[cfg(feature = "markdown_helpers")]
+        self.register_helper(
+            "markdown",
+            Box::new(helpers::helper_markdown::helper_markdown),
+        );
+
         #[cfg(feature = "string_helpers")]
         self.register_string_helpers();
 
@@ -948,9 +954,18 @@ mod test {
         let string_helpers = 8;
         #[cfg(not(feature = "string_helpers"))]
         let string_helpers = 0;
+        #[cfg(feature = "markdown_helpers")]
+        let markdown_helpers = 1;
+        #[cfg(not(feature = "markdown_helpers"))]
+        let markdown_helpers = 0;
+
         assert_eq!(
             r.helpers.len(),
-            num_helpers + num_boolean_helpers + num_custom_helpers + string_helpers
+            num_helpers
+                + num_boolean_helpers
+                + num_custom_helpers
+                + string_helpers
+                + markdown_helpers
         );
     }
 

@@ -12,6 +12,9 @@ pub use self::helper_lookup::LOOKUP_HELPER;
 pub use self::helper_raw::RAW_HELPER;
 pub use self::helper_with::WITH_HELPER;
 
+#[cfg(feature = "markdown_helpers")]
+pub mod helper_markdown;
+
 /// A type alias for `Result<(), RenderError>`
 pub type HelperResult = Result<(), RenderError>;
 

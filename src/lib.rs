@@ -373,6 +373,30 @@
 //! # }
 //! # }
 //! ```
+//! ### Markdown Helper
+//!
+//! Markdown support in [Handlebars] is available via the `markdown_helpers` feature.
+//! By default, this uses [GitHub Flavored Markdown](https://github.github.com/gfm/),
+//! but you can switch to [CommonMark](https://spec.commonmark.org/) by enabling the
+//! optional `markdown_fmt_default` feature.
+//!
+//! This functionality is powered by the [`markdown-rs`](https://github.com/wooorm/markdown-rs) crate.
+//! ```
+//! # #[cfg(feature = "markdown_helpers")] {
+//! use handlebars::Handlebars;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut handlebars = Handlebars::new();
+//!
+//! let data = serde_json::json!({"value": "# header text"});
+//! assert_eq!(
+//!   handlebars.render_template("This is {{markdown value}}", &data)?,
+//!   "<h1>header text</h1>".to_owned()
+//! );
+//! # Ok(())
+//! # }
+//! # }
+//! ```
 //!
 
 #![allow(dead_code, clippy::upper_case_acronyms)]

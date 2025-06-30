@@ -139,6 +139,9 @@ pub enum RenderErrorReason {
     Unimplemented,
     #[error("{0}")]
     Other(String),
+    #[cfg(feature = "markdown_helpers")]
+    #[error(r#"Failed to process markdown "{0}": {1}"#)]
+    MarkdownError(String, markdown::message::Message),
 }
 
 impl From<RenderErrorReason> for RenderError {

@@ -35,3 +35,4 @@ script:
   - cargo $TASK --no-default-features --features no_logging --verbose
   - cargo $TASK --no-default-features --features dir_source --verbose
   - cargo $TASK --no-default-features --features script_helper --verbose
+  - cargo $TASK --no-default-features --features markdown_helpers --verbose
