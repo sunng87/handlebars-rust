@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 
 use serde_json::Value as Json;
 
@@ -45,11 +45,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    // try eval inline partials first
-    if let Some(t) = d.template() {
-        t.eval(r, ctx, rc)?;
-    }
-
     let tname = d.name();
 
     let current_template_before = rc.get_current_template_name();
@@ -85,6 +80,12 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         .collect::<HashMap<&str, &Json>>();
 
     let mut partial_include_block = BlockContext::new();
+
+    for (name, value) in &hash_ctx {
+        partial_include_block
+            .set_block_param(name, crate::BlockParamHolder::Value((*value).clone()));
+    }
+
     // evaluate context for partial
     let merged_context = if let Some(p) = d.param(0) {
         if let Some(relative_path) = p.relative_path() {
@@ -98,11 +99,16 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         // use current path
         merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx)
     };
+
     partial_include_block.set_base_value(merged_context);
 
     // replace and hold blocks from current render context
-    let current_blocks = rc.replace_blocks(VecDeque::with_capacity(1));
     rc.push_block(partial_include_block);
+
+    // try eval inline partials
+    if let Some(t) = d.template() {
+        t.eval(r, ctx, rc)?;
+    }
 
     // @partial-block
     if let Some(pb) = d.template() {
@@ -121,7 +127,7 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         rc.pop_partial_block();
     }
 
-    let _ = rc.replace_blocks(current_blocks);
+    rc.pop_block();
     rc.set_trailing_newline(trailing_newline);
     rc.set_current_template_name(current_template_before);
     rc.set_indent_string(indent_before);
