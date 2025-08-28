@@ -29,8 +29,9 @@ impl crate::HelperDef for BinaryBoolHelper {
         let value = value.as_json().as_bool().unwrap_or(false);
 
         if !(h.is_block()) {
-           return  out.write(value.to_string().as_str())
-                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into())
+            return out
+                .write(value.to_string().as_str())
+                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into());
         }
 
         let tmpl = if value { h.template() } else { h.inverse() };
@@ -66,18 +67,36 @@ impl crate::HelperDef for BinaryBoolHelper {
                     Some(it.value())
                 }
             })
-            .ok_or_else(|| crate::RenderErrorReason::ParamNotFoundForIndex(self.name, 0))?;
+            .ok_or_else(|| crate::RenderErrorReason::ParamNotFoundForIndex(self.name, 1))?;
 
         Ok(crate::ScopedJson::Derived(Json::Bool((self.op)(x, y))))
     }
 }
 
-pub(crate) static EQ_HELPER: BinaryBoolHelper = BinaryBoolHelper { name: "eq", op: |x, y| x == y };
-pub(crate) static NEQ_HELPER: BinaryBoolHelper = BinaryBoolHelper { name: "ne", op: |x, y| x != y };
-pub(crate) static GT_HELPER: BinaryBoolHelper = BinaryBoolHelper { name: "gt", op: |x, y| compare_json(x, y) == Some(Ordering::Greater) };
-pub(crate) static GTE_HELPER: BinaryBoolHelper = BinaryBoolHelper { name: "gte", op: |x, y| compare_json(x, y).is_some_and(|ord| ord != Ordering::Less) };
-pub(crate) static LT_HELPER: BinaryBoolHelper = BinaryBoolHelper { name: "lt", op: |x, y| compare_json(x, y) == Some(Ordering::Less) };
-pub(crate) static LTE_HELPER: BinaryBoolHelper = BinaryBoolHelper { name: "lte", op: |x, y| compare_json(x, y).is_some_and(|ord| ord != Ordering::Greater) };
+pub(crate) static EQ_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "eq",
+    op: |x, y| x == y,
+};
+pub(crate) static NEQ_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "ne",
+    op: |x, y| x != y,
+};
+pub(crate) static GT_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "gt",
+    op: |x, y| compare_json(x, y) == Some(Ordering::Greater),
+};
+pub(crate) static GTE_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "gte",
+    op: |x, y| compare_json(x, y).is_some_and(|ord| ord != Ordering::Less),
+};
+pub(crate) static LT_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "lt",
+    op: |x, y| compare_json(x, y) == Some(Ordering::Less),
+};
+pub(crate) static LTE_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "lte",
+    op: |x, y| compare_json(x, y).is_some_and(|ord| ord != Ordering::Greater),
+};
 
 #[derive(Clone, Copy)]
 pub struct UnaryBoolHelper {
@@ -98,8 +117,9 @@ impl crate::HelperDef for UnaryBoolHelper {
         let value = value.as_json().as_bool().unwrap_or(false);
 
         if !(h.is_block()) {
-            return  out.write(value.to_string().as_str())
-                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into())
+            return out
+                .write(value.to_string().as_str())
+                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into());
         }
 
         let tmpl = if value { h.template() } else { h.inverse() };
@@ -133,10 +153,9 @@ impl crate::HelperDef for UnaryBoolHelper {
 
 pub(crate) static NOT_HELPER: UnaryBoolHelper = UnaryBoolHelper {
     name: "not",
-    op: |x| !x.is_truthy(false)
+    op: |x| !x.is_truthy(false),
 };
 
-handlebars_helper!(not: |x: Json| !x.is_truthy(false));
 handlebars_helper!(len: |x: Json| {
     match x {
         Json::Array(a) => a.len(),
@@ -198,6 +217,7 @@ fn compare_json(x: &Json, y: &Json) -> Option<Ordering> {
     }
 }
 
+#[allow(elided_lifetimes_in_paths)]
 #[derive(Clone, Copy)]
 pub struct ManyBoolHelper {
     name: &'static str,
@@ -217,8 +237,9 @@ impl crate::HelperDef for ManyBoolHelper {
         let value = value.as_json().as_bool().unwrap_or(false);
 
         if !(h.is_block()) {
-            return  out.write(value.to_string().as_str())
-                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into())
+            return out
+                .write(value.to_string().as_str())
+                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into());
         }
 
         let tmpl = if value { h.template() } else { h.inverse() };
@@ -242,12 +263,12 @@ impl crate::HelperDef for ManyBoolHelper {
 
 pub(crate) static AND_HELPER: ManyBoolHelper = ManyBoolHelper {
     name: "and",
-    op: |params| params.iter().all(|p| p.value().is_truthy(false))
+    op: |params| params.iter().all(|p| p.value().is_truthy(false)),
 };
 
 pub(crate) static OR_HELPER: ManyBoolHelper = ManyBoolHelper {
     name: "or",
-    op: |params| params.iter().any(|p| p.value().is_truthy(false))
+    op: |params| params.iter().any(|p| p.value().is_truthy(false)),
 };
 
 #[cfg(test)]
@@ -397,18 +418,12 @@ mod test_conditions {
         test_condition("(lt false true)", true);
     }
 
-    fn test_block(condition: &str, expected: &str) {
+    fn test_block(template: &str, expected: &str) {
         let handlebars = crate::Handlebars::new();
 
-        let result = handlebars
-            .render_template(
-                &format!("{condition}"),
-                &json!({}),
-            )
-            .unwrap();
+        let result = handlebars.render_template(template, &json!({})).unwrap();
         assert_eq!(&result, expected);
     }
-
 
     #[test]
     fn test_chained_else_support() {
