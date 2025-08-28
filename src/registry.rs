@@ -175,15 +175,15 @@ impl<'reg> Registry<'reg> {
         self.register_helper("raw", Box::new(helpers::RAW_HELPER));
         self.register_helper("log", Box::new(helpers::LOG_HELPER));
 
-        self.register_helper("eq", Box::new(helpers::helper_extras::eq));
-        self.register_helper("ne", Box::new(helpers::helper_extras::ne));
-        self.register_helper("gt", Box::new(helpers::helper_extras::gt));
-        self.register_helper("gte", Box::new(helpers::helper_extras::gte));
-        self.register_helper("lt", Box::new(helpers::helper_extras::lt));
-        self.register_helper("lte", Box::new(helpers::helper_extras::lte));
-        self.register_helper("and", Box::new(helpers::helper_extras::and));
-        self.register_helper("or", Box::new(helpers::helper_extras::or));
-        self.register_helper("not", Box::new(helpers::helper_extras::not));
+        self.register_helper("eq", Box::new(helpers::helper_extras::EQ_HELPER));
+        self.register_helper("ne", Box::new(helpers::helper_extras::NEQ_HELPER));
+        self.register_helper("gt", Box::new(helpers::helper_extras::GT_HELPER));
+        self.register_helper("gte", Box::new(helpers::helper_extras::GTE_HELPER));
+        self.register_helper("lt", Box::new(helpers::helper_extras::LT_HELPER));
+        self.register_helper("lte", Box::new(helpers::helper_extras::LTE_HELPER));
+        self.register_helper("and", Box::new(helpers::helper_extras::AND_HELPER));
+        self.register_helper("or", Box::new(helpers::helper_extras::OR_HELPER));
+        self.register_helper("not", Box::new(helpers::helper_extras::NOT_HELPER));
         self.register_helper("len", Box::new(helpers::helper_extras::len));
 
         #[cfg(feature = "string_helpers")]
