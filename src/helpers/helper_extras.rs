@@ -1,20 +1,161 @@
 //! Helpers for boolean operations
 
 use std::cmp::Ordering;
+use std::iter::Iterator;
 use std::str::FromStr;
 
 use num_order::NumOrd;
 use serde_json::Value as Json;
 
 use crate::json::value::JsonTruthy;
+use crate::Renderable;
 
-handlebars_helper!(eq: |x: Json, y: Json| x == y);
-handlebars_helper!(ne: |x: Json, y: Json| x != y);
-handlebars_helper!(gt: |x: Json, y: Json| compare_json(x, y) == Some(Ordering::Greater));
-handlebars_helper!(gte: |x: Json, y: Json| compare_json(x, y).is_some_and(|ord| ord != Ordering::Less));
-handlebars_helper!(lt: |x: Json, y: Json| compare_json(x, y) == Some(Ordering::Less));
-handlebars_helper!(lte: |x: Json, y: Json| compare_json(x, y).is_some_and(|ord| ord != Ordering::Greater));
-handlebars_helper!(not: |x: Json| !x.is_truthy(false));
+#[derive(Clone, Copy)]
+pub struct BinaryBoolHelper {
+    name: &'static str,
+    op: fn(&Json, &Json) -> bool,
+}
+
+impl crate::HelperDef for BinaryBoolHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &crate::Helper<'rc>,
+        r: &'reg crate::registry::Registry<'reg>,
+        ctx: &'rc crate::Context,
+        rc: &mut crate::RenderContext<'reg, 'rc>,
+        out: &mut dyn crate::Output,
+    ) -> crate::HelperResult {
+        let value = self.call_inner(h, r, ctx, rc)?;
+        let value = value.as_json().as_bool().unwrap_or(false);
+
+        if !(h.is_block()) {
+            return out
+                .write(value.to_string().as_str())
+                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into());
+        }
+
+        let tmpl = if value { h.template() } else { h.inverse() };
+        match tmpl {
+            Some(t) => t.render(r, ctx, rc, out),
+            None => Ok(()),
+        }
+    }
+
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &crate::Helper<'rc>,
+        r: &'reg crate::registry::Registry<'reg>,
+        _ctx: &'rc crate::Context,
+        _rc: &mut crate::RenderContext<'reg, 'rc>,
+    ) -> Result<crate::ScopedJson<'rc>, crate::RenderError> {
+        let x = h
+            .param(0)
+            .and_then(|it| {
+                if r.strict_mode() && it.is_value_missing() {
+                    None
+                } else {
+                    Some(it.value())
+                }
+            })
+            .ok_or_else(|| crate::RenderErrorReason::ParamNotFoundForIndex(self.name, 0))?;
+        let y = h
+            .param(1)
+            .and_then(|it| {
+                if r.strict_mode() && it.is_value_missing() {
+                    None
+                } else {
+                    Some(it.value())
+                }
+            })
+            .ok_or_else(|| crate::RenderErrorReason::ParamNotFoundForIndex(self.name, 1))?;
+
+        Ok(crate::ScopedJson::Derived(Json::Bool((self.op)(x, y))))
+    }
+}
+
+pub(crate) static EQ_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "eq",
+    op: |x, y| x == y,
+};
+pub(crate) static NEQ_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "ne",
+    op: |x, y| x != y,
+};
+pub(crate) static GT_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "gt",
+    op: |x, y| compare_json(x, y) == Some(Ordering::Greater),
+};
+pub(crate) static GTE_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "gte",
+    op: |x, y| compare_json(x, y).is_some_and(|ord| ord != Ordering::Less),
+};
+pub(crate) static LT_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "lt",
+    op: |x, y| compare_json(x, y) == Some(Ordering::Less),
+};
+pub(crate) static LTE_HELPER: BinaryBoolHelper = BinaryBoolHelper {
+    name: "lte",
+    op: |x, y| compare_json(x, y).is_some_and(|ord| ord != Ordering::Greater),
+};
+
+#[derive(Clone, Copy)]
+pub struct UnaryBoolHelper {
+    name: &'static str,
+    op: fn(&Json) -> bool,
+}
+
+impl crate::HelperDef for UnaryBoolHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &crate::Helper<'rc>,
+        r: &'reg crate::registry::Registry<'reg>,
+        ctx: &'rc crate::Context,
+        rc: &mut crate::RenderContext<'reg, 'rc>,
+        out: &mut dyn crate::Output,
+    ) -> crate::HelperResult {
+        let value = self.call_inner(h, r, ctx, rc)?;
+        let value = value.as_json().as_bool().unwrap_or(false);
+
+        if !(h.is_block()) {
+            return out
+                .write(value.to_string().as_str())
+                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into());
+        }
+
+        let tmpl = if value { h.template() } else { h.inverse() };
+        match tmpl {
+            Some(t) => t.render(r, ctx, rc, out),
+            None => Ok(()),
+        }
+    }
+
+    fn call_inner<'reg: 'rc, 'rc>(
+        &self,
+        h: &crate::Helper<'rc>,
+        r: &'reg crate::Handlebars<'reg>,
+        _: &'rc crate::Context,
+        _: &mut crate::RenderContext<'reg, 'rc>,
+    ) -> std::result::Result<crate::ScopedJson<'rc>, crate::RenderError> {
+        let arg = h
+            .param(0)
+            .and_then(|it| {
+                if r.strict_mode() && it.is_value_missing() {
+                    None
+                } else {
+                    Some(it.value())
+                }
+            })
+            .ok_or_else(|| crate::RenderErrorReason::ParamNotFoundForIndex(self.name, 0))?;
+        let result = (self.op)(arg);
+        Ok(crate::ScopedJson::Derived(crate::JsonValue::from(result)))
+    }
+}
+
+pub(crate) static NOT_HELPER: UnaryBoolHelper = UnaryBoolHelper {
+    name: "not",
+    op: |x| !x.is_truthy(false),
+};
+
 handlebars_helper!(len: |x: Json| {
     match x {
         Json::Array(a) => a.len(),
@@ -76,10 +217,37 @@ fn compare_json(x: &Json, y: &Json) -> Option<Ordering> {
     }
 }
 
-#[allow(non_camel_case_types)]
-pub struct and;
+#[derive(Clone, Copy)]
+pub struct ManyBoolHelper {
+    name: &'static str,
+    op: fn(&Vec<crate::PathAndJson<'_>>) -> bool,
+}
 
-impl crate::HelperDef for and {
+impl crate::HelperDef for ManyBoolHelper {
+    fn call<'reg: 'rc, 'rc>(
+        &self,
+        h: &crate::Helper<'rc>,
+        r: &'reg crate::registry::Registry<'reg>,
+        ctx: &'rc crate::Context,
+        rc: &mut crate::RenderContext<'reg, 'rc>,
+        out: &mut dyn crate::Output,
+    ) -> crate::HelperResult {
+        let value = self.call_inner(h, r, ctx, rc)?;
+        let value = value.as_json().as_bool().unwrap_or(false);
+
+        if !(h.is_block()) {
+            return out
+                .write(value.to_string().as_str())
+                .map_err(|e| crate::RenderErrorReason::Other(e.to_string()).into());
+        }
+
+        let tmpl = if value { h.template() } else { h.inverse() };
+        match tmpl {
+            Some(t) => t.render(r, ctx, rc, out),
+            None => Ok(()),
+        }
+    }
+
     fn call_inner<'reg: 'rc, 'rc>(
         &self,
         h: &crate::Helper<'rc>,
@@ -87,26 +255,20 @@ impl crate::HelperDef for and {
         _: &'rc crate::Context,
         _: &mut crate::RenderContext<'reg, 'rc>,
     ) -> std::result::Result<crate::ScopedJson<'rc>, crate::RenderError> {
-        let all_true = h.params().iter().all(|p| p.value().is_truthy(false));
-        Ok(crate::ScopedJson::Derived(crate::JsonValue::from(all_true)))
+        let result = (self.op)(h.params());
+        Ok(crate::ScopedJson::Derived(crate::JsonValue::from(result)))
     }
 }
 
-#[allow(non_camel_case_types)]
-pub struct or;
+pub(crate) static AND_HELPER: ManyBoolHelper = ManyBoolHelper {
+    name: "and",
+    op: |params| params.iter().all(|p| p.value().is_truthy(false)),
+};
 
-impl crate::HelperDef for or {
-    fn call_inner<'reg: 'rc, 'rc>(
-        &self,
-        h: &crate::Helper<'rc>,
-        _r: &'reg crate::Handlebars<'reg>,
-        _: &'rc crate::Context,
-        _: &mut crate::RenderContext<'reg, 'rc>,
-    ) -> std::result::Result<crate::ScopedJson<'rc>, crate::RenderError> {
-        let any_true = h.params().iter().any(|p| p.value().is_truthy(false));
-        Ok(crate::ScopedJson::Derived(crate::JsonValue::from(any_true)))
-    }
-}
+pub(crate) static OR_HELPER: ManyBoolHelper = ManyBoolHelper {
+    name: "or",
+    op: |params| params.iter().any(|p| p.value().is_truthy(false)),
+};
 
 #[cfg(test)]
 mod test_conditions {
@@ -253,5 +415,55 @@ mod test_conditions {
         // Boolean comparisons
         test_condition("(gt true false)", true);
         test_condition("(lt false true)", true);
+    }
+
+    fn test_block(template: &str, expected: &str) {
+        let handlebars = crate::Handlebars::new();
+
+        let result = handlebars.render_template(template, &json!({})).unwrap();
+        assert_eq!(&result, expected);
+    }
+
+    #[test]
+    fn test_chained_else_support() {
+        test_block("{{#eq 1 1}}OK{{else}}KO{{/eq}}", "OK");
+        test_block("{{#eq 1 3}}OK{{else}}KO{{/eq}}", "KO");
+
+        test_block("{{#ne 1 1}}OK{{else}}KO{{/ne}}", "KO");
+        test_block("{{#ne 1 3}}OK{{else}}KO{{/ne}}", "OK");
+
+        test_block("{{#gt 2 1}}OK{{else}}KO{{/gt}}", "OK");
+        test_block("{{#gt 1 1}}OK{{else}}KO{{/gt}}", "KO");
+
+        test_block("{{#gte 2 1}}OK{{else}}KO{{/gte}}", "OK");
+        test_block("{{#gte 1 1}}OK{{else}}KO{{/gte}}", "OK");
+        test_block("{{#gte 0 1}}OK{{else}}KO{{/gte}}", "KO");
+
+        test_block("{{#lt 1 2}}OK{{else}}KO{{/lt}}", "OK");
+        test_block("{{#lt 2 2}}OK{{else}}KO{{/lt}}", "KO");
+
+        test_block("{{#lte 0 1}}OK{{else}}KO{{/lte}}", "OK");
+        test_block("{{#lte 1 1}}OK{{else}}KO{{/lte}}", "OK");
+        test_block("{{#lte 2 1}}OK{{else}}KO{{/lte}}", "KO");
+
+        test_block("{{#and true}}OK{{else}}KO{{/and}}", "OK");
+        test_block("{{#and true true}}OK{{else}}KO{{/and}}", "OK");
+        test_block("{{#and true true true}}OK{{else}}KO{{/and}}", "OK");
+        test_block("{{#and true true false}}OK{{else}}KO{{/and}}", "KO");
+        test_block("{{#and true false true}}OK{{else}}KO{{/and}}", "KO");
+        test_block("{{#and false false}}OK{{else}}KO{{/and}}", "KO");
+        test_block("{{#and false}}OK{{else}}KO{{/and}}", "KO");
+
+        test_block("{{#or true}}OK{{else}}KO{{/or}}", "OK");
+        test_block("{{#or true true}}OK{{else}}KO{{/or}}", "OK");
+        test_block("{{#or true true true}}OK{{else}}KO{{/or}}", "OK");
+        test_block("{{#or true true false}}OK{{else}}KO{{/or}}", "OK");
+        test_block("{{#or true false true}}OK{{else}}KO{{/or}}", "OK");
+        test_block("{{#or false true}}OK{{else}}KO{{/or}}", "OK");
+        test_block("{{#or false false}}OK{{else}}KO{{/or}}", "KO");
+        test_block("{{#or false}}OK{{else}}KO{{/or}}", "KO");
+
+        test_block("{{#not false}}OK{{else}}KO{{/not}}", "OK");
+        test_block("{{#not true}}OK{{else}}KO{{/not}}", "KO");
     }
 }
