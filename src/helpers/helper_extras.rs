@@ -223,7 +223,6 @@ pub struct ManyBoolHelper {
     op: fn(&Vec<crate::PathAndJson<'_>>) -> bool,
 }
 
-
 impl crate::HelperDef for ManyBoolHelper {
     fn call<'reg: 'rc, 'rc>(
         &self,
