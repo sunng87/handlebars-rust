@@ -217,12 +217,12 @@ fn compare_json(x: &Json, y: &Json) -> Option<Ordering> {
     }
 }
 
-#[allow(elided_lifetimes_in_paths)]
 #[derive(Clone, Copy)]
 pub struct ManyBoolHelper {
     name: &'static str,
-    op: fn(&Vec<crate::PathAndJson>) -> bool,
+    op: fn(&Vec<crate::PathAndJson<'_>>) -> bool,
 }
+
 
 impl crate::HelperDef for ManyBoolHelper {
     fn call<'reg: 'rc, 'rc>(
