@@ -213,7 +213,7 @@ fn large_nested_loop(c: &mut Criterion) {
 }
 
 fn deeply_nested_partial(c: &mut Criterion) {
-    use std::iter::repeat;
+    use std::iter::repeat_n;
     let mut handlebars = Handlebars::new();
 
     handlebars
@@ -252,11 +252,11 @@ fn deeply_nested_partial(c: &mut Criterion) {
         .expect("Invalid template format");
 
     let data = json!({
-        "foo": repeat(json!({
-            "bar": repeat(json!({
-                "baz": repeat("xyz").take(7).collect::<Vec<_>>()
-            })).take(7).collect::<Vec<_>>()
-        })).take(7).collect::<Vec<_>>()
+        "foo": repeat_n(json!({
+            "bar": repeat_n(json!({
+                "baz": repeat_n("xyz", 7).collect::<Vec<_>>()
+            }), 7).collect::<Vec<_>>()
+        }),7).collect::<Vec<_>>()
     });
 
     let ctx = Context::wraps(data).unwrap();
