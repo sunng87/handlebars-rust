@@ -491,6 +491,11 @@ impl<'reg> Registry<'reg> {
         self.helpers.insert(name.to_string(), def.into());
     }
 
+    /// Unregister a helper
+    pub fn unregister_helper(&mut self, name: &str) {
+        self.helpers.remove(name);
+    }
+
     /// Register a [rhai](https://docs.rs/rhai/) script as handlebars helper
     ///
     /// Currently only simple helpers are supported. You can do computation or
@@ -920,6 +925,27 @@ mod test {
     }
 
     static DUMMY_HELPER: DummyHelper = DummyHelper;
+
+    #[test]
+    fn test_unregister_helper() {
+        let mut r = Registry::new();
+
+        assert!(r
+            .register_template_string("dumber", "{{#dumb}}\ndummy helper exists\n{{/dumb}}")
+            .is_ok());
+
+        r.register_helper("dumb", Box::new(DUMMY_HELPER));
+
+        assert!(r.render("dumber", &()).is_ok());
+
+        r.unregister_helper("dumb");
+
+        assert!(r.render("dumber", &()).is_err());
+        assert!(matches!(
+            r.render("dumber", &()).unwrap_err().reason(),
+            RenderErrorReason::HelperNotFound(..)
+        ));
+    }
 
     #[test]
     fn test_registry_operations() {
