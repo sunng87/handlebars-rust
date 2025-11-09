@@ -491,6 +491,11 @@ impl<'reg> Registry<'reg> {
         self.helpers.insert(name.to_string(), def.into());
     }
 
+    /// Unregister a helper
+    pub fn unregister_helper(&mut self, name: &str) {
+        self.helpers.remove(name);
+    }
+
     /// Register a [rhai](https://docs.rs/rhai/) script as handlebars helper
     ///
     /// Currently only simple helpers are supported. You can do computation or
