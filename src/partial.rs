@@ -18,24 +18,29 @@ fn find_partial<'reg: 'rc, 'rc>(
     r: &'reg Registry<'reg>,
     d: &Decorator<'rc>,
     name: &str,
-) -> Result<Option<&'rc Template>, RenderError> {
+) -> Option<&'rc Template> {
+    if name == PARTIAL_BLOCK {
+        return rc.block().and_then(|b| b.get_partial_block());
+    }
+
     if let Some(partial) = rc.get_partial(name) {
-        return Ok(Some(partial));
+        return Some(partial);
     }
 
     if let Some(t) = rc.get_dev_mode_template(name) {
-        return Ok(Some(t));
+        return Some(t);
     }
 
     if let Some(t) = r.get_template(name) {
-        return Ok(Some(t));
+        return Some(t);
     }
 
+    // when partial is not found, use partial block
     if let Some(tpl) = d.template() {
-        return Ok(Some(tpl));
+        return Some(tpl);
     }
 
-    Ok(None)
+    None
 }
 
 pub fn expand_partial<'reg: 'rc, 'rc>(
@@ -59,23 +64,11 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         return Err(RenderErrorReason::CannotIncludeSelf.into());
     }
 
-    let partial = find_partial(rc, r, d, tname)?;
+    let partial = find_partial(rc, r, d, tname);
 
     let Some(partial) = partial else {
         return Err(RenderErrorReason::PartialNotFound(tname.to_owned()).into());
     };
-
-    let is_partial_block = tname == PARTIAL_BLOCK;
-
-    // add partial block depth there are consecutive partial
-    // blocks in the stack.
-    if is_partial_block {
-        rc.inc_partial_block_depth();
-    } else {
-        // depth cannot be lower than 0, which is guaranted in the
-        // `dec_partial_block_depth` method
-        rc.dec_partial_block_depth();
-    }
 
     // hash
     let hash_ctx = d
@@ -100,14 +93,12 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     };
     partial_include_block.set_base_value(merged_context);
 
+    // set partial block
+    partial_include_block.set_partial_block(d.template());
+
     // replace and hold blocks from current render context
     let current_blocks = rc.replace_blocks(VecDeque::with_capacity(1));
     rc.push_block(partial_include_block);
-
-    // @partial-block
-    if let Some(pb) = d.template() {
-        rc.push_partial_block(pb);
-    }
 
     // indent
     rc.set_indent_string(d.indent().cloned());
@@ -117,11 +108,9 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     // cleanup
     let trailing_newline = rc.get_trailine_newline();
 
-    if d.template().is_some() {
-        rc.pop_partial_block();
-    }
-
+    // drop block context
     let _ = rc.replace_blocks(current_blocks);
+
     rc.set_trailing_newline(trailing_newline);
     rc.set_current_template_name(current_template_before);
     rc.set_indent_string(indent_before);
@@ -334,6 +323,16 @@ mod test {
 
         let page = handlebars.render_template(template3, &json!({})).unwrap();
         assert_eq!("<outer><inner>Hello</inner></outer>", page);
+
+        let mut hs = Registry::new();
+
+        hs.register_template_string("primary", "{{> @partial-block }}")
+            .unwrap();
+        hs.register_template_string("secondary", "{{#*inline \"inl\"}}Bug{{/inline}}{{#>primary}}{{>inl}}{{> @partial-block }}{{/primary}}").unwrap();
+        hs.register_template_string("current", "{{>secondary}}")
+            .unwrap();
+
+        assert!(hs.render("current", &()).is_err());
     }
 
     #[test]
