@@ -63,6 +63,10 @@ pub struct RenderContext<'reg: 'rc, 'rc> {
     // The next text that we render should indent itself.
     indent_before_write: bool,
     indent_string: Option<Cow<'rc, str>>,
+
+    // Threads the recursive_lookup state from the registry down
+    // through to the context navigation layer
+    recursive_lookup: bool,
 }
 
 impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
@@ -87,6 +91,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             blocks,
             modified_context,
             dev_mode_templates: None,
+            recursive_lookup: false,
         }
     }
 
@@ -161,7 +166,9 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             Path::Local((level, name, _)) => Ok(self
                 .get_local_var(*level, name)
                 .map_or_else(|| ScopedJson::Missing, |v| ScopedJson::Derived(v.clone()))),
-            Path::Relative((segs, _)) => context.navigate(segs, &self.blocks),
+            Path::Relative((segs, _)) => {
+                context.navigate(segs, &self.blocks, self.recursive_lookup)
+            }
         }
     }
 
@@ -320,6 +327,10 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
     #[inline]
     pub fn get_indent_before_write(&self) -> bool {
         self.indent_before_write
+    }
+
+    pub fn set_recursive_lookup(&mut self, enabled: bool) {
+        self.recursive_lookup = enabled;
     }
 }
 
@@ -1299,5 +1310,24 @@ mod test {
         assert!(r.render("r4", &()).is_err());
         assert!(r.render("r5", &()).is_err());
         assert!(r.render("r6", &()).is_err());
+    }
+
+    #[test]
+    fn test_recursive_path_resolution() {
+        let mut r = Registry::new();
+        const TEMPLATE: &str = "{{#each children}}outer={{{outer}}} inner={{{inner}}}{{/each}}";
+
+        let data = json!({
+          "children": [{"inner": "inner"}],
+          "outer": "outer"
+        });
+
+        let r1 = r.render_template(TEMPLATE, &data).unwrap();
+        assert_eq!(r1, "outer= inner=inner");
+
+        r.set_recursive_lookup(true);
+
+        let r2 = r.render_template(TEMPLATE, &data).unwrap();
+        assert_eq!(r2, "outer=outer inner=inner");
     }
 }

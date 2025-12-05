@@ -192,18 +192,64 @@ impl Context {
         &'rc self,
         relative_path: &[PathSeg],
         block_contexts: &VecDeque<BlockContext<'_>>,
+        recursive_lookup: bool,
     ) -> Result<ScopedJson<'rc>, RenderError> {
         // always use absolute at the moment until we get base_value lifetime issue fixed
         let resolved_visitor = parse_json_visitor(relative_path, block_contexts, true);
 
         match resolved_visitor {
-            ResolvedPath::AbsolutePath(paths) => {
-                let mut ptr = Some(self.data());
-                for p in &paths {
-                    ptr = get_data(ptr, p)?;
-                }
+            ResolvedPath::AbsolutePath(mut paths) => {
+                // Only attempt a recursive resolution if it looks like a simple
+                // named parameter, rather than an explicitly pathed parameter like
+                // "./foo" or "../foo".
+                let allow_recursive =
+                    recursive_lookup && matches!(relative_path, [PathSeg::Named(_)]);
+                if allow_recursive {
+                    // Paths is probably something like: ["children", "0", "name"].
+                    // This block of code will first try to resolve that set of
+                    // paths, but if no value is found, it will then successively
+                    // mutate that list to remove the parent element (the penultimate
+                    // one) and resolving each in turn:
+                    // ["children", "name"]
+                    // ["name"]
+                    while !paths.is_empty() {
+                        let mut ptr = Some(self.data());
+                        for p in &paths {
+                            ptr = match get_data(ptr, p) {
+                                Ok(p) => p,
+                                Err(err) => {
+                                    use crate::RenderErrorReason::InvalidJsonIndex;
+                                    if matches!(err.reason(), InvalidJsonIndex(_)) {
+                                        ptr = None;
+                                        break;
+                                    }
+                                    return Err(err);
+                                }
+                            };
+                        }
 
-                Ok(ptr.map_or_else(|| ScopedJson::Missing, |v| ScopedJson::Context(v, paths)))
+                        match ptr {
+                            Some(v) => {
+                                return Ok(ScopedJson::Context(v, paths));
+                            }
+                            None => {
+                                let paths_len = paths.len();
+                                if paths_len == 1 {
+                                    return Ok(ScopedJson::Missing);
+                                }
+
+                                paths.remove(paths_len - 2);
+                            }
+                        }
+                    }
+                    Ok(ScopedJson::Missing)
+                } else {
+                    let mut ptr = Some(self.data());
+                    for p in &paths {
+                        ptr = get_data(ptr, p)?;
+                    }
+                    Ok(ptr.map_or_else(|| ScopedJson::Missing, |v| ScopedJson::Context(v, paths)))
+                }
             }
             ResolvedPath::RelativePath(_paths) => {
                 // relative path is disabled for now
@@ -257,7 +303,7 @@ mod test {
         path: &str,
     ) -> Result<ScopedJson<'rc>, RenderError> {
         let relative_path = Path::parse(path).unwrap();
-        ctx.navigate(relative_path.segs().unwrap(), &VecDeque::new())
+        ctx.navigate(relative_path.segs().unwrap(), &VecDeque::new(), false)
     }
 
     #[derive(Serialize)]
@@ -457,9 +503,13 @@ mod test {
         blocks.push_front(block);
 
         assert_eq!(
-            ctx.navigate(Path::parse("@root/b").unwrap().segs().unwrap(), &blocks)
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                Path::parse("@root/b").unwrap().segs().unwrap(),
+                &blocks,
+                false
+            )
+            .unwrap()
+            .render(),
             "2".to_string()
         );
     }
@@ -486,13 +536,17 @@ mod test {
         blocks.push_front(block);
 
         assert_eq!(
-            ctx.navigate(Path::parse("z.[1]").unwrap().segs().unwrap(), &blocks)
-                .unwrap()
-                .render(),
+            ctx.navigate(
+                Path::parse("z.[1]").unwrap().segs().unwrap(),
+                &blocks,
+                false
+            )
+            .unwrap()
+            .render(),
             "2".to_string()
         );
         assert_eq!(
-            ctx.navigate(Path::parse("t").unwrap().segs().unwrap(), &blocks)
+            ctx.navigate(Path::parse("t").unwrap().segs().unwrap(), &blocks, false)
                 .unwrap()
                 .render(),
             "good".to_string()

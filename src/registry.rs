@@ -69,6 +69,7 @@ pub struct Registry<'reg> {
     escape_fn: EscapeFn,
     strict_mode: bool,
     dev_mode: bool,
+    recursive_lookup: bool,
     prevent_indent: bool,
     #[cfg(feature = "script_helper")]
     pub(crate) engine: Arc<Engine>,
@@ -156,6 +157,7 @@ impl<'reg> Registry<'reg> {
             escape_fn: Arc::new(html_escape),
             strict_mode: false,
             dev_mode: false,
+            recursive_lookup: false,
             prevent_indent: false,
             #[cfg(feature = "script_helper")]
             engine: Arc::new(rhai_engine()),
@@ -191,6 +193,23 @@ impl<'reg> Registry<'reg> {
 
         self.register_decorator("inline", Box::new(decorators::INLINE_DECORATOR));
         self
+    }
+
+    /// Enable or disable recursive variable resolution mode
+    ///
+    /// By default variable resolution is performed directly
+    /// within the current scope.
+    ///
+    /// For certain legacy use cases it may be desirable for variable
+    /// resolution to walk up through the enclosing scopes until
+    /// a matching variable is found.
+    pub fn set_recursive_lookup(&mut self, enabled: bool) {
+        self.recursive_lookup = enabled;
+    }
+
+    /// Return recursive lookup state, default is false.
+    pub fn recursive_lookup(&self) -> bool {
+        self.recursive_lookup
     }
 
     /// Enable or disable handlebars strict mode
@@ -719,6 +738,7 @@ impl<'reg> Registry<'reg> {
     ) -> Result<(), RenderError> {
         if !self.dev_mode {
             let mut render_context = RenderContext::new(template.name.as_ref());
+            render_context.set_recursive_lookup(self.recursive_lookup);
             return template.render(self, ctx, &mut render_context, output);
         }
 
@@ -734,6 +754,7 @@ impl<'reg> Registry<'reg> {
         let mut render_context = RenderContext::new(template.name.as_ref());
 
         render_context.set_dev_mode_templates(Some(&dev_mode_templates));
+        render_context.set_recursive_lookup(self.recursive_lookup);
 
         template.render(self, ctx, &mut render_context, output)
     }
