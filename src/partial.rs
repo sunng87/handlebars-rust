@@ -96,14 +96,28 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         let merged_context = if let Some(p) = d.param(0) {
             if let Some(relative_path) = p.relative_path() {
                 // path as parameter provided
-                merge_json(rc.evaluate(ctx, relative_path)?.as_json(), &hash_ctx)
+                if let Some(rc_context) = rc.context() {
+                    merge_json(
+                        rc.evaluate(&rc_context, relative_path)?.as_json(),
+                        &hash_ctx,
+                    )
+                } else {
+                    merge_json(rc.evaluate(ctx, relative_path)?.as_json(), &hash_ctx)
+                }
             } else {
                 // literal provided
                 merge_json(p.value(), &hash_ctx)
             }
         } else {
             // use current path
-            merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx)
+            if let Some(rc_context) = rc.context() {
+                merge_json(
+                    rc.evaluate2(&rc_context, &Path::current())?.as_json(),
+                    &hash_ctx,
+                )
+            } else {
+                merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx)
+            }
         };
         partial_include_block.set_base_value(merged_context);
 
@@ -138,7 +152,7 @@ mod test {
     use crate::output::Output;
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext};
-    use crate::RenderErrorReason;
+    use crate::{Decorator, RenderErrorReason};
 
     #[test]
     fn test() {
@@ -837,5 +851,61 @@ outer third line",
             .unwrap();
 
         assert_eq!(hs.render("current", &()).unwrap(), "Not a Bug");
+    }
+
+    #[test]
+    fn test_referencing_data_in_partial() {
+        fn set_decorator(
+            d: &Decorator<'_>,
+            _: &Registry<'_>,
+            _ctx: &Context,
+            rc: &mut RenderContext<'_, '_>,
+        ) -> Result<(), RenderError> {
+            let data_to_set = d.hash();
+            for (k, v) in data_to_set {
+                set_in_context(rc, k, v.value().clone());
+            }
+            Ok(())
+        }
+
+        /// Sets a variable to a value within the context.
+        fn set_in_context(rc: &mut RenderContext<'_, '_>, key: &str, value: serde_json::Value) {
+            let mut gctx = match rc.context() {
+                Some(c) => (*c).clone(),
+                None => Context::wraps(serde_json::Value::Object(serde_json::Map::new())).unwrap(),
+            };
+            if let serde_json::Value::Object(m) = gctx.data_mut() {
+                m.insert(key.to_string(), value);
+                rc.set_context(gctx);
+            } else {
+                panic!("expected object in context");
+            }
+        }
+
+        let mut handlebars = Registry::new();
+        handlebars.register_decorator("set", Box::new(set_decorator));
+
+        handlebars_helper!(lower: |s: str| s.to_lowercase());
+        handlebars.register_helper("lower", Box::new(lower));
+        handlebars
+            .register_template_string(
+                "an-included-file",
+                "This file is included.\n\nSee {{lower somevalue}}\n",
+            )
+            .unwrap();
+
+        let data = serde_json::json!({});
+        assert_eq!(
+            handlebars
+                .render_template(
+                    r#"
+{{~*set somevalue="Example"}}
+{{> an-included-file }}
+"#,
+                    &data
+                )
+                .unwrap(),
+            "This file is included.\n\nSee example\n"
+        );
     }
 }

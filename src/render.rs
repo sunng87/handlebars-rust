@@ -1,4 +1,4 @@
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::rc::Rc;
@@ -671,7 +671,7 @@ impl Parameter {
             }
             Parameter::Path(ref path) => {
                 if let Some(rc_context) = rc.context() {
-                    let result = rc.evaluate2(rc_context.borrow(), path)?;
+                    let result = rc.evaluate2(&rc_context, path)?;
                     Ok(PathAndJson::new(
                         Some(path.raw().to_owned()),
                         ScopedJson::Derived(result.as_json().clone()),
