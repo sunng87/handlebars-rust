@@ -77,6 +77,8 @@ pub enum RenderErrorReason {
     MissingVariable(Option<String>),
     #[error("Partial not found {0}")]
     PartialNotFound(String),
+    #[error("Partial block cound not be found")]
+    PartialBlockNotFound,
     #[error("Helper not found {0}")]
     HelperNotFound(String),
     #[error("Helper/Decorator {0} param at index {1} required but not found")]
