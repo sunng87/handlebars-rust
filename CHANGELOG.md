@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.3.2...Unreleased) - ReleaseDate
+## [6.4.0](https://github.com/sunng87/handlebars-rust/compare/6.3.2...6.4.0) - 2026-01-02
 
 * [Fixed] Reimplement partial-block, fixed partial-block resolution issues [#732]
 * [Added] `recursive_lookup` mode [#730]
