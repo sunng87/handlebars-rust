@@ -42,7 +42,6 @@ pub struct RenderContext<'reg: 'rc, 'rc> {
     // copy-on-write context
     modified_context: Option<Rc<Context>>,
 
-    partials: BTreeMap<String, &'rc Template>,
     // when rendering partials, store rendered string into partial_block_stack
     // for `@partial-block` referencing. If it's a `{{> partial}}`, push `None`
     // to stack and report error when child partial try to referencing
@@ -80,7 +79,6 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
         let modified_context = None;
         RenderContext {
-            partials: BTreeMap::new(),
             partial_block_stack: VecDeque::new(),
             local_helpers: BTreeMap::new(),
             current_template: None,
@@ -183,12 +181,7 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
             }
         }
 
-        self.partials.get(name).copied()
-    }
-
-    /// Register a partial for this context
-    pub fn set_partial(&mut self, name: String, partial: &'rc Template) {
-        self.partials.insert(name, partial);
+        None
     }
 
     pub(crate) fn push_partial_block(&mut self, partial_block: Option<String>) {
@@ -222,11 +215,6 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
         t: Option<&'rc BTreeMap<String, Cow<'rc, Template>>>,
     ) {
         self.dev_mode_templates = t;
-    }
-
-    /// Remove a registered partial
-    pub fn remove_partial(&mut self, name: &str) {
-        self.partials.remove(name);
     }
 
     fn get_local_var(&self, level: usize, name: &str) -> Option<&Json> {
@@ -336,7 +324,6 @@ impl fmt::Debug for RenderContext<'_, '_> {
             .field("dev_mode_templates", &self.dev_mode_templates)
             .field("blocks", &self.blocks)
             .field("modified_context", &self.modified_context)
-            .field("partials", &self.partials)
             .field("partial_block_stack", &self.partial_block_stack)
             .field("root_template", &self.root_template)
             .field("current_template", &self.current_template)
