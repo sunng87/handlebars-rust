@@ -45,11 +45,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    // try eval inline partials first
-    if let Some(t) = d.template() {
-        t.eval(r, ctx, rc)?;
-    }
-
     let tname = d.name();
 
     let current_template_before = rc.get_current_template_name();
@@ -124,6 +119,11 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         // replace and hold blocks from current render context
         let current_blocks = rc.replace_blocks(VecDeque::with_capacity(1));
         rc.push_block(partial_include_block);
+
+        // try eval inline partials
+        if let Some(t) = d.template() {
+            t.eval(r, ctx, rc)?;
+        }
 
         // indent
         rc.set_indent_string(d.indent().cloned());

@@ -176,6 +176,13 @@ impl<'reg: 'rc, 'rc> RenderContext<'reg, 'rc> {
 
     /// Get registered partial in this render context
     pub fn get_partial(&self, name: &str) -> Option<&'rc Template> {
+        // resolve partial from block
+        for block in &self.blocks {
+            if let Some(partial) = block.get_local_partial(name) {
+                return Some(partial);
+            }
+        }
+
         self.partials.get(name).copied()
     }
 
