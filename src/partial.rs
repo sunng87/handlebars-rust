@@ -9,7 +9,7 @@ use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
 use crate::template::Template;
-use crate::{Path, RenderErrorReason};
+use crate::{Path, RenderErrorReason, StringOutput};
 
 pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 
@@ -59,74 +59,90 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         return Err(RenderErrorReason::CannotIncludeSelf.into());
     }
 
-    let partial = find_partial(rc, r, d, tname)?;
-
-    let Some(partial) = partial else {
-        return Err(RenderErrorReason::PartialNotFound(tname.to_owned()).into());
-    };
-
-    let is_partial_block = tname == PARTIAL_BLOCK;
-
-    // add partial block depth there are consecutive partial
-    // blocks in the stack.
-    if is_partial_block {
-        rc.inc_partial_block_depth();
-    } else {
-        // depth cannot be lower than 0, which is guaranted in the
-        // `dec_partial_block_depth` method
-        rc.dec_partial_block_depth();
-    }
-
-    // hash
-    let hash_ctx = d
-        .hash()
-        .iter()
-        .map(|(k, v)| (*k, v.value()))
-        .collect::<HashMap<&str, &Json>>();
-
-    let mut partial_include_block = BlockContext::new();
-    // evaluate context for partial
-    let merged_context = if let Some(p) = d.param(0) {
-        if let Some(relative_path) = p.relative_path() {
-            // path as parameter provided
-            merge_json(rc.evaluate(ctx, relative_path)?.as_json(), &hash_ctx)
+    // check if referencing partial_block
+    if tname == PARTIAL_BLOCK {
+        if let Some(Some(content)) = rc.peek_partial_block() {
+            out.write(content.as_str())?;
+            Ok(())
         } else {
-            // literal provided
-            merge_json(p.value(), &hash_ctx)
+            // no partial_block for this scope
+            Err(RenderErrorReason::PartialBlockNotFound.into())
         }
     } else {
-        // use current path
-        merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx)
-    };
-    partial_include_block.set_base_value(merged_context);
+        // normal partial
+        let partial = find_partial(rc, r, d, tname)?;
+        let Some(partial) = partial else {
+            return Err(RenderErrorReason::PartialNotFound(tname.to_owned()).into());
+        };
 
-    // replace and hold blocks from current render context
-    let current_blocks = rc.replace_blocks(VecDeque::with_capacity(1));
-    rc.push_block(partial_include_block);
+        // check if this inclusion has a block
+        if let Some(current_parital_block) = d.template() {
+            let mut tmp_out = StringOutput::new();
+            current_parital_block.render(r, ctx, rc, &mut tmp_out)?;
+            rc.push_partial_block(Some(tmp_out.into_string()?));
+        } else {
+            rc.push_partial_block(None);
+        }
 
-    // @partial-block
-    if let Some(pb) = d.template() {
-        rc.push_partial_block(pb);
-    }
+        // hash
+        let hash_ctx = d
+            .hash()
+            .iter()
+            .map(|(k, v)| (*k, v.value()))
+            .collect::<HashMap<&str, &Json>>();
 
-    // indent
-    rc.set_indent_string(d.indent().cloned());
+        let mut partial_include_block = BlockContext::new();
+        // evaluate context for partial
+        let merged_context = if let Some(p) = d.param(0) {
+            if let Some(relative_path) = p.relative_path() {
+                // path as parameter provided
+                if let Some(rc_context) = rc.context() {
+                    merge_json(
+                        rc.evaluate(&rc_context, relative_path)?.as_json(),
+                        &hash_ctx,
+                    )
+                } else {
+                    merge_json(rc.evaluate(ctx, relative_path)?.as_json(), &hash_ctx)
+                }
+            } else {
+                // literal provided
+                merge_json(p.value(), &hash_ctx)
+            }
+        } else {
+            // use current path
+            if let Some(rc_context) = rc.context() {
+                merge_json(
+                    rc.evaluate2(&rc_context, &Path::current())?.as_json(),
+                    &hash_ctx,
+                )
+            } else {
+                merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx)
+            }
+        };
+        partial_include_block.set_base_value(merged_context);
 
-    let result = partial.render(r, ctx, rc, out);
+        // replace and hold blocks from current render context
+        let current_blocks = rc.replace_blocks(VecDeque::with_capacity(1));
+        rc.push_block(partial_include_block);
 
-    // cleanup
-    let trailing_newline = rc.get_trailine_newline();
+        // indent
+        rc.set_indent_string(d.indent().cloned());
 
-    if d.template().is_some() {
+        let result = partial.render(r, ctx, rc, out);
+
+        // cleanup
+        let trailing_newline = rc.get_trailine_newline();
+
+        // remove current partial_block
         rc.pop_partial_block();
+
+        let _ = rc.replace_blocks(current_blocks);
+        rc.set_trailing_newline(trailing_newline);
+        rc.set_current_template_name(current_template_before);
+        rc.set_indent_string(indent_before);
+
+        result
     }
-
-    let _ = rc.replace_blocks(current_blocks);
-    rc.set_trailing_newline(trailing_newline);
-    rc.set_current_template_name(current_template_before);
-    rc.set_indent_string(indent_before);
-
-    result
 }
 
 #[cfg(test)]
@@ -136,6 +152,7 @@ mod test {
     use crate::output::Output;
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext};
+    use crate::{Decorator, RenderErrorReason};
 
     #[test]
     fn test() {
@@ -810,5 +827,85 @@ outer third line",
         hbs.register_template_string("t2", t2).unwrap();
 
         assert_eq!("a:1,", hbs.render("t2", &json!({"b": 2})).unwrap());
+    }
+
+    #[test]
+    fn test_nested_partial_block_scope_issue() {
+        let mut hs = Registry::new();
+        hs.register_template_string("primary", "{{> @partial-block }}")
+            .unwrap();
+        hs.register_template_string("secondary", "{{#*inline \"inl\"}}Bug{{/inline}}{{#>primary}}{{> @partial-block }}{{>inl}}{{/primary}}").unwrap();
+        hs.register_template_string("current", "{{>secondary}}")
+            .unwrap();
+
+        assert!(matches!(
+            hs.render("current", &()).unwrap_err().reason(),
+            RenderErrorReason::PartialBlockNotFound
+        ));
+
+        let mut hs = Registry::new();
+        hs.register_template_string("primary", "{{> @partial-block }}")
+            .unwrap();
+        hs.register_template_string("secondary", "{{#*inline \"inl\"}}Bug{{/inline}}{{#>primary}}{{> @partial-block }}{{>inl}}{{/primary}}").unwrap();
+        hs.register_template_string("current", "{{#>secondary}}Not a {{/secondary}}")
+            .unwrap();
+
+        assert_eq!(hs.render("current", &()).unwrap(), "Not a Bug");
+    }
+
+    #[test]
+    fn test_referencing_data_in_partial() {
+        fn set_decorator(
+            d: &Decorator<'_>,
+            _: &Registry<'_>,
+            _ctx: &Context,
+            rc: &mut RenderContext<'_, '_>,
+        ) -> Result<(), RenderError> {
+            let data_to_set = d.hash();
+            for (k, v) in data_to_set {
+                set_in_context(rc, k, v.value().clone());
+            }
+            Ok(())
+        }
+
+        /// Sets a variable to a value within the context.
+        fn set_in_context(rc: &mut RenderContext<'_, '_>, key: &str, value: serde_json::Value) {
+            let mut gctx = match rc.context() {
+                Some(c) => (*c).clone(),
+                None => Context::wraps(serde_json::Value::Object(serde_json::Map::new())).unwrap(),
+            };
+            if let serde_json::Value::Object(m) = gctx.data_mut() {
+                m.insert(key.to_string(), value);
+                rc.set_context(gctx);
+            } else {
+                panic!("expected object in context");
+            }
+        }
+
+        let mut handlebars = Registry::new();
+        handlebars.register_decorator("set", Box::new(set_decorator));
+
+        handlebars_helper!(lower: |s: str| s.to_lowercase());
+        handlebars.register_helper("lower", Box::new(lower));
+        handlebars
+            .register_template_string(
+                "an-included-file",
+                "This file is included.\n\nSee {{lower somevalue}}\n",
+            )
+            .unwrap();
+
+        let data = serde_json::json!({});
+        assert_eq!(
+            handlebars
+                .render_template(
+                    r#"
+{{~*set somevalue="Example"}}
+{{> an-included-file }}
+"#,
+                    &data
+                )
+                .unwrap(),
+            "This file is included.\n\nSee example\n"
+        );
     }
 }
