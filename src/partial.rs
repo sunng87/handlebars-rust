@@ -16,7 +16,6 @@ pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 fn find_partial<'reg: 'rc, 'rc>(
     rc: &RenderContext<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    d: &Decorator<'rc>,
     name: &str,
 ) -> Result<Option<&'rc Template>, RenderError> {
     if let Some(partial) = rc.get_partial(name) {
@@ -29,10 +28,6 @@ fn find_partial<'reg: 'rc, 'rc>(
 
     if let Some(t) = r.get_template(name) {
         return Ok(Some(t));
-    }
-
-    if let Some(tpl) = d.template() {
-        return Ok(Some(tpl));
     }
 
     Ok(None)
@@ -65,8 +60,13 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         }
     } else {
         // normal partial
-        let partial = find_partial(rc, r, d, tname)?;
-        let Some(partial) = partial else {
+        let original_partial = find_partial(rc, r, tname)?;
+
+        let partial = if let Some(partial) = original_partial {
+            partial
+        } else if let Some(inner_template) = d.template() {
+            inner_template
+        } else {
             return Err(RenderErrorReason::PartialNotFound(tname.to_owned()).into());
         };
 
@@ -117,13 +117,18 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         // This allows inline partials from parent blocks to remain accessible
         rc.push_block(partial_include_block);
 
-        // check if this inclusion has a block
-        if let Some(current_parital_block) = d.template() {
-            let mut tmp_out = StringOutput::new();
-            // render will also eval the block, so any inline directives will be
-            // evaluated
-            current_parital_block.render(r, ctx, rc, &mut tmp_out)?;
-            rc.push_partial_block(Some(tmp_out.into_string()?));
+        // check if this inclusion has a block, make sure we are not rendering
+        // the template itself
+        if original_partial.is_some() {
+            if let Some(current_parital_block) = d.template() {
+                let mut tmp_out = StringOutput::new();
+                // render will also eval the block, so any inline directives will be
+                // evaluated
+                current_parital_block.render(r, ctx, rc, &mut tmp_out)?;
+                rc.push_partial_block(Some(tmp_out.into_string()?));
+            } else {
+                rc.push_partial_block(None);
+            }
         } else {
             rc.push_partial_block(None);
         }
