@@ -1,5 +1,10 @@
 # Change Log
 
+## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.3.2...Unreleased) - ReleaseDate
+
+* [Fixed] Reimplement partial-block, fixed partial-block resolution issues [#732]
+* [Added] `recursive_lookup` mode [#730]
+
 ## [6.3.2](https://github.com/sunng87/handlebars-rust/compare/6.3.1...6.3.2) - 2025-03-16
 
 * [Fixed] Reimplementation of partial context [#699]
