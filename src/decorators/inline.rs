@@ -33,7 +33,10 @@ impl DecoratorDef for InlineDecorator {
             .template()
             .ok_or(RenderErrorReason::BlockContentRequired)?;
 
-        rc.set_partial(name, template);
+        if let Some(block) = rc.block_mut() {
+            block.set_local_partial(name, template);
+        }
+
         Ok(())
     }
 }

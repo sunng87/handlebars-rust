@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 
 use serde_json::Value as Json;
 
@@ -7,7 +7,7 @@ use crate::context::{merge_json, Context};
 use crate::error::RenderError;
 use crate::output::Output;
 use crate::registry::Registry;
-use crate::render::{Decorator, Evaluable, RenderContext, Renderable};
+use crate::render::{Decorator, RenderContext, Renderable};
 use crate::template::Template;
 use crate::{Path, RenderErrorReason, StringOutput};
 
@@ -16,7 +16,6 @@ pub(crate) const PARTIAL_BLOCK: &str = "@partial-block";
 fn find_partial<'reg: 'rc, 'rc>(
     rc: &RenderContext<'reg, 'rc>,
     r: &'reg Registry<'reg>,
-    d: &Decorator<'rc>,
     name: &str,
 ) -> Result<Option<&'rc Template>, RenderError> {
     if let Some(partial) = rc.get_partial(name) {
@@ -31,10 +30,6 @@ fn find_partial<'reg: 'rc, 'rc>(
         return Ok(Some(t));
     }
 
-    if let Some(tpl) = d.template() {
-        return Ok(Some(tpl));
-    }
-
     Ok(None)
 }
 
@@ -45,11 +40,6 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
     rc: &mut RenderContext<'reg, 'rc>,
     out: &mut dyn Output,
 ) -> Result<(), RenderError> {
-    // try eval inline partials first
-    if let Some(t) = d.template() {
-        t.eval(r, ctx, rc)?;
-    }
-
     let tname = d.name();
 
     let current_template_before = rc.get_current_template_name();
@@ -70,19 +60,15 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         }
     } else {
         // normal partial
-        let partial = find_partial(rc, r, d, tname)?;
-        let Some(partial) = partial else {
+        let original_partial = find_partial(rc, r, tname)?;
+
+        let partial = if let Some(partial) = original_partial {
+            partial
+        } else if let Some(inner_template) = d.template() {
+            inner_template
+        } else {
             return Err(RenderErrorReason::PartialNotFound(tname.to_owned()).into());
         };
-
-        // check if this inclusion has a block
-        if let Some(current_parital_block) = d.template() {
-            let mut tmp_out = StringOutput::new();
-            current_parital_block.render(r, ctx, rc, &mut tmp_out)?;
-            rc.push_partial_block(Some(tmp_out.into_string()?));
-        } else {
-            rc.push_partial_block(None);
-        }
 
         // hash
         let hash_ctx = d
@@ -92,6 +78,12 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             .collect::<HashMap<&str, &Json>>();
 
         let mut partial_include_block = BlockContext::new();
+        // overwrite parent block's params
+        for (name, value) in &hash_ctx {
+            partial_include_block
+                .set_block_param(name, crate::BlockParamHolder::Value((*value).clone()));
+        }
+
         // evaluate context for partial
         let merged_context = if let Some(p) = d.param(0) {
             if let Some(relative_path) = p.relative_path() {
@@ -121,9 +113,25 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         };
         partial_include_block.set_base_value(merged_context);
 
-        // replace and hold blocks from current render context
-        let current_blocks = rc.replace_blocks(VecDeque::with_capacity(1));
+        // Push partial's context block (doesn't clear parent blocks)
+        // This allows inline partials from parent blocks to remain accessible
         rc.push_block(partial_include_block);
+
+        // check if this inclusion has a block, make sure we are not rendering
+        // the template itself
+        if original_partial.is_some() {
+            if let Some(current_parital_block) = d.template() {
+                let mut tmp_out = StringOutput::new();
+                // render will also eval the block, so any inline directives will be
+                // evaluated
+                current_parital_block.render(r, ctx, rc, &mut tmp_out)?;
+                rc.push_partial_block(Some(tmp_out.into_string()?));
+            } else {
+                rc.push_partial_block(None);
+            }
+        } else {
+            rc.push_partial_block(None);
+        }
 
         // indent
         rc.set_indent_string(d.indent().cloned());
@@ -136,7 +144,8 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         // remove current partial_block
         rc.pop_partial_block();
 
-        let _ = rc.replace_blocks(current_blocks);
+        // Remove partial's context block
+        rc.pop_block();
         rc.set_trailing_newline(trailing_newline);
         rc.set_current_template_name(current_template_before);
         rc.set_indent_string(indent_before);
