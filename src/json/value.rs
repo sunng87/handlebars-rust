@@ -1,5 +1,5 @@
 use serde::Serialize;
-use serde_json::value::{to_value, Value as Json};
+use serde_json::value::{Value as Json, to_value};
 
 pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 
@@ -23,7 +23,7 @@ impl<'rc> ScopedJson<'rc> {
     pub fn as_json(&self) -> &Json {
         match self {
             ScopedJson::Constant(j) => j,
-            ScopedJson::Derived(ref j) => j,
+            ScopedJson::Derived(j) => j,
             ScopedJson::Context(j, _) => j,
             _ => &DEFAULT_VALUE,
         }
@@ -44,7 +44,7 @@ impl<'rc> ScopedJson<'rc> {
 
     pub fn context_path(&self) -> Option<&Vec<String>> {
         match self {
-            ScopedJson::Context(_, ref p) => Some(p),
+            ScopedJson::Context(_, p) => Some(p),
             _ => None,
         }
     }

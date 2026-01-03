@@ -1,11 +1,11 @@
 use std::iter::Peekable;
 
-use pest::iterators::Pair;
 use pest::Parser;
+use pest::iterators::Pair;
 
+use crate::RenderErrorReason;
 use crate::error::RenderError;
 use crate::grammar::{HandlebarsParser, Rule};
-use crate::RenderErrorReason;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 #[non_exhaustive]
@@ -45,8 +45,8 @@ impl Path {
 
     pub(crate) fn raw(&self) -> &str {
         match self {
-            Path::Relative((_, ref raw)) => raw,
-            Path::Local((_, _, ref raw)) => raw,
+            Path::Relative((_, raw)) => raw,
+            Path::Local((_, _, raw)) => raw,
         }
     }
 
@@ -129,7 +129,7 @@ where
 pub(crate) fn merge_json_path(path_stack: &mut Vec<String>, relative_path: &[PathSeg]) {
     for seg in relative_path {
         match seg {
-            PathSeg::Named(ref s) => {
+            PathSeg::Named(s) => {
                 path_stack.push(s.to_owned());
             }
             PathSeg::Ruled(Rule::path_root) => {}

@@ -9,7 +9,7 @@ use serde_json::value::Value as Json;
 
 use crate::error::{TemplateError, TemplateErrorReason};
 use crate::grammar::{HandlebarsParser, Rule};
-use crate::json::path::{parse_json_path_from_iter, Path};
+use crate::json::path::{Path, parse_json_path_from_iter};
 use crate::support;
 
 use derive_builder::Builder;
@@ -313,8 +313,8 @@ impl DecoratorTemplate {
 impl Parameter {
     pub fn as_name(&self) -> Option<&str> {
         match self {
-            Parameter::Name(ref n) => Some(n),
-            Parameter::Path(ref p) => Some(p.raw()),
+            Parameter::Name(n) => Some(n),
+            Parameter::Path(p) => Some(p.raw()),
             _ => None,
         }
     }
@@ -566,7 +566,7 @@ impl Template {
 
     fn remove_previous_whitespace(template_stack: &mut VecDeque<Template>) {
         let t = template_stack.front_mut().unwrap();
-        if let Some(RawString(ref mut text)) = t.elements.last_mut() {
+        if let Some(RawString(text)) = &mut t.elements.last_mut() {
             text.trim_end().to_owned().clone_into(text);
         }
     }
@@ -601,7 +601,7 @@ impl Template {
             if prevent_indent && with_leading_newline {
                 let t = template_stack.front_mut().unwrap();
                 // check the last element before current
-                if let Some(RawString(ref mut text)) = t.elements.last_mut() {
+                if let Some(RawString(text)) = &mut t.elements.last_mut() {
                     // trim leading space for standalone statement
                     text.trim_end_matches(support::str::whitespace_matcher)
                         .to_owned()
@@ -1519,6 +1519,9 @@ mod test {
         let s = "{{#>(X)}}{{/X}}";
         let result = Template::compile(s);
         assert!(result.is_err());
-        assert_eq!("decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false, chain: false, indent_before_write: false }) })\" was opened, but \"X\" is closing", format!("{}", result.unwrap_err().reason()));
+        assert_eq!(
+            "decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false, chain: false, indent_before_write: false }) })\" was opened, but \"X\" is closing",
+            format!("{}", result.unwrap_err().reason())
+        );
     }
 }
