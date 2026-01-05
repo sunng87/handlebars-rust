@@ -1,5 +1,6 @@
 use serde::Serialize;
 use serde_json::value::{Value as Json, to_value};
+use smol_str::SmolStr;
 
 pub(crate) static DEFAULT_VALUE: Json = Json::Null;
 
@@ -14,7 +15,7 @@ pub enum ScopedJson<'rc> {
     Constant(&'rc Json),
     Derived(Json),
     // represents a json reference to context value, its full path
-    Context(&'rc Json, Vec<String>),
+    Context(&'rc Json, Vec<SmolStr>),
     Missing,
 }
 
@@ -42,7 +43,7 @@ impl<'rc> ScopedJson<'rc> {
         ScopedJson::Derived(v.clone())
     }
 
-    pub fn context_path(&self) -> Option<&Vec<String>> {
+    pub fn context_path(&self) -> Option<&Vec<SmolStr>> {
         match self {
             ScopedJson::Context(_, p) => Some(p),
             _ => None,
@@ -60,12 +61,12 @@ impl<'rc> From<Json> for ScopedJson<'rc> {
 ///
 #[derive(Debug, Clone)]
 pub struct PathAndJson<'rc> {
-    relative_path: Option<String>,
+    relative_path: Option<SmolStr>,
     value: ScopedJson<'rc>,
 }
 
 impl<'rc> PathAndJson<'rc> {
-    pub fn new(relative_path: Option<String>, value: ScopedJson<'rc>) -> PathAndJson<'rc> {
+    pub fn new(relative_path: Option<SmolStr>, value: ScopedJson<'rc>) -> PathAndJson<'rc> {
         PathAndJson {
             relative_path,
             value,
@@ -74,12 +75,12 @@ impl<'rc> PathAndJson<'rc> {
 
     /// Returns relative path when the value is referenced
     /// If the value is from a literal, the path is `None`
-    pub fn relative_path(&self) -> Option<&String> {
+    pub fn relative_path(&self) -> Option<&SmolStr> {
         self.relative_path.as_ref()
     }
 
     /// Returns full path to this value if any
-    pub fn context_path(&self) -> Option<&Vec<String>> {
+    pub fn context_path(&self) -> Option<&Vec<SmolStr>> {
         self.value.context_path()
     }
 

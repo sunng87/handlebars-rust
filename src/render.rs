@@ -661,18 +661,18 @@ impl Parameter {
         match self {
             Parameter::Name(name) => {
                 // FIXME: raise error when expanding with name?
-                Ok(PathAndJson::new(Some(name.to_owned()), ScopedJson::Missing))
+                Ok(PathAndJson::new(Some(name.clone()), ScopedJson::Missing))
             }
             Parameter::Path(path) => {
                 if let Some(rc_context) = rc.context() {
                     let result = rc.evaluate2(&rc_context, path)?;
                     Ok(PathAndJson::new(
-                        Some(path.raw().to_owned()),
+                        Some(path.raw().clone()),
                         ScopedJson::Derived(result.as_json().clone()),
                     ))
                 } else {
                     let result = rc.evaluate2(ctx, path)?;
-                    Ok(PathAndJson::new(Some(path.raw().to_owned()), result))
+                    Ok(PathAndJson::new(Some(path.raw().clone()), result))
                 }
             }
             Parameter::Literal(j) => Ok(PathAndJson::new(None, ScopedJson::Constant(j))),
@@ -890,7 +890,9 @@ impl Renderable for TemplateElement {
                         let context_json = ht.name.expand(registry, ctx, rc)?;
                         if context_json.is_value_missing() {
                             if registry.strict_mode() {
-                                Err(RenderError::strict_error(context_json.relative_path()))
+                                Err(RenderError::strict_error(
+                                    context_json.relative_path().map(|s| s.as_str()),
+                                ))
                             } else {
                                 // helper missing
                                 if let Some(hook) = registry.get_or_load_helper(HELPER_MISSING)? {
@@ -979,11 +981,12 @@ mod test {
     use crate::registry::Registry;
     use crate::template::TemplateElement::*;
     use crate::template::{HelperTemplate, Template, TemplateElement};
+    use smol_str::SmolStr;
 
     #[test]
     fn test_raw_string() {
         let r = Registry::new();
-        let raw_string = RawString("<h1>hello world</h1>".to_string());
+        let raw_string = RawString(SmolStr::new("<h1>hello world</h1>"));
 
         let mut out = StringOutput::new();
         let ctx = Context::null();
@@ -1050,12 +1053,12 @@ mod test {
         let ctx = Context::wraps(&m).unwrap();
 
         let elements: Vec<TemplateElement> = vec![
-            RawString("<h1>".to_string()),
+            RawString(SmolStr::new("<h1>")),
             Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
                 &["hello"],
             )))),
-            RawString("</h1>".to_string()),
-            Comment(String::new()),
+            RawString(SmolStr::new("</h1>")),
+            Comment(SmolStr::new("")),
         ];
 
         let template = Template {

@@ -10,8 +10,11 @@ where
 }
 
 #[inline]
-pub(crate) fn extend(base: &mut Vec<String>, slice: &[String]) {
+pub(crate) fn extend<T>(base: &mut Vec<T>, slice: &[T])
+where
+    T: Clone,
+{
     for i in slice {
-        base.push(i.to_owned());
+        base.push(i.clone());
     }
 }
