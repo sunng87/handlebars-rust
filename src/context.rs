@@ -1,13 +1,13 @@
 use std::collections::{HashMap, VecDeque};
 
 use serde::Serialize;
-use serde_json::value::{to_value, Value as Json};
 use serde_json::Map;
+use serde_json::value::{Value as Json, to_value};
 
 use crate::block::{BlockContext, BlockParamHolder};
 use crate::error::{RenderError, RenderErrorReason};
 use crate::grammar::Rule;
-use crate::json::path::{merge_json_path, PathSeg};
+use crate::json::path::{PathSeg, merge_json_path};
 use crate::json::value::ScopedJson;
 use crate::util::extend;
 
@@ -64,11 +64,11 @@ fn parse_json_visitor<'a>(
 
     let mut path_stack = Vec::with_capacity(relative_path.len() + 5);
     match with_block_param {
-        Some((BlockParamHolder::Value(ref value), _)) => {
+        Some((BlockParamHolder::Value(value), _)) => {
             merge_json_path(&mut path_stack, &relative_path[(path_context_depth + 1)..]);
             ResolvedPath::BlockParamValue(path_stack, value)
         }
-        Some((BlockParamHolder::Path(ref paths), base_path)) => {
+        Some((BlockParamHolder::Path(paths), base_path)) => {
             extend(&mut path_stack, base_path);
             if !paths.is_empty() {
                 extend(&mut path_stack, paths);
@@ -149,15 +149,15 @@ pub(crate) fn merge_json(base: &Json, addition: &HashMap<&str, &Json>) -> Json {
     }
 
     let mut base_map = match base {
-        Json::Object(ref m) => m.clone(),
-        Json::Array(ref a) => {
+        Json::Object(m) => m.clone(),
+        Json::Array(a) => {
             let mut base_map = Map::new();
             for (idx, value) in a.iter().enumerate() {
                 base_map.insert(idx.to_string(), value.clone());
             }
             base_map
         }
-        Json::String(ref s) => {
+        Json::String(s) => {
             let mut base_map = Map::new();
             for (idx, value) in s.chars().enumerate() {
                 base_map.insert(idx.to_string(), Json::String(value.to_string()));

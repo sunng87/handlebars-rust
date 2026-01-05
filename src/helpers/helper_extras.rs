@@ -7,8 +7,8 @@ use std::str::FromStr;
 use num_order::NumOrd;
 use serde_json::Value as Json;
 
-use crate::json::value::JsonTruthy;
 use crate::Renderable;
+use crate::json::value::JsonTruthy;
 
 #[derive(Clone, Copy)]
 pub struct BinaryBoolHelper {

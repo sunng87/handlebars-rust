@@ -3,7 +3,7 @@ use crate::error::{RenderError, RenderErrorReason};
 use crate::json::value::ScopedJson;
 use crate::output::Output;
 use crate::registry::Registry;
-use crate::render::{do_escape, indent_aware_write, Helper, RenderContext};
+use crate::render::{Helper, RenderContext, do_escape, indent_aware_write};
 
 pub use self::helper_each::EACH_HELPER;
 pub use self::helper_if::{IF_HELPER, UNLESS_HELPER};
@@ -147,14 +147,14 @@ pub trait HelperDef {
 
 /// implement `HelperDef` for bare function so we can use function as helper
 impl<
-        F: for<'reg, 'rc> Fn(
-            &Helper<'rc>,
-            &'reg Registry<'reg>,
-            &'rc Context,
-            &mut RenderContext<'reg, 'rc>,
-            &mut dyn Output,
-        ) -> HelperResult,
-    > HelperDef for F
+    F: for<'reg, 'rc> Fn(
+        &Helper<'rc>,
+        &'reg Registry<'reg>,
+        &'rc Context,
+        &mut RenderContext<'reg, 'rc>,
+        &mut dyn Output,
+    ) -> HelperResult,
+> HelperDef for F
 {
     fn call<'reg: 'rc, 'rc>(
         &self,
@@ -220,12 +220,16 @@ mod test {
     #[test]
     fn test_meta_helper() {
         let mut handlebars = Registry::new();
-        assert!(handlebars
-            .register_template_string("t0", "{{foo this}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t1", "{{#bar this}}nice{{/bar}}")
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t0", "{{foo this}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t1", "{{#bar this}}nice{{/bar}}")
+                .is_ok()
+        );
 
         let meta_helper = MetaHelper;
         handlebars.register_helper("helperMissing", Box::new(meta_helper));
@@ -241,9 +245,11 @@ mod test {
     #[test]
     fn test_helper_for_subexpression() {
         let mut handlebars = Registry::new();
-        assert!(handlebars
-            .register_template_string("t2", "{{foo value=(bar 0)}}")
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t2", "{{foo value=(bar 0)}}")
+                .is_ok()
+        );
 
         handlebars.register_helper(
             "helperMissing",

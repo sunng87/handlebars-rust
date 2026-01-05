@@ -2,8 +2,8 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU16, Ordering};
 
 use handlebars::{
     Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, RenderErrorReason,
@@ -41,9 +41,10 @@ fn test_subexpression() {
     );
 
     // no argument provided for not
-    assert!(hbs
-        .render_template("{{#if (not)}}Success{{else}}Failed{{/if}}", &data)
-        .is_err());
+    assert!(
+        hbs.render_template("{{#if (not)}}Success{{else}}Failed{{/if}}", &data)
+            .is_err()
+    );
 
     // json literal
     assert_eq!(
@@ -65,12 +66,14 @@ fn test_strict_mode() {
 
     let data = json!({"a": 1});
 
-    assert!(hbs
-        .render_template("{{#if (eq a 1)}}Success{{else}}Failed{{/if}}", &data)
-        .is_ok());
-    assert!(hbs
-        .render_template("{{#if (eq z 1)}}Success{{else}}Failed{{/if}}", &data)
-        .is_err());
+    assert!(
+        hbs.render_template("{{#if (eq a 1)}}Success{{else}}Failed{{/if}}", &data)
+            .is_ok()
+    );
+    assert!(
+        hbs.render_template("{{#if (eq z 1)}}Success{{else}}Failed{{/if}}", &data)
+            .is_err()
+    );
 }
 
 #[test]

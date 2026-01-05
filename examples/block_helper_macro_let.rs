@@ -2,7 +2,7 @@ use handlebars::{
     BlockParamHolder, Context, Handlebars, Helper, Output, RenderContext, RenderError,
     RenderErrorReason,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 // a custom block helper to bind a variable name to a value
 pub fn helper_let<'reg, 'rc>(

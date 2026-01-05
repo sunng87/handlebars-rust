@@ -1,9 +1,9 @@
+use crate::RenderErrorReason;
 use crate::context::Context;
 use crate::decorators::{DecoratorDef, DecoratorResult};
 use crate::error::RenderError;
 use crate::registry::Registry;
 use crate::render::{Decorator, RenderContext};
-use crate::RenderErrorReason;
 
 #[derive(Clone, Copy)]
 pub struct InlineDecorator;

@@ -20,7 +20,9 @@ fn main() {
     let hbs = Arc::new(handlebars());
 
     let server = Server::http("127.0.0.1:3030").expect("Failed to start demo server.");
-    println!("Edit ./examples/dev_mode/template.hbs and request http://localhost:3030 to see the change on the fly.");
+    println!(
+        "Edit ./examples/dev_mode/template.hbs and request http://localhost:3030 to see the change on the fly."
+    );
 
     for req in server.incoming_requests() {
         let result = hbs

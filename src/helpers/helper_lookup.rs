@@ -1,12 +1,12 @@
 use serde_json::value::Value as Json;
 
+use crate::RenderErrorReason;
 use crate::context::Context;
 use crate::error::RenderError;
 use crate::helpers::HelperDef;
 use crate::json::value::ScopedJson;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
-use crate::RenderErrorReason;
 
 #[derive(Clone, Copy)]
 pub struct LookupHelper;
@@ -48,15 +48,21 @@ mod test {
     #[test]
     fn test_lookup() {
         let mut handlebars = Registry::new();
-        assert!(handlebars
-            .register_template_string("t0", "{{#each v1}}{{lookup ../v2 @index}}{{/each}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t1", "{{#each v1}}{{lookup ../v2 1}}{{/each}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t2", "{{lookup kk \"a\"}}")
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t0", "{{#each v1}}{{lookup ../v2 @index}}{{/each}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t1", "{{#each v1}}{{lookup ../v2 1}}{{/each}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t2", "{{lookup kk \"a\"}}")
+                .is_ok()
+        );
 
         let m = json!({"v1": [1,2,3], "v2": [9,8,7]});
 
@@ -94,17 +100,20 @@ mod test {
                 .unwrap(),
             ""
         );
-        assert!(hbs
-            .render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
-            .is_ok());
+        assert!(
+            hbs.render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
+                .is_ok()
+        );
 
         hbs.set_strict_mode(true);
 
-        assert!(hbs
-            .render_template("{{lookup kk 1}}", &json!({"kk": []}))
-            .is_err());
-        assert!(hbs
-            .render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
-            .is_ok());
+        assert!(
+            hbs.render_template("{{lookup kk 1}}", &json!({"kk": []}))
+                .is_err()
+        );
+        assert!(
+            hbs.render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
+                .is_ok()
+        );
     }
 }

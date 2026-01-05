@@ -13,8 +13,8 @@ use std::fs::File;
 use std::io::{Read, Write};
 
 use handlebars::{
-    to_json, Context, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError,
-    RenderErrorReason,
+    Context, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError, RenderErrorReason,
+    to_json,
 };
 
 // define a custom helper

@@ -10,7 +10,7 @@ homepage = "https://github.com/sunng87/handlebars-rust"
 repository = "https://github.com/sunng87/handlebars-rust"
 documentation = "https://docs.rs/crate/handlebars/"
 readme = "README.md"
-edition = "2021"
+edition = "2024"
 rust-version = "1.85"
 
 [lib]

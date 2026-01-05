@@ -2,9 +2,9 @@ use std::collections::BTreeMap;
 
 use serde_json::value::Value as Json;
 
+use crate::Template;
 use crate::error::RenderError;
 use crate::local_vars::LocalVars;
-use crate::Template;
 
 #[derive(Clone, Debug)]
 pub enum BlockParamHolder {

@@ -3,7 +3,7 @@ extern crate handlebars;
 #[macro_use]
 extern crate serde_json;
 
-use handlebars::{handlebars_helper, no_escape, Handlebars};
+use handlebars::{Handlebars, handlebars_helper, no_escape};
 
 #[test]
 fn test_escape_216() {

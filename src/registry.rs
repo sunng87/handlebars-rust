@@ -951,9 +951,10 @@ mod test {
     fn test_unregister_helper() {
         let mut r = Registry::new();
 
-        assert!(r
-            .register_template_string("dumber", "{{#dumb}}\ndummy helper exists\n{{/dumb}}")
-            .is_ok());
+        assert!(
+            r.register_template_string("dumber", "{{#dumb}}\ndummy helper exists\n{{/dumb}}")
+                .is_ok()
+        );
 
         r.register_helper("dumb", Box::new(DUMMY_HELPER));
 
@@ -1259,12 +1260,14 @@ mod test {
             "the_only_key": "the_only_value"
         });
 
-        assert!(r
-            .render_template("accessing the_only_key {{the_only_key}}", &data)
-            .is_ok());
-        assert!(r
-            .render_template("accessing non-exists key {{the_key_never_exists}}", &data)
-            .is_err());
+        assert!(
+            r.render_template("accessing the_only_key {{the_only_key}}", &data)
+                .is_ok()
+        );
+        assert!(
+            r.render_template("accessing non-exists key {{the_key_never_exists}}", &data)
+                .is_err()
+        );
 
         let render_error = r
             .render_template("accessing non-exists key {{the_key_never_exists}}", &data)
@@ -1279,12 +1282,14 @@ mod test {
         );
 
         let data2 = json!([1, 2, 3]);
-        assert!(r
-            .render_template("accessing valid array index {{this.[2]}}", &data2)
-            .is_ok());
-        assert!(r
-            .render_template("accessing invalid array index {{this.[3]}}", &data2)
-            .is_err());
+        assert!(
+            r.render_template("accessing valid array index {{this.[2]}}", &data2)
+                .is_ok()
+        );
+        assert!(
+            r.render_template("accessing invalid array index {{this.[3]}}", &data2)
+                .is_err()
+        );
         let render_error2 = r
             .render_template("accessing invalid array index {{this.[3]}}", &data2)
             .unwrap_err();
@@ -1338,21 +1343,24 @@ mod test {
         let data = json!({
             "the_key_we_have": "the_value_we_have"
         });
-        assert!(r
-            .render_template("accessing non-exists key {{the_key_we_dont_have}}", &data)
-            .is_err());
-        assert!(r
-            .render_template(
+        assert!(
+            r.render_template("accessing non-exists key {{the_key_we_dont_have}}", &data)
+                .is_err()
+        );
+        assert!(
+            r.render_template(
                 "accessing non-exists key from helper {{check_missing the_key_we_dont_have}}",
                 &data
             )
-            .is_ok());
-        assert!(r
-            .render_template(
+            .is_ok()
+        );
+        assert!(
+            r.render_template(
                 "accessing helper that generates missing value {{generate_missing_value}}",
                 &data
             )
-            .is_err());
+            .is_err()
+        );
     }
 
     #[test]
