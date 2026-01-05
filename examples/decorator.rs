@@ -8,8 +8,8 @@ use std::error::Error;
 use serde_json::value::{Map, Value as Json};
 
 use handlebars::{
-    to_json, Context, Decorator, Handlebars, Helper, JsonRender, Output, RenderContext,
-    RenderError, RenderErrorReason,
+    Context, Decorator, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError,
+    RenderErrorReason, to_json,
 };
 
 // default format helper

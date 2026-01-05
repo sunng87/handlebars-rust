@@ -1,3 +1,5 @@
+#[cfg(not(feature = "no_logging"))]
+use crate::RenderErrorReason;
 use crate::context::Context;
 use crate::helpers::{HelperDef, HelperResult};
 #[cfg(not(feature = "no_logging"))]
@@ -5,8 +7,6 @@ use crate::json::value::JsonRender;
 use crate::output::Output;
 use crate::registry::Registry;
 use crate::render::{Helper, RenderContext};
-#[cfg(not(feature = "no_logging"))]
-use crate::RenderErrorReason;
 #[cfg(not(feature = "no_logging"))]
 use log::Level;
 #[cfg(not(feature = "no_logging"))]
@@ -76,15 +76,21 @@ mod test {
     #[cfg(not(feature = "no_logging"))]
     fn test_log_helper() {
         let mut handlebars = Registry::new();
-        assert!(handlebars
-            .register_template_string("t0", "{{log this level=\"warn\"}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t1", "{{log this level=\"hello\"}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t2", "{{log this}}")
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t0", "{{log this level=\"warn\"}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t1", "{{log this level=\"hello\"}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t2", "{{log this}}")
+                .is_ok()
+        );
 
         let r0 = handlebars.render("t0", &true);
         assert!(r0.is_ok());
@@ -100,15 +106,21 @@ mod test {
     #[cfg(feature = "no_logging")]
     fn test_log_helper() {
         let mut handlebars = Registry::new();
-        assert!(handlebars
-            .register_template_string("t0", "{{log this level=\"warn\"}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t1", "{{log this level=\"hello\"}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t2", "{{log this}}")
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t0", "{{log this level=\"warn\"}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t1", "{{log this level=\"hello\"}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t2", "{{log this}}")
+                .is_ok()
+        );
 
         let r0 = handlebars.render("t0", &true);
         assert!(r0.is_ok());

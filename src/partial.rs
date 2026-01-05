@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde_json::Value as Json;
 
 use crate::block::BlockContext;
-use crate::context::{merge_json, Context};
+use crate::context::{Context, merge_json};
 use crate::error::RenderError;
 use crate::output::Output;
 use crate::registry::Registry;
@@ -166,40 +166,58 @@ mod test {
     #[test]
     fn test() {
         let mut handlebars = Registry::new();
-        assert!(handlebars
-            .register_template_string("t0", "{{> t1}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t1", "{{this}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t2", "{{#> t99}}not there{{/t99}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t3", "{{#*inline \"t31\"}}{{this}}{{/inline}}{{> t31}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string(
-                "t4",
-                "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}"
-            )
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t5", "include {{> nav}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("t6", "{{> t1 a}}")
-            .is_ok());
-        assert!(handlebars
-            .register_template_string(
-                "t7",
-                "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}"
-            )
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t0", "{{> t1}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t1", "{{this}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t2", "{{#> t99}}not there{{/t99}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t3", "{{#*inline \"t31\"}}{{this}}{{/inline}}{{> t31}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string(
+                    "t4",
+                    "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}"
+                )
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t5", "include {{> nav}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("t6", "{{> t1 a}}")
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string(
+                    "t7",
+                    "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}"
+                )
+                .is_ok()
+        );
         assert!(handlebars.register_template_string("t8", "{{a}}").is_ok());
-        assert!(handlebars
-            .register_template_string("t9", "{{> t8 a=2}}")
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("t9", "{{> t8 a=2}}")
+                .is_ok()
+        );
 
         assert_eq!(handlebars.render("t0", &1).ok().unwrap(), "1".to_string());
         assert_eq!(
@@ -253,12 +271,16 @@ mod test {
         let two_partial = "--- two ---";
 
         let mut handlebars = Registry::new();
-        assert!(handlebars
-            .register_template_string("template", main_template)
-            .is_ok());
-        assert!(handlebars
-            .register_template_string("two", two_partial)
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("template", main_template)
+                .is_ok()
+        );
+        assert!(
+            handlebars
+                .register_template_string("two", two_partial)
+                .is_ok()
+        );
 
         let r0 = handlebars.render("template", &true);
         assert_eq!(r0.ok().unwrap(), "one--- two ---three--- two ---");
@@ -270,9 +292,11 @@ mod test {
         let p_partial = "{{a}}";
 
         let mut handlebars = Registry::new();
-        assert!(handlebars
-            .register_template_string("template", main_template)
-            .is_ok());
+        assert!(
+            handlebars
+                .register_template_string("template", main_template)
+                .is_ok()
+        );
         assert!(handlebars.register_template_string("p", p_partial).is_ok());
 
         let r0 = handlebars.render("template", &true);

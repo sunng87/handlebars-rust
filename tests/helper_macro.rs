@@ -4,8 +4,8 @@ extern crate handlebars;
 extern crate serde_json;
 
 use handlebars::Handlebars;
-use time::format_description::{parse, well_known::Rfc2822};
 use time::OffsetDateTime;
+use time::format_description::{parse, well_known::Rfc2822};
 
 handlebars_helper!(lower: |s: str| s.to_lowercase());
 handlebars_helper!(upper: |s: str| s.to_uppercase());

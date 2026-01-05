@@ -399,12 +399,12 @@ pub use self::decorators::DecoratorDef;
 pub use self::error::{RenderError, RenderErrorReason, TemplateError, TemplateErrorReason};
 pub use self::helpers::{HelperDef, HelperResult};
 pub use self::json::path::{Path, PathSeg};
-pub use self::json::value::{to_json, JsonRender, JsonTruthy, PathAndJson, ScopedJson};
+pub use self::json::value::{JsonRender, JsonTruthy, PathAndJson, ScopedJson, to_json};
 pub use self::local_vars::LocalVars;
 pub use self::output::{Output, StringOutput, WriteOutput};
-pub use self::registry::{html_escape, no_escape, EscapeFn, Registry as Handlebars};
 #[cfg(feature = "dir_source")]
 pub use self::registry::{DirectorySourceOptions, DirectorySourceOptionsBuilder};
+pub use self::registry::{EscapeFn, Registry as Handlebars, html_escape, no_escape};
 pub use self::render::{Decorator, Evaluable, Helper, RenderContext, Renderable};
 pub use self::template::Template;
 

@@ -1,9 +1,9 @@
 use std::error::Error;
 
-use handlebars::{handlebars_helper, Handlebars, JsonRender};
-use serde_json::{json, Value};
-use time::format_description::parse;
+use handlebars::{Handlebars, JsonRender, handlebars_helper};
+use serde_json::{Value, json};
 use time::OffsetDateTime;
+use time::format_description::parse;
 
 // define a helper using helper
 // a date format helper accept an `OffsetDateTime` as parameter

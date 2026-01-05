@@ -4,7 +4,7 @@ extern crate criterion;
 extern crate serde_derive;
 
 use criterion::Criterion;
-use handlebars::{to_json, Context, Handlebars, Template};
+use handlebars::{Context, Handlebars, Template, to_json};
 use serde_json::json;
 use serde_json::value::Value as Json;
 use std::collections::BTreeMap;
@@ -12,12 +12,12 @@ use std::collections::BTreeMap;
 #[cfg(unix)]
 use criterion::profiler::Profiler;
 #[cfg(unix)]
-use pprof::protos::Message;
-#[cfg(unix)]
 use pprof::ProfilerGuard;
+#[cfg(unix)]
+use pprof::protos::Message;
 
 #[cfg(unix)]
-use std::fs::{create_dir_all, File};
+use std::fs::{File, create_dir_all};
 #[cfg(unix)]
 use std::io::Write;
 #[cfg(unix)]

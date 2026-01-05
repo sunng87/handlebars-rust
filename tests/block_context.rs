@@ -42,8 +42,7 @@ fn test_singular_and_pair_block_params() {
         {"value": 22},
     ]);
 
-    let template =
-        "{{#each this as |b index|}}{{b.value}}{{#each this as |value key|}}:{{key}},{{/each}}{{/each}}";
+    let template = "{{#each this as |b index|}}{{b.value}}{{#each this as |value key|}}:{{key}},{{/each}}{{/each}}";
     assert_eq!(
         hbs.render_template(template, &data).unwrap(),
         "11:value,22:value,"
