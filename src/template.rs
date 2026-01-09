@@ -6,7 +6,7 @@ use pest::error::LineColLocation;
 use pest::iterators::Pair;
 use pest::{Parser, Position, Span};
 use serde_json::value::Value as Json;
-use smol_str::SmolStr;
+use smol_str::{SmolStr, ToSmolStr};
 
 use crate::error::{TemplateError, TemplateErrorReason};
 use crate::grammar::{HandlebarsParser, Rule};
@@ -379,7 +379,7 @@ impl Template {
             | Rule::partial_identifier
             | Rule::opt_identifier
             | Rule::opt_partial_identifier
-            | Rule::invert_tag_item => Ok(Parameter::Name(SmolStr::new(name_span.as_str()))),
+            | Rule::invert_tag_item => Ok(Parameter::Name(name_span.as_str().to_smolstr())),
             Rule::reference => {
                 let paths = parse_json_path_from_iter(it, name_span.end());
                 Ok(Parameter::Path(Path::new(name_span.as_str(), paths)))
@@ -468,7 +468,7 @@ impl Template {
         let name = it.next().unwrap();
         let name_node = name.as_span();
         // identifier
-        let key = SmolStr::new(name_node.as_str());
+        let key = name_node.as_str().to_smolstr();
 
         let value = Template::parse_param(source, it.by_ref(), limit)?;
         Ok((key, value))
@@ -481,12 +481,12 @@ impl Template {
         let p1_name = it.next().unwrap();
         let p1_name_span = p1_name.as_span();
         // identifier
-        let p1 = SmolStr::new(p1_name_span.as_str());
+        let p1 = p1_name_span.as_str().to_smolstr();
 
         let p2 = it.peek().and_then(|p2_name| {
             let p2_name_span = p2_name.as_span();
             if p2_name_span.end() <= limit {
-                Some(SmolStr::new(p2_name_span.as_str()))
+                Some(p2_name_span.as_str().to_smolstr())
             } else {
                 None
             }
@@ -568,7 +568,7 @@ impl Template {
     fn remove_previous_whitespace(template_stack: &mut VecDeque<Template>) {
         let t = template_stack.front_mut().unwrap();
         if let Some(RawString(text)) = &mut t.elements.last_mut() {
-            *text = SmolStr::new(text.trim_end());
+            *text = text.trim_end().to_smolstr();
         }
     }
 
@@ -604,7 +604,9 @@ impl Template {
                 // check the last element before current
                 if let Some(RawString(text)) = &mut t.elements.last_mut() {
                     // trim leading space for standalone statement
-                    *text = SmolStr::new(text.trim_end_matches(support::str::whitespace_matcher));
+                    *text = text
+                        .trim_end_matches(support::str::whitespace_matcher)
+                        .to_smolstr();
                 }
             }
 
@@ -648,12 +650,12 @@ impl Template {
         }
 
         if trim_start {
-            RawString(SmolStr::new(s.trim_start()))
+            RawString(s.trim_start().to_smolstr())
         } else if trim_start_line {
             let s = s.trim_start_matches(support::str::whitespace_matcher);
-            RawString(SmolStr::new(support::str::strip_first_newline(s)))
+            RawString(support::str::strip_first_newline(s).to_smolstr())
         } else {
-            RawString(SmolStr::new(s))
+            RawString(s.to_smolstr())
         }
     }
 
@@ -921,7 +923,7 @@ impl Template {
                                     exp.clone(),
                                     trim_line_required && !exp.omit_pre_ws,
                                 );
-                                decorator.indent = indent.map(SmolStr::new);
+                                decorator.indent = indent.map(ToSmolStr::to_smolstr);
 
                                 let el = if rule == Rule::decorator_expression {
                                     DecoratorExpression(Box::new(decorator))
@@ -1030,7 +1032,7 @@ impl Template {
                             .trim_start_matches("{{!--")
                             .trim_end_matches("--}}");
                         let t = template_stack.front_mut().unwrap();
-                        t.push_element(Comment(SmolStr::new(text)), line_no, col_no);
+                        t.push_element(Comment(text.to_smolstr()), line_no, col_no);
                     }
                     _ => {}
                 }
@@ -1045,7 +1047,7 @@ impl Template {
                     // is some called in if check
                     let (line_no, col_no) = end_pos.unwrap().line_col();
                     let t = template_stack.front_mut().unwrap();
-                    t.push_element(RawString(SmolStr::new(text)), line_no, col_no);
+                    t.push_element(RawString(text.to_smolstr()), line_no, col_no);
                 }
                 let mut root_template = template_stack.pop_front().unwrap();
                 root_template.name = options.name;

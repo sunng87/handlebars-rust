@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use pest::Parser;
 use pest::iterators::Pair;
-use smol_str::SmolStr;
+use smol_str::{SmolStr, ToSmolStr};
 
 use crate::RenderErrorReason;
 use crate::error::RenderError;
@@ -28,9 +28,9 @@ pub enum Path {
 impl Path {
     pub(crate) fn new(raw: &str, segs: Vec<PathSeg>) -> Path {
         if let Some((level, name)) = get_local_path_and_level(&segs) {
-            Path::Local((level, name, SmolStr::new(raw)))
+            Path::Local((level, name, raw.to_smolstr()))
         } else {
-            Path::Relative((segs, SmolStr::new(raw)))
+            Path::Relative((segs, raw.to_smolstr()))
         }
     }
 
@@ -59,9 +59,9 @@ impl Path {
     pub(crate) fn with_named_paths(name_segs: &[&str]) -> Path {
         let segs = name_segs
             .iter()
-            .map(|n| PathSeg::Named(SmolStr::new(*n)))
+            .map(|n| PathSeg::Named(n.to_smolstr()))
             .collect();
-        Path::Relative((segs, SmolStr::new(name_segs.join("/"))))
+        Path::Relative((segs, name_segs.join("/").to_smolstr()))
     }
 
     // for test only
@@ -115,7 +115,7 @@ where
             Rule::path_id | Rule::path_raw_id => {
                 let name = n.as_str();
                 if name != "this" {
-                    path_stack.push(PathSeg::Named(SmolStr::new(name)));
+                    path_stack.push(PathSeg::Named(name.to_smolstr()));
                 }
             }
             _ => {}

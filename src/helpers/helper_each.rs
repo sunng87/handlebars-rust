@@ -1,5 +1,5 @@
 use serde_json::value::Value as Json;
-use smol_str::SmolStr;
+use smol_str::{SmolStr, ToSmolStr};
 
 use super::block_util::create_block;
 use crate::RenderErrorReason;
@@ -102,13 +102,7 @@ impl HelperDef for EachHelper {
                             block.set_local_var("last", to_json(is_last));
                             block.set_local_var("index", index.clone());
 
-                            update_block_context(
-                                block,
-                                array_path,
-                                SmolStr::new(i.to_string()),
-                                is_first,
-                                v,
-                            );
+                            update_block_context(block, array_path, i.to_smolstr(), is_first, v);
                             set_block_param(block, h, array_path, &index, v)?;
                         }
 
@@ -139,7 +133,7 @@ impl HelperDef for EachHelper {
                             block.set_local_var("key", key.clone());
                             block.set_local_var("index", to_json(i));
 
-                            update_block_context(block, obj_path, SmolStr::new(k), is_first, v);
+                            update_block_context(block, obj_path, k.to_smolstr(), is_first, v);
                             set_block_param(block, h, obj_path, &key, v)?;
                         }
 
