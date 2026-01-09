@@ -721,11 +721,11 @@ impl Renderable for Template {
         for (idx, t) in iter.enumerate() {
             t.render(registry, ctx, rc, out).map_err(|mut e| {
                 // add line/col number if the template has mapping data
-                if e.line_no.is_none() {
-                    if let Some(&TemplateMapping(line, col)) = self.mapping.get(idx) {
-                        e.line_no = Some(line);
-                        e.column_no = Some(col);
-                    }
+                if e.line_no.is_none()
+                    && let Some(&TemplateMapping(line, col)) = self.mapping.get(idx)
+                {
+                    e.line_no = Some(line);
+                    e.column_no = Some(col);
                 }
 
                 if e.template_name.is_none() {
@@ -751,11 +751,11 @@ impl Evaluable for Template {
 
         for (idx, t) in iter.enumerate() {
             t.eval(registry, ctx, rc).map_err(|mut e| {
-                if e.line_no.is_none() {
-                    if let Some(&TemplateMapping(line, col)) = self.mapping.get(idx) {
-                        e.line_no = Some(line);
-                        e.column_no = Some(col);
-                    }
+                if e.line_no.is_none()
+                    && let Some(&TemplateMapping(line, col)) = self.mapping.get(idx)
+                {
+                    e.line_no = Some(line);
+                    e.column_no = Some(col);
                 }
 
                 e.template_name.clone_from(&self.name);
@@ -845,10 +845,11 @@ pub fn indent_aware_write(
     }
     rc.set_content_produced(true);
 
-    if !v.starts_with(newline_matcher) && rc.get_indent_before_write() {
-        if let Some(indent) = rc.get_indent_string() {
-            out.write(indent)?;
-        }
+    if !v.starts_with(newline_matcher)
+        && rc.get_indent_before_write()
+        && let Some(indent) = rc.get_indent_string()
+    {
+        out.write(indent)?;
     }
 
     if let Some(indent) = rc.get_indent_string() {

@@ -219,12 +219,12 @@ impl HelperTemplate {
     }
 
     fn ref_chain_head_mut(&mut self) -> Option<&mut Box<HelperTemplate>> {
-        if self.chain {
-            if let Some(inverse_tmpl) = &mut self.inverse {
-                assert_eq!(inverse_tmpl.elements.len(), 1);
-                if let HelperBlock(helper) = &mut inverse_tmpl.elements[0] {
-                    return Some(helper);
-                }
+        if self.chain
+            && let Some(inverse_tmpl) = &mut self.inverse
+        {
+            assert_eq!(inverse_tmpl.elements.len(), 1);
+            if let HelperBlock(helper) = &mut inverse_tmpl.elements[0] {
+                return Some(helper);
             }
         }
         None
