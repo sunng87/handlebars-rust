@@ -1,4 +1,4 @@
-use std::io::{Error as IOError, Write};
+use std::io::{Error as IOError, ErrorKind, Write};
 use std::string::FromUtf8Error;
 
 /// The Output API.
@@ -42,29 +42,30 @@ impl<W: Write> WriteOutput<W> {
 }
 
 pub struct StringOutput {
-    buf: Vec<u8>,
+    buf: String,
 }
 
 impl Output for StringOutput {
     fn write(&mut self, seg: &str) -> Result<(), IOError> {
-        self.buf.extend_from_slice(seg.as_bytes());
+        self.buf.push_str(seg);
         Ok(())
     }
 
     fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError> {
-        self.buf.write_fmt(args)
+        std::fmt::Write::write_fmt(&mut self.buf, args)
+            .map_err(|e| IOError::new(ErrorKind::Other, e))
     }
 }
 
 impl StringOutput {
     pub fn new() -> StringOutput {
         StringOutput {
-            buf: Vec::with_capacity(8 * 1024),
+            buf: String::with_capacity(8 * 1024),
         }
     }
 
     pub fn into_string(self) -> Result<String, FromUtf8Error> {
-        String::from_utf8(self.buf)
+        Ok(self.buf)
     }
 }
 
