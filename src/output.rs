@@ -52,7 +52,7 @@ impl Output for StringOutput {
     }
 
     fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError> {
-        std::fmt::Write::write_fmt(&mut self.buf, args).map_err(|e| IOError::other(e))
+        std::fmt::Write::write_fmt(&mut self.buf, args).map_err(IOError::other)
     }
 }
 
