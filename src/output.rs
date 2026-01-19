@@ -1,4 +1,4 @@
-use std::io::{Error as IOError, ErrorKind, Write};
+use std::io::{Error as IOError, Write};
 use std::string::FromUtf8Error;
 
 /// The Output API.
@@ -52,8 +52,7 @@ impl Output for StringOutput {
     }
 
     fn write_fmt(&mut self, args: std::fmt::Arguments<'_>) -> Result<(), IOError> {
-        std::fmt::Write::write_fmt(&mut self.buf, args)
-            .map_err(|e| IOError::new(ErrorKind::Other, e))
+        std::fmt::Write::write_fmt(&mut self.buf, args).map_err(|e| IOError::other(e))
     }
 }
 
