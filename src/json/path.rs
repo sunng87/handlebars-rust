@@ -2,6 +2,7 @@ use std::iter::Peekable;
 
 use pest::Parser;
 use pest::iterators::Pair;
+use smol_str::{SmolStr, ToSmolStr};
 
 use crate::RenderErrorReason;
 use crate::error::RenderError;
@@ -10,7 +11,7 @@ use crate::grammar::{HandlebarsParser, Rule};
 #[derive(PartialEq, Eq, Clone, Debug)]
 #[non_exhaustive]
 pub enum PathSeg {
-    Named(String),
+    Named(SmolStr),
     Ruled(Rule),
 }
 
@@ -20,16 +21,16 @@ pub enum PathSeg {
 /// or a normal relative path like `a/b/c`.
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Path {
-    Relative((Vec<PathSeg>, String)),
-    Local((usize, String, String)),
+    Relative((Vec<PathSeg>, SmolStr)),
+    Local((usize, SmolStr, SmolStr)),
 }
 
 impl Path {
     pub(crate) fn new(raw: &str, segs: Vec<PathSeg>) -> Path {
         if let Some((level, name)) = get_local_path_and_level(&segs) {
-            Path::Local((level, name, raw.to_owned()))
+            Path::Local((level, name, raw.to_smolstr()))
         } else {
-            Path::Relative((segs, raw.to_owned()))
+            Path::Relative((segs, raw.to_smolstr()))
         }
     }
 
@@ -43,7 +44,7 @@ impl Path {
             .map_err(|_| RenderErrorReason::InvalidJsonPath(raw.to_owned()))?
     }
 
-    pub(crate) fn raw(&self) -> &str {
+    pub(crate) fn raw(&self) -> &SmolStr {
         match self {
             Path::Relative((_, raw)) => raw,
             Path::Local((_, _, raw)) => raw,
@@ -51,16 +52,16 @@ impl Path {
     }
 
     pub(crate) fn current() -> Path {
-        Path::Relative((Vec::with_capacity(0), String::new()))
+        Path::Relative((Vec::with_capacity(0), SmolStr::new("")))
     }
 
     // for test only
     pub(crate) fn with_named_paths(name_segs: &[&str]) -> Path {
         let segs = name_segs
             .iter()
-            .map(|n| PathSeg::Named((*n).to_string()))
+            .map(|n| PathSeg::Named(n.to_smolstr()))
             .collect();
-        Path::Relative((segs, name_segs.join("/")))
+        Path::Relative((segs, name_segs.join("/").to_smolstr()))
     }
 
     // for test only
@@ -72,7 +73,7 @@ impl Path {
     }
 }
 
-fn get_local_path_and_level(paths: &[PathSeg]) -> Option<(usize, String)> {
+fn get_local_path_and_level(paths: &[PathSeg]) -> Option<(usize, SmolStr)> {
     paths.first().and_then(|seg| {
         if seg == &PathSeg::Ruled(Rule::path_local) {
             let mut level = 0;
@@ -114,7 +115,7 @@ where
             Rule::path_id | Rule::path_raw_id => {
                 let name = n.as_str();
                 if name != "this" {
-                    path_stack.push(PathSeg::Named(name.to_string()));
+                    path_stack.push(PathSeg::Named(name.to_smolstr()));
                 }
             }
             _ => {}
@@ -126,11 +127,11 @@ where
     path_stack
 }
 
-pub(crate) fn merge_json_path(path_stack: &mut Vec<String>, relative_path: &[PathSeg]) {
+pub(crate) fn merge_json_path(path_stack: &mut Vec<SmolStr>, relative_path: &[PathSeg]) {
     for seg in relative_path {
         match seg {
             PathSeg::Named(s) => {
-                path_stack.push(s.to_owned());
+                path_stack.push(s.clone());
             }
             PathSeg::Ruled(Rule::path_root) => {}
             PathSeg::Ruled(Rule::path_up) => {}
