@@ -204,6 +204,10 @@ The
 page has libraries that provide additional helpers, decorators and
 outputs to handlebars-rust, and you can use in your own projects.
 
+### In other languages
+
+- [pyhandlebars](https://github.com/sukram42/pyhandlebars) The Python wrapper
+
 ## License
 
 This library (handlebars-rust) is open sourced under the MIT License.
