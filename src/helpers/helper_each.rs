@@ -1,4 +1,5 @@
 use serde_json::value::Value as Json;
+use smol_str::{SmolStr, ToSmolStr};
 
 use super::block_util::create_block;
 use crate::RenderErrorReason;
@@ -14,8 +15,8 @@ use crate::util::copy_on_push_vec;
 
 fn update_block_context(
     block: &mut BlockContext<'_>,
-    base_path: Option<&Vec<String>>,
-    relative_path: String,
+    base_path: Option<&Vec<SmolStr>>,
+    relative_path: SmolStr,
     is_first: bool,
     value: &Json,
 ) {
@@ -33,7 +34,7 @@ fn update_block_context(
 fn set_block_param<'rc>(
     block: &mut BlockContext<'rc>,
     h: &Helper<'rc>,
-    base_path: Option<&Vec<String>>,
+    base_path: Option<&Vec<SmolStr>>,
     k: &Json,
     v: &Json,
 ) -> Result<(), RenderError> {
@@ -101,7 +102,7 @@ impl HelperDef for EachHelper {
                             block.set_local_var("last", to_json(is_last));
                             block.set_local_var("index", index.clone());
 
-                            update_block_context(block, array_path, i.to_string(), is_first, v);
+                            update_block_context(block, array_path, i.to_smolstr(), is_first, v);
                             set_block_param(block, h, array_path, &index, v)?;
                         }
 
@@ -132,7 +133,7 @@ impl HelperDef for EachHelper {
                             block.set_local_var("key", key.clone());
                             block.set_local_var("index", to_json(i));
 
-                            update_block_context(block, obj_path, k.to_string(), is_first, v);
+                            update_block_context(block, obj_path, k.to_smolstr(), is_first, v);
                             set_block_param(block, h, obj_path, &key, v)?;
                         }
 
@@ -146,7 +147,9 @@ impl HelperDef for EachHelper {
                     if let Some(else_template) = h.inverse() {
                         else_template.render(r, ctx, rc, out)
                     } else if r.strict_mode() {
-                        Err(RenderError::strict_error(value.relative_path()))
+                        Err(RenderError::strict_error(
+                            value.relative_path().map(|s| s.as_str()),
+                        ))
                     } else {
                         Ok(())
                     }
