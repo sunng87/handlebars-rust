@@ -56,7 +56,10 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             Ok(())
         } else if let Some(fallback) = d.template() {
             // no partial_block for this scope, render fallback from block syntax
-            fallback.render(r, ctx, rc, out)
+            let result = fallback.render(r, ctx, rc, out);
+            rc.set_current_template_name(current_template_before);
+            rc.set_indent_string(indent_before);
+            result
         } else {
             // no partial_block for this scope
             Err(RenderErrorReason::PartialBlockNotFound.into())
@@ -907,6 +910,46 @@ outer third line",
             .render_template("{{#> some_partial}}CONTENT{{/some_partial}}", &json!({}))
             .unwrap();
         assert_eq!(r2, "before CONTENT after");
+    }
+
+    #[test]
+    fn test_partial_block_fallback_restores_state() {
+        let mut hb = Registry::new();
+        hb.register_template_string(
+            "wrapper",
+            "[{{#> @partial-block}}DEFAULT{{/@partial-block}}] {{> inner}}",
+        )
+        .unwrap();
+        hb.register_template_string("inner", "ok").unwrap();
+
+        let r1 = hb.render_template("{{> wrapper}}", &json!({})).unwrap();
+        assert_eq!(r1, "[DEFAULT] ok");
+
+        let r2 = hb
+            .render_template(
+                "{{#> wrapper}}CUSTOM{{/wrapper}}",
+                &json!({}),
+            )
+            .unwrap();
+        assert_eq!(r2, "[CUSTOM] ok");
+    }
+
+    #[test]
+    fn test_partial_block_fallback_restores_template_name() {
+        let mut hb = Registry::new();
+        hb.register_template_string(
+            "self_ref",
+            "{{#> @partial-block}}DEFAULT{{/@partial-block}}{{> self_ref}}",
+        )
+        .unwrap();
+
+        let result = hb.render_template("{{> self_ref}}", &json!({}));
+        assert!(result.is_err());
+        let msg = format!("{}", result.unwrap_err());
+        assert!(
+            msg.contains("include current template"),
+            "expected self-inclusion error, got: {msg}"
+        );
     }
 
     #[test]
