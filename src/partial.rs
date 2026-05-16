@@ -54,6 +54,9 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         if let Some(Some(content)) = rc.peek_partial_block() {
             out.write(content.as_str())?;
             Ok(())
+        } else if let Some(fallback) = d.template() {
+            // no partial_block for this scope, render fallback from block syntax
+            fallback.render(r, ctx, rc, out)
         } else {
             // no partial_block for this scope
             Err(RenderErrorReason::PartialBlockNotFound.into())
@@ -884,6 +887,26 @@ outer third line",
             .unwrap();
 
         assert_eq!(hs.render("current", &()).unwrap(), "Not a Bug");
+    }
+
+    #[test]
+    fn test_partial_block_syntax_for_at_partial_block() {
+        let mut hb = Registry::new();
+        hb.register_template_string(
+            "some_partial",
+            "before {{#> @partial-block}}{{/@partial-block}} after",
+        )
+        .unwrap();
+
+        let r1 = hb
+            .render_template("{{> some_partial}}", &json!({}))
+            .unwrap();
+        assert_eq!(r1, "before  after");
+
+        let r2 = hb
+            .render_template("{{#> some_partial}}CONTENT{{/some_partial}}", &json!({}))
+            .unwrap();
+        assert_eq!(r2, "before CONTENT after");
     }
 
     #[test]
