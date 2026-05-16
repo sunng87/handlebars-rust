@@ -897,14 +897,14 @@ outer third line",
         let mut hb = Registry::new();
         hb.register_template_string(
             "some_partial",
-            "before {{#> @partial-block}}{{/@partial-block}} after",
+            "before {{#> @partial-block}}DEFAULT{{/@partial-block}} after",
         )
         .unwrap();
 
         let r1 = hb
             .render_template("{{> some_partial}}", &json!({}))
             .unwrap();
-        assert_eq!(r1, "before  after");
+        assert_eq!(r1, "before DEFAULT after");
 
         let r2 = hb
             .render_template("{{#> some_partial}}CONTENT{{/some_partial}}", &json!({}))
@@ -926,10 +926,7 @@ outer third line",
         assert_eq!(r1, "[DEFAULT] ok");
 
         let r2 = hb
-            .render_template(
-                "{{#> wrapper}}CUSTOM{{/wrapper}}",
-                &json!({}),
-            )
+            .render_template("{{#> wrapper}}CUSTOM{{/wrapper}}", &json!({}))
             .unwrap();
         assert_eq!(r2, "[CUSTOM] ok");
     }
