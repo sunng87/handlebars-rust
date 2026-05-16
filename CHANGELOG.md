@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.4.0...Unreleased) - ReleaseDate
+## [6.4.1](https://github.com/sunng87/handlebars-rust/compare/6.4.0...6.4.1) - 2026-05-16
 
 * [Fixed] Allow using `@partial-block` with block include and fallback template [#752]
 
