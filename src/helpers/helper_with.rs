@@ -50,7 +50,9 @@ impl HelperDef for WithHelper {
         } else if let Some(t) = h.inverse() {
             t.render(r, ctx, rc, out)
         } else if r.strict_mode() {
-            Err(RenderError::strict_error(param.relative_path()))
+            Err(RenderError::strict_error(
+                param.relative_path().map(|s| s.as_str()),
+            ))
         } else {
             Ok(())
         }

@@ -167,8 +167,8 @@ impl RenderError {
         RenderErrorReason::Other(desc.as_ref().to_string()).into()
     }
 
-    pub fn strict_error(path: Option<&String>) -> RenderError {
-        RenderErrorReason::MissingVariable(path.map(ToOwned::to_owned)).into()
+    pub fn strict_error(path: Option<&str>) -> RenderError {
+        RenderErrorReason::MissingVariable(path.map(|s| s.to_owned())).into()
     }
 
     #[deprecated(since = "5.0.0", note = "Use RenderErrorReason::NestedError instead")]

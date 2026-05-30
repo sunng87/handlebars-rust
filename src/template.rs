@@ -6,6 +6,7 @@ use pest::error::LineColLocation;
 use pest::iterators::Pair;
 use pest::{Parser, Position, Span};
 use serde_json::value::Value as Json;
+use smol_str::{SmolStr, ToSmolStr};
 
 use crate::error::{TemplateError, TemplateErrorReason};
 use crate::grammar::{HandlebarsParser, Rule};
@@ -57,7 +58,7 @@ impl Subexpression {
     pub fn new(
         name: Parameter,
         params: Vec<Parameter>,
-        hash: HashMap<String, Parameter>,
+        hash: HashMap<SmolStr, Parameter>,
     ) -> Subexpression {
         Subexpression {
             element: Box::new(Expression(Box::new(HelperTemplate {
@@ -100,7 +101,7 @@ impl Subexpression {
         }
     }
 
-    pub fn hash(&self) -> Option<&HashMap<String, Parameter>> {
+    pub fn hash(&self) -> Option<&HashMap<SmolStr, Parameter>> {
         match *self.as_element() {
             Expression(ref ht) => Some(&ht.hash),
             _ => None,
@@ -120,7 +121,7 @@ pub enum BlockParam {
 pub struct ExpressionSpec {
     pub name: Parameter,
     pub params: Vec<Parameter>,
-    pub hash: HashMap<String, Parameter>,
+    pub hash: HashMap<SmolStr, Parameter>,
     #[builder(setter(strip_option), default)]
     pub block_param: Option<BlockParam>,
     pub omit_pre_ws: bool,
@@ -131,7 +132,7 @@ pub struct ExpressionSpec {
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum Parameter {
     // for helper name only
-    Name(String),
+    Name(SmolStr),
     // for expression, helper param and hash
     Path(Path),
     Literal(Json),
@@ -143,7 +144,7 @@ pub enum Parameter {
 pub struct HelperTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
-    pub hash: HashMap<String, Parameter>,
+    pub hash: HashMap<SmolStr, Parameter>,
     #[builder(setter(strip_option), default)]
     pub block_param: Option<BlockParam>,
     #[builder(setter(strip_option), default)]
@@ -218,12 +219,12 @@ impl HelperTemplate {
     }
 
     fn ref_chain_head_mut(&mut self) -> Option<&mut Box<HelperTemplate>> {
-        if self.chain {
-            if let Some(inverse_tmpl) = &mut self.inverse {
-                assert_eq!(inverse_tmpl.elements.len(), 1);
-                if let HelperBlock(helper) = &mut inverse_tmpl.elements[0] {
-                    return Some(helper);
-                }
+        if self.chain
+            && let Some(inverse_tmpl) = &mut self.inverse
+        {
+            assert_eq!(inverse_tmpl.elements.len(), 1);
+            if let HelperBlock(helper) = &mut inverse_tmpl.elements[0] {
+                return Some(helper);
             }
         }
         None
@@ -288,12 +289,12 @@ impl HelperTemplate {
 pub struct DecoratorTemplate {
     pub name: Parameter,
     pub params: Vec<Parameter>,
-    pub hash: HashMap<String, Parameter>,
+    pub hash: HashMap<SmolStr, Parameter>,
     #[builder(setter(strip_option), default)]
     pub template: Option<Template>,
     // for partial indent
     #[builder(setter(into, strip_option), default)]
-    pub indent: Option<String>,
+    pub indent: Option<SmolStr>,
     pub(crate) indent_before_write: bool,
 }
 
@@ -378,7 +379,7 @@ impl Template {
             | Rule::partial_identifier
             | Rule::opt_identifier
             | Rule::opt_partial_identifier
-            | Rule::invert_tag_item => Ok(Parameter::Name(name_span.as_str().to_owned())),
+            | Rule::invert_tag_item => Ok(Parameter::Name(name_span.as_str().to_smolstr())),
             Rule::reference => {
                 let paths = parse_json_path_from_iter(it, name_span.end());
                 Ok(Parameter::Path(Path::new(name_span.as_str(), paths)))
@@ -460,14 +461,14 @@ impl Template {
         source: &'a str,
         it: &mut Peekable<I>,
         limit: usize,
-    ) -> Result<(String, Parameter), TemplateError>
+    ) -> Result<(SmolStr, Parameter), TemplateError>
     where
         I: Iterator<Item = Pair<'a, Rule>>,
     {
         let name = it.next().unwrap();
         let name_node = name.as_span();
         // identifier
-        let key = name_node.as_str().to_owned();
+        let key = name_node.as_str().to_smolstr();
 
         let value = Template::parse_param(source, it.by_ref(), limit)?;
         Ok((key, value))
@@ -480,12 +481,12 @@ impl Template {
         let p1_name = it.next().unwrap();
         let p1_name_span = p1_name.as_span();
         // identifier
-        let p1 = p1_name_span.as_str().to_owned();
+        let p1 = p1_name_span.as_str().to_smolstr();
 
         let p2 = it.peek().and_then(|p2_name| {
             let p2_name_span = p2_name.as_span();
             if p2_name_span.end() <= limit {
-                Some(p2_name_span.as_str().to_owned())
+                Some(p2_name_span.as_str().to_smolstr())
             } else {
                 None
             }
@@ -508,7 +509,7 @@ impl Template {
         I: Iterator<Item = Pair<'a, Rule>>,
     {
         let mut params: Vec<Parameter> = Vec::new();
-        let mut hashes: HashMap<String, Parameter> = HashMap::new();
+        let mut hashes: HashMap<SmolStr, Parameter> = HashMap::new();
         let mut omit_pre_ws = false;
         let mut omit_pro_ws = false;
         let mut block_param = None;
@@ -567,7 +568,7 @@ impl Template {
     fn remove_previous_whitespace(template_stack: &mut VecDeque<Template>) {
         let t = template_stack.front_mut().unwrap();
         if let Some(RawString(text)) = &mut t.elements.last_mut() {
-            text.trim_end().to_owned().clone_into(text);
+            *text = text.trim_end().to_smolstr();
         }
     }
 
@@ -603,9 +604,9 @@ impl Template {
                 // check the last element before current
                 if let Some(RawString(text)) = &mut t.elements.last_mut() {
                     // trim leading space for standalone statement
-                    text.trim_end_matches(support::str::whitespace_matcher)
-                        .to_owned()
-                        .clone_into(text);
+                    *text = text
+                        .trim_end_matches(support::str::whitespace_matcher)
+                        .to_smolstr();
                 }
             }
 
@@ -649,12 +650,12 @@ impl Template {
         }
 
         if trim_start {
-            RawString(s.trim_start().to_owned())
+            RawString(s.trim_start().to_smolstr())
         } else if trim_start_line {
             let s = s.trim_start_matches(support::str::whitespace_matcher);
-            RawString(support::str::strip_first_newline(s).to_owned())
+            RawString(support::str::strip_first_newline(s).to_smolstr())
         } else {
-            RawString(s)
+            RawString(s.to_smolstr())
         }
     }
 
@@ -922,7 +923,7 @@ impl Template {
                                     exp.clone(),
                                     trim_line_required && !exp.omit_pre_ws,
                                 );
-                                decorator.indent = indent.map(std::borrow::ToOwned::to_owned);
+                                decorator.indent = indent.map(ToSmolStr::to_smolstr);
 
                                 let el = if rule == Rule::decorator_expression {
                                     DecoratorExpression(Box::new(decorator))
@@ -1015,7 +1016,7 @@ impl Template {
                             .trim_start_matches("{{!")
                             .trim_end_matches("}}");
                         let t = template_stack.front_mut().unwrap();
-                        t.push_element(Comment(text.to_owned()), line_no, col_no);
+                        t.push_element(Comment(SmolStr::new(text)), line_no, col_no);
                     }
                     Rule::hbs_comment => {
                         trim_line_required = Template::process_standalone_statement(
@@ -1031,7 +1032,7 @@ impl Template {
                             .trim_start_matches("{{!--")
                             .trim_end_matches("--}}");
                         let t = template_stack.front_mut().unwrap();
-                        t.push_element(Comment(text.to_owned()), line_no, col_no);
+                        t.push_element(Comment(text.to_smolstr()), line_no, col_no);
                     }
                     _ => {}
                 }
@@ -1046,7 +1047,7 @@ impl Template {
                     // is some called in if check
                     let (line_no, col_no) = end_pos.unwrap().line_col();
                     let t = template_stack.front_mut().unwrap();
-                    t.push_element(RawString(text.to_owned()), line_no, col_no);
+                    t.push_element(RawString(text.to_smolstr()), line_no, col_no);
                 }
                 let mut root_template = template_stack.pop_front().unwrap();
                 root_template.name = options.name;
@@ -1080,7 +1081,7 @@ impl Template {
 #[non_exhaustive]
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum TemplateElement {
-    RawString(String),
+    RawString(SmolStr),
     HtmlExpression(Box<HelperTemplate>),
     Expression(Box<HelperTemplate>),
     HelperBlock(Box<HelperTemplate>),
@@ -1088,7 +1089,7 @@ pub enum TemplateElement {
     DecoratorBlock(Box<DecoratorTemplate>),
     PartialExpression(Box<DecoratorTemplate>),
     PartialBlock(Box<DecoratorTemplate>),
-    Comment(String),
+    Comment(SmolStr),
 }
 
 #[cfg(test)]
@@ -1103,7 +1104,7 @@ mod test {
         assert_eq!(t.elements.len(), 1);
         assert_eq!(
             *t.elements.first().unwrap(),
-            RawString("foo {{bar}}".to_string())
+            RawString(SmolStr::new("foo {{bar}}"))
         );
     }
 
@@ -1112,7 +1113,10 @@ mod test {
         let source = r"\\\\";
         let t = Template::compile(source).ok().unwrap();
         assert_eq!(t.elements.len(), 1);
-        assert_eq!(*t.elements.first().unwrap(), RawString(source.to_string()));
+        assert_eq!(
+            *t.elements.first().unwrap(),
+            RawString(SmolStr::new(source))
+        );
     }
 
     #[test]
@@ -1122,7 +1126,7 @@ mod test {
         assert_eq!(t.elements.len(), 1);
         assert_eq!(
             *t.elements.first().unwrap(),
-            RawString("{{{{foo}}}} bar".to_string())
+            RawString(SmolStr::new("{{{{foo}}}} bar"))
         );
     }
 
@@ -1135,7 +1139,10 @@ mod test {
 
         assert_eq!(t.elements.len(), 10);
 
-        assert_eq!(*t.elements.first().unwrap(), RawString("<h1>".to_string()));
+        assert_eq!(
+            *t.elements.first().unwrap(),
+            RawString(SmolStr::new("<h1>"))
+        );
         assert_eq!(
             *t.elements.get(1).unwrap(),
             Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
@@ -1296,14 +1303,14 @@ mod test {
 
         assert_eq!(t.elements.len(), 4);
 
-        assert_eq!(t.elements[0], RawString("hello~".to_string()));
+        assert_eq!(t.elements[0], RawString(SmolStr::new("hello~")));
         assert_eq!(
             t.elements[1],
             Expression(Box::new(HelperTemplate::with_path(Path::with_named_paths(
                 &["world"]
             ))))
         );
-        assert_eq!(t.elements[2], RawString("!".to_string()));
+        assert_eq!(t.elements[2], RawString(SmolStr::new("!")));
 
         let t2 = Template::compile("{{#if true}}1  {{~ else ~}} 2 {{~/if}}")
             .ok()
@@ -1313,11 +1320,11 @@ mod test {
             HelperBlock(ref h) => {
                 assert_eq!(
                     h.template.as_ref().unwrap().elements[0],
-                    RawString("1".to_string())
+                    RawString(SmolStr::new("1"))
                 );
                 assert_eq!(
                     h.inverse.as_ref().unwrap().elements[0],
-                    RawString("2".to_string())
+                    RawString(SmolStr::new("2"))
                 );
             }
             _ => unreachable!(),
@@ -1348,8 +1355,8 @@ mod test {
         match Template::compile(source) {
             Ok(t) => {
                 assert_eq!(t.elements.len(), 3);
-                assert_eq!(t.elements[0], RawString("hello".to_owned()));
-                assert_eq!(t.elements[2], RawString("world".to_owned()));
+                assert_eq!(t.elements[0], RawString(SmolStr::new("hello")));
+                assert_eq!(t.elements[2], RawString(SmolStr::new("world")));
                 match t.elements[1] {
                     HelperBlock(ref h) => {
                         assert_eq!(h.name.as_name().unwrap(), "raw".to_owned());
@@ -1357,7 +1364,7 @@ mod test {
                             assert_eq!(ht.elements.len(), 1);
                             assert_eq!(
                                 *ht.elements.first().unwrap(),
-                                RawString("good{{night}}".to_owned())
+                                RawString(SmolStr::new("good{{night}}"))
                             );
                         } else {
                             panic!("helper template not found");
@@ -1483,14 +1490,14 @@ mod test {
             Err(e) => panic!("{}", e),
             Ok(t) => {
                 if let DecoratorBlock(ref db) = t.elements[0] {
-                    assert_eq!(db.name, Parameter::Name("inline".to_owned()));
+                    assert_eq!(db.name, Parameter::Name(SmolStr::new("inline")));
                     assert_eq!(
                         db.params[0],
                         Parameter::Literal(Json::String("hello".to_owned()))
                     );
                     assert_eq!(
                         db.template.as_ref().unwrap().elements[0],
-                        TemplateElement::RawString("expand to hello".to_owned())
+                        TemplateElement::RawString(SmolStr::new("expand to hello"))
                     );
                 }
             }
@@ -1500,14 +1507,14 @@ mod test {
             Err(e) => panic!("{}", e),
             Ok(t) => {
                 if let PartialBlock(ref db) = t.elements[0] {
-                    assert_eq!(db.name, Parameter::Name("layout".to_owned()));
+                    assert_eq!(db.name, Parameter::Name(SmolStr::new("layout")));
                     assert_eq!(
                         db.params[0],
                         Parameter::Literal(Json::String("hello".to_owned()))
                     );
                     assert_eq!(
                         db.template.as_ref().unwrap().elements[0],
-                        TemplateElement::RawString("expand to hello".to_owned())
+                        TemplateElement::RawString(SmolStr::new("expand to hello"))
                     );
                 }
             }

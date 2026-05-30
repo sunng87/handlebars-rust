@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use serde_json::value::Value as Json;
+use smol_str::SmolStr;
 
 use crate::Template;
 use crate::error::RenderError;
@@ -9,7 +10,7 @@ use crate::local_vars::LocalVars;
 #[derive(Clone, Debug)]
 pub enum BlockParamHolder {
     // a reference to certain context value
-    Path(Vec<String>),
+    Path(Vec<SmolStr>),
     // an actual value holder
     Value(Json),
 }
@@ -19,7 +20,7 @@ impl BlockParamHolder {
         BlockParamHolder::Value(v)
     }
 
-    pub fn path(r: Vec<String>) -> BlockParamHolder {
+    pub fn path(r: Vec<SmolStr>) -> BlockParamHolder {
         BlockParamHolder::Path(r)
     }
 }
@@ -38,7 +39,7 @@ impl<'reg> BlockParams<'reg> {
 
     /// Add a path reference as the parameter. The `path` is a vector of path
     /// segments the relative to current block's base path.
-    pub fn add_path(&mut self, k: &'reg str, path: Vec<String>) -> Result<(), RenderError> {
+    pub fn add_path(&mut self, k: &'reg str, path: Vec<SmolStr>) -> Result<(), RenderError> {
         self.data.insert(k, BlockParamHolder::path(path));
         Ok(())
     }
@@ -58,14 +59,14 @@ impl<'reg> BlockParams<'reg> {
 /// A data structure holds contextual data for current block scope.
 #[derive(Debug, Clone, Default)]
 pub struct BlockContext<'rc> {
-    /// the `base_path` of current block scope
-    base_path: Vec<String>,
-    /// the `base_value` of current block scope, when the block is using a
+    /// `base_path` of current block scope
+    base_path: Vec<SmolStr>,
+    /// `base_value` of current block scope, when the block is using a
     /// constant or derived value as block base
     base_value: Option<Json>,
     /// current block context variables
     block_params: BlockParams<'rc>,
-    /// the partials available in this block
+    /// partials available in this block
     block_partials: BTreeMap<String, &'rc Template>,
     /// local variables in current context
     local_variables: LocalVars,
@@ -94,12 +95,12 @@ impl<'rc> BlockContext<'rc> {
 
     /// borrow a reference to current scope's base path
     /// all paths inside this block will be relative to this path
-    pub fn base_path(&self) -> &Vec<String> {
+    pub fn base_path(&self) -> &Vec<SmolStr> {
         &self.base_path
     }
 
-    /// borrow a mutable reference to the base path
-    pub fn base_path_mut(&mut self) -> &mut Vec<String> {
+    /// borrow a mutable reference to base path
+    pub fn base_path_mut(&mut self) -> &mut Vec<SmolStr> {
         &mut self.base_path
     }
 
