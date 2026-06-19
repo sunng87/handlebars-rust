@@ -3,11 +3,11 @@ use std::error::Error;
 use handlebars::{Handlebars, JsonRender, handlebars_helper};
 use serde_json::{Value, json};
 use time::OffsetDateTime;
-use time::format_description::parse;
+use time::format_description::parse_borrowed;
 
 // define a helper using helper
 // a date format helper accept an `OffsetDateTime` as parameter
-handlebars_helper!(date: |dt: OffsetDateTime| dt.format(&parse("[year]-[month]-[day]").unwrap()).unwrap());
+handlebars_helper!(date: |dt: OffsetDateTime| dt.format(&parse_borrowed::<1>("[year]-[month]-[day]").unwrap()).unwrap());
 
 // a helper returns number of provided parameters
 handlebars_helper!(nargs: |*args| args.len());
@@ -21,7 +21,7 @@ handlebars_helper!(isdefined: |v: Value| !v.is_null());
 
 // a helper provides format
 handlebars_helper!(date2: |dt: OffsetDateTime, {fmt:str = "[year]-[month]-[day]"}|
-    dt.format(&parse(fmt).unwrap()).unwrap()
+    dt.format(&parse_borrowed::<1>(fmt).unwrap()).unwrap()
 );
 
 fn main() -> Result<(), Box<dyn Error>> {

@@ -5,7 +5,7 @@ extern crate serde_json;
 
 use handlebars::Handlebars;
 use time::OffsetDateTime;
-use time::format_description::{parse, well_known::Rfc2822};
+use time::format_description::{parse_borrowed, well_known::Rfc2822};
 
 handlebars_helper!(lower: |s: str| s.to_lowercase());
 handlebars_helper!(upper: |s: str| s.to_uppercase());
@@ -16,7 +16,7 @@ handlebars_helper!(nargs: |*args| args.len());
 handlebars_helper!(has_a: |{a:i64 = 99}, **kwargs|
                    format!("{}, {}", a, kwargs.contains_key("a")));
 handlebars_helper!(tag: |t: str| format!("<{}>", t));
-handlebars_helper!(date: |dt: OffsetDateTime| dt.format(&parse("[year]-[month]-[day]").unwrap()).unwrap());
+handlebars_helper!(date: |dt: OffsetDateTime| dt.format(&parse_borrowed::<1>("[year]-[month]-[day]").unwrap()).unwrap());
 
 #[test]
 fn test_macro_helper() {
