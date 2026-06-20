@@ -87,6 +87,11 @@ impl<'rc> BlockContext<'rc> {
         &mut self.local_variables
     }
 
+    /// borrow the local variables
+    pub fn local_variables(&self) -> &LocalVars {
+        &self.local_variables
+    }
+
     /// get a local variable from current scope
     pub fn get_local_var(&self, name: &str) -> Option<&Json> {
         self.local_variables.get(name)

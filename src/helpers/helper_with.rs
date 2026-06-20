@@ -28,6 +28,15 @@ impl HelperDef for WithHelper {
         if param.value().is_truthy(false) {
             let mut block = create_block(param);
 
+            // inherit local variables (@key/@index/@first/@last) from the
+            // enclosing block so they remain accessible inside `#with`,
+            // matching Handlebars.js (see issue #592).
+            if let Some(parent) = rc.block() {
+                block
+                    .local_variables_mut()
+                    .clone_from(parent.local_variables());
+            }
+
             if let Some(block_param) = h.block_param() {
                 let mut params = BlockParams::new();
                 if param.context_path().is_some() {
@@ -224,6 +233,33 @@ mod test {
 
         let r2 = handlebars.render("t2", &people);
         assert_eq!(r2.ok().unwrap(), "01".to_string());
+    }
+
+    #[test]
+    fn test_with_in_each_inherits_key_and_index() {
+        // Regression for #592: `@key`/`@index` from an enclosing `{{#each}}`
+        // must remain accessible inside `{{#with}}`, matching Handlebars.js.
+        let mut handlebars = Registry::new();
+
+        let template_obj = "{{#each this}}{{#with this}}{{@key}}={{this}}|{{/with}}{{/each}}";
+        handlebars
+            .register_template_string("obj", template_obj)
+            .unwrap();
+        let r_obj = handlebars.render(
+            "obj",
+            &json!({
+                "ftp": 21,
+                "http": 80,
+            }),
+        );
+        assert_eq!(r_obj.unwrap(), "ftp=21|http=80|".to_string());
+
+        let template_arr = "{{#each this}}{{#with this}}{{@index}}={{this}}|{{/with}}{{/each}}";
+        handlebars
+            .register_template_string("arr", template_arr)
+            .unwrap();
+        let r_arr = handlebars.render("arr", &json!([10, 20]));
+        assert_eq!(r_arr.unwrap(), "0=10|1=20|".to_string());
     }
 
     #[test]
