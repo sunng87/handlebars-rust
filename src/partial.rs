@@ -868,7 +868,7 @@ outer third line",
         hbs.register_template_string("t1", t1).unwrap();
         hbs.register_template_string("t2", t2).unwrap();
 
-        assert_eq!("a:1,b:2,", hbs.render("t2", &json!({"b": 2})).unwrap());
+        assert_eq!("b:2,a:1,", hbs.render("t2", &json!({"b": 2})).unwrap());
 
         let t1 = "{{#each this}}{{@key}}:{{this}},{{/each}}";
         let t2 = "{{> t1 b a=1}}";
@@ -1015,5 +1015,56 @@ outer third line",
                 .unwrap(),
             "This file is included.\n\nSee example\n"
         );
+    }
+
+    #[test]
+    fn test_each_this_order_issue_760() {
+        let mut reg = Registry::new();
+        reg.register_partial("p", "{{#each this}}\n{{n}}\n{{/each}}")
+            .unwrap();
+
+        let template = "{{#each nums}}{{> p par=42}}{{/each}}";
+
+        let input = json!({
+            "nums": [
+                [
+                    {"n": "1"},
+                    {"n": "2"},
+                    {"n": "3"},
+                    {"n": "4"},
+                    {"n": "5"},
+                    {"n": "6"},
+                    {"n": "7"},
+                    {"n": "8"},
+                    {"n": "9"},
+                    {"n": "10"},
+                    {"n": "11"},
+                ]
+            ]
+        });
+        let rendered = reg.render_template(template, &input).unwrap();
+        // Matches Handlebars.js: the array context is converted to an object
+        // (indexed by stringified indices) and merged with the hash parameter,
+        // so `{{#each this}}` iterates the 11 array elements *and* the `par`
+        // entry (whose `{{n}}` renders empty), yielding the trailing extra
+        // newline. The array indices are iterated in numeric order, not the
+        // lexicographic order that would otherwise reorder "10" before "2".
+        assert_eq!("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n\n", rendered);
+    }
+
+    #[test]
+    fn test_partial_hash_param_merged_with_array_context_issue_760() {
+        // Companion to `test_each_this_order_issue_760`: when the context is
+        // an array, Handlebars.js converts it to an object and merges the hash
+        // parameters into it, so `{{#each this}}` iterates both the array
+        // elements and the hash entries (in numeric-then-insertion order).
+        let mut reg = Registry::new();
+        reg.register_partial("p", "{{#each this}}[{{this}}]{{/each}}")
+            .unwrap();
+
+        let template = "{{> p items par=\"ok\"}}";
+        let input = json!({ "items": [1, 2, 3] });
+        let rendered = reg.render_template(template, &input).unwrap();
+        assert_eq!("[1][2][3][ok]", rendered);
     }
 }
