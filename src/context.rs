@@ -3,6 +3,7 @@ use std::collections::{HashMap, VecDeque};
 use serde::Serialize;
 use serde_json::Map;
 use serde_json::value::{Value as Json, to_value};
+use smol_str::SmolStr;
 
 use crate::block::{BlockContext, BlockParamHolder};
 use crate::error::{RenderError, RenderErrorReason};
@@ -24,13 +25,13 @@ pub struct Context {
 enum ResolvedPath<'a> {
     // FIXME: change to borrowed when possible
     // full path
-    AbsolutePath(Vec<String>),
+    AbsolutePath(Vec<SmolStr>),
     // relative path and path root
-    RelativePath(Vec<String>),
+    RelativePath(Vec<SmolStr>),
     // relative path against block param value
-    BlockParamValue(Vec<String>, &'a Json),
+    BlockParamValue(Vec<SmolStr>, &'a Json),
     // relative path against derived value,
-    LocalValue(Vec<String>, &'a Json),
+    LocalValue(Vec<SmolStr>, &'a Json),
 }
 
 fn parse_json_visitor<'a>(
@@ -131,7 +132,7 @@ fn get_data<'a>(d: Option<&'a Json>, p: &str) -> Result<Option<&'a Json>, Render
 fn get_in_block_params<'a>(
     block_contexts: &'a VecDeque<BlockContext<'_>>,
     p: &str,
-) -> Option<(&'a BlockParamHolder, &'a Vec<String>)> {
+) -> Option<(&'a BlockParamHolder, &'a Vec<SmolStr>)> {
     for bc in block_contexts {
         let v = bc.get_block_param(p);
         if v.is_some() {
@@ -497,7 +498,7 @@ mod test {
         });
         let ctx = Context::wraps(m).unwrap();
         let mut block = BlockContext::new();
-        *block.base_path_mut() = ["a".to_owned(), "b".to_owned()].to_vec();
+        *block.base_path_mut() = [SmolStr::new("a"), SmolStr::new("b")].to_vec();
 
         let mut blocks = VecDeque::new();
         blocks.push_front(block);
@@ -525,7 +526,10 @@ mod test {
         let ctx = Context::wraps(m).unwrap();
         let mut block_params = BlockParams::new();
         block_params
-            .add_path("z", ["0".to_owned(), "a".to_owned()].to_vec())
+            .add_path(
+                "z",
+                [smol_str::SmolStr::new("0"), smol_str::SmolStr::new("a")].to_vec(),
+            )
             .unwrap();
         block_params.add_value("t", json!("good")).unwrap();
 
