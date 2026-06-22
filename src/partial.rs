@@ -90,6 +90,18 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
                 .set_block_param(name, crate::BlockParamHolder::Value((*value).clone()));
         }
 
+        // inherit local variables (@key/@index/@first/@last) from the
+        // enclosing block so they remain accessible inside the partial.
+        // This matches Handlebars.js, where the implicit data variables of
+        // an enclosing `{{#each}}`/`{{#with}}` are inherited across the
+        // partial boundary. Block params (`as |v k|`) are deliberately NOT
+        // inherited, as they are scoped to their block.
+        if let Some(parent) = rc.block() {
+            partial_include_block
+                .local_variables_mut()
+                .clone_from(parent.local_variables());
+        }
+
         // evaluate context for partial
         let merged_context = if let Some(p) = d.param(0) {
             if let Some(relative_path) = p.relative_path() {
