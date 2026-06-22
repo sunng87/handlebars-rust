@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* [Fixed] Access to local variables like `@key`, `@index`, etc. in `#with` and
+  partial block [#758]
 * [Fixed] Preserve ordering when iterating an array context inside a partial
   that receives hash parameters [#760]
 * [Changed] Enable serde_json `preserve_order` feature. JSON objects are now
