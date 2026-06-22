@@ -1,5 +1,15 @@
 # Change Log
 
+## Unreleased
+
+* [Fixed] Preserve ordering when iterating an array context inside a partial
+  that receives hash parameters [#760]
+* [Changed] Enable serde_json `preserve_order` feature. JSON objects are now
+  iterated in insertion order (matching Handlebars.js semantics) instead of
+  alphabetical key order. This fixes index-key ordering for array contexts
+  converted into objects by partial hash parameters (e.g. `"10"` no longer
+  sorts before `"2"`).
+
 ## [6.4.1](https://github.com/sunng87/handlebars-rust/compare/6.4.0...6.4.1) - 2026-05-16
 
 * [Fixed] Allow using `@partial-block` with block include and fallback template [#752]
