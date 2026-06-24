@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased](https://github.com/sunng87/handlebars-rust/compare/6.4.1...Unreleased) - ReleaseDate
+## [6.4.2](https://github.com/sunng87/handlebars-rust/compare/6.4.1...6.4.2) - 2026-06-24
 
 * [Fixed] Access to local variables like `@key`, `@index`, etc. in `#with` and
   partial block [#758]
