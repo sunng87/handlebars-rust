@@ -9,59 +9,6 @@ use serde_json::json;
 use serde_json::value::Value as Json;
 use std::collections::BTreeMap;
 
-#[cfg(unix)]
-use criterion::profiler::Profiler;
-#[cfg(unix)]
-use pprof::ProfilerGuard;
-#[cfg(unix)]
-use pprof::protos::Message;
-
-#[cfg(unix)]
-use std::fs::{File, create_dir_all};
-#[cfg(unix)]
-use std::io::Write;
-#[cfg(unix)]
-use std::path::Path;
-
-#[cfg(unix)]
-#[derive(Default)]
-struct CpuProfiler<'a> {
-    guard: Option<ProfilerGuard<'a>>,
-}
-
-#[cfg(unix)]
-impl Profiler for CpuProfiler<'_> {
-    fn start_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
-        create_dir_all(benchmark_dir).unwrap();
-
-        let guard = ProfilerGuard::new(100).unwrap();
-        self.guard = Some(guard);
-    }
-
-    fn stop_profiling(&mut self, benchmark_id: &str, benchmark_dir: &Path) {
-        if let Ok(ref report) = self.guard.as_ref().unwrap().report().build() {
-            let fg_file_name = benchmark_dir.join(format!("{benchmark_id}.svg"));
-            let fg_file = File::create(fg_file_name).unwrap();
-            report.flamegraph(fg_file).unwrap();
-
-            let pb_file_name = benchmark_dir.join(format!("{benchmark_id}.pb"));
-            let mut pb_file = File::create(pb_file_name).unwrap();
-            let profile = report.pprof().unwrap();
-
-            let mut content = Vec::new();
-            profile.encode(&mut content).unwrap();
-            pb_file.write_all(&content).unwrap();
-        };
-
-        self.guard = None;
-    }
-}
-
-#[cfg(unix)]
-fn profiled() -> Criterion {
-    Criterion::default().with_profiler(CpuProfiler::default())
-}
-
 #[derive(Serialize)]
 struct DataWrapper {
     v: String,
@@ -265,15 +212,6 @@ fn deeply_nested_partial(c: &mut Criterion) {
     });
 }
 
-#[cfg(unix)]
-criterion_group!(
-    name = benches;
-    config = profiled();
-    targets = parse_template, render_template, large_loop_helper, large_loop_helper_with_context_creation,
-    large_nested_loop, deeply_nested_partial
-);
-
-#[cfg(not(unix))]
 criterion_group!(
     benches,
     parse_template,
