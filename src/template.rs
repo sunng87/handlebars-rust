@@ -814,10 +814,27 @@ impl Template {
                         // hack: invert_tag structure is similar to ExpressionSpec, so I
                         // use it here to represent the data
 
+                        // For invert_chain_tag the optional leading tilde precedes
+                        // invert_tag_item and is therefore not part of exp_line, so
+                        // parse_expression (called below) never sees it. Consume it
+                        // here before parse_name, otherwise parse_name hits the
+                        // leading_tilde_to_omit_whitespace pair and panics.
+                        // https://github.com/sunng87/handlebars-rust/issues/766
+                        let mut invert_omit_pre_ws = false;
                         if rule == Rule::invert_chain_tag {
+                            if it.peek().unwrap().as_rule()
+                                == Rule::leading_tilde_to_omit_whitespace
+                            {
+                                invert_omit_pre_ws = true;
+                                it.next();
+                            }
                             let _ = Template::parse_name(source, &mut it, span.end())?;
                         }
-                        let exp = Template::parse_expression(source, it.by_ref(), span.end())?;
+                        let mut exp = Template::parse_expression(source, it.by_ref(), span.end())?;
+
+                        if invert_omit_pre_ws {
+                            exp.omit_pre_ws = true;
+                        }
 
                         if exp.omit_pre_ws {
                             Template::remove_previous_whitespace(&mut template_stack);
@@ -1523,5 +1540,15 @@ mod test {
             "decorator \"Subexpression(Subexpression { element: Expression(HelperTemplate { name: Path(Relative(([Named(\\\"X\\\")], \\\"X\\\"))), params: [], hash: {}, block_param: None, template: None, inverse: None, block: false, chain: false, indent_before_write: false }) })\" was opened, but \"X\" is closing",
             format!("{}", result.unwrap_err().reason())
         );
+    }
+
+    // https://github.com/sunng87/handlebars-rust/issues/766
+    #[test]
+    fn test_invert_chain_tag_with_leading_tilde() {
+        // `{{~else if ...}}` previously panicked in parse_name with
+        // `unreachable: leading_tilde_to_omit_whitespace`.
+        let s = "{{#if 1}}\n{{~else if 0 }}\n{{/if}}";
+        let result = Template::compile(s);
+        assert!(result.is_ok(), "failed to compile: {:?}", result.err());
     }
 }

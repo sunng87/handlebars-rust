@@ -364,3 +364,43 @@ fn tag_before_eof_does_not_become_standalone_in_partial() {
         output
     );
 }
+
+// Regression test for https://github.com/sunng87/handlebars-rust/issues/766
+// `{{~else if ...}}` previously panicked during template compilation.
+#[test]
+fn test_else_if_with_whitespace_omission() {
+    let hbs = Handlebars::new();
+
+    // Leading tilde on `else if` should strip preceding whitespace, mirroring
+    // the behaviour of `{{~else}}`.
+    let leading = "{{#if x}}\nA\n   {{~else if y}}\nB\n{{/if}}";
+    assert_eq!(
+        "B\n",
+        hbs.render_template(leading, &json!({"x": false, "y": true}))
+            .unwrap()
+    );
+
+    // Trailing tilde on `else if` should strip following whitespace.
+    let trailing = "{{#if x}}\nA\n{{else if y ~}}   \nB\n{{/if}}";
+    assert_eq!(
+        "B\n",
+        hbs.render_template(trailing, &json!({"x": false, "y": true}))
+            .unwrap()
+    );
+
+    // Both tildes.
+    let both = "{{#if x}}\nA\n   {{~else if y~}}   \nB\n{{/if}}";
+    assert_eq!(
+        "B\n",
+        hbs.render_template(both, &json!({"x": false, "y": true}))
+            .unwrap()
+    );
+
+    // And the falsy fallback when no chain matches.
+    let fallback = "{{#if x}}\nA\n   {{~else if y}}\nB\n{{else}}\nC\n{{/if}}";
+    assert_eq!(
+        "C\n",
+        hbs.render_template(fallback, &json!({"x": false, "y": false}))
+            .unwrap()
+    );
+}

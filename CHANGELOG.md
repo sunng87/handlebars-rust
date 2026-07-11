@@ -1,5 +1,11 @@
 # Change Log
 
+## [Unreleased]
+
+* [Fixed] Panic when using whitespace omission (`~`) on an `else if`
+  chain tag, e.g. `{{~else if cond}}`. The leading tilde is now handled
+  consistently with `{{~else}}` [#766]
+
 ## [6.4.2](https://github.com/sunng87/handlebars-rust/compare/6.4.1...6.4.2) - 2026-06-24
 
 * [Fixed] Access to local variables like `@key`, `@index`, etc. in `#with` and
