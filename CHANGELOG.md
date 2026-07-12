@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+* [Fixed] Panic when using whitespace omission (`~`) on an `else if`
+  chain tag, e.g. `{{~else if cond}}`. The leading tilde is now handled
+  consistently with `{{~else}}` [#766]
 * [Added] `preserve_json_order` feature flag that gates `serde_json`'s
   `preserve_order` feature. Enabled by default to keep insertion-order key
   iteration; disable with `default-features = false` to restore alphabetical

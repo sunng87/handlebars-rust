@@ -261,6 +261,9 @@ mod test {
             "{{#if}}hello{{~else}}world{{/if}}",
             "{{#if}}hello{{else~}}world{{/if}}",
             "{{#if}}hello{{~^~}}world{{/if}}",
+            "{{#if}}hello{{~else if foo}}world{{/if}}",
+            "{{#if}}hello{{else if foo~}}world{{/if}}",
+            "{{#if}}hello{{~else if foo~}}world{{/if}}",
             "{{#if}}{{/if}}",
             "{{#if}}hello{{else if}}world{{else}}test{{/if}}",
         ];
