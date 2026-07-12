@@ -1,4 +1,5 @@
 use handlebars::Handlebars;
+use handlebars::testing::TestHandlebars;
 use serde_json::json;
 
 #[test]
@@ -13,7 +14,7 @@ fn test_partial_with_blocks() {
     });
 
     let template = "{{#*inline \"test\"}}{{b}};{{/inline}}{{#each a as |z|}}{{> test z}}{{/each}}";
-    assert_eq!(hbs.render_template(template, &data).unwrap(), "1;2;");
+    hbs.assert_render_template(template, &data, "1;2;");
 }
 
 #[test]
@@ -30,7 +31,7 @@ fn test_root_with_blocks() {
 
     let template =
         "{{#*inline \"test\"}}{{b}}:{{@root.b}};{{/inline}}{{#each a}}{{> test}}{{/each}}";
-    assert_eq!(hbs.render_template(template, &data).unwrap(), "1:3;2:3;");
+    hbs.assert_render_template(template, &data, "1:3;2:3;");
 }
 
 #[test]
@@ -43,10 +44,7 @@ fn test_singular_and_pair_block_params() {
     ]);
 
     let template = "{{#each this as |b index|}}{{b.value}}{{#each this as |value key|}}:{{key}},{{/each}}{{/each}}";
-    assert_eq!(
-        hbs.render_template(template, &data).unwrap(),
-        "11:value,22:value,"
-    );
+    hbs.assert_render_template(template, &data, "11:value,22:value,");
 }
 
 #[test]
@@ -71,7 +69,7 @@ fn test_nested_each() {
     });
 
     let template = "{{#each classes as |class|}}{{#each class.methods as |method|}}{{method.id}};{{/each}}{{/each}}";
-    assert_eq!(hbs.render_template(template, &data).unwrap(), "1;2;3;4;");
+    hbs.assert_render_template(template, &data, "1;2;3;4;");
 }
 
 #[test]
@@ -98,10 +96,7 @@ fn test_referencing_block_param_from_upper_scope() {
     });
 
     let template = "{{#each classes as |class|}}{{#each class.methods as |method|}}{{class.private}}|{{method.id}};{{/each}}{{/each}}";
-    assert_eq!(
-        hbs.render_template(template, &data).unwrap(),
-        "false|1;false|2;true|3;true|4;"
-    );
+    hbs.assert_render_template(template, &data, "false|1;false|2;true|3;true|4;");
 }
 
 #[test]
@@ -120,9 +115,5 @@ fn nested_path_lookup() {
 ";
     let hbs = Handlebars::new();
 
-    assert_eq!(
-        hbs.render_template(input, &json!({"foo": [42], "bar": [1,2,3]}))
-            .unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"foo": [42], "bar": [1,2,3]}), output);
 }

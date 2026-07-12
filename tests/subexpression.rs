@@ -5,6 +5,7 @@ extern crate serde_json;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU16, Ordering};
 
+use handlebars::testing::TestHandlebars;
 use handlebars::{
     Context, Handlebars, Helper, HelperDef, RenderContext, RenderError, RenderErrorReason,
     ScopedJson,
@@ -16,46 +17,40 @@ fn test_subexpression() {
 
     let data = json!({"a": 1, "b": 0, "c": 2});
 
-    assert_eq!(
-        hbs.render_template("{{#if (gt a b)}}Success{{else}}Failed{{/if}}", &data)
-            .unwrap(),
-        "Success"
+    hbs.assert_render_template(
+        "{{#if (gt a b)}}Success{{else}}Failed{{/if}}",
+        &data,
+        "Success",
     );
-
-    assert_eq!(
-        hbs.render_template("{{#if (gt a c)}}Success{{else}}Failed{{/if}}", &data)
-            .unwrap(),
-        "Failed"
+    hbs.assert_render_template(
+        "{{#if (gt a c)}}Success{{else}}Failed{{/if}}",
+        &data,
+        "Failed",
     );
-
-    assert_eq!(
-        hbs.render_template("{{#if (not (gt a c))}}Success{{else}}Failed{{/if}}", &data)
-            .unwrap(),
-        "Success"
+    hbs.assert_render_template(
+        "{{#if (not (gt a c))}}Success{{else}}Failed{{/if}}",
+        &data,
+        "Success",
     );
-
-    assert_eq!(
-        hbs.render_template("{{#if (not (gt a b))}}Success{{else}}Failed{{/if}}", &data)
-            .unwrap(),
-        "Failed"
+    hbs.assert_render_template(
+        "{{#if (not (gt a b))}}Success{{else}}Failed{{/if}}",
+        &data,
+        "Failed",
     );
 
     // no argument provided for not
-    assert!(
-        hbs.render_template("{{#if (not)}}Success{{else}}Failed{{/if}}", &data)
-            .is_err()
-    );
+    hbs.assert_render_template_err("{{#if (not)}}Success{{else}}Failed{{/if}}", &data, None);
 
     // json literal
-    assert_eq!(
-        hbs.render_template("{{#if (not true)}}Success{{else}}Failed{{/if}}", &data)
-            .unwrap(),
-        "Failed"
+    hbs.assert_render_template(
+        "{{#if (not true)}}Success{{else}}Failed{{/if}}",
+        &data,
+        "Failed",
     );
-    assert_eq!(
-        hbs.render_template("{{#if (not false)}}Success{{else}}Failed{{/if}}", &data)
-            .unwrap(),
-        "Success"
+    hbs.assert_render_template(
+        "{{#if (not false)}}Success{{else}}Failed{{/if}}",
+        &data,
+        "Success",
     );
 }
 
@@ -66,14 +61,8 @@ fn test_strict_mode() {
 
     let data = json!({"a": 1});
 
-    assert!(
-        hbs.render_template("{{#if (eq a 1)}}Success{{else}}Failed{{/if}}", &data)
-            .is_ok()
-    );
-    assert!(
-        hbs.render_template("{{#if (eq z 1)}}Success{{else}}Failed{{/if}}", &data)
-            .is_err()
-    );
+    hbs.assert_render_template_ok("{{#if (eq a 1)}}Success{{else}}Failed{{/if}}", &data);
+    hbs.assert_render_template_err("{{#if (eq z 1)}}Success{{else}}Failed{{/if}}", &data, None);
 }
 
 #[test]
@@ -83,7 +72,7 @@ fn invalid_json_path() {
 
     let hbs = Handlebars::new();
 
-    let error = hbs.render_template("{{x[]@this}}", &data).unwrap_err();
+    let error = hbs.assert_render_template_err("{{x[]@this}}", data, None);
     let cause = error.reason();
 
     assert!(matches!(cause, RenderErrorReason::HelperNotFound(_)));
@@ -110,13 +99,9 @@ impl HelperDef for MyHelper {
 fn test_lookup_with_subexpression() {
     let mut registry = Handlebars::new();
     registry.register_helper("myhelper", Box::new(MyHelper {}));
-    registry
-        .register_template_string("t", "{{ lookup (myhelper) \"a\" }}")
-        .unwrap();
+    registry.register("t", r#"{{ lookup (myhelper) "a" }}"#);
 
-    let result = registry.render("t", &json!({})).unwrap();
-
-    assert_eq!("1", result);
+    registry.assert_render("t", &json!({}), "1");
 }
 
 struct CallCounterHelper {

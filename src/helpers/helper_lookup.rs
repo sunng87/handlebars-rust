@@ -44,76 +44,40 @@ pub static LOOKUP_HELPER: LookupHelper = LookupHelper;
 #[cfg(test)]
 mod test {
     use crate::registry::Registry;
+    use crate::testing::TestHandlebars;
 
     #[test]
     fn test_lookup() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{#each v1}}{{lookup ../v2 @index}}{{/each}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t1", "{{#each v1}}{{lookup ../v2 1}}{{/each}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t2", "{{lookup kk \"a\"}}")
-                .is_ok()
-        );
+        handlebars.register("t0", "{{#each v1}}{{lookup ../v2 @index}}{{/each}}");
+        handlebars.register("t1", "{{#each v1}}{{lookup ../v2 1}}{{/each}}");
+        handlebars.register("t2", "{{lookup kk \"a\"}}");
 
         let m = json!({"v1": [1,2,3], "v2": [9,8,7]});
-
         let m2 = json!({
             "kk": {"a": "world"}
         });
 
-        let r0 = handlebars.render("t0", &m);
-        assert_eq!(r0.ok().unwrap(), "987".to_string());
+        handlebars.assert_render("t0", &m, "987");
+        handlebars.assert_render("t1", &m, "888");
+        handlebars.assert_render("t2", &m2, "world");
 
-        let r1 = handlebars.render("t1", &m);
-        assert_eq!(r1.ok().unwrap(), "888".to_string());
-
-        let r2 = handlebars.render("t2", &m2);
-        assert_eq!(r2.ok().unwrap(), "world".to_string());
-
-        assert!(handlebars.render_template("{{lookup}}", &m).is_err());
-        assert!(handlebars.render_template("{{lookup v1}}", &m).is_err());
-        assert_eq!(
-            handlebars.render_template("{{lookup null 1}}", &m).unwrap(),
-            ""
-        );
-        assert_eq!(
-            handlebars.render_template("{{lookup v1 3}}", &m).unwrap(),
-            ""
-        );
+        handlebars.assert_render_template_err("{{lookup}}", &m, None);
+        handlebars.assert_render_template_err("{{lookup v1}}", &m, None);
+        handlebars.assert_render_template("{{lookup null 1}}", &m, "");
+        handlebars.assert_render_template("{{lookup v1 3}}", &m, "");
     }
 
     #[test]
     fn test_strict_lookup() {
         let mut hbs = Registry::new();
 
-        assert_eq!(
-            hbs.render_template("{{lookup kk 1}}", &json!({"kk": []}))
-                .unwrap(),
-            ""
-        );
-        assert!(
-            hbs.render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
-                .is_ok()
-        );
+        hbs.assert_render_template("{{lookup kk 1}}", &json!({"kk": []}), "");
+        hbs.assert_render_template_ok("{{lookup kk 0}}", &json!({ "kk": [null] }));
 
         hbs.set_strict_mode(true);
 
-        assert!(
-            hbs.render_template("{{lookup kk 1}}", &json!({"kk": []}))
-                .is_err()
-        );
-        assert!(
-            hbs.render_template("{{lookup kk 0}}", &json!({ "kk": [null] }))
-                .is_ok()
-        );
+        hbs.assert_render_template_err("{{lookup kk 1}}", &json!({"kk": []}), None);
+        hbs.assert_render_template_ok("{{lookup kk 0}}", &json!({ "kk": [null] }));
     }
 }

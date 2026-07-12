@@ -1,4 +1,5 @@
 use handlebars::Handlebars;
+use handlebars::testing::TestHandlebars;
 
 #[test]
 fn test_inline_scope() {
@@ -8,18 +9,15 @@ fn test_inline_scope() {
         r#"{{#>nested_partial}}Inner Content{{/nested_partial}}"#,
     )
     .unwrap();
-    let output = hbs
-        .render_template(
-            r#"{{>test_partial}}
+    hbs.assert_render_template(
+        r#"{{>test_partial}}
 
 {{#>test_partial}}
 {{#*inline "nested_partial"}}Overwrite{{/inline}}
 {{/test_partial}}
 
 {{>test_partial}}"#,
-            &(),
-        )
-        .unwrap();
-
-    assert_eq!("Inner Content\nOverwrite\nInner Content", output);
+        &(),
+        "Inner Content\nOverwrite\nInner Content",
+    );
 }

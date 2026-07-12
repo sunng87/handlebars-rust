@@ -925,6 +925,7 @@ mod test {
     use crate::render::{Helper, RenderContext, Renderable};
     use crate::support::str::StringWriter;
     use crate::template::Template;
+    use crate::testing::TestHandlebars;
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
@@ -1216,18 +1217,17 @@ mod test {
 
         let input = String::from("\"<>&");
 
-        r.register_template_string("test", String::from("{{this}}"))
-            .unwrap();
+        r.register("test", "{{this}}");
 
-        assert_eq!("&quot;&lt;&gt;&amp;", r.render("test", &input).unwrap());
+        r.assert_render("test", &input, "&quot;&lt;&gt;&amp;");
 
         r.register_escape_fn(|s| s.into());
 
-        assert_eq!("\"<>&", r.render("test", &input).unwrap());
+        r.assert_render("test", &input, "\"<>&");
 
         r.unregister_escape_fn();
 
-        assert_eq!("&quot;&lt;&gt;&amp;", r.render("test", &input).unwrap());
+        r.assert_render("test", &input, "&quot;&lt;&gt;&amp;");
     }
 
     #[test]
@@ -1235,17 +1235,9 @@ mod test {
         let r = Registry::new();
         let data = json!({"hello": "world"});
 
-        assert_eq!(
-            "{{hello}}",
-            r.render_template(r"\{{hello}}", &data).unwrap()
-        );
-
-        assert_eq!(
-            " {{hello}}",
-            r.render_template(r" \{{hello}}", &data).unwrap()
-        );
-
-        assert_eq!(r"\world", r.render_template(r"\\{{hello}}", &data).unwrap());
+        r.assert_render_template(r"\{{hello}}", &data, "{{hello}}");
+        r.assert_render_template(r" \{{hello}}", &data, " {{hello}}");
+        r.assert_render_template(r"\\{{hello}}", &data, r"\world");
     }
 
     #[test]

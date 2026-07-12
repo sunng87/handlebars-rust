@@ -179,83 +179,36 @@ mod test {
     use crate::output::Output;
     use crate::registry::Registry;
     use crate::render::{Helper, RenderContext};
+    use crate::testing::TestHandlebars;
     use crate::{Decorator, RenderErrorReason};
 
     #[test]
     fn test() {
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("t0", "{{> t1}}")
-                .is_ok()
+        handlebars.register("t0", "{{> t1}}");
+        handlebars.register("t1", "{{this}}");
+        handlebars.register("t2", "{{#> t99}}not there{{/t99}}");
+        handlebars.register("t3", "{{#*inline \"t31\"}}{{this}}{{/inline}}{{> t31}}");
+        handlebars.register(
+            "t4",
+            "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}",
         );
-        assert!(
-            handlebars
-                .register_template_string("t1", "{{this}}")
-                .is_ok()
+        handlebars.register("t5", "include {{> nav}}");
+        handlebars.register("t6", "{{> t1 a}}");
+        handlebars.register(
+            "t7",
+            "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}",
         );
-        assert!(
-            handlebars
-                .register_template_string("t2", "{{#> t99}}not there{{/t99}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t3", "{{#*inline \"t31\"}}{{this}}{{/inline}}{{> t31}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t4",
-                    "{{#> t5}}{{#*inline \"nav\"}}navbar{{/inline}}{{/t5}}"
-                )
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t5", "include {{> nav}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("t6", "{{> t1 a}}")
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string(
-                    "t7",
-                    "{{#*inline \"t71\"}}{{a}}{{/inline}}{{> t71 a=\"world\"}}"
-                )
-                .is_ok()
-        );
-        assert!(handlebars.register_template_string("t8", "{{a}}").is_ok());
-        assert!(
-            handlebars
-                .register_template_string("t9", "{{> t8 a=2}}")
-                .is_ok()
-        );
+        handlebars.register("t8", "{{a}}");
+        handlebars.register("t9", "{{> t8 a=2}}");
 
-        assert_eq!(handlebars.render("t0", &1).ok().unwrap(), "1".to_string());
-        assert_eq!(
-            handlebars.render("t2", &1).ok().unwrap(),
-            "not there".to_string()
-        );
-        assert_eq!(handlebars.render("t3", &1).ok().unwrap(), "1".to_string());
-        assert_eq!(
-            handlebars.render("t4", &1).ok().unwrap(),
-            "include navbar".to_string()
-        );
-        assert_eq!(
-            handlebars.render("t6", &json!({"a": "2"})).ok().unwrap(),
-            "2".to_string()
-        );
-        assert_eq!(
-            handlebars.render("t7", &1).ok().unwrap(),
-            "world".to_string()
-        );
-        assert_eq!(handlebars.render("t9", &1).ok().unwrap(), "2".to_string());
+        handlebars.assert_render("t0", &1, "1");
+        handlebars.assert_render("t2", &1, "not there");
+        handlebars.assert_render("t3", &1, "1");
+        handlebars.assert_render("t4", &1, "include navbar");
+        handlebars.assert_render("t6", &json!({"a": "2"}), "2");
+        handlebars.assert_render("t7", &1, "world");
+        handlebars.assert_render("t9", &1, "2");
     }
 
     #[test]
@@ -264,11 +217,10 @@ mod test {
         let t1 = "{{#> t0}}inner {{this}}{{/t0}}";
 
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", t0).is_ok());
-        assert!(handlebars.register_template_string("t1", t1).is_ok());
+        handlebars.register("t0", t0);
+        handlebars.register("t1", t1);
 
-        let r0 = handlebars.render("t1", &true);
-        assert_eq!(r0.ok().unwrap(), "hello inner true".to_string());
+        handlebars.assert_render("t1", &true, "hello inner true");
     }
 
     #[test]
@@ -276,11 +228,10 @@ mod test {
         let t0 = "hello {{> t1}} {{> t0}}";
         let t1 = "some template";
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t0", t0).is_ok());
-        assert!(handlebars.register_template_string("t1", t1).is_ok());
+        handlebars.register("t0", t0);
+        handlebars.register("t1", t1);
 
-        let r0 = handlebars.render("t0", &true);
-        assert!(r0.is_err());
+        handlebars.assert_render_err("t0", &true, None);
     }
 
     #[test]
@@ -289,19 +240,10 @@ mod test {
         let two_partial = "--- two ---";
 
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("template", main_template)
-                .is_ok()
-        );
-        assert!(
-            handlebars
-                .register_template_string("two", two_partial)
-                .is_ok()
-        );
+        handlebars.register("template", main_template);
+        handlebars.register("two", two_partial);
 
-        let r0 = handlebars.render("template", &true);
-        assert_eq!(r0.ok().unwrap(), "one--- two ---three--- two ---");
+        handlebars.assert_render("template", &true, "one--- two ---three--- two ---");
     }
 
     #[test]
@@ -310,50 +252,37 @@ mod test {
         let p_partial = "{{a}}";
 
         let mut handlebars = Registry::new();
-        assert!(
-            handlebars
-                .register_template_string("template", main_template)
-                .is_ok()
-        );
-        assert!(handlebars.register_template_string("p", p_partial).is_ok());
+        handlebars.register("template", main_template);
+        handlebars.register("p", p_partial);
 
-        let r0 = handlebars.render("template", &true);
-        assert_eq!(r0.ok().unwrap(), "In: 2 Out: ");
+        handlebars.assert_render("template", &true, "In: 2 Out: ");
     }
 
     #[test]
     fn test_partial_context_hash() {
         let mut hbs = Registry::new();
-        hbs.register_template_string("one", "This is a test. {{> two name=\"fred\" }}")
-            .unwrap();
-        hbs.register_template_string("two", "Lets test {{name}}")
-            .unwrap();
-        assert_eq!(
-            "This is a test. Lets test fred",
-            hbs.render("one", &0).unwrap()
-        );
+        hbs.register("one", "This is a test. {{> two name=\"fred\" }}");
+        hbs.register("two", "Lets test {{name}}");
+        hbs.assert_render("one", &0, "This is a test. Lets test fred");
     }
 
     #[test]
-    fn teset_partial_context_with_both_hash_and_param() {
+    fn test_partial_context_with_both_hash_and_param() {
         let mut hbs = Registry::new();
-        hbs.register_template_string("one", "This is a test. {{> two this name=\"fred\" }}")
-            .unwrap();
-        hbs.register_template_string("two", "Lets test {{name}} and {{root_name}}")
-            .unwrap();
-        assert_eq!(
+        hbs.register("one", "This is a test. {{> two this name=\"fred\" }}");
+        hbs.register("two", "Lets test {{name}} and {{root_name}}");
+        hbs.assert_render(
+            "one",
+            &json!({"root_name": "tom"}),
             "This is a test. Lets test fred and tom",
-            hbs.render("one", &json!({"root_name": "tom"})).unwrap()
         );
     }
 
     #[test]
     fn test_partial_subexpression_context_hash() {
         let mut hbs = Registry::new();
-        hbs.register_template_string("one", "This is a test. {{> (x @root) name=\"fred\" }}")
-            .unwrap();
-        hbs.register_template_string("two", "Lets test {{name}}")
-            .unwrap();
+        hbs.register("one", "This is a test. {{> (x @root) name=\"fred\" }}");
+        hbs.register("two", "Lets test {{name}}");
 
         hbs.register_helper(
             "x",
@@ -369,10 +298,7 @@ mod test {
                 },
             ),
         );
-        assert_eq!(
-            "This is a test. Lets test fred",
-            hbs.render("one", &0).unwrap()
-        );
+        hbs.assert_render("one", &0, "This is a test. Lets test fred");
     }
 
     #[test]
@@ -381,9 +307,8 @@ mod test {
         let data = json!({"c": [{"b": true}, {"b": false}]});
 
         let mut handlebars = Registry::new();
-        assert!(handlebars.register_template_string("t", t).is_ok());
-        let r0 = handlebars.render("t", &data);
-        assert_eq!(r0.ok().unwrap(), "2 true2 false");
+        handlebars.register("t", t);
+        handlebars.assert_render("t", &data, "2 true2 false");
     }
 
     #[test]
@@ -393,15 +318,14 @@ mod test {
         let template2 = "{{#> t1 }}<inner>{{> @partial-block }}</inner>{{/ t1 }}";
         let template3 = "{{#> t2 }}Hello{{/ t2 }}";
 
-        handlebars
-            .register_template_string("t1", template1)
-            .unwrap();
-        handlebars
-            .register_template_string("t2", template2)
-            .unwrap();
+        handlebars.register("t1", template1);
+        handlebars.register("t2", template2);
 
-        let page = handlebars.render_template(template3, &json!({})).unwrap();
-        assert_eq!("<outer><inner>Hello</inner></outer>", page);
+        handlebars.assert_render_template(
+            template3,
+            &json!({}),
+            "<outer><inner>Hello</inner></outer>",
+        );
     }
 
     #[test]
@@ -439,15 +363,14 @@ mod test {
                 },
             ),
         );
-        handlebars
-            .register_template_string("t1", template1)
-            .unwrap();
-        handlebars
-            .register_template_string("t2", template2)
-            .unwrap();
+        handlebars.register("t1", template1);
+        handlebars.register("t2", template2);
 
-        let page = handlebars.render_template(template3, &json!({})).unwrap();
-        assert_eq!("<outer><inner>Hello</inner></outer> World", page);
+        handlebars.assert_render_template(
+            template3,
+            &json!({}),
+            "<outer><inner>Hello</inner></outer> World",
+        );
     }
 
     #[test]
@@ -458,13 +381,10 @@ mod test {
         let data = json!({ "fruits": ["carrot", "tomato"] });
 
         let mut handlebars = Registry::new();
-        handlebars.register_template_string("outer", outer).unwrap();
-        handlebars.register_template_string("inner", inner).unwrap();
+        handlebars.register("outer", outer);
+        handlebars.register("inner", inner);
 
-        assert_eq!(
-            handlebars.render("outer", &data).unwrap(),
-            "fruit: carrot,fruit: tomato,"
-        );
+        handlebars.assert_render("outer", &data, "fruit: carrot,fruit: tomato,");
     }
 
     #[test]
@@ -480,17 +400,19 @@ mod test {
 {{> foo}}"#;
 
         let hbs = Registry::new();
-        assert_eq!(
+        hbs.assert_render_template(
+            tpl0,
+            &json!({}),
             r"foo
 foo
 foo
 ",
-            hbs.render_template(tpl0, &json!({})).unwrap()
         );
-        assert_eq!(
+        hbs.assert_render_template(
+            tpl1,
+            &json!({}),
             r"
 foofoofoo",
-            hbs.render_template(tpl1, &json!({})).unwrap()
         );
     }
 
@@ -510,25 +432,18 @@ foofoofoo",
 ";
 
         let mut hbs = Registry::new();
+        hbs.register("inner", inner);
+        hbs.register("outer", outer);
 
-        hbs.register_template_string("inner", inner).unwrap();
-        hbs.register_template_string("outer", outer).unwrap();
-
-        let result = hbs
-            .render(
-                "outer",
-                &json!({
-                    "inner_solo": {"name": "inner_solo"},
-                    "inners": [
-                        {"name": "hello"},
-                        {"name": "there"}
-                    ]
-                }),
-            )
-            .unwrap();
-
-        assert_eq!(
-            result,
+        hbs.assert_render(
+            "outer",
+            &json!({
+                "inner_solo": {"name": "inner_solo"},
+                "inners": [
+                    {"name": "hello"},
+                    {"name": "there"}
+                ]
+            }),
             r"                name: inner_solo
 
                 name: hello
@@ -536,7 +451,7 @@ foofoofoo",
 
         name: hello
         name: there
-"
+",
         );
     }
     // Rule::partial_expression should not trim leading indent  by default
@@ -558,25 +473,18 @@ foofoofoo",
 
         let mut hbs = Registry::new();
         hbs.set_prevent_indent(true);
+        hbs.register("inner", inner);
+        hbs.register("outer", outer);
 
-        hbs.register_template_string("inner", inner).unwrap();
-        hbs.register_template_string("outer", outer).unwrap();
-
-        let result = hbs
-            .render(
-                "outer",
-                &json!({
-                    "inner_solo": {"name": "inner_solo"},
-                    "inners": [
-                        {"name": "hello"},
-                        {"name": "there"}
-                    ]
-                }),
-            )
-            .unwrap();
-
-        assert_eq!(
-            result,
+        hbs.assert_render(
+            "outer",
+            &json!({
+                "inner_solo": {"name": "inner_solo"},
+                "inners": [
+                    {"name": "hello"},
+                    {"name": "there"}
+                ]
+            }),
             r"                name: inner_solo
 
                 name: hello
@@ -584,16 +492,15 @@ foofoofoo",
 
         name: hello
         name: there
-"
+",
         );
     }
 
     #[test]
     fn test_nested_partials() {
         let mut hb = Registry::new();
-        hb.register_template_string("partial", "{{> @partial-block}}")
-            .unwrap();
-        hb.register_template_string(
+        hb.register("partial", "{{> @partial-block}}");
+        hb.register(
             "index",
             r"{{#>partial}}
     Yo
@@ -601,34 +508,31 @@ foofoofoo",
     Yo 2
     {{/partial}}
 {{/partial}}",
-        )
-        .unwrap();
-        assert_eq!(
+        );
+        hb.assert_render(
+            "index",
+            &(),
             r"    Yo
     Yo 2
 ",
-            hb.render("index", &()).unwrap()
         );
 
-        hb.register_template_string("partial2", "{{> @partial-block}}")
-            .unwrap();
-        let r2 = hb
-            .render_template(
-                r"{{#> partial}}
+        hb.register("partial2", "{{> @partial-block}}");
+        hb.assert_render_template(
+            r"{{#> partial}}
 {{#> partial2}}
 :(
 {{/partial2}}
 {{/partial}}",
-                &(),
-            )
-            .unwrap();
-        assert_eq!(":(\n", r2);
+            &(),
+            ":(\n",
+        );
     }
 
     #[test]
     fn test_partial_context_issue_495() {
         let mut hb = Registry::new();
-        hb.register_template_string(
+        hb.register(
             "t1",
             r#"{{~#*inline "displayName"~}}
 Template:{{name}}
@@ -637,10 +541,8 @@ Template:{{name}}
 Name:{{name}}
 {{>displayName name="aaaa"}}
 {{/each}}"#,
-        )
-        .unwrap();
-
-        hb.register_template_string(
+        );
+        hb.register(
             "t2",
             r#"{{~#*inline "displayName"~}}
 Template:{{this}}
@@ -649,28 +551,29 @@ Template:{{this}}
 Name:{{name}}
 {{>displayName}}
 {{/each}}"#,
-        )
-        .unwrap();
+        );
 
         let data = json!({
             "data": ["hudel", "test"]
         });
 
-        assert_eq!(
+        hb.assert_render(
+            "t1",
+            &data,
             r"Name:hudel
 Template:aaaa
 Name:test
 Template:aaaa
 ",
-            hb.render("t1", &data).unwrap()
         );
-        assert_eq!(
+        hb.assert_render(
+            "t2",
+            &data,
             r"Name:hudel
 Template:hudel
 Name:test
 Template:test
 ",
-            hb.render("t2", &data).unwrap()
         );
     }
 
@@ -678,7 +581,7 @@ Template:test
     fn test_multiline_partial_indent() {
         let mut hb = Registry::new();
 
-        hb.register_template_string(
+        hb.register(
             "t1",
             r#"{{#*inline "thepartial"}}
   inner first line
@@ -686,47 +589,46 @@ Template:test
 {{/inline}}
   {{> thepartial}}
 outer third line"#,
-        )
-        .unwrap();
-        assert_eq!(
+        );
+        hb.assert_render(
+            "t1",
+            &(),
             r"    inner first line
     inner second line
 outer third line",
-            hb.render("t1", &()).unwrap()
         );
 
-        hb.register_template_string(
+        hb.register(
             "t2",
             r#"{{#*inline "thepartial"}}inner first line
 inner second line
 {{/inline}}
   {{> thepartial}}
 outer third line"#,
-        )
-        .unwrap();
-        assert_eq!(
+        );
+        hb.assert_render(
+            "t2",
+            &(),
             r"  inner first line
   inner second line
 outer third line",
-            hb.render("t2", &()).unwrap()
         );
 
-        hb.register_template_string(
+        hb.register(
             "t3",
             r#"{{#*inline "thepartial"}}{{a}}{{/inline}}
   {{> thepartial}}
 outer third line"#,
-        )
-        .unwrap();
-        assert_eq!(
+        );
+        hb.assert_render(
+            "t3",
+            &json!({"a": "inner first line\ninner second line"}),
             r"
   inner first line
   inner second lineouter third line",
-            hb.render("t3", &json!({"a": "inner first line\ninner second line"}))
-                .unwrap()
         );
 
-        hb.register_template_string(
+        hb.register(
             "t4",
             r#"{{#*inline "thepartial"}}
   inner first line
@@ -734,19 +636,18 @@ outer third line"#,
 {{/inline}}
   {{~> thepartial}}
 outer third line"#,
-        )
-        .unwrap();
-        assert_eq!(
+        );
+        hb.assert_render(
+            "t4",
+            &(),
             r"  inner first line
   inner second line
 outer third line",
-            hb.render("t4", &()).unwrap()
         );
 
         let mut hb2 = Registry::new();
         hb2.set_prevent_indent(true);
-
-        hb2.register_template_string(
+        hb2.register(
             "t1",
             r#"{{#*inline "thepartial"}}
   inner first line
@@ -754,13 +655,13 @@ outer third line",
 {{/inline}}
   {{> thepartial}}
 outer third line"#,
-        )
-        .unwrap();
-        assert_eq!(
+        );
+        hb2.assert_render(
+            "t1",
+            &(),
             r"    inner first line
   inner second line
 outer third line",
-            hb2.render("t1", &()).unwrap()
         );
     }
 
@@ -794,16 +695,11 @@ outer third line",
 ";
 
         let mut hb = Registry::new();
-        hb.register_template_string("nested_partial", nested_partial.trim_start())
-            .unwrap();
-        hb.register_template_string("partial", partial.trim_start())
-            .unwrap();
-        hb.register_template_string("partial_indented", partial_indented.trim_start())
-            .unwrap();
+        hb.register("nested_partial", nested_partial.trim_start());
+        hb.register("partial", partial.trim_start());
+        hb.register("partial_indented", partial_indented.trim_start());
 
-        let s = hb.render("partial_indented", &()).unwrap();
-
-        assert_eq!(&s, result.trim_start());
+        hb.assert_render("partial_indented", &(), result.trim_start());
     }
 
     #[test]
@@ -819,145 +715,112 @@ outer third line",
         });
 
         let mut hbs = Registry::new();
-        hbs.register_template_string("t1", t1).unwrap();
-        hbs.register_template_string("t2", t2).unwrap();
+        hbs.register("t1", t1);
+        hbs.register("t2", t2);
 
-        assert_eq!("foobar", hbs.render("t2", &data).unwrap());
+        hbs.assert_render("t2", &data, "foobar");
     }
 
     #[test]
     fn test_partial_not_found() {
-        let t1 = "{{> bar}}";
         let hbs = Registry::new();
-        assert!(hbs.render_template(t1, &()).is_err());
+        hbs.assert_render_template_err("{{> bar}}", &(), None);
     }
 
     #[test]
     fn test_issue_643_this_context() {
-        let t1 = "{{this}}";
-        let t2 = "{{> t1 \"hello world\"}}";
+        let mut hbs = Registry::new();
+        hbs.register("t1", "{{this}}");
+        hbs.register("t2", "{{> t1 \"hello world\"}}");
+        hbs.assert_render("t2", &(), "hello world");
 
         let mut hbs = Registry::new();
-        hbs.register_template_string("t1", t1).unwrap();
-        hbs.register_template_string("t2", t2).unwrap();
-
-        assert_eq!("hello world", hbs.render("t2", &()).unwrap());
-
-        let t1 = "{{a}} {{[0]}} {{[1]}}";
-        let t2 = "{{> t1 \"hello world\" a=1}}";
+        hbs.register("t1", "{{a}} {{[0]}} {{[1]}}");
+        hbs.register("t2", "{{> t1 \"hello world\" a=1}}");
+        hbs.assert_render("t2", &(), "1 h e");
 
         let mut hbs = Registry::new();
-        hbs.register_template_string("t1", t1).unwrap();
-        hbs.register_template_string("t2", t2).unwrap();
-
-        assert_eq!("1 h e", hbs.render("t2", &()).unwrap());
-
-        let t1 = "{{#each this}}{{@key}}:{{this}},{{/each}}";
-        let t2 = "{{> t1 a=1}}";
+        hbs.register("t1", "{{#each this}}{{@key}}:{{this}},{{/each}}");
+        hbs.register("t2", "{{> t1 a=1}}");
+        hbs.assert_render("t2", &(), "a:1,");
 
         let mut hbs = Registry::new();
-        hbs.register_template_string("t1", t1).unwrap();
-        hbs.register_template_string("t2", t2).unwrap();
-
-        assert_eq!("a:1,", hbs.render("t2", &()).unwrap());
-
-        let t1 = "{{#each this}}{{@key}}:{{this}},{{/each}}";
-        let t2 = "{{> t1 a=1}}";
+        hbs.register("t1", "{{#each this}}{{@key}}:{{this}},{{/each}}");
+        hbs.register("t2", "{{> t1 a=1}}");
+        hbs.assert_render("t2", &json!({"b": 2}), "b:2,a:1,");
 
         let mut hbs = Registry::new();
-        hbs.register_template_string("t1", t1).unwrap();
-        hbs.register_template_string("t2", t2).unwrap();
-
-        assert_eq!("b:2,a:1,", hbs.render("t2", &json!({"b": 2})).unwrap());
-
-        let t1 = "{{#each this}}{{@key}}:{{this}},{{/each}}";
-        let t2 = "{{> t1 b a=1}}";
-
-        let mut hbs = Registry::new();
-        hbs.register_template_string("t1", t1).unwrap();
-        hbs.register_template_string("t2", t2).unwrap();
-
-        assert_eq!("a:1,", hbs.render("t2", &json!({"b": 2})).unwrap());
+        hbs.register("t1", "{{#each this}}{{@key}}:{{this}},{{/each}}");
+        hbs.register("t2", "{{> t1 b a=1}}");
+        hbs.assert_render("t2", &json!({"b": 2}), "a:1,");
     }
 
     #[test]
     fn test_nested_partial_block_scope_issue() {
         let mut hs = Registry::new();
-        hs.register_template_string("primary", "{{> @partial-block }}")
-            .unwrap();
-        hs.register_template_string("secondary", "{{#*inline \"inl\"}}Bug{{/inline}}{{#>primary}}{{> @partial-block }}{{>inl}}{{/primary}}").unwrap();
-        hs.register_template_string("current", "{{>secondary}}")
-            .unwrap();
+        hs.register("primary", "{{> @partial-block }}");
+        hs.register("secondary", "{{#*inline \"inl\"}}Bug{{/inline}}{{#>primary}}{{> @partial-block }}{{>inl}}{{/primary}}");
+        hs.register("current", "{{>secondary}}");
 
+        let err = hs.assert_render_err("current", &(), None);
         assert!(matches!(
-            hs.render("current", &()).unwrap_err().reason(),
+            err.reason(),
             RenderErrorReason::PartialBlockNotFound
         ));
 
         let mut hs = Registry::new();
-        hs.register_template_string("primary", "{{> @partial-block }}")
-            .unwrap();
-        hs.register_template_string("secondary", "{{#*inline \"inl\"}}Bug{{/inline}}{{#>primary}}{{> @partial-block }}{{>inl}}{{/primary}}").unwrap();
-        hs.register_template_string("current", "{{#>secondary}}Not a {{/secondary}}")
-            .unwrap();
+        hs.register("primary", "{{> @partial-block }}");
+        hs.register("secondary", "{{#*inline \"inl\"}}Bug{{/inline}}{{#>primary}}{{> @partial-block }}{{>inl}}{{/primary}}");
+        hs.register("current", "{{#>secondary}}Not a {{/secondary}}");
 
-        assert_eq!(hs.render("current", &()).unwrap(), "Not a Bug");
+        hs.assert_render("current", &(), "Not a Bug");
     }
 
     #[test]
     fn test_partial_block_syntax_for_at_partial_block() {
         let mut hb = Registry::new();
-        hb.register_template_string(
+        hb.register(
             "some_partial",
             "before {{#> @partial-block}}DEFAULT{{/@partial-block}} after",
-        )
-        .unwrap();
+        );
 
-        let r1 = hb
-            .render_template("{{> some_partial}}", &json!({}))
-            .unwrap();
-        assert_eq!(r1, "before DEFAULT after");
-
-        let r2 = hb
-            .render_template("{{#> some_partial}}CONTENT{{/some_partial}}", &json!({}))
-            .unwrap();
-        assert_eq!(r2, "before CONTENT after");
+        hb.assert_render_template("{{> some_partial}}", &json!({}), "before DEFAULT after");
+        hb.assert_render_template(
+            "{{#> some_partial}}CONTENT{{/some_partial}}",
+            &json!({}),
+            "before CONTENT after",
+        );
     }
 
     #[test]
     fn test_partial_block_fallback_restores_state() {
         let mut hb = Registry::new();
-        hb.register_template_string(
+        hb.register(
             "wrapper",
             "[{{#> @partial-block}}DEFAULT{{/@partial-block}}] {{> inner}}",
-        )
-        .unwrap();
-        hb.register_template_string("inner", "ok").unwrap();
+        );
+        hb.register("inner", "ok");
 
-        let r1 = hb.render_template("{{> wrapper}}", &json!({})).unwrap();
-        assert_eq!(r1, "[DEFAULT] ok");
-
-        let r2 = hb
-            .render_template("{{#> wrapper}}CUSTOM{{/wrapper}}", &json!({}))
-            .unwrap();
-        assert_eq!(r2, "[CUSTOM] ok");
+        hb.assert_render_template("{{> wrapper}}", &json!({}), "[DEFAULT] ok");
+        hb.assert_render_template(
+            "{{#> wrapper}}CUSTOM{{/wrapper}}",
+            &json!({}),
+            "[CUSTOM] ok",
+        );
     }
 
     #[test]
     fn test_partial_block_fallback_restores_template_name() {
         let mut hb = Registry::new();
-        hb.register_template_string(
+        hb.register(
             "self_ref",
             "{{#> @partial-block}}DEFAULT{{/@partial-block}}{{> self_ref}}",
-        )
-        .unwrap();
+        );
 
-        let result = hb.render_template("{{> self_ref}}", &json!({}));
-        assert!(result.is_err());
-        let msg = format!("{}", result.unwrap_err());
-        assert!(
-            msg.contains("include current template"),
-            "expected self-inclusion error, got: {msg}"
+        hb.assert_render_template_err(
+            "{{> self_ref}}",
+            &json!({}),
+            Some("include current template"),
         );
     }
 
@@ -995,25 +858,18 @@ outer third line",
 
         handlebars_helper!(lower: |s: str| s.to_lowercase());
         handlebars.register_helper("lower", Box::new(lower));
-        handlebars
-            .register_template_string(
-                "an-included-file",
-                "This file is included.\n\nSee {{lower somevalue}}\n",
-            )
-            .unwrap();
+        handlebars.register(
+            "an-included-file",
+            "This file is included.\n\nSee {{lower somevalue}}\n",
+        );
 
-        let data = serde_json::json!({});
-        assert_eq!(
-            handlebars
-                .render_template(
-                    r#"
+        handlebars.assert_render_template(
+            r#"
 {{~*set somevalue="Example"}}
 {{> an-included-file }}
 "#,
-                    &data
-                )
-                .unwrap(),
-            "This file is included.\n\nSee example\n"
+            &serde_json::json!({}),
+            "This file is included.\n\nSee example\n",
         );
     }
 
@@ -1022,8 +878,6 @@ outer third line",
         let mut reg = Registry::new();
         reg.register_partial("p", "{{#each this}}\n{{n}}\n{{/each}}")
             .unwrap();
-
-        let template = "{{#each nums}}{{> p par=42}}{{/each}}";
 
         let input = json!({
             "nums": [
@@ -1042,14 +896,17 @@ outer third line",
                 ]
             ]
         });
-        let rendered = reg.render_template(template, &input).unwrap();
         // Matches Handlebars.js: the array context is converted to an object
         // (indexed by stringified indices) and merged with the hash parameter,
         // so `{{#each this}}` iterates the 11 array elements *and* the `par`
         // entry (whose `{{n}}` renders empty), yielding the trailing extra
         // newline. The array indices are iterated in numeric order, not the
         // lexicographic order that would otherwise reorder "10" before "2".
-        assert_eq!("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n\n", rendered);
+        reg.assert_render_template(
+            "{{#each nums}}{{> p par=42}}{{/each}}",
+            &input,
+            "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n\n",
+        );
     }
 
     #[test]
@@ -1062,9 +919,7 @@ outer third line",
         reg.register_partial("p", "{{#each this}}[{{this}}]{{/each}}")
             .unwrap();
 
-        let template = "{{> p items par=\"ok\"}}";
         let input = json!({ "items": [1, 2, 3] });
-        let rendered = reg.render_template(template, &input).unwrap();
-        assert_eq!("[1][2][3][ok]", rendered);
+        reg.assert_render_template("{{> p items par=\"ok\"}}", &input, "[1][2][3][ok]");
     }
 }

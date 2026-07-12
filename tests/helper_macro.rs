@@ -4,6 +4,8 @@ extern crate handlebars;
 extern crate serde_json;
 
 use handlebars::Handlebars;
+use handlebars::testing::TestHandlebars;
+use serde_json::Value;
 use time::OffsetDateTime;
 use time::format_description::{parse_borrowed, well_known::Rfc2822};
 
@@ -26,84 +28,43 @@ fn test_macro_helper() {
     hbs.register_helper("upper", Box::new(upper));
     hbs.register_helper("hex", Box::new(hex));
     hbs.register_helper("money", Box::new(money));
+    hbs.register_helper("all_hash", Box::new(all_hash));
     hbs.register_helper("nargs", Box::new(nargs));
     hbs.register_helper("has_a", Box::new(has_a));
     hbs.register_helper("tag", Box::new(tag));
     hbs.register_helper("date", Box::new(date));
 
-    let data = json!("Teixeira");
-
-    assert_eq!(
-        hbs.render_template("{{lower this}}", &data).unwrap(),
-        "teixeira"
-    );
-    assert_eq!(
-        hbs.render_template("{{upper this}}", &data).unwrap(),
-        "TEIXEIRA"
-    );
-    assert_eq!(hbs.render_template("{{hex 16}}", &()).unwrap(), "0x10");
-
-    assert_eq!(
-        hbs.render_template("{{money 5000}}", &()).unwrap(),
-        "$5000.00"
-    );
-    assert_eq!(
-        hbs.render_template("{{money 5000 cur=\"£\"}}", &())
-            .unwrap(),
-        "£5000.00"
-    );
-    assert_eq!(
-        hbs.render_template("{{nargs 1 1 1 1 1}}", &()).unwrap(),
-        "5"
-    );
-    assert_eq!(hbs.render_template("{{nargs}}", &()).unwrap(), "0");
-
-    assert_eq!(
-        hbs.render_template("{{has_a a=1 b=2}}", &()).unwrap(),
-        "1, true"
-    );
-
-    assert_eq!(
-        hbs.render_template("{{has_a x=1 b=2}}", &()).unwrap(),
-        "99, false"
-    );
-
-    assert_eq!(
-        hbs.render_template("{{tag \"html\"}}", &()).unwrap(),
-        "&lt;html&gt;"
-    );
-
-    assert_eq!(
-        hbs.render_template("{{{tag \"html\"}}}", &()).unwrap(),
-        "<html>"
-    );
-
-    assert_eq!(
-        hbs.render_template(
-            "{{date this}}",
-            &OffsetDateTime::parse("Wed, 18 Feb 2015 23:16:09 GMT", &Rfc2822).unwrap()
-        )
-        .unwrap(),
-        "2015-02-18"
-    );
-
-    assert_eq!(
-        hbs.render_template("{{eq image.link null}}", &json!({"image": {"link": null}}))
-            .unwrap(),
-        "true"
-    );
-
-    assert_eq!(
-        hbs.render_template(
+    // (template, data, expected). Cases that ignore the data use `null`,
+    // which renders identically to `()` for these templates.
+    let cases: &[(&str, Value, &str)] = &[
+        ("{{lower this}}", json!("Teixeira"), "teixeira"),
+        ("{{upper this}}", json!("Teixeira"), "TEIXEIRA"),
+        ("{{hex 16}}", json!(null), "0x10"),
+        ("{{money 5000}}", json!(null), "$5000.00"),
+        (r#"{{money 5000 cur="£"}}"#, json!(null), "£5000.00"),
+        ("{{nargs 1 1 1 1 1}}", json!(null), "5"),
+        ("{{nargs}}", json!(null), "0"),
+        ("{{has_a a=1 b=2}}", json!(null), "1, true"),
+        ("{{has_a x=1 b=2}}", json!(null), "99, false"),
+        (r#"{{tag "html"}}"#, json!(null), "&lt;html&gt;"),
+        (r#"{{{tag "html"}}}"#, json!(null), "<html>"),
+        (
             "{{eq image.link null}}",
-            &json!({"image": {"link": "https://url"}})
-        )
-        .unwrap(),
-        "false"
-    );
+            json!({"image": {"link": null}}),
+            "true",
+        ),
+        (
+            "{{eq image.link null}}",
+            json!({"image": {"link": "https://url"}}),
+            "false",
+        ),
+        (r"{{tag 'html'}}", json!(null), "&lt;html&gt;"),
+    ];
+    for (template, data, expected) in cases {
+        hbs.assert_render_template(template, data, expected);
+    }
 
-    assert_eq!(
-        hbs.render_template("{{tag 'html'}}", &()).unwrap(),
-        "&lt;html&gt;"
-    );
+    // `date` takes an `OffsetDateTime`, so it is exercised separately.
+    let dt = OffsetDateTime::parse("Wed, 18 Feb 2015 23:16:09 GMT", &Rfc2822).unwrap();
+    hbs.assert_render_template("{{date this}}", &dt, "2015-02-18");
 }

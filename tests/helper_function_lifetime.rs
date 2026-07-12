@@ -1,3 +1,4 @@
+use handlebars::testing::TestHandlebars;
 use handlebars::*;
 
 fn ifcond<'reg, 'rc>(
@@ -26,10 +27,5 @@ fn test_helper() {
 
     // make data and render it
     let data = true;
-    assert_eq!(
-        "yes",
-        handlebars
-            .render_template("{{#ifcond this}}yes{{/ifcond}}", &data)
-            .unwrap()
-    );
+    handlebars.assert_render_template("{{#ifcond this}}yes{{/ifcond}}", &data, "yes");
 }

@@ -3,6 +3,7 @@ extern crate handlebars;
 extern crate serde_json;
 
 use handlebars::Handlebars;
+use handlebars::testing::TestHandlebars;
 
 #[test]
 fn test_walk_dir_template_name() {
@@ -13,9 +14,8 @@ fn test_walk_dir_template_name() {
         "b": "top"
     });
 
-    hbs.register_template_string("foo/bar", "{{@root/b}}")
-        .unwrap();
-    assert_eq!(hbs.render_template("{{> foo/bar }}", &data).unwrap(), "top");
+    hbs.register("foo/bar", "{{@root/b}}");
+    hbs.assert_render_template("{{> foo/bar }}", &data, "top");
 }
 
 #[test]
@@ -27,9 +27,6 @@ fn test_walk_dir_template_name_with_args() {
         "b": "top"
     });
 
-    hbs.register_template_string("foo/bar", "{{this}}").unwrap();
-    assert_eq!(
-        hbs.render_template("{{> foo/bar b }}", &data).unwrap(),
-        "top"
-    );
+    hbs.register("foo/bar", "{{this}}");
+    hbs.assert_render_template("{{> foo/bar b }}", &data, "top");
 }

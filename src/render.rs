@@ -979,6 +979,7 @@ mod test {
     use crate::registry::Registry;
     use crate::template::TemplateElement::*;
     use crate::template::{HelperTemplate, Template, TemplateElement};
+    use crate::testing::TestHandlebars;
 
     #[test]
     fn test_raw_string() {
@@ -1152,46 +1153,29 @@ mod test {
     fn test_partial_failback_render() {
         let mut r = Registry::new();
 
-        assert!(
-            r.register_template_string("parent", "<html>{{> layout}}</html>")
-                .is_ok()
+        r.register("parent", "<html>{{> layout}}</html>");
+        r.register(
+            "child",
+            "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}",
         );
-        assert!(
-            r.register_template_string(
-                "child",
-                "{{#*inline \"layout\"}}content{{/inline}}{{#> parent}}{{> seg}}{{/parent}}",
-            )
-            .is_ok()
-        );
-        assert!(r.register_template_string("seg", "1234").is_ok());
+        r.register("seg", "1234");
 
-        let r = r.render("child", &true).expect("should work");
-        assert_eq!(r, "<html>content</html>");
+        r.assert_render("child", &true, "<html>content</html>");
     }
 
     #[test]
     fn test_key_with_slash() {
         let mut r = Registry::new();
 
-        assert!(
-            r.register_template_string("t", "{{#each this}}{{@key}}: {{this}}\n{{/each}}")
-                .is_ok()
-        );
+        r.register("t", "{{#each this}}{{@key}}: {{this}}\n{{/each}}");
 
-        let r = r.render("t", &json!({"/foo": "bar"})).unwrap();
-
-        assert_eq!(r, "/foo: bar\n");
+        r.assert_render("t", &json!({"/foo": "bar"}), "/foo: bar\n");
     }
 
     #[test]
     fn test_comment() {
         let r = Registry::new();
-
-        assert_eq!(
-            r.render_template("Hello {{this}} {{! test me }}", &0)
-                .unwrap(),
-            "Hello 0 "
-        );
+        r.assert_render_template("Hello {{this}} {{! test me }}", &0, "Hello 0 ");
     }
 
     #[test]
@@ -1309,12 +1293,10 @@ mod test {
           "outer": "outer"
         });
 
-        let r1 = r.render_template(TEMPLATE, &data).unwrap();
-        assert_eq!(r1, "outer= inner=inner");
+        r.assert_render_template(TEMPLATE, &data, "outer= inner=inner");
 
         r.set_recursive_lookup(true);
 
-        let r2 = r.render_template(TEMPLATE, &data).unwrap();
-        assert_eq!(r2, "outer=outer inner=inner");
+        r.assert_render_template(TEMPLATE, &data, "outer=outer inner=inner");
     }
 }

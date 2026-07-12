@@ -1,26 +1,13 @@
 use handlebars::Handlebars;
+use handlebars::testing::TestHandlebars;
 use serde_json::json;
 
 #[test]
 fn test_whitespaces_elision() {
     let hbs = Handlebars::new();
-    assert_eq!(
-        "bar",
-        hbs.render_template("  {{~ foo ~}}  ", &json!({"foo": "bar"}))
-            .unwrap()
-    );
-
-    assert_eq!(
-        "<bar/>",
-        hbs.render_template("  {{{~ foo ~}}}  ", &json!({"foo": "<bar/>"}))
-            .unwrap()
-    );
-
-    assert_eq!(
-        "<bar/>",
-        hbs.render_template("  {{~ {foo} ~}}  ", &json!({"foo": "<bar/>"}))
-            .unwrap()
-    );
+    hbs.assert_render_template("  {{~ foo ~}}  ", &json!({"foo": "bar"}), "bar");
+    hbs.assert_render_template("  {{{~ foo ~}}}  ", &json!({"foo": "<bar/>"}), "<bar/>");
+    hbs.assert_render_template("  {{~ {foo} ~}}  ", &json!({"foo": "<bar/>"}), "<bar/>");
 }
 
 #[test]
@@ -45,11 +32,7 @@ fn test_indent_after_if() {
 </div>
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"foo": true})).unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"foo": true}), output);
 }
 
 #[test]
@@ -81,11 +64,7 @@ fn test_partial_inside_if() {
 </div>
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"foo": true})).unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"foo": true}), output);
 }
 
 #[test]
@@ -119,11 +98,7 @@ fn test_partial_inside_double_if() {
 </div>
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"foo": true})).unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"foo": true}), output);
 }
 
 #[test]
@@ -140,8 +115,7 @@ fn test_empty_partial() {
 </div>
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(hbs.render_template(input, &()).unwrap(), output);
+    hbs.assert_render_template(input, &(), output);
 }
 
 #[test]
@@ -158,11 +132,7 @@ fn test_partial_pasting_empty_dynamic_content() {
 </div>
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"input": ""})).unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"input": ""}), output);
 }
 
 #[test]
@@ -181,12 +151,7 @@ fn test_partial_pasting_dynamic_content_with_newlines() {
     baz</div>
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"input": "foo\nbar\nbaz"}))
-            .unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"input": "foo\nbar\nbaz"}), output);
 }
 
 #[test]
@@ -205,11 +170,10 @@ fn test_indent_on_consecutive_dynamic_contents() {
 </div>
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"a": "foo\n", "b": "bar", "c": "baz\n"}))
-            .unwrap(),
-        output
+    hbs.assert_render_template(
+        input,
+        &json!({"a": "foo\n", "b": "bar", "c": "baz\n"}),
+        output,
     );
 }
 
@@ -235,12 +199,7 @@ foo
     foofoo
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"content": "foo"}))
-            .unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"content": "foo"}), output);
 }
 
 #[test]
@@ -263,12 +222,7 @@ foo
     foofoo
 ";
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"content": "foo"}))
-            .unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"content": "foo"}), output);
 }
 
 #[test]
@@ -283,8 +237,7 @@ fn test_empty_inline_partials_and_helpers_retain_indent_directive() {
 "#;
     let output = "    foo\n";
     let hbs = Handlebars::new();
-
-    assert_eq!(hbs.render_template(input, &()).unwrap(), output);
+    hbs.assert_render_template(input, &(), output);
 }
 
 #[test]
@@ -297,13 +250,14 @@ fn test_indent_directive_propagated_but_not_restored_if_content_was_written() {
 "#;
     let output = "    foofoo\n";
     let hbs = Handlebars::new();
-
-    assert_eq!(hbs.render_template(input, &()).unwrap(), output);
+    hbs.assert_render_template(input, &(), output);
 }
 
 //regression test for #611
 #[test]
 fn tag_before_eof_becomes_standalone_in_full_template() {
+    let hbs = Handlebars::new();
+
     let input = r#"<ul>
   {{#each a}}
     {{!-- comment --}}
@@ -314,13 +268,7 @@ fn tag_before_eof_becomes_standalone_in_full_template() {
     <li>2</li>
     <li>3</li>
 "#;
-    let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"a": [1, 2, 3]}))
-            .unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"a": [1, 2, 3]}), output);
 
     let input = r#"<ul>
   {{#each a}}
@@ -332,13 +280,7 @@ fn tag_before_eof_becomes_standalone_in_full_template() {
       <li>2</li>
       <li>3</li>
   abc"#;
-    let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"a": [1, 2, 3]}))
-            .unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"a": [1, 2, 3]}), output);
 }
 
 #[test]
@@ -357,12 +299,7 @@ fn tag_before_eof_does_not_become_standalone_in_partial() {
       <li>3</li>
   "#;
     let hbs = Handlebars::new();
-
-    assert_eq!(
-        hbs.render_template(input, &json!({"a": [1, 2, 3]}))
-            .unwrap(),
-        output
-    );
+    hbs.assert_render_template(input, &json!({"a": [1, 2, 3]}), output);
 }
 
 // Regression test for https://github.com/sunng87/handlebars-rust/issues/766
@@ -373,34 +310,30 @@ fn test_else_if_with_whitespace_omission() {
 
     // Leading tilde on `else if` should strip preceding whitespace, mirroring
     // the behaviour of `{{~else}}`.
-    let leading = "{{#if x}}\nA\n   {{~else if y}}\nB\n{{/if}}";
-    assert_eq!(
+    hbs.assert_render_template(
+        "{{#if x}}\nA\n   {{~else if y}}\nB\n{{/if}}",
+        &json!({"x": false, "y": true}),
         "B\n",
-        hbs.render_template(leading, &json!({"x": false, "y": true}))
-            .unwrap()
     );
 
     // Trailing tilde on `else if` should strip following whitespace.
-    let trailing = "{{#if x}}\nA\n{{else if y ~}}   \nB\n{{/if}}";
-    assert_eq!(
+    hbs.assert_render_template(
+        "{{#if x}}\nA\n{{else if y ~}}   \nB\n{{/if}}",
+        &json!({"x": false, "y": true}),
         "B\n",
-        hbs.render_template(trailing, &json!({"x": false, "y": true}))
-            .unwrap()
     );
 
     // Both tildes.
-    let both = "{{#if x}}\nA\n   {{~else if y~}}   \nB\n{{/if}}";
-    assert_eq!(
+    hbs.assert_render_template(
+        "{{#if x}}\nA\n   {{~else if y~}}   \nB\n{{/if}}",
+        &json!({"x": false, "y": true}),
         "B\n",
-        hbs.render_template(both, &json!({"x": false, "y": true}))
-            .unwrap()
     );
 
     // And the falsy fallback when no chain matches.
-    let fallback = "{{#if x}}\nA\n   {{~else if y}}\nB\n{{else}}\nC\n{{/if}}";
-    assert_eq!(
+    hbs.assert_render_template(
+        "{{#if x}}\nA\n   {{~else if y}}\nB\n{{else}}\nC\n{{/if}}",
+        &json!({"x": false, "y": false}),
         "C\n",
-        hbs.render_template(fallback, &json!({"x": false, "y": false}))
-            .unwrap()
     );
 }

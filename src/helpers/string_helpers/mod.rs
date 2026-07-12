@@ -49,20 +49,21 @@ define_case_helper!(train_case, to_train_case);
 
 #[cfg(test)]
 mod tests {
+    use crate::testing::TestHandlebars;
+
     macro_rules! define_case_helpers_test_cases {
     ($template_fn_name:literal, $helper_tc_fn_name:ident, $(($tc_input:literal, $tc_expected:literal),)+) => {
 
         #[test]
         fn $helper_tc_fn_name() {
             let hbs = crate::registry::Registry::new();
-            let test_cases = vec![$(($tc_input, $tc_expected)),+];
-            for tc in test_cases {
-                let result =
-                    hbs.render_template(
-                        concat!("{{", $template_fn_name, " data}}"),
-                        &json!({"data": tc.0}));
-                assert!(result.is_ok(), "{}", result.err().unwrap());
-                assert_eq!(result.unwrap(), tc.1.to_string());
+            let test_cases = [$(($tc_input, $tc_expected)),+];
+            for (input, expected) in test_cases {
+                hbs.assert_render_template(
+                    concat!("{{", $template_fn_name, " data}}"),
+                    &json!({"data": input}),
+                    expected,
+                );
             }
         }
     }
@@ -121,9 +122,7 @@ mod tests {
         use crate::error::RenderErrorReason;
 
         let hbs = crate::registry::Registry::new();
-        let err = hbs
-            .render_template("{{snakeCase 1}}", &json!({}))
-            .unwrap_err();
+        let err = hbs.assert_render_template_err("{{snakeCase 1}}", &json!({}), None);
         assert!(matches!(
             err.reason(),
             RenderErrorReason::ParamTypeMismatchForName(_, _, _)
