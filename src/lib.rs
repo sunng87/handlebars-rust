@@ -450,3 +450,9 @@ mod sources;
 mod support;
 pub mod template;
 mod util;
+
+/// Test helpers shared by this crate's tests and, behind the `testing` cargo
+/// feature, by downstream users. See `src/testing.rs`.
+#[cfg(any(test, feature = "testing"))]
+#[doc(hidden)]
+pub mod testing;

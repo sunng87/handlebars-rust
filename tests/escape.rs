@@ -1,8 +1,8 @@
 extern crate handlebars;
-
 #[macro_use]
 extern crate serde_json;
 
+use handlebars::testing::TestHandlebars;
 use handlebars::{Handlebars, handlebars_helper, no_escape};
 
 #[test]
@@ -14,9 +14,10 @@ fn test_escape_216() {
         "BAR": "bar"
     });
 
-    assert_eq!(
-        hbs.render_template(r"\\\\ {{FOO}} {{BAR}} {{FOO}}{{BAR}} {{FOO}}#{{BAR}} {{FOO}}//{{BAR}} {{FOO}}\\{{FOO}} {{FOO}}\\\\{{FOO}}\\\{{FOO}} \\\{{FOO}} \{{FOO}} \{{FOO}}", &data).unwrap(),
-        r"\\\\ foo bar foobar foo#bar foo//bar foo\foo foo\\\foo\\foo \\foo {{FOO}} {{FOO}}"
+    hbs.assert_render_template(
+        r"\\\\ {{FOO}} {{BAR}} {{FOO}}{{BAR}} {{FOO}}#{{BAR}} {{FOO}}//{{BAR}} {{FOO}}\\{{FOO}} {{FOO}}\\\\{{FOO}}\\\{{FOO}} \\\{{FOO}} \{{FOO}} \{{FOO}}",
+        &data,
+        r"\\\\ foo bar foobar foo#bar foo//bar foo\foo foo\\\foo\\foo \\foo {{FOO}} {{FOO}}",
     );
 }
 
@@ -33,37 +34,19 @@ fn test_string_no_escape_422() {
     hbs.register_helper("replace", Box::new(replace));
     hbs.register_helper("echo", Box::new(echo));
 
-    assert_eq!(
-        r"some\ path",
-        hbs.render_template(r#"{{replace "some/path" "/" "\\ " }}"#, &())
-            .unwrap()
-    );
-    assert_eq!(
-        r"some\ path",
-        hbs.render_template(r"{{replace 'some/path' '/' '\\ ' }}", &())
-            .unwrap()
-    );
-
-    assert_eq!(
-        r"some\path",
-        hbs.render_template(r#"{{replace "some/path" "/" "\\" }}"#, &())
-            .unwrap()
-    );
-    assert_eq!(
-        r"some\path",
-        hbs.render_template(r"{{replace 'some/path' '/' '\\' }}", &())
-            .unwrap()
-    );
-
-    assert_eq!(
+    hbs.assert_render_template(r#"{{replace "some/path" "/" "\\ " }}"#, &(), r"some\ path");
+    hbs.assert_render_template(r"{{replace 'some/path' '/' '\\ ' }}", &(), r"some\ path");
+    hbs.assert_render_template(r#"{{replace "some/path" "/" "\\" }}"#, &(), r"some\path");
+    hbs.assert_render_template(r"{{replace 'some/path' '/' '\\' }}", &(), r"some\path");
+    hbs.assert_render_template(
+        r#"{{echo "double-quoted \\ 'with' \"nesting\""}}"#,
+        &(),
         r"double-quoted \ &#x27;with&#x27; &quot;nesting&quot;",
-        hbs.render_template(r#"{{echo "double-quoted \\ 'with' \"nesting\""}}"#, &())
-            .unwrap()
     );
-    assert_eq!(
+    hbs.assert_render_template(
+        r#"{{echo 'single-quoted \\ \'with\' "nesting"'}}"#,
+        &(),
         r"single-quoted \ &#x27;with&#x27; &quot;nesting&quot;",
-        hbs.render_template(r#"{{echo 'single-quoted \\ \'with\' "nesting"'}}"#, &())
-            .unwrap()
     );
 }
 
@@ -76,13 +59,13 @@ fn test_string_whitespace_467() {
 
     let mut hbs = Handlebars::new();
     hbs.register_escape_fn(no_escape);
-    hbs.register_template_string("perl", TEMPLATE_UNQUOTED)
-        .unwrap();
+    hbs.register("perl", TEMPLATE_UNQUOTED);
 
-    let r = hbs
-        .render("perl", &json!({"synonyms": [{"name": "lt", "sym": "<"}]}))
-        .unwrap();
-    assert_eq!("    lt => '<',\n", r);
+    hbs.assert_render(
+        "perl",
+        &json!({"synonyms": [{"name": "lt", "sym": "<"}]}),
+        "    lt => '<',\n",
+    );
 }
 
 #[test]
@@ -94,29 +77,27 @@ fn test_triple_bracket_expression_471() {
     });
     hbs.register_helper("replace", Box::new(replace));
 
-    assert_eq!(
+    hbs.assert_render_template(
+        "{{replace h}}",
+        &json!({"h": "some\npath"}),
         "some&lt;br/&gt;path",
-        hbs.render_template("{{replace h}}", &json!({"h": "some\npath"}))
-            .unwrap()
     );
-
-    assert_eq!(
+    hbs.assert_render_template(
+        "{{{replace h}}}",
+        &json!({"h": "some\npath"}),
         "some<br/>path",
-        hbs.render_template("{{{replace h}}}", &json!({"h": "some\npath"}))
-            .unwrap()
     );
 }
 
 #[test]
 fn test_trimmed_nonescaped_variable() {
-    let mut handlebars = Handlebars::new();
-    handlebars
-        .register_partial("system", "system: {{~{system}~}}")
+    let mut hbs = Handlebars::new();
+    hbs.register_partial("system", "system: {{~{system}~}}")
         .unwrap();
 
-    let output = handlebars
-        .render_template("{{>system system=\"hello\" prompt=\" world\"}}", &())
-        .unwrap();
-
-    assert_eq!(output, "system:hello");
+    hbs.assert_render_template(
+        r#"{{>system system="hello" prompt=" world"}}"#,
+        &(),
+        "system:hello",
+    );
 }

@@ -1,3 +1,4 @@
+use handlebars::testing::TestHandlebars;
 use handlebars::*;
 use serde_json::json;
 
@@ -24,6 +25,5 @@ fn test_helper_with_ref_data() {
     let mut r = Handlebars::new();
     r.register_helper("hello", Box::new(the_helper));
 
-    let s = r.render_template("Output: {{hello}}", &json!({})).unwrap();
-    assert_eq!(s, "Output: hello helper".to_owned());
+    r.assert_render_template("Output: {{hello}}", &json!({}), "Output: hello helper");
 }

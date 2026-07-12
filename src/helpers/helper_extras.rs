@@ -272,16 +272,15 @@ pub(crate) static OR_HELPER: ManyBoolHelper = ManyBoolHelper {
 
 #[cfg(test)]
 mod test_conditions {
+    use crate::testing::TestHandlebars;
+
     fn test_condition(condition: &str, expected: bool) {
         let handlebars = crate::Handlebars::new();
-
-        let result = handlebars
-            .render_template(
-                &format!("{{{{#if {condition}}}}}lorem{{{{else}}}}ipsum{{{{/if}}}}"),
-                &json!({}),
-            )
-            .unwrap();
-        assert_eq!(&result, if expected { "lorem" } else { "ipsum" });
+        handlebars.assert_render_template(
+            &format!("{{{{#if {condition}}}}}lorem{{{{else}}}}ipsum{{{{/if}}}}"),
+            &json!({}),
+            if expected { "lorem" } else { "ipsum" },
+        );
     }
 
     #[test]
@@ -334,44 +333,29 @@ mod test_conditions {
     #[test]
     fn nested_conditions() {
         let handlebars = crate::Handlebars::new();
-
-        let result = handlebars
-            .render_template("{{#if (gt 5 3)}}lorem{{else}}ipsum{{/if}}", &json!({}))
-            .unwrap();
-        assert_eq!(&result, "lorem");
-
-        let result = handlebars
-            .render_template(
-                "{{#if (not (gt 5 3))}}lorem{{else}}ipsum{{/if}}",
-                &json!({}),
-            )
-            .unwrap();
-        assert_eq!(&result, "ipsum");
+        handlebars.assert_render_template(
+            "{{#if (gt 5 3)}}lorem{{else}}ipsum{{/if}}",
+            &json!({}),
+            "lorem",
+        );
+        handlebars.assert_render_template(
+            "{{#if (not (gt 5 3))}}lorem{{else}}ipsum{{/if}}",
+            &json!({}),
+            "ipsum",
+        );
     }
 
     #[test]
     fn test_len() {
         let handlebars = crate::Handlebars::new();
-
-        let result = handlebars
-            .render_template("{{len value}}", &json!({"value": [1,2,3]}))
-            .unwrap();
-        assert_eq!(&result, "3");
-
-        let result = handlebars
-            .render_template("{{len value}}", &json!({"value": {"a" :1, "b": 2}}))
-            .unwrap();
-        assert_eq!(&result, "2");
-
-        let result = handlebars
-            .render_template("{{len value}}", &json!({"value": "tomcat"}))
-            .unwrap();
-        assert_eq!(&result, "6");
-
-        let result = handlebars
-            .render_template("{{len value}}", &json!({"value": 3}))
-            .unwrap();
-        assert_eq!(&result, "0");
+        handlebars.assert_render_template("{{len value}}", &json!({"value": [1,2,3]}), "3");
+        handlebars.assert_render_template(
+            "{{len value}}",
+            &json!({"value": {"a": 1, "b": 2}}),
+            "2",
+        );
+        handlebars.assert_render_template("{{len value}}", &json!({"value": "tomcat"}), "6");
+        handlebars.assert_render_template("{{len value}}", &json!({"value": 3}), "0");
     }
 
     #[test]
@@ -419,9 +403,7 @@ mod test_conditions {
 
     fn test_block(template: &str, expected: &str) {
         let handlebars = crate::Handlebars::new();
-
-        let result = handlebars.render_template(template, &json!({})).unwrap();
-        assert_eq!(&result, expected);
+        handlebars.assert_render_template(template, &json!({}), expected);
     }
 
     #[test]
