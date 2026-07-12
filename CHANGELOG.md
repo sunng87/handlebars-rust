@@ -5,6 +5,15 @@
 * [Fixed] Panic when using whitespace omission (`~`) on an `else if`
   chain tag, e.g. `{{~else if cond}}`. The leading tilde is now handled
   consistently with `{{~else}}` [#766]
+* [Added] `preserve_json_order` feature flag that gates `serde_json`'s
+  `preserve_order` feature. Enabled by default to keep insertion-order key
+  iteration; disable with `default-features = false` to restore alphabetical
+  JSON object key ordering.
+* [Changed] Drop the `pprof` dev-dependency (and its `inferno` /
+  `quick-xml` transitive deps) from benchmarks. This removes the vulnerable
+  `quick-xml` 0.26 transitive dependency ([#764], [#765]); the upgrade was
+  blocked upstream because `pprof` pins `inferno` 0.11. Benchmarks now use
+  plain criterion without in-repo flamegraph generation.
 
 ## [6.4.2](https://github.com/sunng87/handlebars-rust/compare/6.4.1...6.4.2) - 2026-06-24
 
