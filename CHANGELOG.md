@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+* [Added] `preserve_json_order` feature flag that gates `serde_json`'s
+  `preserve_order` feature. Enabled by default to keep insertion-order key
+  iteration; disable with `default-features = false` to restore alphabetical
+  JSON object key ordering.
 * [Changed] Drop the `pprof` dev-dependency (and its `inferno` /
   `quick-xml` transitive deps) from benchmarks. This removes the vulnerable
   `quick-xml` 0.26 transitive dependency ([#764], [#765]); the upgrade was
