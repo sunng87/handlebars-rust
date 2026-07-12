@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased] - ReleaseDate
+## [6.4.3] - 2026-07-12
 
 * [Fixed] Panic when using whitespace omission (`~`) on an `else if`
   chain tag, e.g. `{{~else if cond}}`. The leading tilde is now handled
