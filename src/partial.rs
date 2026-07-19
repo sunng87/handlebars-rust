@@ -83,12 +83,16 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
             .map(|(k, v)| (*k, v.value()))
             .collect::<HashMap<&str, &Json>>();
 
+        // Hash params are merged into the partial's context below via
+        // `merge_json` (matching Handlebars.js `Utils.extend({}, context,
+        // options.hash)`), not registered as block params — otherwise they'd
+        // leak into nested `{{#each}}`/`{{#with}}` scopes (#698).
+        //
+        // Mark this block as a partial scope boundary so block params from
+        // the caller don't leak in either (matches Handlebars.js; fixes
+        // #495 where a hash param must override an enclosing block param).
         let mut partial_include_block = BlockContext::new();
-        // overwrite parent block's params
-        for (name, value) in &hash_ctx {
-            partial_include_block
-                .set_block_param(name, crate::BlockParamHolder::Value((*value).clone()));
-        }
+        partial_include_block.mark_partial_scope();
 
         // inherit local variables (@key/@index/@first/@last) from the
         // enclosing block so they remain accessible inside the partial.
