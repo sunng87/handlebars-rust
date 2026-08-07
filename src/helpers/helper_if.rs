@@ -123,7 +123,6 @@ mod test {
 
     #[test]
     fn test_if_include_zero() {
-        use std::f64;
         let handlebars = Registry::new();
         handlebars.assert_render_template("{{#if a}}1{{else}}0{{/if}}", &json!({"a": 0}), "0");
         handlebars.assert_render_template(

@@ -182,7 +182,6 @@ fn test_json_render() {
 
 #[test]
 fn test_json_number_truthy() {
-    use std::f64;
     assert!(json!(16i16).is_truthy(false));
     assert!(json!(16i16).is_truthy(true));
 
