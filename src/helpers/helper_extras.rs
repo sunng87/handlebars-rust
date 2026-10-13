@@ -75,11 +75,11 @@ impl crate::HelperDef for BinaryBoolHelper {
 
 pub(crate) static EQ_HELPER: BinaryBoolHelper = BinaryBoolHelper {
     name: "eq",
-    op: |x, y| x == y,
+    op: json_eq,
 };
 pub(crate) static NEQ_HELPER: BinaryBoolHelper = BinaryBoolHelper {
     name: "ne",
-    op: |x, y| x != y,
+    op: |x, y| !json_eq(x, y),
 };
 pub(crate) static GT_HELPER: BinaryBoolHelper = BinaryBoolHelper {
     name: "gt",
@@ -164,6 +164,15 @@ handlebars_helper!(len: |x: Json| {
         _ => 0
     }
 });
+
+/// Numbers are compared by value, so that `2` equals `2.0` as it does for
+/// `gte` and `lte`. Other values use plain JSON equality.
+fn json_eq(x: &Json, y: &Json) -> bool {
+    match (x, y) {
+        (Json::Number(_), Json::Number(_)) => compare_json(x, y) == Some(Ordering::Equal),
+        _ => x == y,
+    }
+}
 
 fn compare_json(x: &Json, y: &Json) -> Option<Ordering> {
     fn cmp_num_str(a_num: &serde_json::Number, b_str: &str) -> Option<Ordering> {
@@ -320,6 +329,11 @@ mod test_conditions {
         test_condition(r"(eq [5] [4])", false);
         test_condition(r#"(eq 5 "5")"#, false);
         test_condition(r"(eq 5 [5])", false);
+        test_condition("(eq 5 5.0)", true);
+        test_condition("(eq 5.0 5)", true);
+        test_condition("(eq 0 0.0)", true);
+        test_condition("(eq -1 -1.0)", true);
+        test_condition("(eq 5 5.5)", false);
     }
 
     #[test]
@@ -328,6 +342,8 @@ mod test_conditions {
         test_condition("(ne 5 5)", false);
         test_condition(r#"(ne "foo" "foo")"#, false);
         test_condition(r#"(ne "foo" "Foo")"#, true);
+        test_condition("(ne 5 5.0)", false);
+        test_condition("(ne 5 5.5)", true);
     }
 
     #[test]
