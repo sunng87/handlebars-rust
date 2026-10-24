@@ -107,8 +107,8 @@ raw_block_end = { "{{{{" ~ leading_tilde_to_omit_whitespace? ~ "/" ~ opt_identif
                   trailing_tilde_to_omit_whitespace? ~ "}}}}" }
 raw_block = _{ raw_block_start ~ raw_block_text ~ raw_block_end }
 
-hbs_comment = { "{{!" ~ "--" ~ (!"--}}" ~ ANY)* ~ "--" ~ "}}" }
-hbs_comment_compact = { "{{!" ~ (!"}}" ~ ANY)* ~ "}}" }
+hbs_comment = { ("{{~!" | "{{!") ~ "--" ~ (!("--~}}" | "--}}") ~ ANY)* ~ ("--~}}" | "--}}") }
+hbs_comment_compact = { ("{{~!" | "{{!") ~ (!("~}}" | "}}") ~ ANY)* ~ ("~}}" | "}}") }
 
 template = { (
             raw_text |
