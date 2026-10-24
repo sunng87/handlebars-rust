@@ -103,34 +103,43 @@ pub fn expand_partial<'reg: 'rc, 'rc>(
         }
 
         // evaluate context for partial
-        let merged_context = if let Some(p) = d.param(0) {
-            if let Some(relative_path) = p.relative_path() {
-                // path as parameter provided
+        if d.param(0).is_none() && hash_ctx.is_empty() && rc.context().is_none() {
+            // same context as the caller: point at it instead of copying it
+            if let Some(parent) = rc.block() {
+                *partial_include_block.base_path_mut() = parent.base_path().clone();
+                if let Some(value) = parent.base_value() {
+                    partial_include_block.set_base_value(value.clone());
+                }
+            }
+        } else {
+            let merged_context = if let Some(p) = d.param(0) {
+                if let Some(relative_path) = p.relative_path() {
+                    // path as parameter provided
+                    if let Some(rc_context) = rc.context() {
+                        merge_json(
+                            rc.evaluate(&rc_context, relative_path)?.as_json(),
+                            &hash_ctx,
+                        )
+                    } else {
+                        merge_json(rc.evaluate(ctx, relative_path)?.as_json(), &hash_ctx)
+                    }
+                } else {
+                    // literal provided
+                    merge_json(p.value(), &hash_ctx)
+                }
+            } else {
+                // use current path
                 if let Some(rc_context) = rc.context() {
                     merge_json(
-                        rc.evaluate(&rc_context, relative_path)?.as_json(),
+                        rc.evaluate2(&rc_context, &Path::current())?.as_json(),
                         &hash_ctx,
                     )
                 } else {
-                    merge_json(rc.evaluate(ctx, relative_path)?.as_json(), &hash_ctx)
+                    merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx)
                 }
-            } else {
-                // literal provided
-                merge_json(p.value(), &hash_ctx)
-            }
-        } else {
-            // use current path
-            if let Some(rc_context) = rc.context() {
-                merge_json(
-                    rc.evaluate2(&rc_context, &Path::current())?.as_json(),
-                    &hash_ctx,
-                )
-            } else {
-                merge_json(rc.evaluate2(ctx, &Path::current())?.as_json(), &hash_ctx)
-            }
-        };
-        partial_include_block.set_base_value(merged_context);
-
+            };
+            partial_include_block.set_base_value(merged_context);
+        }
         // Push partial's context block (doesn't clear parent blocks)
         // This allows inline partials from parent blocks to remain accessible
         rc.push_block(partial_include_block);
@@ -921,5 +930,32 @@ outer third line",
 
         let input = json!({ "items": [1, 2, 3] });
         reg.assert_render_template("{{> p items par=\"ok\"}}", &input, "[1][2][3][ok]");
+    }
+    #[test]
+    fn test_partial_without_params_uses_caller_context() {
+        let mut hb = Registry::new();
+        hb.register_partial("item", "[{{name}}|{{@index}}|{{../title}}|{{@root.title}}]")
+            .unwrap();
+        hb.register_partial("root", "<{{title}}:{{#each items}}{{name}}{{/each}}>")
+            .unwrap();
+        hb.register_partial("layout", "<main>{{> @partial-block}}{{> root}}</main>")
+            .unwrap();
+        hb.register_partial("nested", "{{#with obj}}{{> item}}{{/with}}")
+            .unwrap();
+        let data =
+            json!({"title": "T", "items": [{"name": "a"}, {"name": "b"}], "obj": {"name": "o"}});
+
+        hb.assert_render_template(
+        concat!(
+            "{{> root}}",                                     // at the root
+            "{{#each items}}{{> item}}{{/each}}",             // inside each: @index, ../, @root
+            "{{#> layout}}{{title}}{{/layout}}",              // partial block + partial inside a partial
+            "{{> nested}}",                                   // inside with, inside a partial
+            "{{#each items}}{{> item name=\"h\"}}{{> item this}}{{/each}}", // hash / param: old path
+            "{{#each items as |it|}}{{> item}}{{/each}}",     // block params
+        ),
+        &data,
+        "<T:ab>[a|0||T][b|1||T]<main>T<T:ab></main>[o|||T][h|0||T][a|0||T][h|1||T][b|1||T][a|0||T][b|1||T]",
+    );
     }
 }
