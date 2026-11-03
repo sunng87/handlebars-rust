@@ -926,7 +926,9 @@ impl Renderable for TemplateElement {
                 let content_produced_before = rc.get_content_produced();
 
                 rc.set_indent_before_write(
-                    dt.indent_before_write && (rc.get_trailine_newline() || dt.indent.is_some()),
+                    indent_directive_before
+                        || (dt.indent_before_write
+                            && (rc.get_trailine_newline() || dt.indent.is_some())),
                 );
                 rc.set_content_produced(false);
 
