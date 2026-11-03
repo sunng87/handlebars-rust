@@ -21,7 +21,7 @@ path = "src/lib.rs"
 log = { version = "0.4.0" }
 thiserror = "2"
 derive_builder = "0.20.2"
-pest = "2.2.0"
+pest = "2.5.5"
 pest_derive = "2.2.0"
 serde = "1.0.0"
 serde_json = { version = "1.0.39" }

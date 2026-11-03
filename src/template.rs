@@ -709,7 +709,7 @@ impl Template {
 
                 if is_trailing_string {
                     // trailing string check
-                    let (line_no, col_no) = span.start_pos().line_col();
+                    let (line_no, col_no) = pair.line_col();
                     if rule == Rule::raw_block_end {
                         let mut t = Template::new();
                         t.push_element(
@@ -741,7 +741,9 @@ impl Template {
                     trim_line_required = false;
                 }
 
-                let (line_no, col_no) = span.start_pos().line_col();
+                // `Pair::line_col` looks up pest's line index; `Position::line_col`
+                // would rescan the source from the start for every element.
+                let (line_no, col_no) = pair.line_col();
                 match rule {
                     Rule::template => {
                         template_stack.push_front(Template::new());
@@ -1423,6 +1425,44 @@ mod test {
             }
             Err(e) => panic!("{}", e),
         }
+    }
+
+    #[test]
+    fn test_template_mapping_crlf_and_unicode() {
+        // Columns count chars, and "\r\n" ends a line.
+        let t = Template::compile(
+            "h\u{e9}llo {{a}}\r\n\u{65e5}\u{672c} {{#if b}}\r\n\t{{c}}\r\n{{else}}\r\n  \
+             {{{d}}} {{!-- note --}}\r\n{{/if}}\r\n{{> p}} \u{1f388}{{e}}",
+        )
+        .unwrap();
+        let mapping = |v: &[(usize, usize)]| -> Vec<TemplateMapping> {
+            v.iter().map(|&(l, c)| TemplateMapping(l, c)).collect()
+        };
+
+        assert_eq!(
+            t.mapping,
+            mapping(&[
+                (1, 1),
+                (1, 7),
+                (2, 1),
+                (2, 4),
+                (7, 1),
+                (7, 1),
+                (7, 9),
+                (7, 10)
+            ])
+        );
+        let HelperBlock(ref block) = t.elements[3] else {
+            panic!("expected a block, got {:?}", t.elements[3]);
+        };
+        assert_eq!(
+            block.template.as_ref().unwrap().mapping,
+            mapping(&[(3, 2), (3, 2), (4, 1)])
+        );
+        assert_eq!(
+            block.inverse.as_ref().unwrap().mapping,
+            mapping(&[(5, 3), (5, 3), (5, 11), (5, 11), (6, 1)])
+        );
     }
 
     #[test]
