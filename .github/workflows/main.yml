@@ -42,11 +42,7 @@ jobs:
       run: cargo test --all-features
     - name: Install Tarpaulin
       if: matrix.build == 'stable'
-      uses: actions-rs/install@v0.1
-      with:
-        crate: cargo-tarpaulin
-        version: 0.22.0
-        use-tool-cache: true
+      run: cargo install cargo-tarpaulin --version 0.37.6 --locked
     - name: Coverage
       if: matrix.build == 'stable'
       run: cargo tarpaulin --all-features -o Lcov --output-dir ./coverage
@@ -75,7 +71,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: "1.85"
+        toolchain: "1.88"
         override: true
     - run: cargo build --all-features
 
