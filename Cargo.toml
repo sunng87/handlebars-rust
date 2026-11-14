@@ -13,6 +13,9 @@ readme = "README.md"
 edition = "2024"
 rust-version = "1.85"
 
+[workspace]
+members = ["playground"]
+
 [lib]
 name = "handlebars"
 path = "src/lib.rs"
@@ -68,3 +71,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 [[example]]
 name = "script"
 required-features = ["script_helper"]
+
+# The playground wasm bundle ships to GitHub Pages, so build that crate for
+# small code size. Scoped as a package override so the library's own
+# release/bench profile is untouched (bench inherits release).
+[profile.release.package.playground]
+opt-level = "s"
+strip = true
