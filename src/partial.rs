@@ -703,6 +703,32 @@ outer third line",
     }
 
     #[test]
+    fn test_indent_nested_partial_at_line_start() {
+        let mut hb = Registry::new();
+        hb.register("item", "<li>\n{{> icon}} {{name}}\n</li>\n");
+        hb.register("icon", "<i></i>");
+
+        hb.assert_render_template(
+            "<ul>\n  {{> item}}\n</ul>\n",
+            &json!({"name": "Home"}),
+            "<ul>\n  <li>\n  <i></i> Home\n  </li>\n</ul>\n",
+        );
+    }
+
+    #[test]
+    fn test_indent_nested_partial_after_text() {
+        let mut hb = Registry::new();
+        hb.register("item", "<li>\n<b>{{> icon}}</b> {{name}}\n</li>\n");
+        hb.register("icon", "<i></i>");
+
+        hb.assert_render_template(
+            "<ul>\n  {{> item}}\n</ul>\n",
+            &json!({"name": "Home"}),
+            "<ul>\n  <li>\n  <b><i></i></b> Home\n  </li>\n</ul>\n",
+        );
+    }
+
+    #[test]
     fn test_issue_534() {
         let t1 = "{{title}}";
         let t2 = "{{#each modules}}{{> (lookup this \"module\") content name=0}}{{/each}}";
