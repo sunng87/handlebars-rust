@@ -337,3 +337,20 @@ fn test_else_if_with_whitespace_omission() {
         "C\n",
     );
 }
+
+#[test]
+fn test_comment_whitespace_control() {
+    let hbs = Handlebars::new();
+    let data = json!({"foo": "bar"});
+    hbs.assert_render_template("a {{~! comment ~}} b", &data, "ab");
+    hbs.assert_render_template("a {{~! comment }} b", &data, "a b");
+    hbs.assert_render_template("a {{! comment ~}} b", &data, "a b");
+    hbs.assert_render_template("a {{~!-- comment --~}} b", &data, "ab");
+    hbs.assert_render_template("a {{~!-- }} --}} b", &data, "a b");
+    hbs.assert_render_template(
+        "<ul>\n  {{!-- items --~}}\n  <li>x</li>\n</ul>",
+        &data,
+        "<ul>\n<li>x</li>\n</ul>",
+    );
+    hbs.assert_render_template("{{foo~}}{{! comment }}  b", &data, "bar  b");
+}

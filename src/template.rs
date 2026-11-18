@@ -218,12 +218,12 @@ impl HelperTemplate {
     }
 
     fn ref_chain_head_mut(&mut self) -> Option<&mut Box<HelperTemplate>> {
-        if self.chain {
-            if let Some(inverse_tmpl) = &mut self.inverse {
-                assert_eq!(inverse_tmpl.elements.len(), 1);
-                if let HelperBlock(helper) = &mut inverse_tmpl.elements[0] {
-                    return Some(helper);
-                }
+        if self.chain
+            && let Some(inverse_tmpl) = &mut self.inverse
+        {
+            assert_eq!(inverse_tmpl.elements.len(), 1);
+            if let HelperBlock(helper) = &mut inverse_tmpl.elements[0] {
+                return Some(helper);
             }
         }
         None
@@ -1020,7 +1020,13 @@ impl Template {
                             _ => unreachable!(),
                         }
                     }
-                    Rule::hbs_comment_compact => {
+                    Rule::hbs_comment_compact | Rule::hbs_comment => {
+                        let text = span.as_str();
+                        if text.starts_with("{{~") {
+                            Template::remove_previous_whitespace(&mut template_stack);
+                        }
+                        omit_pro_ws = text.ends_with("~}}");
+
                         trim_line_required = Template::process_standalone_statement(
                             &mut template_stack,
                             source,
@@ -1029,26 +1035,17 @@ impl Template {
                             options.is_partial,
                         );
 
-                        let text = span
-                            .as_str()
-                            .trim_start_matches("{{!")
-                            .trim_end_matches("}}");
-                        let t = template_stack.front_mut().unwrap();
-                        t.push_element(Comment(text.to_owned()), line_no, col_no);
-                    }
-                    Rule::hbs_comment => {
-                        trim_line_required = Template::process_standalone_statement(
-                            &mut template_stack,
-                            source,
-                            &span,
-                            true,
-                            options.is_partial,
-                        );
-
-                        let text = span
-                            .as_str()
-                            .trim_start_matches("{{!--")
-                            .trim_end_matches("--}}");
+                        let text = if rule == Rule::hbs_comment {
+                            text.trim_start_matches("{{~!--")
+                                .trim_start_matches("{{!--")
+                                .trim_end_matches("--~}}")
+                                .trim_end_matches("--}}")
+                        } else {
+                            text.trim_start_matches("{{~!")
+                                .trim_start_matches("{{!")
+                                .trim_end_matches("~}}")
+                                .trim_end_matches("}}")
+                        };
                         let t = template_stack.front_mut().unwrap();
                         t.push_element(Comment(text.to_owned()), line_no, col_no);
                     }
