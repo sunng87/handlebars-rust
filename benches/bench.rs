@@ -212,6 +212,30 @@ fn deeply_nested_partial(c: &mut Criterion) {
     });
 }
 
+fn partial_with_large_context(c: &mut Criterion) {
+    let mut handlebars = Handlebars::new();
+
+    handlebars
+        .register_partial("header", "<header>{{title}}</header>")
+        .expect("Invalid template format");
+    handlebars
+        .register_partial("layout", "<html>{{> header}}{{> @partial-block}}</html>")
+        .expect("Invalid template format");
+    handlebars
+        .register_template_string("page", "{{#> layout}}<p>{{title}}</p>{{/layout}}")
+        .expect("Invalid template format");
+
+    // a page whose context also holds a large collection it doesn't render
+    let items: Vec<Json> = (0..2000)
+        .map(|i| json!({ "url": format!("/posts/{i}"), "content": "x".repeat(2000) }))
+        .collect();
+    let ctx = Context::wraps(json!({ "title": "Post", "items": items })).unwrap();
+
+    c.bench_function("partial_with_large_context", move |b| {
+        b.iter(|| handlebars.render_with_context("page", &ctx).ok().unwrap());
+    });
+}
+
 criterion_group!(
     benches,
     parse_template,
@@ -219,7 +243,8 @@ criterion_group!(
     large_loop_helper,
     large_loop_helper_with_context_creation,
     large_nested_loop,
-    deeply_nested_partial
+    deeply_nested_partial,
+    partial_with_large_context
 );
 
 criterion_main!(benches);
