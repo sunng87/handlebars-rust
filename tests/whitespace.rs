@@ -284,6 +284,24 @@ fn tag_before_eof_becomes_standalone_in_full_template() {
 }
 
 #[test]
+fn tag_before_eof_with_trailing_whitespace_becomes_standalone() {
+    let hbs = Handlebars::new();
+
+    hbs.assert_render_template("a\n{{!-- comment --}}  ", &(), "a\n");
+    hbs.assert_render_template("{{! comment }}\t", &(), "");
+    hbs.assert_render_template(
+        "a\n{{#if t}}\nb\n  {{/if}}  ",
+        &json!({"t": true}),
+        "a\nb\n",
+    );
+    hbs.assert_render_template(
+        "{{#each l}}\n{{this}}\n{{/each}} ",
+        &json!({"l": [1, 2]}),
+        "1\n2\n",
+    );
+}
+
+#[test]
 fn tag_before_eof_does_not_become_standalone_in_partial() {
     let input = r#"{{#*inline "partial"}}
 <ul>
