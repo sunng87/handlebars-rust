@@ -871,10 +871,18 @@ impl Template {
                     }
 
                     Rule::raw_block_text => {
+                        // pest skips implicit whitespace before this rule, but in a raw
+                        // block that whitespace is part of the content.
+                        let gap = &source[prev_end..span.start()];
+                        let text = if gap.is_empty() {
+                            span.as_str().to_owned()
+                        } else {
+                            format!("{gap}{}", span.as_str())
+                        };
                         let mut t = Template::new();
                         t.push_element(
                             Template::raw_string(
-                                span.as_str(),
+                                &text,
                                 Some(pair.clone()),
                                 omit_pro_ws,
                                 trim_line_required,

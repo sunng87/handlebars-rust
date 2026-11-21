@@ -3,6 +3,28 @@ use handlebars::testing::TestHandlebars;
 use serde_json::json;
 
 #[test]
+fn test_raw_block_preserves_content_whitespace() {
+    let hbs = Handlebars::new();
+
+    hbs.assert_render_template("A{{{{raw}}}}  x  {{{{/raw}}}}B", &json!({}), "A  x  B");
+    hbs.assert_render_template(
+        "a\n  {{{{raw}}}}\n  x\n  {{{{/raw}}}}\nb",
+        &json!({}),
+        "a\n  x\nb",
+    );
+    hbs.assert_render_template(
+        "a\n{{{{raw}}}}\n    x\n{{{{/raw}}}}\nb",
+        &json!({}),
+        "a\n    x\nb",
+    );
+    hbs.assert_render_template(
+        "a\n{{{{raw}}}}\n\n  x\n{{{{/raw}}}}\nb",
+        &json!({}),
+        "a\n\n  x\nb",
+    );
+}
+
+#[test]
 fn test_whitespaces_elision() {
     let hbs = Handlebars::new();
     hbs.assert_render_template("  {{~ foo ~}}  ", &json!({"foo": "bar"}), "bar");
