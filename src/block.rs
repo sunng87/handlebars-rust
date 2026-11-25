@@ -69,6 +69,9 @@ pub struct BlockContext<'rc> {
     block_partials: BTreeMap<String, &'rc Template>,
     /// local variables in current context
     local_variables: LocalVars,
+    /// whether this block was pushed by a partial expansion. Block params do
+    /// not cross a partial boundary (matches Handlebars.js). See #698/#495.
+    is_partial_scope: bool,
 }
 
 impl<'rc> BlockContext<'rc> {
@@ -148,5 +151,13 @@ impl<'rc> BlockContext<'rc> {
     /// Set a block parameter into this block.
     pub fn set_block_param(&mut self, key: &'rc str, value: BlockParamHolder) {
         self.block_params.data.insert(key, value);
+    }
+
+    pub fn is_partial_scope(&self) -> bool {
+        self.is_partial_scope
+    }
+
+    pub(crate) fn mark_partial_scope(&mut self) {
+        self.is_partial_scope = true;
     }
 }
