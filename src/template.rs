@@ -589,8 +589,11 @@ impl Template {
         let mut with_trailing_newline = support::str::starts_with_empty_line(continuation);
 
         // For full templates, we behave as if there was a trailing newline if we encounter
-        // the end of input. See #611.
-        with_trailing_newline |= !is_partial && continuation.is_empty();
+        // the end of input, also when only spaces or tabs are left. See #611.
+        with_trailing_newline |= !is_partial
+            && continuation
+                .trim_start_matches(support::str::whitespace_matcher)
+                .is_empty();
 
         if with_trailing_newline {
             let with_leading_newline =
