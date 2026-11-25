@@ -73,6 +73,13 @@ fn parse_template(c: &mut Criterion) {
     });
 }
 
+fn parse_large_template(c: &mut Criterion) {
+    let source = SOURCE.repeat(200);
+    c.bench_function("parse_large_template", move |b| {
+        b.iter(|| Template::compile(&source).ok().unwrap());
+    });
+}
+
 fn render_template(c: &mut Criterion) {
     let mut handlebars = Handlebars::new();
     handlebars
@@ -239,6 +246,7 @@ fn partial_with_large_context(c: &mut Criterion) {
 criterion_group!(
     benches,
     parse_template,
+    parse_large_template,
     render_template,
     large_loop_helper,
     large_loop_helper_with_context_creation,
