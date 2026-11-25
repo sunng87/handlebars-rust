@@ -26,9 +26,17 @@ impl HelperDef for LookupHelper {
             .param(1)
             .ok_or(RenderErrorReason::ParamNotFoundForIndex("lookup", 1))?;
 
-        let value = match *collection_value.value() {
-            Json::Array(ref v) => index.value().as_u64().and_then(|u| v.get(u as usize)),
-            Json::Object(ref m) => index.value().as_str().and_then(|k| m.get(k)),
+        // Like handlebars.js, an array accepts a canonical integer string as
+        // index and an object accepts a number as key.
+        let value = match (collection_value.value(), index.value()) {
+            (Json::Array(v), Json::Number(n)) => n.as_u64().and_then(|u| v.get(u as usize)),
+            (Json::Array(v), Json::String(s)) => s
+                .parse::<usize>()
+                .ok()
+                .filter(|u| u.to_string() == *s)
+                .and_then(|u| v.get(u)),
+            (Json::Object(m), Json::String(k)) => m.get(k),
+            (Json::Object(m), Json::Number(n)) => m.get(&n.to_string()),
             _ => None,
         };
         if r.strict_mode() && value.is_none() {
@@ -69,6 +77,38 @@ mod test {
     }
 
     #[test]
+    fn test_lookup_index_type_coercion() {
+        let hbs = Registry::new();
+        let data = json!({
+            "arr": ["a", "b", "c"],
+            "obj": {"0": "x", "1": "y", "1.5": "z"},
+            "idx": "1",
+        });
+
+        // a string index on an array and a number key on an object
+        hbs.assert_render_template("{{lookup arr \"1\"}}", &data, "b");
+        hbs.assert_render_template("{{lookup arr idx}}", &data, "b");
+        hbs.assert_render_template("{{lookup obj 1}}", &data, "y");
+        hbs.assert_render_template("{{lookup obj 1.5}}", &data, "z");
+        hbs.assert_render_template(
+            "{{#each arr}}{{lookup ../obj @index}}{{/each}}",
+            &data,
+            "xy",
+        );
+        hbs.assert_render_template("{{#each obj}}{{lookup ../arr @key}}{{/each}}", &data, "ab");
+
+        // only canonical integer strings index an array
+        hbs.assert_render_template("{{lookup arr \"01\"}}", &data, "");
+        hbs.assert_render_template("{{lookup arr \"+1\"}}", &data, "");
+        hbs.assert_render_template("{{lookup arr \"-1\"}}", &data, "");
+        hbs.assert_render_template("{{lookup arr \"x\"}}", &data, "");
+        hbs.assert_render_template("{{lookup arr \"3\"}}", &data, "");
+        hbs.assert_render_template("{{lookup arr 1.5}}", &data, "");
+        hbs.assert_render_template("{{lookup obj 2}}", &data, "");
+        hbs.assert_render_template("{{lookup obj true}}", &data, "");
+    }
+
+    #[test]
     fn test_strict_lookup() {
         let mut hbs = Registry::new();
 
@@ -79,5 +119,8 @@ mod test {
 
         hbs.assert_render_template_err("{{lookup kk 1}}", &json!({"kk": []}), None);
         hbs.assert_render_template_ok("{{lookup kk 0}}", &json!({ "kk": [null] }));
+        hbs.assert_render_template_ok("{{lookup kk \"0\"}}", &json!({ "kk": [null] }));
+        hbs.assert_render_template_ok("{{lookup kk 0}}", &json!({ "kk": {"0": null} }));
+        hbs.assert_render_template_err("{{lookup kk \"01\"}}", &json!({ "kk": [null] }), None);
     }
 }
