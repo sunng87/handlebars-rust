@@ -691,7 +691,7 @@ impl Template {
             .flatten()
             .filter(|p| {
                 // remove rules that should be silent but not for now due to pest limitation
-                !matches!(p.as_rule(), Rule::escape)
+                !matches!(p.as_rule(), Rule::escape | Rule::raw_chunk)
             })
             .peekable();
         let mut end_pos: Option<Position<'_>> = None;
@@ -1137,6 +1137,15 @@ mod test {
         let t = Template::compile(source).ok().unwrap();
         assert_eq!(t.elements.len(), 1);
         assert_eq!(*t.elements.first().unwrap(), RawString(source.to_string()));
+    }
+
+    #[test]
+    fn test_backslash_inside_raw_string() {
+        let source = r"C:\temp\\dir \x{{a}}\ ";
+        let t = Template::compile(source).unwrap();
+        assert_eq!(t.elements.len(), 3);
+        assert_eq!(t.elements[0], RawString(r"C:\temp\\dir \x".to_string()));
+        assert_eq!(t.elements[2], RawString(r"\ ".to_string()));
     }
 
     #[test]
