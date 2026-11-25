@@ -345,7 +345,8 @@ impl<'reg> Registry<'reg> {
 
     /// Register templates from a directory
     ///
-    /// Hidden files and tempfile (starts with `#`) will be ignored by default.
+    /// Only files (or symlinks to files) are registered. Hidden files and tempfile (starts with `#`)
+    /// will be ignored by default.
     /// Set `DirectorySourceOptions` to something other than `DirectorySourceOptions::default()` to adjust this.
     /// All registered templates will use their relative path to determine their template name.
     /// For example, when `dir_path` is `templates/` and `DirectorySourceOptions.tpl_extension` is `.hbs`, the file
@@ -392,6 +393,8 @@ impl<'reg> Registry<'reg> {
                     .to_string_lossy()
                     .ends_with(options.tpl_extension.as_str())
             })
+            // Rejects directories and other non-files whose names match the extension.
+            .filter(|tpl_path| tpl_path.is_file())
             // Rejects any hidden or temporary files.
             .filter(|tpl_path| {
                 tpl_path
@@ -1192,6 +1195,50 @@ mod test {
             assert!(r.templates.contains_key(".t12"));
 
             drop(file1);
+
+            dir.close().unwrap();
+        }
+
+        {
+            // directories whose names match the extension are not templates
+            let dir = tempdir().unwrap();
+            DirBuilder::new()
+                .create(dir.path().join("pages.html"))
+                .unwrap();
+            File::create(dir.path().join("index.html")).unwrap();
+            File::create(dir.path().join("pages.html/t13.html")).unwrap();
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::symlink;
+                symlink(dir.path().join("index.html"), dir.path().join("alias.html")).unwrap();
+                symlink(
+                    dir.path().join("pages.html"),
+                    dir.path().join("linked.html"),
+                )
+                .unwrap();
+                symlink(dir.path().join("gone.html"), dir.path().join("broken.html")).unwrap();
+            }
+
+            for (tpl_extension, expected) in [
+                (".html", ["alias", "index", "pages.html/t13"]),
+                ("", ["alias.html", "index.html", "pages.html/t13.html"]),
+            ] {
+                let mut r = Registry::new();
+                r.register_templates_directory(
+                    dir.path(),
+                    DirectorySourceOptions {
+                        tpl_extension: tpl_extension.to_owned(),
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
+
+                let mut names = r.templates.keys().map(String::as_str).collect::<Vec<_>>();
+                names.sort_unstable();
+                // `alias` sorts first and is a symlink, created on unix only
+                let expected = &expected[usize::from(cfg!(not(unix)))..];
+                assert_eq!(names, expected);
+            }
 
             dir.close().unwrap();
         }
