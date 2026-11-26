@@ -39,20 +39,34 @@ pub mod str {
 
     /// See https://github.com/handlebars-lang/handlebars.js/blob/37411901da42200ced8e1a7fc2f67bf83526b497/lib/handlebars/utils.js#L1
     pub fn escape_html(s: &str) -> String {
-        let mut output = String::new();
-        for c in s.chars() {
-            match c {
-                '<' => output.push_str("&lt;"),
-                '>' => output.push_str("&gt;"),
-                '"' => output.push_str("&quot;"),
-                '&' => output.push_str("&amp;"),
-                '\'' => output.push_str("&#x27;"),
-                '`' => output.push_str("&#x60;"),
-                '=' => output.push_str("&#x3D;"),
-                _ => output.push(c),
-            }
+        let bytes = s.as_bytes();
+        let Some(first) = bytes.iter().position(|&b| needs_html_escape(b)) else {
+            return s.to_owned();
+        };
+        let mut output = String::with_capacity(s.len() + s.len() / 8);
+        let mut last = 0;
+        for (i, &b) in bytes.iter().enumerate().skip(first) {
+            let escaped = match b {
+                b'<' => "&lt;",
+                b'>' => "&gt;",
+                b'"' => "&quot;",
+                b'&' => "&amp;",
+                b'\'' => "&#x27;",
+                b'`' => "&#x60;",
+                b'=' => "&#x3D;",
+                _ => continue,
+            };
+            output.push_str(&s[last..i]);
+            output.push_str(escaped);
+            last = i + 1;
         }
+        output.push_str(&s[last..]);
         output
+    }
+
+    #[inline]
+    fn needs_html_escape(b: u8) -> bool {
+        matches!(b, b'<' | b'>' | b'"' | b'&' | b'\'' | b'`' | b'=')
     }
 
     /// add indent for lines but last
@@ -145,6 +159,19 @@ pub mod str {
 
             let s = sw.into_string();
             assert_eq!(s, "helloworld".to_string());
+        }
+
+        #[test]
+        fn test_escape_html() {
+            use crate::support::str::escape_html;
+
+            assert_eq!(escape_html(""), "");
+            assert_eq!(escape_html("plain text, 日本語"), "plain text, 日本語");
+            assert_eq!(
+                escape_html("<a href=\"x\">'`&</a>"),
+                "&lt;a href&#x3D;&quot;x&quot;&gt;&#x27;&#x60;&amp;&lt;/a&gt;"
+            );
+            assert_eq!(escape_html("é<ü>🎈&"), "é&lt;ü&gt;🎈&amp;");
         }
     }
 }

@@ -902,9 +902,19 @@ impl Renderable for TemplateElement {
                                 }
                             }
                         } else {
-                            let rendered = context_json.value().render();
-                            let output = do_escape(registry, rc, rendered);
-                            indent_aware_write(output.as_ref(), rc, out)
+                            // Escape string values from the borrowed data instead of
+                            // rendering them to an owned copy first.
+                            if let Json::String(s) = context_json.value() {
+                                if rc.is_disable_escape() {
+                                    indent_aware_write(s, rc, out)
+                                } else {
+                                    indent_aware_write(&registry.get_escape_fn()(s), rc, out)
+                                }
+                            } else {
+                                let rendered = context_json.value().render();
+                                let output = do_escape(registry, rc, rendered);
+                                indent_aware_write(output.as_ref(), rc, out)
+                            }
                         }
                     }
                 } else {
