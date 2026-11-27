@@ -9,7 +9,7 @@ use serde_json::value::Value as Json;
 
 use crate::error::{TemplateError, TemplateErrorReason};
 use crate::grammar::{HandlebarsParser, Rule};
-use crate::json::path::{Path, parse_json_path_from_iter};
+use crate::json::path::{Path, PathSeg, parse_json_path_from_iter};
 use crate::support;
 
 use derive_builder::Builder;
@@ -382,6 +382,27 @@ impl Template {
             Rule::reference => {
                 let paths = parse_json_path_from_iter(it, name_span.end());
                 Ok(Parameter::Path(Path::new(name_span.as_str(), paths)))
+            }
+            Rule::string_literal => {
+                let quoted = name_span.as_str();
+                let inner = &quoted[1..quoted.len() - 1];
+                let name = if quoted.starts_with('"') {
+                    inner.replace("\\\"", "\"")
+                } else {
+                    inner.replace("\\'", "'")
+                };
+
+                while let Some(n) = it.peek() {
+                    if n.as_span().end() > name_span.end() {
+                        break;
+                    }
+                    it.next();
+                }
+
+                Ok(Parameter::Path(Path::new(
+                    &name,
+                    vec![PathSeg::Named(name.clone())],
+                )))
             }
             Rule::subexpression => {
                 Template::parse_subexpression(source, it.by_ref(), name_span.end())
@@ -1404,6 +1425,23 @@ mod test {
             Err(e) => {
                 panic!("{}", e);
             }
+        }
+    }
+
+    #[test]
+    fn test_quoted_literal_reference_parser() {
+        match Template::compile("{{\"foo bar\"}}") {
+            Ok(t) => {
+                if let Expression(ref ht) = t.elements[0] {
+                    assert_eq!(
+                        ht.name,
+                        Parameter::Path(Path::with_named_paths(&["foo bar"]))
+                    );
+                } else {
+                    panic!("Expression expected");
+                }
+            }
+            Err(e) => panic!("{}", e),
         }
     }
 

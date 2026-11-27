@@ -31,7 +31,6 @@ json_char_single_quote = {
 }
 string_inner_double_quote = @{ json_char_double_quote* }
 string_inner_single_quote = @{ json_char_single_quote* }
-string_literal = ${ ("\"" ~ string_inner_double_quote ~ "\"") | ("'" ~ string_inner_single_quote ~ "'") }
 array_literal = { "[" ~ literal? ~ ("," ~ literal)* ~ "]" }
 object_literal = { "{" ~ (string_literal ~ ":" ~ literal)?
                    ~ ("," ~ string_literal ~ ":" ~ literal)* ~ "}" }
@@ -47,6 +46,7 @@ opt_partial_identifier = { partial_identifier? }
 reference = ${ path_inline }
 
 name = _{ subexpression | reference }
+expression_name = _{ subexpression | reference | string_literal }
 
 helper_parameter = { !(keywords ~ !symbol_char) ~ (literal | reference | subexpression) }
 hash = { identifier ~ "=" ~ helper_parameter }
@@ -60,16 +60,16 @@ leading_tilde_to_omit_whitespace = { "~" }
 trailing_tilde_to_omit_whitespace = { "~" }
 
 expression = { !(invert_tag|invert_chain_tag) ~ "{{" ~ leading_tilde_to_omit_whitespace? ~
-              ((identifier ~ (hash|helper_parameter)+) | name )
+              ((identifier ~ (hash|helper_parameter)+) | expression_name )
               ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
 html_expression_triple_bracket_legacy = _{ "{{{" ~ leading_tilde_to_omit_whitespace? ~
-                                           ((identifier ~ (hash|helper_parameter)+) | name ) ~
+                                           ((identifier ~ (hash|helper_parameter)+) | expression_name ) ~
                                            trailing_tilde_to_omit_whitespace? ~ "}}}" }
 html_expression_triple_bracket = _{ "{{" ~ leading_tilde_to_omit_whitespace? ~ "{" ~
-                                              ((identifier ~ (hash|helper_parameter)+) | name ) ~
+                                              ((identifier ~ (hash|helper_parameter)+) | expression_name ) ~
                                               "}" ~ trailing_tilde_to_omit_whitespace? ~ "}}" }
 
-amp_expression = _{ "{{" ~ leading_tilde_to_omit_whitespace? ~ "&" ~ name ~
+amp_expression = _{ "{{" ~ leading_tilde_to_omit_whitespace? ~ "&" ~ expression_name ~
                        trailing_tilde_to_omit_whitespace? ~ "}}" }
 html_expression = { (html_expression_triple_bracket_legacy | html_expression_triple_bracket)
                    | amp_expression }
@@ -143,3 +143,5 @@ path_item = _{ path_id|path_key }
 path_local = { "@" }
 path_inline = ${ path_current? ~ (path_root ~ path_sep)? ~ path_local? ~ (path_up ~ path_sep)*  ~ path_item ~ (path_sep ~  path_item)* }
 path = _{ path_inline ~ EOI }
+
+string_literal = ${ ("\"" ~ string_inner_double_quote ~ "\"") | ("'" ~ string_inner_single_quote ~ "'") }
