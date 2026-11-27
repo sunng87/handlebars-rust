@@ -168,6 +168,8 @@ mod test {
             "{{exp}}",
             "{{(exp)}}",
             "{{../exp}}",
+            "{{\"foo bar\"}}",
+            "{{'foo bar'}}",
             "{{exp 1}}",
             "{{exp \"literal\"}}",
             "{{exp \"literal with space\"}}",
